@@ -1,0 +1,90 @@
+import type { AuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
+import bcrypt from "bcryptjs";
+import { prisma } from "@/lib/prisma";
+
+const googleEnabled = Boolean(
+  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+);
+
+export const authOptions: AuthOptions = {
+  session: { strategy: "jwt" },
+  secret: process.env.NEXTAUTH_SECRET,
+  pages: {
+    signIn: "/signin",
+  },
+  providers: [
+    CredentialsProvider({
+      name: "Email and password",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) return null;
+
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email.toLowerCase().trim() },
+        });
+        if (!user) return null;
+        // Google-only accounts have no passwordHash — credentials sign-in
+        // must not fall through to bcrypt.compare(..., null).
+        if (!user.passwordHash) return null;
+
+        const valid = await bcrypt.compare(credentials.password, user.passwordHash);
+        if (!valid) return null;
+
+        return { id: user.id, email: user.email };
+      },
+    }),
+    // Only registered when GOOGLE_CLIENT_ID/SECRET are set — the app works
+    // fine without Google configured, this provider just doesn't appear.
+    ...(googleEnabled
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID!,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+          }),
+        ]
+      : []),
+  ],
+  callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider !== "google") return true;
+      if (!user.email) return false;
+
+      const email = user.email.toLowerCase().trim();
+      const existing = await prisma.user.findUnique({ where: { email } });
+
+      if (existing) {
+        // Link by email — an existing Credentials (or previously-Google)
+        // account can sign in with Google without a separate merge step.
+        user.id = existing.id;
+        return true;
+      }
+
+      // No account with this email yet. Same bootstrap rule as
+      // signUpAction: only the very first account can self-create: every
+      // account after that must come from a redeemed Team invite.
+      const accountCount = await prisma.user.count();
+      if (accountCount > 0) return false;
+
+      const created = await prisma.user.create({
+        data: { email, passwordHash: null },
+      });
+      user.id = created.id;
+      return true;
+    },
+    async jwt({ token, user }) {
+      if (user) token.id = (user as { id: string }).id;
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        (session.user as { id?: string }).id = token.id as string;
+      }
+      return session;
+    },
+  },
+};

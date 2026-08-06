@@ -1,0 +1,720 @@
+"use client";
+
+import { useEffect, useRef, useState, useTransition } from "react";
+import { Trash2, PenTool, Link2, Sparkles, Pencil, Upload } from "lucide-react";
+import { Topbar } from "@/components/topbar";
+import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Chip } from "@/components/ui/chip";
+import { TextField } from "@/components/ui/text-field";
+import { Button } from "@/components/ui/button";
+import {
+  updateMemoryInstructionsAction,
+  updateMemoryNotesAction,
+  saveMemoryFileAction,
+  uploadMemoryImageAction,
+  saveMemoryLinkAction,
+  generatePersonaAction,
+  updatePersonaAction,
+  updateBrandingAction,
+  uploadBrandLogoAction,
+  deleteMemoryAssetAction,
+} from "@/actions/memory";
+import { disconnectProviderAction, type Provider } from "@/actions/connections";
+import { industryLabel } from "@/lib/industries";
+import { CURRENCIES } from "@/lib/currencies";
+import {
+  type Preset,
+  TONE_PRESETS,
+  INSTRUCTIONS_PRESETS,
+  STORY_PRESETS,
+  CONTEXT_PRESETS,
+} from "@/lib/memory-presets";
+
+/**
+ * Memory used to be seven separate tabs. It's now one scrollable, modular
+ * page — everything the AI draws on (persona, voice, story, context, files,
+ * images, links, branding, connectors) lives together, closer to how a
+ * memory/context page works elsewhere. The chip row below is just an anchor
+ * nav for quick jumping, not a tab switcher — nothing is hidden.
+ */
+const SECTIONS = [
+  ["persona", "Persona"],
+  ["voice", "Voice"],
+  ["story", "Story & context"],
+  ["references", "Files, images & links"],
+  ["branding", "Branding"],
+  ["connectors", "Connectors"],
+] as const;
+
+interface FileAsset {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+interface ImageAsset {
+  id: string;
+  name: string;
+  dataUrl: string;
+  createdAt: string;
+}
+interface LinkAsset {
+  id: string;
+  name: string;
+  url: string;
+  createdAt: string;
+}
+interface ConnectionInfo {
+  provider: Provider;
+  accountLabel: string | null;
+  connectedAt: string;
+}
+export function MemoryView({
+  industry,
+  aiPersona,
+  personaUpdatedAt,
+  initialInstructions,
+  initialTone,
+  initialStory,
+  initialContext,
+  brandPrimaryColor,
+  brandAccentColor,
+  brandLogoDataUrl,
+  currency,
+  files,
+  images,
+  links,
+  connections,
+}: {
+  industry: string | null;
+  aiPersona: string | null;
+  personaUpdatedAt: string | null;
+  initialInstructions: string;
+  initialTone: string;
+  initialStory: string;
+  initialContext: string;
+  brandPrimaryColor: string | null;
+  brandAccentColor: string | null;
+  brandLogoDataUrl: string | null;
+  currency: string;
+  files: FileAsset[];
+  images: ImageAsset[];
+  links: LinkAsset[];
+  connections: ConnectionInfo[];
+}) {
+  return (
+    <>
+      <Topbar eyebrow="Memory" />
+      <div>
+        <h1 className="font-display italic text-[32px] text-coral m-0">
+          What it knows about your studio.
+        </h1>
+        <p className="text-slate text-[13px] mt-2">
+          This context actually shapes quote generation — try changing it and generating a new
+          quote. Working as: <span className="font-semibold text-slate">{industryLabel(industry)}</span>.
+        </p>
+      </div>
+      <div className="flex gap-2 flex-wrap">
+        {SECTIONS.map(([id, label]) => (
+          <a key={id} href={`#${id}`}>
+            <Chip>{label}</Chip>
+          </a>
+        ))}
+      </div>
+
+      <div className="flex flex-col gap-7">
+        <section id="persona" className="scroll-mt-6">
+          <PersonaCard initial={aiPersona} updatedAt={personaUpdatedAt} />
+        </section>
+
+        <section id="voice" className="scroll-mt-6 grid grid-cols-2 gap-5">
+          <AutosaveNotes
+            field={null}
+            initial={initialInstructions}
+            isInstructions
+            label="Instructions"
+            presets={INSTRUCTIONS_PRESETS}
+            rows={4}
+          />
+          <AutosaveNotes
+            field="toneNotes"
+            initial={initialTone}
+            label="Tone notes"
+            placeholder="e.g. warm but efficient, no exclamation points, avoid jargon..."
+            presets={TONE_PRESETS}
+            rows={4}
+          />
+        </section>
+
+        <section id="story" className="scroll-mt-6 grid grid-cols-2 gap-5">
+          <AutosaveNotes
+            field="storyNotes"
+            initial={initialStory}
+            label="Studio story"
+            placeholder="How the studio started, what you're known for, values that should come through in quotes..."
+            presets={STORY_PRESETS}
+            rows={4}
+          />
+          <AutosaveNotes
+            field="contextNotes"
+            initial={initialContext}
+            label="Additional context"
+            placeholder="Anything else Claude should know — rates, typical engagement length, industries you specialize in..."
+            presets={CONTEXT_PRESETS}
+            rows={4}
+          />
+        </section>
+
+        <section id="references" className="scroll-mt-6">
+          <ReferencesCard files={files} images={images} links={links} />
+        </section>
+
+        <section id="branding" className="scroll-mt-6">
+          <BrandingCard
+            primaryColor={brandPrimaryColor}
+            accentColor={brandAccentColor}
+            logoDataUrl={brandLogoDataUrl}
+            currency={currency}
+          />
+        </section>
+
+        <section id="connectors" className="scroll-mt-6">
+          <ConnectorsCard connections={connections} />
+        </section>
+      </div>
+    </>
+  );
+}
+
+function PersonaCard({ initial, updatedAt }: { initial: string | null; updatedAt: string | null }) {
+  const [value, setValue] = useState(initial ?? "");
+  const [editing, setEditing] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState("");
+
+  function regenerate() {
+    setError("");
+    startTransition(async () => {
+      const result = await generatePersonaAction();
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setValue(result.data.persona);
+      setEditing(false);
+    });
+  }
+
+  function saveEdit() {
+    startTransition(async () => {
+      await updatePersonaAction(value);
+      setEditing(false);
+    });
+  }
+
+  return (
+    <Card>
+      <div className="flex justify-between items-center mb-2.5">
+        <Label>Persona</Label>
+        <span className="text-xs text-text-muted">
+          {updatedAt ? `Updated ${new Date(updatedAt).toLocaleDateString()}` : "Not generated yet"}
+        </span>
+      </div>
+      <p className="text-[11px] text-text-muted mb-3">
+        Built from your Story, Tone, Context, saved files, and past projects — a starting picture
+        of how you work, not a locked-in fact. Correct it any time.
+      </p>
+      {editing ? (
+        <TextField value={value} onChange={setValue} multiline rows={4} />
+      ) : (
+        <p className="text-sm leading-relaxed text-ink m-0 min-h-[3em]">
+          {value || "Nothing generated yet — add a bit to Story or Files below, then generate."}
+        </p>
+      )}
+      {error && <div className="text-overdue text-xs mt-2">{error}</div>}
+      <div className="flex gap-2.5 mt-3">
+        <Button icon={Sparkles} spinIcon={pending} disabled={pending} onClick={regenerate}>
+          {value ? "Regenerate" : "Generate persona"}
+        </Button>
+        {editing ? (
+          <Button variant="outline" disabled={pending} onClick={saveEdit}>
+            Save edit
+          </Button>
+        ) : (
+          <Button variant="ghost" icon={Pencil} disabled={pending} onClick={() => setEditing(true)}>
+            Correct it
+          </Button>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function AutosaveNotes({
+  field,
+  initial,
+  label = "Core instructions",
+  placeholder,
+  isInstructions,
+  presets,
+  rows = 5,
+}: {
+  field: "toneNotes" | "storyNotes" | "contextNotes" | null;
+  initial: string;
+  label?: string;
+  placeholder?: string;
+  isInstructions?: boolean;
+  presets?: Preset[];
+  rows?: number;
+}) {
+  const [value, setValue] = useState(initial);
+  const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const timer = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    if (value === initial) return;
+    setStatus("saving");
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(async () => {
+      if (isInstructions) {
+        await updateMemoryInstructionsAction(value);
+      } else if (field) {
+        await updateMemoryNotesAction(field, value);
+      }
+      setStatus("saved");
+    }, 700);
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  return (
+    <Card>
+      <div className="flex justify-between items-center mb-2.5">
+        <Label>{label}</Label>
+        <span className="text-xs text-success font-body font-semibold">
+          {status === "saving" ? "saving..." : status === "saved" ? "saved" : "saved automatically"}
+        </span>
+      </div>
+      {presets && presets.length > 0 && (
+        <div className="mb-3">
+          <div className="text-[11px] text-text-muted mb-1.5">
+            Start from a preset — one click sets the text below, then edit as you like.
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {presets.map((p) => (
+              <Chip key={p.label} active={value === p.text} onClick={() => setValue(p.text)}>
+                {p.label}
+              </Chip>
+            ))}
+          </div>
+        </div>
+      )}
+      <TextField value={value} onChange={setValue} multiline rows={rows} placeholder={placeholder} />
+    </Card>
+  );
+}
+
+function ReferencesCard({
+  files,
+  images,
+  links,
+}: {
+  files: FileAsset[];
+  images: ImageAsset[];
+  links: LinkAsset[];
+}) {
+  const [fileItems, setFileItems] = useState(files);
+  const [imageItems, setImageItems] = useState(images);
+  const [linkItems, setLinkItems] = useState(links);
+  const [linkName, setLinkName] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [uploading, setUploading] = useState<"file" | "image" | "link" | null>(null);
+  const [error, setError] = useState("");
+
+  async function handleFileUpload(file: File) {
+    setUploading("file");
+    setError("");
+    const formData = new FormData();
+    formData.set("file", file);
+    const res = await fetch("/api/extract-text", { method: "POST", body: formData });
+    const extracted = await res.json();
+    if (!res.ok) {
+      setUploading(null);
+      setError(extracted.error || "Couldn't read that file.");
+      return;
+    }
+    const result = await saveMemoryFileAction(extracted.fileName, extracted.text);
+    setUploading(null);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    setFileItems((prev) => [
+      { id: result.data.id, name: result.data.name, createdAt: new Date().toISOString() },
+      ...prev,
+    ]);
+  }
+
+  async function handleImageUpload(file: File) {
+    setUploading("image");
+    setError("");
+    const formData = new FormData();
+    formData.set("file", file);
+    const result = await uploadMemoryImageAction(formData);
+    setUploading(null);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageItems((prev) => [
+        {
+          id: result.data.id,
+          name: result.data.name,
+          dataUrl: String(reader.result),
+          createdAt: new Date().toISOString(),
+        },
+        ...prev,
+      ]);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function handleAddLink() {
+    setUploading("link");
+    setError("");
+    const result = await saveMemoryLinkAction(linkName, linkUrl);
+    setUploading(null);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    setLinkItems((prev) => [
+      { id: result.data.id, name: result.data.name, url: linkUrl, createdAt: new Date().toISOString() },
+      ...prev,
+    ]);
+    setLinkName("");
+    setLinkUrl("");
+  }
+
+  async function handleDelete(id: string, kind: "file" | "image" | "link") {
+    if (kind === "file") setFileItems((prev) => prev.filter((f) => f.id !== id));
+    if (kind === "image") setImageItems((prev) => prev.filter((f) => f.id !== id));
+    if (kind === "link") setLinkItems((prev) => prev.filter((f) => f.id !== id));
+    await deleteMemoryAssetAction(id);
+  }
+
+  return (
+    <Card>
+      <div className="flex justify-between items-center mb-1">
+        <Label>Files, images & links</Label>
+        <span className="text-xs text-text-muted">
+          Files &amp; links feed the AI directly; images are for your own brand reference.
+        </span>
+      </div>
+
+      <div className="grid grid-cols-3 gap-5 mt-3">
+        <div>
+          <div className="text-[11px] font-semibold text-slate mb-2 uppercase tracking-wide">Files</div>
+          <label className="flex flex-col gap-2 cursor-pointer mb-3">
+            <input
+              type="file"
+              accept=".txt,.md,.pdf,.docx"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleFileUpload(file);
+              }}
+            />
+            <span className="font-body font-bold text-[12.5px] text-violet">
+              {uploading === "file" ? "Reading..." : "+ Upload a file"}
+            </span>
+          </label>
+          <div className="flex flex-col gap-2">
+            {fileItems.map((f) => (
+              <div key={f.id} className="flex justify-between items-center bg-paper rounded-lg px-3 py-2">
+                <span className="text-[12.5px] text-ink truncate">{f.name}</span>
+                <button onClick={() => handleDelete(f.id, "file")} className="text-text-muted hover:text-overdue flex-shrink-0">
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            ))}
+            {fileItems.length === 0 && <div className="text-text-muted text-xs">None yet.</div>}
+          </div>
+        </div>
+
+        <div>
+          <div className="text-[11px] font-semibold text-slate mb-2 uppercase tracking-wide">Images</div>
+          <label className="flex flex-col gap-2 cursor-pointer mb-3">
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImageUpload(file);
+              }}
+            />
+            <span className="font-body font-bold text-[12.5px] text-violet">
+              {uploading === "image" ? "Uploading..." : "+ Upload an image"}
+            </span>
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            {imageItems.map((img) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <div key={img.id} className="relative group">
+                <img
+                  src={img.dataUrl}
+                  alt={img.name}
+                  className="w-full aspect-square object-cover rounded-lg border border-line"
+                />
+                <button
+                  onClick={() => handleDelete(img.id, "image")}
+                  className="absolute top-1 right-1 bg-white rounded-full p-1 border border-line"
+                >
+                  <Trash2 size={10} />
+                </button>
+              </div>
+            ))}
+          </div>
+          {imageItems.length === 0 && <div className="text-text-muted text-xs">None yet.</div>}
+        </div>
+
+        <div>
+          <div className="text-[11px] font-semibold text-slate mb-2 uppercase tracking-wide">Links</div>
+          <div className="flex flex-col gap-1.5 mb-3">
+            <input
+              value={linkName}
+              onChange={(e) => setLinkName(e.target.value)}
+              placeholder="Label (e.g. Portfolio)"
+              className="w-full font-body text-xs text-ink bg-paper border border-line rounded-lg px-2.5 py-2 outline-none"
+            />
+            <input
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              placeholder="https://..."
+              className="w-full font-body text-xs text-ink bg-paper border border-line rounded-lg px-2.5 py-2 outline-none"
+            />
+            <button
+              onClick={handleAddLink}
+              disabled={uploading === "link" || !linkName || !linkUrl}
+              className="font-body font-bold text-[12.5px] text-violet text-left disabled:opacity-40 disabled:cursor-default"
+            >
+              {uploading === "link" ? "Saving..." : "+ Add link"}
+            </button>
+          </div>
+          <div className="flex flex-col gap-2">
+            {linkItems.map((l) => (
+              <div key={l.id} className="flex justify-between items-center bg-paper rounded-lg px-3 py-2">
+                <a href={l.url} target="_blank" rel="noreferrer" className="text-[12.5px] text-violet truncate">
+                  {l.name}
+                </a>
+                <button onClick={() => handleDelete(l.id, "link")} className="text-text-muted hover:text-overdue flex-shrink-0">
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            ))}
+            {linkItems.length === 0 && <div className="text-text-muted text-xs">None yet.</div>}
+          </div>
+        </div>
+      </div>
+      {error && <div className="text-overdue text-xs mt-3">{error}</div>}
+    </Card>
+  );
+}
+
+function BrandingCard({
+  primaryColor,
+  accentColor,
+  logoDataUrl,
+  currency,
+}: {
+  primaryColor: string | null;
+  accentColor: string | null;
+  logoDataUrl: string | null;
+  currency: string;
+}) {
+  const [primary, setPrimary] = useState(primaryColor ?? "#F45B69");
+  const [accent, setAccent] = useState(accentColor ?? "#6320EE");
+  const [logo, setLogo] = useState(logoDataUrl);
+  const [curr, setCurr] = useState(currency);
+  const [pending, startTransition] = useTransition();
+
+  function save(patch: { brandPrimaryColor?: string; brandAccentColor?: string; currency?: string }) {
+    startTransition(() => {
+      updateBrandingAction(patch);
+    });
+  }
+
+  async function handleLogoUpload(file: File) {
+    const formData = new FormData();
+    formData.set("file", file);
+    const result = await uploadBrandLogoAction(formData);
+    if (result.ok) {
+      const reader = new FileReader();
+      reader.onload = () => setLogo(String(reader.result));
+      reader.readAsDataURL(file);
+    }
+  }
+
+  return (
+    <Card>
+      <Label>Branding</Label>
+      <p className="text-[11px] text-text-muted mb-3">
+        Applied to your public client site, public quote pages, and PDF exports — so clients see
+        your studio&apos;s look, not Freely&apos;s default.
+      </p>
+      <div className="flex gap-8 items-start">
+        <div>
+          <div className="text-[11px] font-semibold text-slate mb-2 uppercase tracking-wide">Logo</div>
+          {logo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logo} alt="Logo" className="h-10 mb-2" />
+          ) : (
+            <div className="text-xs text-text-muted mb-2">Using the Freely wordmark for now.</div>
+          )}
+          <label className="flex items-center gap-1.5 cursor-pointer">
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleLogoUpload(file);
+              }}
+            />
+            <Upload size={12} className="text-violet" />
+            <span className="font-body font-bold text-[12.5px] text-violet">Upload logo</span>
+          </label>
+        </div>
+        <div className="flex gap-6">
+          <div>
+            <div className="text-[11px] font-semibold text-slate mb-2 uppercase tracking-wide">Primary color</div>
+            <input
+              type="color"
+              value={primary}
+              onChange={(e) => {
+                setPrimary(e.target.value);
+                save({ brandPrimaryColor: e.target.value });
+              }}
+              className="w-12 h-9 rounded border border-line cursor-pointer"
+            />
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold text-slate mb-2 uppercase tracking-wide">Accent color</div>
+            <input
+              type="color"
+              value={accent}
+              onChange={(e) => {
+                setAccent(e.target.value);
+                save({ brandAccentColor: e.target.value });
+              }}
+              className="w-12 h-9 rounded border border-line cursor-pointer"
+            />
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold text-slate mb-2 uppercase tracking-wide">Currency</div>
+            <select
+              value={curr}
+              onChange={(e) => {
+                setCurr(e.target.value);
+                save({ currency: e.target.value });
+              }}
+              className="h-9 rounded border border-line bg-paper px-2.5 text-sm text-ink cursor-pointer"
+            >
+              {CURRENCIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code} ({c.symbol})
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+      <p className="text-[11px] text-text-muted mt-2.5">
+        Default currency for new quotes — each quote can still be changed individually in the
+        wizard.
+      </p>
+      {pending && <div className="text-xs text-text-muted mt-2">Saving...</div>}
+    </Card>
+  );
+}
+
+const PROVIDER_LABEL: Record<Provider, string> = {
+  FIGMA: "Figma",
+  NOTION: "Notion",
+  GITHUB: "GitHub",
+};
+
+function ConnectorsCard({ connections }: { connections: ConnectionInfo[] }) {
+  const connected = new Map(connections.map((c) => [c.provider, c]));
+
+  return (
+    <Card>
+      <Label>Connectors</Label>
+      <div className="flex flex-col gap-3 mt-2">
+        <ConnectorRow
+          provider="FIGMA"
+          icon={<PenTool size={16} />}
+          info={connected.get("FIGMA")}
+          available
+        />
+        <ConnectorRow provider="NOTION" icon={<Link2 size={16} />} info={connected.get("NOTION")} />
+        <ConnectorRow provider="GITHUB" icon={<Link2 size={16} />} info={connected.get("GITHUB")} />
+      </div>
+    </Card>
+  );
+}
+
+function ConnectorRow({
+  provider,
+  icon,
+  info,
+  available,
+}: {
+  provider: Provider;
+  icon: React.ReactNode;
+  info?: ConnectionInfo;
+  available?: boolean;
+}) {
+  const [working, setWorking] = useState(false);
+
+  return (
+    <div className="flex items-center justify-between bg-paper rounded-lg px-4 py-3">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-white border border-line flex items-center justify-center text-slate">
+          {icon}
+        </div>
+        <div>
+          <div className="font-body font-semibold text-sm text-ink">{PROVIDER_LABEL[provider]}</div>
+          <div className="text-xs text-text-muted">
+            {info ? `Connected${info.accountLabel ? ` as ${info.accountLabel}` : ""}` : "Not connected"}
+          </div>
+        </div>
+      </div>
+      {info ? (
+        <Button
+          variant="ghost"
+          disabled={working}
+          onClick={async () => {
+            setWorking(true);
+            await disconnectProviderAction(provider);
+            setWorking(false);
+            window.location.reload();
+          }}
+        >
+          Disconnect
+        </Button>
+      ) : available ? (
+        <Button onClick={() => (window.location.href = `/api/connect/figma/start`)}>Connect</Button>
+      ) : (
+        <Button variant="ghost" disabled>
+          Coming soon
+        </Button>
+      )}
+    </div>
+  );
+}

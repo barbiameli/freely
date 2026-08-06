@@ -1,0 +1,249 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String   @unique
+  createdAt DateTime @default(now())
+
+  owner   User          @relation("TeamOwner", fields: [ownerId], references: [id])
+  members User[]        @relation("TeamMember")
+  invites TeamInvite[]
+}
+
+model TeamInvite {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  email     String?
+  token     String   @unique @default(cuid())
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([teamId])
+}
+
+model User {
+  id                 String   @id @default(cuid())
+  email              String   @unique
+  // Nullable so Google-only accounts (no password set) can exist. The
+  // Credentials provider must reject sign-in attempts where this is null.
+  passwordHash       String?
+  memoryInstructions String   @default("") @db.Text
+  toneNotes          String   @default("") @db.Text
+  storyNotes         String   @default("") @db.Text
+  contextNotes       String   @default("") @db.Text
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Onboarding: broad industry category, used to tailor default prompts and
+  // presets across Quote/Memory. Null until the user completes /onboarding.
+  industry           String?
+
+  // AI-synthesized persona — a short summary of who this freelancer is and
+  // how they work, inferred from Story/Tone/Context/Files/industry/past
+  // projects. Regenerated on demand; user can hand-edit to correct it.
+  aiPersona          String?  @db.Text
+  personaUpdatedAt   DateTime?
+
+  // Branding applied to the public client site, public quote pages, and PDF
+  // export. All optional — falls back to Freely's default look.
+  brandPrimaryColor  String?
+  brandAccentColor   String?
+  brandLogoDataUrl   String?  @db.Text
+
+  // Default currency (ISO 4217 code, e.g. "USD") for new quotes — set in
+  // Memory → Branding. Each Brief/Project stores its own currency too, so
+  // changing this later doesn't rewrite past quotes.
+  currency           String   @default("USD")
+
+  // A user either owns a team (TeamOwner) or belongs to one as a member
+  // (TeamMember, via teamId). Solo users have neither set.
+  ownedTeam Team?   @relation("TeamOwner")
+  teamId    String?
+  team      Team?   @relation("TeamMember", fields: [teamId], references: [id])
+
+  briefs      Brief[]
+  projects    Project[]
+  assets      MemoryAsset[]
+  connections Connection[]
+}
+
+model MemoryAsset {
+  id          String          @id @default(cuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        MemoryAssetType
+  name        String
+  textContent String?         @db.Text
+  dataUrl     String?         @db.Text
+  // Only set for type=LINK — a reference URL (portfolio piece, style guide,
+  // brand doc) saved to Memory without needing a file upload.
+  url         String?
+
+  createdAt   DateTime        @default(now())
+
+  @@index([userId])
+}
+
+enum MemoryAssetType {
+  FILE
+  IMAGE
+  LINK
+}
+
+enum ConnectionProvider {
+  FIGMA
+  NOTION
+  GITHUB
+}
+
+model Connection {
+  id                String              @id @default(cuid())
+  userId            String
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          ConnectionProvider
+  accountLabel      String?
+  accessTokenCipher String              @db.Text
+  refreshTokenCipher String?            @db.Text
+  expiresAt         DateTime?
+  createdAt         DateTime            @default(now())
+
+  @@unique([userId, provider])
+}
+
+model Brief {
+  id             String      @id @default(cuid())
+  userId         String
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title          String
+  client         String
+  scope          String      @db.Text
+  deliverables   Json
+  timeline       String
+  // Structured Strategy section — { goal, findings[], aiWill[], aiWillNot[],
+  // openQuestions[] } — kept as JSON (not a prose blob) so every renderer
+  // (brief view, PDF, public page) can lay it out as real bulleted sections.
+  strategy       Json?
+  price          Float
+  hours          Float
+  hourlyRate     Float?
+  // ISO 4217 code (e.g. "USD", "EUR") — defaults from the user's saved
+  // preference at generation time, but can differ per quote.
+  currency       String      @default("USD")
+  expertiseLevel String?
+  status         BriefStatus @default(DRAFT)
+  sourceText     String?     @db.Text
+  settings       Json?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  // Public, shareable "HTML page" quote — mirrors Project's publicSlug
+  // pattern. published gates visibility; publicSlug is the stable URL.
+  published      Boolean     @default(false)
+  publicSlug     String      @unique @default(cuid())
+  // Which of the 3 public-page visual templates to render at /q/[publicSlug].
+  template       String      @default("classic")
+
+  project  Project?
+  examples BriefExample[]
+
+  @@index([userId])
+}
+
+// A reference file (screenshot, moodboard, past landing page, etc.) attached
+// to a quote with a caption explaining how it applies — e.g. "this is a
+// landing page I built — I'd apply a similar structure here" or "this
+// moodboard is the visual direction I'd take the branding in." Shown on the
+// brief page, in the PDF export, and on the public quote page.
+model BriefExample {
+  id        String   @id @default(cuid())
+  briefId   String
+  brief     Brief    @relation(fields: [briefId], references: [id], onDelete: Cascade)
+  name      String
+  dataUrl   String   @db.Text
+  caption   String   @db.Text
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([briefId])
+}
+
+enum BriefStatus {
+  DRAFT
+  TRACKED
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  briefId     String?       @unique
+  brief       Brief?        @relation(fields: [briefId], references: [id])
+  title       String
+  client      String
+  status      ProjectStatus @default(ACTIVE)
+  price       Float         @default(0)
+  hours       Float         @default(0)
+  hoursLogged Float         @default(0)
+  timeline    String        @default("")
+  currency    String        @default("USD")
+  published   Boolean       @default(false)
+  publicSlug  String        @unique @default(cuid())
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  invoiceStatus      InvoiceStatus @default(UNPAID)
+  stripeCheckoutUrl  String?
+  stripeSessionId    String?
+  stripePaymentIntentId String?
+
+  deliverables Deliverable[]
+  diaryEntries DiaryEntry[]
+
+  @@index([userId])
+}
+
+enum ProjectStatus {
+  ACTIVE
+  DUE
+  OVERDUE
+  DONE
+}
+
+enum InvoiceStatus {
+  UNPAID
+  PENDING
+  PAID
+}
+
+model Deliverable {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  done      Boolean @default(false)
+  order     Int     @default(0)
+
+  @@index([projectId])
+}
+
+model DiaryEntry {
+  id            String   @id @default(cuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  date          DateTime @default(now())
+  title         String
+  body          String   @db.Text
+  autoGenerated Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@index([projectId])
+}
