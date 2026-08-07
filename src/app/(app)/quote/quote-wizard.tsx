@@ -10,6 +10,7 @@ import { Chip } from "@/components/ui/chip";
 import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
 import { Stepper } from "@/components/ui/stepper";
+import { DropZone } from "@/components/ui/drop-zone";
 import { generateBriefAction, type QuoteDraftPayload } from "@/actions/briefs";
 import { industryQuoteExample } from "@/lib/industries";
 import { CURRENCIES, currencySymbol } from "@/lib/currencies";
@@ -24,23 +25,37 @@ const STATUS_COLOR: Record<string, string> = {
 // Generation involves a real Claude call (sometimes with web search on top),
 // so it can genuinely take a while — but it should never just hang with no
 // feedback. If nothing comes back within this window, give up and show a
-// real error instead of spinning forever (matches the server action's own
-// maxDuration in actions/briefs.ts, plus a little slack).
+// real error instead of spinning forever (matches the quote page's own
+// maxDuration route config, plus a little slack).
 const GENERATION_TIMEOUT_MS = 65_000;
 
+// A real progress percentage isn't knowable — there's no way to ask an LLM
+// call how far along it is. This eases toward (but deliberately never
+// quite reaches) 100%, tuned against GENERATION_TIMEOUT_MS, so there's at
+// least a sense of forward motion instead of a frozen spinner.
+function fakeProgress(elapsedMs: number): number {
+  const t = elapsedMs / GENERATION_TIMEOUT_MS;
+  return Math.min(96, Math.round(100 * (1 - Math.exp(-3 * t))));
+}
+
 // Lighthearted, rotating stand-ins for a static "Generating..." label —
-// purely cosmetic, but a wall of silence during a 20-40 second wait reads as
-// broken even when it isn't.
+// written like the AI's own internal (very informal) monologue. This is
+// the practical version of "surface the AI's thoughts": true token-level
+// thought streaming would mean rebuilding this as a streaming endpoint
+// instead of a Server Action, which is a much bigger change than a wall
+// of silence during a 20-40 second wait justifies.
 const GENERATION_STATUS_MESSAGES = [
   "Reading through everything you've handed over...",
-  "Doing some quick napkin math on hours...",
+  "Doing some suspiciously fast napkin math on hours...",
   "Cross-checking against your past quotes...",
-  "Negotiating gently with your hourly rate...",
+  "Politely negotiating with your hourly rate...",
   "Making sure the timeline doesn't sound delusional...",
-  "Borrowing a bit of your studio's voice...",
+  "Borrowing a bit of your studio's voice (hope that's ok)...",
+  "Arguing with itself about the price, briefly...",
   "Tightening up the scope...",
   "Proofreading like a very picky editor...",
-  "Nearly there...",
+  "Adding a dash of confidence, subtracting the filler...",
+  "Nearly there, promise...",
 ];
 
 /** A tiny mocked-up page thumbnail so users can see roughly what each
@@ -114,6 +129,7 @@ export function QuoteWizard({
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [statusMessage, setStatusMessage] = useState(GENERATION_STATUS_MESSAGES[0]);
+  const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
 
   // A late-arriving response from a request the user already cancelled (or
@@ -121,12 +137,14 @@ export function QuoteWizard({
   // not applied to the UI or navigated to.
   const cancelledRef = useRef(false);
   const timersRef = useRef<{
-    interval?: ReturnType<typeof setInterval>;
+    messageInterval?: ReturnType<typeof setInterval>;
+    progressInterval?: ReturnType<typeof setInterval>;
     timeout?: ReturnType<typeof setTimeout>;
   }>({});
 
   function clearGenerationTimers() {
-    if (timersRef.current.interval) clearInterval(timersRef.current.interval);
+    if (timersRef.current.messageInterval) clearInterval(timersRef.current.messageInterval);
+    if (timersRef.current.progressInterval) clearInterval(timersRef.current.progressInterval);
     if (timersRef.current.timeout) clearTimeout(timersRef.current.timeout);
     timersRef.current = {};
   }
@@ -152,14 +170,20 @@ export function QuoteWizard({
   async function handleGenerate() {
     setGenerating(true);
     setError("");
+    setProgress(0);
     cancelledRef.current = false;
 
     let messageIndex = 0;
     setStatusMessage(GENERATION_STATUS_MESSAGES[0]);
-    timersRef.current.interval = setInterval(() => {
+    timersRef.current.messageInterval = setInterval(() => {
       messageIndex = (messageIndex + 1) % GENERATION_STATUS_MESSAGES.length;
       setStatusMessage(GENERATION_STATUS_MESSAGES[messageIndex]);
     }, 3500);
+
+    const startedAt = Date.now();
+    timersRef.current.progressInterval = setInterval(() => {
+      setProgress(fakeProgress(Date.now() - startedAt));
+    }, 250);
 
     const timeout = new Promise<never>((_, reject) => {
       timersRef.current.timeout = setTimeout(
@@ -184,7 +208,7 @@ export function QuoteWizard({
       setGenerating(false);
       setError(
         err instanceof Error && err.message === "TIMEOUT"
-          ? "This is taking longer than it should — it may still finish in the background, but don't wait on it. Try again, or simplify the source material first (a very large uploaded file slows this down a lot)."
+          ? "This is taking longer than it should. It may still finish in the background, but don't wait on it. Try again, or simplify the source material first (a very large uploaded file slows this down a lot)."
           : "Something went wrong generating the brief. Try again."
       );
     }
@@ -194,7 +218,7 @@ export function QuoteWizard({
     cancelledRef.current = true;
     clearGenerationTimers();
     setGenerating(false);
-    setError("Generation stopped — change anything above and try again whenever you're ready.");
+    setError("Generation stopped. Change anything above and try again whenever you're ready.");
   }
 
   return (
@@ -259,25 +283,21 @@ export function QuoteWizard({
             />
           ) : (
             <Card>
-              <label className="flex flex-col gap-2 cursor-pointer">
+              <DropZone
+                onFile={handleFile}
+                accept=".txt,.md,.pdf,.docx"
+                disabled={uploading}
+                className="flex flex-col gap-2 cursor-pointer -m-1 p-1"
+              >
                 <span className="text-[13px] text-text-muted">
                   {uploading
                     ? "Reading file..."
                     : fileName
                     ? `Loaded: ${fileName}`
-                    : "Click to choose a file, .txt, .md, .pdf, and .docx are supported."}
+                    : "Drag a file here, or click to choose one (.txt, .md, .pdf, .docx)."}
                 </span>
-                <input
-                  type="file"
-                  accept=".txt,.md,.pdf,.docx"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleFile(file);
-                  }}
-                />
                 <span className="font-body font-bold text-[13px] text-violet">Choose file</span>
-              </label>
+              </DropZone>
             </Card>
           )}
           {error && <div className="text-overdue text-[13px]">{error}</div>}
@@ -534,9 +554,17 @@ export function QuoteWizard({
             </div>
           </Card>
           {generating && (
-            <div className="flex items-center gap-2 text-violet text-[13px] font-body font-semibold">
-              <Sparkles size={14} className="animate-spin-slow" />
-              {statusMessage}
+            <div className="flex flex-col gap-2">
+              <div className="h-1.5 w-full bg-line rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-violet rounded-full transition-[width] duration-300 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <div className="flex items-center gap-2 text-violet text-[13px] font-body font-semibold">
+                <Sparkles size={14} className="animate-spin-slow" />
+                {statusMessage}
+              </div>
             </div>
           )}
           {error && <div className="text-overdue text-[13px]">{error}</div>}

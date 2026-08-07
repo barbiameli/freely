@@ -21,6 +21,7 @@ import {
   uploadBrandLogoAction,
 } from "@/actions/memory";
 import { ArrowRight, TriangleAlert, Upload, Trash2, FileText, Link2, CheckCircle2 } from "lucide-react";
+import { DropZone } from "@/components/ui/drop-zone";
 
 type StepId = "industry" | "instructions" | "toneNotes" | "storyNotes" | "contextNotes";
 
@@ -34,28 +35,28 @@ const MEMORY_STEPS: {
   {
     id: "instructions",
     title: "How should quotes be written?",
-    subtitle: "Instructions Freely follows on every quote, tone, structure, level of detail.",
+    subtitle: "Tone, structure, level of detail, applied to every quote.",
     placeholder: "e.g. spell out every deliverable explicitly, keep it lean and fast, write for a non-technical client...",
     presets: INSTRUCTIONS_PRESETS,
   },
   {
     id: "toneNotes",
     title: "What voice should it write in?",
-    subtitle: "A short note on tone, Freely applies this to every quote's language.",
+    subtitle: "Applied to every quote's language.",
     placeholder: "e.g. warm but efficient, no exclamation points, avoid jargon...",
     presets: TONE_PRESETS,
   },
   {
     id: "storyNotes",
     title: "What's your studio's story?",
-    subtitle: "How you started, what you're known for, used to build your AI persona and inform tone.",
+    subtitle: "Used to build your AI persona and inform tone.",
     placeholder: "How the studio started, what you're known for, values that should come through in quotes...",
     presets: STORY_PRESETS,
   },
   {
     id: "contextNotes",
     title: "Anything else worth knowing?",
-    subtitle: "Rates, typical engagement length, industries you specialize in, anything that should shape pricing or scope.",
+    subtitle: "Rates, engagement length, specialties, anything that shapes pricing.",
     placeholder: "Anything else the AI should know, rates, typical engagement length, industries you specialize in...",
     presets: CONTEXT_PRESETS,
   },
@@ -235,10 +236,8 @@ function ReferencesStep({ onContinue, isLast }: { onContinue: () => void; isLast
       <div>
         <h2 className="font-display italic text-2xl text-coral m-0">Show us what you&apos;ve got</h2>
         <p className="text-slate text-[13px] mt-1.5">
-          This is the single biggest thing that makes a quote sound like <em>you</em> instead of a
-          generic template. Add your CV or portfolio link, past quotes you&apos;ve sent, case
-          studies, or anything that shows your experience and expertise level, the more you add,
-          the more specific and credible every quote will be. Add as many as you have.
+          The biggest thing that makes a quote sound like <em>you</em>, not a template. Add a CV,
+          portfolio link, past quote, or anything showing your experience.
         </p>
       </div>
 
@@ -247,21 +246,17 @@ function ReferencesStep({ onContinue, isLast }: { onContinue: () => void; isLast
           <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate uppercase tracking-wide mb-2.5">
             <FileText size={12} /> Files
           </div>
-          <label className="flex flex-col gap-2 cursor-pointer mb-2.5">
-            <input
-              type="file"
-              accept=".txt,.md,.pdf,.docx"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleFileUpload(file);
-              }}
-            />
+          <DropZone
+            onFile={handleFileUpload}
+            accept=".txt,.md,.pdf,.docx"
+            disabled={uploading === "file"}
+            className="flex flex-col gap-2 cursor-pointer mb-2.5 -m-1 p-1"
+          >
             <span className="flex items-center gap-1.5 font-body font-bold text-[12.5px] text-violet">
               <Upload size={12} />
-              {uploading === "file" ? "Reading..." : "Upload a CV, portfolio PDF, past quote..."}
+              {uploading === "file" ? "Reading..." : "Drag a file, or click to upload"}
             </span>
-          </label>
+          </DropZone>
           <div className="flex flex-col gap-1.5">
             {files.map((f) => (
               <div key={f.id} className="flex justify-between items-center bg-white rounded-lg px-2.5 py-1.5">
@@ -327,9 +322,8 @@ function ReferencesStep({ onContinue, isLast }: { onContinue: () => void; isLast
         <div className="flex items-start gap-2 bg-coral-tint rounded-lg px-3.5 py-3 text-[12.5px] text-overdue">
           <TriangleAlert size={15} className="shrink-0 mt-0.5" />
           <span>
-            Skipping this means quotes start from a blank slate instead of your actual work -
-            they&apos;ll read more generic until you add some of this (you can always add it later
-            in Memory).
+            Quotes will read more generic until you add some of this. You can always do it later
+            in Memory.
           </span>
         </div>
       )}
@@ -423,9 +417,7 @@ function BrandingStep({ onContinue, isLast }: { onContinue: () => void; isLast: 
       <div>
         <h2 className="font-display italic text-2xl text-coral m-0">Got brand guidelines?</h2>
         <p className="text-slate text-[13px] mt-1.5">
-          Upload your brand guide PDF and the AI will pull out your colors and typeface names, and/or
-          upload your logo, so client-facing quotes and pages look like your studio, not Freely&apos;s
-          default. Both optional, and you can always do this later in Memory.
+          Upload a brand guide and/or logo so your quotes look like your studio. Both optional.
         </p>
       </div>
 
@@ -434,21 +426,17 @@ function BrandingStep({ onContinue, isLast }: { onContinue: () => void; isLast: 
           <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate uppercase tracking-wide mb-2.5">
             <FileText size={12} /> Brand guidelines
           </div>
-          <label className="flex flex-col gap-2 cursor-pointer mb-2.5">
-            <input
-              type="file"
-              accept=".pdf"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleGuideUpload(file);
-              }}
-            />
+          <DropZone
+            onFile={handleGuideUpload}
+            accept=".pdf,.docx,.txt,.md"
+            disabled={guideUploading}
+            className="flex flex-col gap-2 cursor-pointer mb-2.5 -m-1 p-1"
+          >
             <span className="flex items-center gap-1.5 font-body font-bold text-[12.5px] text-violet">
               <Upload size={12} />
-              {guideUploading ? "Reading & analyzing..." : "Upload brand guidelines (PDF)"}
+              {guideUploading ? "Reading & analyzing..." : "Drag a file, or click to upload"}
             </span>
-          </label>
+          </DropZone>
           {guideError && <div className="text-overdue text-xs">{guideError}</div>}
           {guideResult && (
             <div className="flex items-start gap-1.5 bg-mint rounded-lg px-2.5 py-2 text-[11.5px] text-ink">
@@ -476,21 +464,16 @@ function BrandingStep({ onContinue, isLast }: { onContinue: () => void; isLast: 
             // eslint-disable-next-line @next/next/no-img-element
             <img src={logo} alt="Logo" className="h-9 mb-2" />
           ) : (
-            <label className="flex flex-col gap-2 cursor-pointer mb-2.5">
-              <input
-                type="file"
-                accept="image/png"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleLogoUpload(file);
-                }}
-              />
+            <DropZone
+              onFile={handleLogoUpload}
+              accept="image/png"
+              className="flex flex-col gap-2 cursor-pointer mb-2.5 -m-1 p-1"
+            >
               <span className="flex items-center gap-1.5 font-body font-bold text-[12.5px] text-violet">
                 <Upload size={12} />
-                Upload logo
+                Drag a logo, or click to upload
               </span>
-            </label>
+            </DropZone>
           )}
           <div className="text-[10.5px] text-text-muted">
             PNG with a transparent background, at least 200×200px.
@@ -503,8 +486,8 @@ function BrandingStep({ onContinue, isLast }: { onContinue: () => void; isLast: 
         <div className="flex items-start gap-2 bg-coral-tint rounded-lg px-3.5 py-3 text-[12.5px] text-overdue">
           <TriangleAlert size={15} className="shrink-0 mt-0.5" />
           <span>
-            Skipping this means client-facing pages use Freely&apos;s default look instead of yours
-            (you can always add it later in Memory).
+            Client-facing pages will use Freely&apos;s default look until you add this. You can
+            always do it later in Memory.
           </span>
         </div>
       )}
@@ -583,8 +566,8 @@ function MemoryStep({
         <div className="flex items-start gap-2 bg-coral-tint rounded-lg px-3.5 py-3 text-[12.5px] text-overdue">
           <TriangleAlert size={15} className="shrink-0 mt-0.5" />
           <span>
-            Skipping this means Freely has less to work with, quotes may be less accurate until
-            you fill it in (you can always add it later in Memory).
+            Quotes may be less accurate until you fill this in. You can always add it later in
+            Memory.
           </span>
         </div>
       )}

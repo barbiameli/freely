@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Chip } from "@/components/ui/chip";
 import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
+import { DropZone } from "@/components/ui/drop-zone";
 import {
   updateMemoryInstructionsAction,
   updateMemoryNotesAction,
@@ -426,20 +427,16 @@ function ReferencesCard({
       <div className="grid grid-cols-3 gap-5 mt-3">
         <div>
           <div className="text-[11px] font-semibold text-slate mb-2 uppercase tracking-wide">Files</div>
-          <label className="flex flex-col gap-2 cursor-pointer mb-3">
-            <input
-              type="file"
-              accept=".txt,.md,.pdf,.docx"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleFileUpload(file);
-              }}
-            />
+          <DropZone
+            onFile={handleFileUpload}
+            accept=".txt,.md,.pdf,.docx"
+            disabled={uploading === "file"}
+            className="flex flex-col gap-2 cursor-pointer mb-3 -m-1 p-1"
+          >
             <span className="font-body font-bold text-[12.5px] text-violet">
-              {uploading === "file" ? "Reading..." : "+ Upload a file"}
+              {uploading === "file" ? "Reading..." : "+ Upload or drag a file"}
             </span>
-          </label>
+          </DropZone>
           <div className="flex flex-col gap-2">
             {fileItems.map((f) => (
               <div key={f.id} className="flex justify-between items-center bg-paper rounded-lg px-3 py-2">
@@ -455,20 +452,16 @@ function ReferencesCard({
 
         <div>
           <div className="text-[11px] font-semibold text-slate mb-2 uppercase tracking-wide">Images</div>
-          <label className="flex flex-col gap-2 cursor-pointer mb-3">
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleImageUpload(file);
-              }}
-            />
+          <DropZone
+            onFile={handleImageUpload}
+            accept="image/*"
+            disabled={uploading === "image"}
+            className="flex flex-col gap-2 cursor-pointer mb-3 -m-1 p-1"
+          >
             <span className="font-body font-bold text-[12.5px] text-violet">
-              {uploading === "image" ? "Uploading..." : "+ Upload an image"}
+              {uploading === "image" ? "Uploading..." : "+ Upload or drag an image"}
             </span>
-          </label>
+          </DropZone>
           <div className="grid grid-cols-3 gap-2">
             {imageItems.map((img) => (
               // eslint-disable-next-line @next/next/no-img-element
@@ -627,25 +620,20 @@ function BrandingCard({
           <FileText size={12} /> Brand guidelines
         </div>
         <p className="text-[11.5px] text-text-muted mb-2">
-          Upload your brand guide PDF and the AI will pull out your colors and typeface names.
-          Colors apply immediately below; fonts are shown for reference (not yet applied to
-          rendered pages automatically).
+          The AI pulls out colors and typeface names. Colors apply immediately; fonts are shown
+          for reference only.
         </p>
-        <label className="flex items-center gap-1.5 cursor-pointer mb-1">
-          <input
-            type="file"
-            accept=".pdf"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleGuideUpload(file);
-            }}
-          />
+        <DropZone
+          onFile={handleGuideUpload}
+          accept=".pdf,.docx,.txt,.md"
+          disabled={guideUploading}
+          className="flex items-center gap-1.5 cursor-pointer mb-1 -m-1 p-1"
+        >
           <Upload size={12} className="text-violet" />
           <span className="font-body font-bold text-[12.5px] text-violet">
-            {guideUploading ? "Reading & analyzing..." : "Upload brand guidelines (PDF)"}
+            {guideUploading ? "Reading & analyzing..." : "Upload or drag brand guidelines"}
           </span>
-        </label>
+        </DropZone>
         {guideError && <div className="text-overdue text-xs mt-1.5">{guideError}</div>}
         {guideResult && (
           <div className="flex items-start gap-1.5 bg-mint rounded-lg px-3 py-2.5 mt-2 text-[12px] text-ink">
@@ -674,19 +662,14 @@ function BrandingCard({
           ) : (
             <div className="text-xs text-text-muted mb-2">Using the Freely wordmark for now.</div>
           )}
-          <label className="flex items-center gap-1.5 cursor-pointer">
-            <input
-              type="file"
-              accept="image/png"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleLogoUpload(file);
-              }}
-            />
+          <DropZone
+            onFile={handleLogoUpload}
+            accept="image/png"
+            className="flex items-center gap-1.5 cursor-pointer -m-1 p-1"
+          >
             <Upload size={12} className="text-violet" />
-            <span className="font-body font-bold text-[12.5px] text-violet">Upload logo</span>
-          </label>
+            <span className="font-body font-bold text-[12.5px] text-violet">Upload or drag logo</span>
+          </DropZone>
           <div className="text-[10.5px] text-text-muted mt-1 max-w-[160px]">
             PNG with a transparent background, at least 200×200px.
           </div>
