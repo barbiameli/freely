@@ -90,6 +90,7 @@ export async function generateBriefAction(
   try {
     generated = await generateBriefFromDraft(await buildMemoryContext(user), draft, pricingHistory);
   } catch (err) {
+    console.error("[generateBriefAction] generation failed", err);
     return {
       ok: false,
       error: err instanceof Error ? err.message : "Couldn't generate a brief right now.",
@@ -139,16 +140,19 @@ export async function generateBriefAction(
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    // A column that exists in schema.prisma but not in the live database
-    // yet: the app was deployed before `prisma db push` was run against it.
-    if (/column|does not exist|Unknown arg/i.test(message)) {
-      return {
-        ok: false,
-        error:
-          "The quote was generated but couldn't be saved: the database is missing a column this version of the app expects. Run `npx prisma db push` against the live database, then try again.",
-      };
-    }
-    return { ok: false, error: `The quote was generated but couldn't be saved. ${message}` };
+    // Always log the full error server-side: the message returned to the
+    // browser is necessarily trimmed, and without this there's nothing to
+    // look at in the deployment's runtime logs when something goes wrong.
+    console.error("[generateBriefAction] failed to save generated brief", err);
+    // Always include the real message rather than guessing at a cause. An
+    // earlier version pattern-matched on "column" and confidently blamed a
+    // missing database column, which sent us chasing `prisma db push` when
+    // the actual problem was a stale generated Prisma Client. A wrong
+    // diagnosis stated confidently is worse than no diagnosis.
+    return {
+      ok: false,
+      error: `The quote was generated but couldn't be saved. ${message}`,
+    };
   }
 
   revalidatePath("/quote");
