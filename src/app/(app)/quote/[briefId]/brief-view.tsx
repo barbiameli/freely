@@ -14,6 +14,8 @@ import {
   ImagePlus,
   ChevronDown,
   FileText,
+  Copy,
+  ExternalLink,
 } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
@@ -120,6 +122,7 @@ export function BriefView({
   const [error, setError] = useState("");
   const [published, setPublished] = useState(brief.published);
   const [publishing, setPublishing] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const [showSource, setShowSource] = useState(false);
   const [examples, setExamples] = useState(brief.examples);
@@ -128,6 +131,17 @@ export function BriefView({
   const [exampleDataUrl, setExampleDataUrl] = useState("");
   const [addingExample, setAddingExample] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleCopyLink() {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard access can be denied; the link is right there to copy by
+      // hand, so there's nothing useful to say here.
+    }
+  }
 
   async function handleTogglePublish() {
     setPublishing(true);
@@ -226,22 +240,7 @@ export function BriefView({
             )}
           </div>
         </div>
-        <div className="flex flex-col items-end gap-2.5">
-          <Stamp status={brief.status} size={56} />
-          <button
-            type="button"
-            disabled={publishing}
-            onClick={handleTogglePublish}
-            className="flex items-center gap-1.5 bg-none border-none cursor-pointer p-0 text-[11.5px] font-semibold text-white/70 hover:text-white"
-          >
-            <Link2 size={12} />
-            {publishing
-              ? "Working..."
-              : published
-              ? "Live, unpublish"
-              : "Publish as HTML page"}
-          </button>
-        </div>
+        <Stamp status={brief.status} size={56} />
       </div>
 
       <div className="flex gap-5 flex-1 min-h-0 mt-5">
@@ -437,16 +436,11 @@ export function BriefView({
           </Card>
         </div>
       </div>
-      {published && (
-        <div className="flex items-center gap-2 bg-mint-solid rounded-lg px-4 py-2.5 text-[13px] text-success">
-          <Link2 size={14} />
-          Live at{" "}
-          <a href={shareUrl} target="_blank" rel="noreferrer" className="font-semibold underline">
-            {shareUrl}
-          </a>
-        </div>
-      )}
-      <div className="flex justify-end gap-3">
+      {/* Sharing the quote is the point of the page, so publishing is a real
+          CTA here rather than a faint link tucked next to the stamp. Once
+          it's live the button is replaced in place by the link itself, since
+          that's what you came back for, with unpublish demoted underneath. */}
+      <div className="flex justify-end items-start gap-3">
         <Button variant="ghost" onClick={() => router.push("/quote")}>
           New quote
         </Button>
@@ -456,8 +450,53 @@ export function BriefView({
           </Button>
         </a>
         {brief.status === "DRAFT" && (
-          <Button icon={Check} disabled={working} onClick={handleAddToTrack}>
+          <Button variant="outline" icon={Check} disabled={working} onClick={handleAddToTrack}>
             Add to Track
+          </Button>
+        )}
+
+        {published ? (
+          <div className="flex flex-col items-end gap-1.5">
+            <div className="flex items-center gap-2 bg-mint-solid rounded-lg pl-3.5 pr-2 py-2 max-w-[420px]">
+              <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0" />
+              <a
+                href={shareUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[13px] text-success font-semibold truncate hover:underline"
+              >
+                {shareUrl.replace(/^https?:\/\//, "")}
+              </a>
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                title={copied ? "Copied" : "Copy link"}
+                className="text-success/70 hover:text-success bg-none border-none cursor-pointer p-1 shrink-0"
+              >
+                {copied ? <Check size={13} /> : <Copy size={13} />}
+              </button>
+              <a
+                href={shareUrl}
+                target="_blank"
+                rel="noreferrer"
+                title="Open page"
+                className="text-success/70 hover:text-success p-1 shrink-0"
+              >
+                <ExternalLink size={13} />
+              </a>
+            </div>
+            <button
+              type="button"
+              disabled={publishing}
+              onClick={handleTogglePublish}
+              className="text-[11.5px] text-text-muted hover:text-overdue underline bg-none border-none cursor-pointer p-0"
+            >
+              {publishing ? "Working..." : "Unpublish"}
+            </button>
+          </div>
+        ) : (
+          <Button icon={Link2} disabled={publishing} onClick={handleTogglePublish}>
+            {publishing ? "Publishing..." : "Publish as a page"}
           </Button>
         )}
       </div>
