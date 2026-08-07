@@ -1,12 +1,5 @@
 "use server";
 
-// Brief generation can involve a large uploaded source document plus a
-// Claude call (sometimes with web search) — bump this route's serverless
-// function timeout well past the framework default so a legitimately slow
-// generation doesn't get killed mid-flight and surface as a silent hang on
-// the client. (Server Actions read this the same way Route Handlers do.)
-export const maxDuration = 60;
-
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
