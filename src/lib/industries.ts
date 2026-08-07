@@ -1,8 +1,12 @@
 /**
- * Freely's onboarding asks every new user which of these ~7 broad categories
- * they work in. This is deliberately a small, fixed set — not a free-text
- * field and not 30 individual niches — so it stays easy to reason about
- * while still letting the app tailor default prompts per kind of work.
+ * Freely's onboarding asks every new user which of these roles they work in.
+ * Deliberately granular (individual pills per role rather than broad
+ * buckets like "Design" or "Data") so a data engineer, a UX designer, and a
+ * product designer each get their own, more relevant default prompt instead
+ * of all landing in the same catch-all category. "other" is the escape
+ * valve for anything not listed — the onboarding UI collects free text for
+ * it and stores that text directly as the industry value, rather than the
+ * literal key "other".
  */
 export interface IndustryOption {
   key: string;
@@ -14,50 +18,77 @@ export interface IndustryOption {
 
 export const INDUSTRY_OPTIONS: IndustryOption[] = [
   {
-    key: "design",
-    label: "Design (UX/UI, product, brand)",
+    key: "ux-designer",
+    label: "UX designer",
+    quoteInstructionsExample: "e.g. focus on research + flows, call out usability testing explicitly",
+  },
+  {
+    key: "product-designer",
+    label: "Product designer",
     quoteInstructionsExample:
       "e.g. focus on discovery + design system audit, call out Figma handoff explicitly",
   },
   {
-    key: "development",
-    label: "Development (web, mobile, software)",
-    quoteInstructionsExample:
-      "e.g. break out frontend vs backend hours, note tech stack and hosting assumptions",
+    key: "brand-designer",
+    label: "Brand / graphic designer",
+    quoteInstructionsExample: "e.g. specify number of concepts and revision rounds included",
   },
   {
-    key: "writing",
-    label: "Writing & content",
-    quoteInstructionsExample:
-      "e.g. specify word count per deliverable, note revision rounds included",
+    key: "frontend-developer",
+    label: "Frontend developer",
+    quoteInstructionsExample: "e.g. note framework/stack assumptions and browser support target",
+  },
+  {
+    key: "backend-developer",
+    label: "Backend developer",
+    quoteInstructionsExample: "e.g. call out infra/hosting assumptions and third-party integrations",
+  },
+  {
+    key: "fullstack-developer",
+    label: "Full-stack developer",
+    quoteInstructionsExample: "e.g. break out frontend vs backend hours, note tech stack assumptions",
+  },
+  {
+    key: "mobile-developer",
+    label: "Mobile developer",
+    quoteInstructionsExample: "e.g. specify target platforms (iOS/Android) and app store submission",
+  },
+  {
+    key: "data-engineer",
+    label: "Data engineer",
+    quoteInstructionsExample: "e.g. note data sources and access needed upfront, separate pipeline/infra work",
+  },
+  {
+    key: "data-scientist",
+    label: "Data scientist / analyst",
+    quoteInstructionsExample: "e.g. separate exploratory analysis from modeling or dashboarding",
   },
   {
     key: "marketing",
-    label: "Marketing & growth",
+    label: "Marketing",
     quoteInstructionsExample:
       "e.g. call out channels covered, distinguish strategy work from execution",
   },
   {
-    key: "data",
-    label: "Data (engineering, science, analytics, architecture)",
-    quoteInstructionsExample:
-      "e.g. note data sources and access needed upfront, separate pipeline/infra work from analysis or modeling",
+    key: "content-creator",
+    label: "Content creator / writer",
+    quoteInstructionsExample: "e.g. specify word count or video length per deliverable, revision rounds",
   },
   {
-    key: "consulting",
-    label: "Consulting & strategy",
-    quoteInstructionsExample:
-      "e.g. frame around a workshop + written recommendations structure",
+    key: "consultant",
+    label: "Consultant / strategist",
+    quoteInstructionsExample: "e.g. frame around a workshop + written recommendations structure",
   },
   {
     key: "other",
-    label: "Something else",
+    label: "Other, please specify",
     quoteInstructionsExample: "e.g. describe the shape of the engagement in your own words",
   },
 ];
 
 export function industryLabel(key: string | null | undefined): string {
-  return INDUSTRY_OPTIONS.find((i) => i.key === key)?.label ?? "Freelancer";
+  if (!key) return "Freelancer";
+  return INDUSTRY_OPTIONS.find((i) => i.key === key)?.label ?? key;
 }
 
 export function industryQuoteExample(key: string | null | undefined): string {

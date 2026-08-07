@@ -14,6 +14,7 @@ import { DropZone } from "@/components/ui/drop-zone";
 import { generateBriefAction, type QuoteDraftPayload } from "@/actions/briefs";
 import { industryQuoteExample } from "@/lib/industries";
 import { CURRENCIES, currencySymbol } from "@/lib/currencies";
+import { MAX_DOCUMENT_UPLOAD_BYTES, documentTooLargeError } from "@/lib/upload-limits";
 
 type BriefSummary = { id: string; title: string; status: "DRAFT" | "TRACKED" };
 
@@ -152,8 +153,12 @@ export function QuoteWizard({
   useEffect(() => clearGenerationTimers, []);
 
   async function handleFile(file: File) {
-    setUploading(true);
     setError("");
+    if (file.size > MAX_DOCUMENT_UPLOAD_BYTES) {
+      setError(documentTooLargeError(file));
+      return;
+    }
+    setUploading(true);
     const formData = new FormData();
     formData.set("file", file);
     const res = await fetch("/api/extract-text", { method: "POST", body: formData });

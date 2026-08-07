@@ -391,6 +391,64 @@ export async function analyzeBrandGuide(sourceText: string): Promise<BrandGuideA
   return result.data;
 }
 
+const BRAND_GUIDE_IMAGE_SYSTEM_PROMPT = [
+  "You read brand/style guideline images (screenshots, exported style-guide pages, moodboards) and extract concrete, visible facts only.",
+  "primaryColor and accentColor must be valid hex codes (e.g. \"#6320EE\") for the two most prominent brand colors actually shown in the image. If you can't tell, use null, never guess a color that isn't visibly present.",
+  "headingFont and bodyFont are typeface names only if they're explicitly labeled in the image (e.g. a swatch captioned \"Raleway\"). If no typeface is named in the image, use null, don't guess a font from how the text merely looks.",
+  "notes is one short sentence flagging anything else worth a human's attention, or null if there's nothing else notable.",
+  'Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly: {"primaryColor": string|null, "accentColor": string|null, "headingFont": string|null, "bodyFont": string|null, "notes": string|null}',
+].join(" ");
+
+/** Same job as analyzeBrandGuide, but for an uploaded PNG/JPG (a screenshot
+ * of a style guide, a moodboard, an exported brand page) instead of a
+ * text-extractable document — sent straight to Claude as an image rather
+ * than through /api/extract-text, since there's no text to pull out of a
+ * picture. Deliberately conservative about fonts: a screenshot only lets
+ * Claude *see* a typeface, not know its name, so it's told to only report a
+ * font if the image actually labels one. */
+export async function analyzeBrandGuideFromImage(
+  base64Data: string,
+  mediaType: "image/png" | "image/jpeg"
+): Promise<BrandGuideAnalysis> {
+  const anthropic = getClient();
+  const response = await anthropic.messages.create({
+    model: MODEL,
+    max_tokens: 1000,
+    system: BRAND_GUIDE_IMAGE_SYSTEM_PROMPT,
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "image", source: { type: "base64", media_type: mediaType, data: base64Data } },
+          {
+            type: "text",
+            text: "Extract the primary color, accent color, heading font, and body font from this brand guideline image.",
+          },
+        ],
+      },
+    ],
+  });
+  const text = response.content
+    .filter((block): block is Anthropic.TextBlock => block.type === "text")
+    .map((block) => block.text)
+    .join("\n");
+  if (!text) throw new Error("The AI returned an empty response.");
+
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  const cleaned = (jsonMatch ? jsonMatch[0] : text).replace(/```json/gi, "").replace(/```/g, "").trim();
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch {
+    throw new Error("Couldn't read a brand guide out of that image.");
+  }
+  const result = brandGuideSchema.safeParse(parsed);
+  if (!result.success) {
+    throw new Error(`Brand guide analysis failed validation: ${result.error.message}`);
+  }
+  return result.data;
+}
+
 export async function refineBrief(
   memory: MemoryContext,
   current: GeneratedBrief,

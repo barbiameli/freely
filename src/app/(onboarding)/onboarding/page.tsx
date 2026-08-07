@@ -12,8 +12,6 @@ export default async function OnboardingPage() {
     <div className="min-h-screen flex items-center justify-center bg-paper p-6">
       <Card className="w-full max-w-lg">
         <h1 className="font-display italic text-3xl text-coral mb-1">What kind of work do you do?</h1>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/brand/flourish.svg" alt="" aria-hidden="true" className="w-11 mb-2.5" />
         <p className="text-slate text-sm mb-6">
           A few quick questions so Freely has real context before you generate your first quote -
           each one after this is optional, but the more it knows, the more accurate quotes will

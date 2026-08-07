@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser, requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
-import { generatePersona, analyzeBrandGuide, type BrandGuideAnalysis } from "@/lib/anthropic";
+import {
+  generatePersona,
+  analyzeBrandGuide,
+  analyzeBrandGuideFromImage,
+  type BrandGuideAnalysis,
+} from "@/lib/anthropic";
 import { extractDominantColor } from "@/lib/png-color";
 import type { ActionResult } from "@/actions/briefs";
 
@@ -252,8 +257,14 @@ export async function analyzeBrandGuideAction(
     };
   }
 
+  await applyBrandGuideAnalysis(user.id, analysis);
+  revalidatePath("/memory");
+  return { ok: true, data: analysis };
+}
+
+async function applyBrandGuideAnalysis(userId: string, analysis: BrandGuideAnalysis): Promise<void> {
   await prisma.user.update({
-    where: { id: user.id },
+    where: { id: userId },
     data: {
       ...(analysis.primaryColor ? { brandPrimaryColor: analysis.primaryColor } : {}),
       ...(analysis.accentColor ? { brandAccentColor: analysis.accentColor } : {}),
@@ -261,7 +272,39 @@ export async function analyzeBrandGuideAction(
       ...(analysis.bodyFont ? { brandBodyFont: analysis.bodyFont } : {}),
     },
   });
+}
 
+const ALLOWED_BRAND_GUIDE_IMAGE_TYPES = ["image/png", "image/jpeg"] as const;
+
+/** Same job as analyzeBrandGuideAction, but for a PNG/JPG screenshot of a
+ * brand guide (a moodboard, an exported style-guide page) instead of a
+ * text-extractable document — read directly by Claude's vision, since
+ * there's no text to extract out of a picture. */
+export async function analyzeBrandGuideImageAction(
+  dataUrl: string
+): Promise<ActionResult<BrandGuideAnalysis>> {
+  const user = await requireUser();
+
+  const match = dataUrl.match(/^data:(image\/png|image\/jpeg);base64,(.+)$/);
+  if (!match) {
+    return { ok: false, error: "That doesn't look like a PNG or JPG image." };
+  }
+  const [, mediaType, base64Data] = match;
+  if (!ALLOWED_BRAND_GUIDE_IMAGE_TYPES.includes(mediaType as (typeof ALLOWED_BRAND_GUIDE_IMAGE_TYPES)[number])) {
+    return { ok: false, error: "Only PNG or JPG images are supported." };
+  }
+
+  let analysis: BrandGuideAnalysis;
+  try {
+    analysis = await analyzeBrandGuideFromImage(base64Data, mediaType as "image/png" | "image/jpeg");
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Couldn't analyze that brand guide right now.",
+    };
+  }
+
+  await applyBrandGuideAnalysis(user.id, analysis);
   revalidatePath("/memory");
   return { ok: true, data: analysis };
 }

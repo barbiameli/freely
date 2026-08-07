@@ -18,9 +18,20 @@ import {
   saveMemoryLinkAction,
   deleteMemoryAssetAction,
   analyzeBrandGuideAction,
+  analyzeBrandGuideImageAction,
   uploadBrandLogoAction,
 } from "@/actions/memory";
-import { ArrowRight, TriangleAlert, Upload, Trash2, FileText, Link2, CheckCircle2 } from "lucide-react";
+import { MAX_DOCUMENT_UPLOAD_BYTES, documentTooLargeError } from "@/lib/upload-limits";
+import {
+  ArrowRight,
+  ChevronLeft,
+  TriangleAlert,
+  Upload,
+  Trash2,
+  FileText,
+  Link2,
+  CheckCircle2,
+} from "lucide-react";
 import { DropZone } from "@/components/ui/drop-zone";
 
 type StepId = "industry" | "instructions" | "toneNotes" | "storyNotes" | "contextNotes";
@@ -65,6 +76,7 @@ const MEMORY_STEPS: {
 export function OnboardingForm() {
   const [step, setStep] = useState(0);
   const [industry, setIndustry] = useState<string | null>(null);
+  const [customIndustry, setCustomIndustry] = useState("");
   const [values, setValues] = useState<Record<StepId, string>>({
     industry: "",
     instructions: "",
@@ -81,14 +93,15 @@ export function OnboardingForm() {
   const onBrandingStep = step === 2;
   const memoryStep =
     onIndustryStep || onReferencesStep || onBrandingStep ? null : MEMORY_STEPS[step - 3];
+  const industryValue = industry === "other" ? customIndustry.trim() : industry;
 
   function finish() {
-    if (!industry) return;
+    if (!industryValue) return;
     setError("");
     startTransition(async () => {
       try {
         await completeOnboardingAction({
-          industry,
+          industry: industryValue,
           instructions: values.instructions,
           toneNotes: values.toneNotes,
           storyNotes: values.storyNotes,
@@ -106,6 +119,10 @@ export function OnboardingForm() {
       return;
     }
     setStep((s) => s + 1);
+  }
+
+  function goBack() {
+    setStep((s) => Math.max(0, s - 1));
   }
 
   return (
@@ -128,10 +145,17 @@ export function OnboardingForm() {
               </Chip>
             ))}
           </div>
+          {industry === "other" && (
+            <TextField
+              value={customIndustry}
+              onChange={setCustomIndustry}
+              placeholder="What kind of work do you do?"
+            />
+          )}
           {error && <div className="text-overdue text-xs">{error}</div>}
           <Button
             icon={ArrowRight}
-            disabled={!industry}
+            disabled={!industryValue}
             onClick={goNext}
             className="justify-center"
           >
@@ -139,9 +163,9 @@ export function OnboardingForm() {
           </Button>
         </>
       ) : onReferencesStep ? (
-        <ReferencesStep onContinue={goNext} isLast={step === totalSteps - 1} />
+        <ReferencesStep onBack={goBack} onContinue={goNext} isLast={step === totalSteps - 1} />
       ) : onBrandingStep ? (
-        <BrandingStep onContinue={goNext} isLast={step === totalSteps - 1} />
+        <BrandingStep onBack={goBack} onContinue={goNext} isLast={step === totalSteps - 1} />
       ) : (
         memoryStep && (
           <MemoryStep
@@ -152,6 +176,7 @@ export function OnboardingForm() {
             presets={memoryStep.presets}
             value={values[memoryStep.id]}
             onChange={(v) => setValues((prev) => ({ ...prev, [memoryStep.id]: v }))}
+            onBack={goBack}
             onContinue={goNext}
             isLast={step === totalSteps - 1}
             pending={pending}
@@ -179,7 +204,15 @@ interface RefLink {
  * draw on instead of writing generic filler. Reuses the same Memory-asset
  * actions the Memory page's "Files, images & links" section uses, so
  * anything added here shows up there too (and vice versa, later). */
-function ReferencesStep({ onContinue, isLast }: { onContinue: () => void; isLast: boolean }) {
+function ReferencesStep({
+  onBack,
+  onContinue,
+  isLast,
+}: {
+  onBack: () => void;
+  onContinue: () => void;
+  isLast: boolean;
+}) {
   const [files, setFiles] = useState<RefFile[]>([]);
   const [links, setLinks] = useState<RefLink[]>([]);
   const [linkName, setLinkName] = useState("");
@@ -191,8 +224,12 @@ function ReferencesStep({ onContinue, isLast }: { onContinue: () => void; isLast
   const hasContent = files.length > 0 || links.length > 0;
 
   async function handleFileUpload(file: File) {
-    setUploading("file");
     setError("");
+    if (file.size > MAX_DOCUMENT_UPLOAD_BYTES) {
+      setError(documentTooLargeError(file));
+      return;
+    }
+    setUploading("file");
     const formData = new FormData();
     formData.set("file", file);
     const res = await fetch("/api/extract-text", { method: "POST", body: formData });
@@ -329,28 +366,33 @@ function ReferencesStep({ onContinue, isLast }: { onContinue: () => void; isLast
       )}
 
       <div className="flex justify-between items-center">
-        {hasContent ? (
-          <span className="text-[12.5px] text-success font-semibold">
-            {files.length + links.length} added, add more, or continue.
-          </span>
-        ) : (
-          <button
-            type="button"
-            onClick={() => {
-              if (!showSkipWarning) {
-                setShowSkipWarning(true);
-                return;
-              }
-              onContinue();
-            }}
-            className="font-body font-semibold text-[13px] text-slate bg-none border-none cursor-pointer p-0"
-          >
-            {showSkipWarning ? "Skip anyway" : "Skip this step"}
-          </button>
-        )}
-        <Button icon={ArrowRight} onClick={onContinue}>
-          {isLast ? "Finish setup" : "Continue"}
+        <Button variant="ghost" icon={ChevronLeft} onClick={onBack}>
+          Back
         </Button>
+        <div className="flex items-center gap-4">
+          {hasContent ? (
+            <span className="text-[12.5px] text-success font-semibold">
+              {files.length + links.length} added, add more, or continue.
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                if (!showSkipWarning) {
+                  setShowSkipWarning(true);
+                  return;
+                }
+                onContinue();
+              }}
+              className="font-body font-semibold text-[13px] text-slate bg-none border-none cursor-pointer p-0"
+            >
+              {showSkipWarning ? "Skip anyway" : "Skip this step"}
+            </button>
+          )}
+          <Button icon={ArrowRight} onClick={onContinue}>
+            {isLast ? "Finish setup" : "Continue"}
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -361,7 +403,15 @@ function ReferencesStep({ onContinue, isLast }: { onContinue: () => void; isLast
  * the exact same actions that page uses, so anything set here shows up
  * there too. Colors apply immediately; fonts are shown for reference only
  * (not yet auto-applied to rendered pages). */
-function BrandingStep({ onContinue, isLast }: { onContinue: () => void; isLast: boolean }) {
+function BrandingStep({
+  onBack,
+  onContinue,
+  isLast,
+}: {
+  onBack: () => void;
+  onContinue: () => void;
+  isLast: boolean;
+}) {
   const [guideUploading, setGuideUploading] = useState(false);
   const [guideError, setGuideError] = useState("");
   const [guideResult, setGuideResult] = useState<{
@@ -377,9 +427,33 @@ function BrandingStep({ onContinue, isLast }: { onContinue: () => void; isLast: 
   const hasContent = Boolean(guideResult || logo);
 
   async function handleGuideUpload(file: File) {
-    setGuideUploading(true);
     setGuideError("");
     setGuideResult(null);
+    if (file.size > MAX_DOCUMENT_UPLOAD_BYTES) {
+      setGuideError(documentTooLargeError(file));
+      return;
+    }
+    setGuideUploading(true);
+
+    // Images have no extractable text — read them as a data URL and hand
+    // them straight to Claude's vision instead of the text-extraction path.
+    if (file.type === "image/png" || file.type === "image/jpeg") {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+      const imageResult = await analyzeBrandGuideImageAction(dataUrl);
+      setGuideUploading(false);
+      if (!imageResult.ok) {
+        setGuideError(imageResult.error);
+        return;
+      }
+      setGuideResult(imageResult.data);
+      return;
+    }
+
     const formData = new FormData();
     formData.set("file", file);
     const res = await fetch("/api/extract-text", { method: "POST", body: formData });
@@ -428,7 +502,7 @@ function BrandingStep({ onContinue, isLast }: { onContinue: () => void; isLast: 
           </div>
           <DropZone
             onFile={handleGuideUpload}
-            accept=".pdf,.docx,.txt,.md"
+            accept=".pdf,.docx,.txt,.md,image/png,image/jpeg"
             disabled={guideUploading}
             className="flex flex-col gap-2 cursor-pointer mb-2.5 -m-1 p-1"
           >
@@ -493,26 +567,31 @@ function BrandingStep({ onContinue, isLast }: { onContinue: () => void; isLast: 
       )}
 
       <div className="flex justify-between items-center">
-        {hasContent ? (
-          <span className="text-[12.5px] text-success font-semibold">Saved, continue whenever.</span>
-        ) : (
-          <button
-            type="button"
-            onClick={() => {
-              if (!showSkipWarning) {
-                setShowSkipWarning(true);
-                return;
-              }
-              onContinue();
-            }}
-            className="font-body font-semibold text-[13px] text-slate bg-none border-none cursor-pointer p-0"
-          >
-            {showSkipWarning ? "Skip anyway" : "Skip this step"}
-          </button>
-        )}
-        <Button icon={ArrowRight} onClick={onContinue}>
-          {isLast ? "Finish setup" : "Continue"}
+        <Button variant="ghost" icon={ChevronLeft} onClick={onBack}>
+          Back
         </Button>
+        <div className="flex items-center gap-4">
+          {hasContent ? (
+            <span className="text-[12.5px] text-success font-semibold">Saved, continue whenever.</span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                if (!showSkipWarning) {
+                  setShowSkipWarning(true);
+                  return;
+                }
+                onContinue();
+              }}
+              className="font-body font-semibold text-[13px] text-slate bg-none border-none cursor-pointer p-0"
+            >
+              {showSkipWarning ? "Skip anyway" : "Skip this step"}
+            </button>
+          )}
+          <Button icon={ArrowRight} onClick={onContinue}>
+            {isLast ? "Finish setup" : "Continue"}
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -525,6 +604,7 @@ function MemoryStep({
   presets,
   value,
   onChange,
+  onBack,
   onContinue,
   isLast,
   pending,
@@ -536,6 +616,7 @@ function MemoryStep({
   presets: Preset[];
   value: string;
   onChange: (v: string) => void;
+  onBack: () => void;
   onContinue: () => void;
   isLast: boolean;
   pending: boolean;
@@ -573,23 +654,28 @@ function MemoryStep({
       )}
 
       <div className="flex justify-between items-center">
-        <button
-          type="button"
-          onClick={() => {
-            if (!value.trim() && !showSkipWarning) {
-              setShowSkipWarning(true);
-              return;
-            }
-            onContinue();
-          }}
-          disabled={pending}
-          className="font-body font-semibold text-[13px] text-slate bg-none border-none cursor-pointer p-0"
-        >
-          {value.trim() ? "Skip" : showSkipWarning ? "Skip anyway" : "Skip this step"}
-        </button>
-        <Button icon={ArrowRight} spinIcon={pending} disabled={pending} onClick={onContinue}>
-          {pending ? "Setting up..." : isLast ? "Finish setup" : "Continue"}
+        <Button variant="ghost" icon={ChevronLeft} disabled={pending} onClick={onBack}>
+          Back
         </Button>
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => {
+              if (!value.trim() && !showSkipWarning) {
+                setShowSkipWarning(true);
+                return;
+              }
+              onContinue();
+            }}
+            disabled={pending}
+            className="font-body font-semibold text-[13px] text-slate bg-none border-none cursor-pointer p-0"
+          >
+            {value.trim() ? "Skip" : showSkipWarning ? "Skip anyway" : "Skip this step"}
+          </button>
+          <Button icon={ArrowRight} spinIcon={pending} disabled={pending} onClick={onContinue}>
+            {pending ? "Setting up..." : isLast ? "Finish setup" : "Continue"}
+          </Button>
+        </div>
       </div>
     </div>
   );

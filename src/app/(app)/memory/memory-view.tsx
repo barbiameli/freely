@@ -20,10 +20,12 @@ import {
   updateBrandingAction,
   uploadBrandLogoAction,
   analyzeBrandGuideAction,
+  analyzeBrandGuideImageAction,
   deleteMemoryAssetAction,
 } from "@/actions/memory";
 import { disconnectProviderAction, type Provider } from "@/actions/connections";
 import { industryLabel } from "@/lib/industries";
+import { MAX_DOCUMENT_UPLOAD_BYTES, documentTooLargeError } from "@/lib/upload-limits";
 import { CURRENCIES } from "@/lib/currencies";
 import {
   type Preset,
@@ -342,8 +344,12 @@ function ReferencesCard({
   const [error, setError] = useState("");
 
   async function handleFileUpload(file: File) {
-    setUploading("file");
     setError("");
+    if (file.size > MAX_DOCUMENT_UPLOAD_BYTES) {
+      setError(documentTooLargeError(file));
+      return;
+    }
+    setUploading("file");
     const formData = new FormData();
     formData.set("file", file);
     const res = await fetch("/api/extract-text", { method: "POST", body: formData });
@@ -582,9 +588,33 @@ function BrandingCard({
   }
 
   async function handleGuideUpload(file: File) {
-    setGuideUploading(true);
     setGuideError("");
     setGuideResult(null);
+    if (file.size > MAX_DOCUMENT_UPLOAD_BYTES) {
+      setGuideError(documentTooLargeError(file));
+      return;
+    }
+    setGuideUploading(true);
+
+    // Images have no extractable text — read them as a data URL and hand
+    // them straight to Claude's vision instead of the text-extraction path.
+    if (file.type === "image/png" || file.type === "image/jpeg") {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+      const result = await analyzeBrandGuideImageAction(dataUrl);
+      setGuideUploading(false);
+      if (!result.ok) {
+        setGuideError(result.error);
+        return;
+      }
+      setGuideResult(result.data);
+      return;
+    }
+
     const formData = new FormData();
     formData.set("file", file);
     const res = await fetch("/api/extract-text", { method: "POST", body: formData });
@@ -625,7 +655,7 @@ function BrandingCard({
         </p>
         <DropZone
           onFile={handleGuideUpload}
-          accept=".pdf,.docx,.txt,.md"
+          accept=".pdf,.docx,.txt,.md,image/png,image/jpeg"
           disabled={guideUploading}
           className="flex items-center gap-1.5 cursor-pointer mb-1 -m-1 p-1"
         >
