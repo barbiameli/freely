@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
+import { sanitizeText } from "@/lib/sanitize-text";
 import {
   generateBriefFromDraft,
   refineBrief,
@@ -49,6 +50,19 @@ async function buildMemoryContext(user: {
 // Next's server-action bundler. See src/app/api/extract-text/route.ts.
 
 export type QuoteDraftPayload = QuoteDraftInput;
+
+/** Postgres rejects NUL bytes inside jsonb just as it does in text columns,
+ * so the Strategy object needs the same cleaning as the plain-text fields
+ * before it's stored. */
+function sanitizeStrategy(strategy: Strategy): Strategy {
+  return {
+    goal: sanitizeText(strategy.goal),
+    findings: strategy.findings.map(sanitizeText),
+    aiWill: strategy.aiWill.map(sanitizeText),
+    aiWillNot: strategy.aiWillNot.map(sanitizeText),
+    openQuestions: strategy.openQuestions.map(sanitizeText),
+  };
+}
 
 /** Pulls this freelancer's own past quotes (team-scoped) as pricing anchors
  * for a new quote — Claude uses these to reason about hours/price instead of
@@ -107,27 +121,32 @@ export async function generateBriefAction(
     brief = await prisma.brief.create({
       data: {
         userId: user.id,
-        title: generated.title,
-        client: generated.client,
-        scope: generated.scope,
-        deliverables: generated.deliverables,
-        timeline: generated.timeline,
+        // Everything text-shaped gets sanitized on the way in. Extraction
+        // already cleans uploaded files, but source text can also be pasted
+        // straight in, and the model echoes chunks of it back into these
+        // fields, so a single missed NUL anywhere upstream would fail the
+        // whole insert after the slow generation had already been paid for.
+        title: sanitizeText(generated.title),
+        client: sanitizeText(generated.client),
+        scope: sanitizeText(generated.scope),
+        deliverables: generated.deliverables.map(sanitizeText),
+        timeline: sanitizeText(generated.timeline),
         // Prisma's Json? columns treat an explicit `null` specially (it wants
         // Prisma.JsonNull, not the JS literal) — so when there's no strategy
         // we just omit the field entirely (undefined) and let the column
         // default to NULL, rather than passing null directly.
-        ...(generated.strategy ? { strategy: generated.strategy } : {}),
+        ...(generated.strategy ? { strategy: sanitizeStrategy(generated.strategy) } : {}),
         price: generated.price,
         hours: generated.hours,
         hourlyRate: draft.hourlyRate,
         currency: draft.currency || "USD",
         expertiseLevel: draft.expertiseLevel,
-        sourceText: draft.sourceText,
+        sourceText: sanitizeText(draft.sourceText),
         template: draft.template || "classic",
         branding: draft.branding || "freely",
         settings: {
-          instructions: draft.instructions,
-          memoryProjectTitles: draft.memoryProjectTitles,
+          instructions: sanitizeText(draft.instructions),
+          memoryProjectTitles: draft.memoryProjectTitles.map(sanitizeText),
           detailLevel: draft.detailLevel,
           format: draft.format,
           includeSOW: draft.includeSOW,
@@ -195,12 +214,12 @@ export async function refineBriefAction(
   await prisma.brief.update({
     where: { id: brief.id },
     data: {
-      title: updated.title,
-      client: updated.client,
-      scope: updated.scope,
-      deliverables: updated.deliverables,
-      timeline: updated.timeline,
-      ...(updated.strategy ? { strategy: updated.strategy } : {}),
+      title: sanitizeText(updated.title),
+      client: sanitizeText(updated.client),
+      scope: sanitizeText(updated.scope),
+      deliverables: updated.deliverables.map(sanitizeText),
+      timeline: sanitizeText(updated.timeline),
+      ...(updated.strategy ? { strategy: sanitizeStrategy(updated.strategy) } : {}),
       price: updated.price,
       hours: updated.hours,
     },

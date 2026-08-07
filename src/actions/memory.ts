@@ -11,6 +11,7 @@ import {
   type BrandGuideAnalysis,
 } from "@/lib/anthropic";
 import { extractDominantColor } from "@/lib/png-color";
+import { sanitizeText } from "@/lib/sanitize-text";
 import type { ActionResult } from "@/actions/briefs";
 
 export async function updateMemoryInstructionsAction(
@@ -48,7 +49,16 @@ export async function saveMemoryFileAction(
   const user = await requireUser();
   if (!name.trim()) return { ok: false, error: "File needs a name." };
   const asset = await prisma.memoryAsset.create({
-    data: { userId: user.id, type: "FILE", name, textContent: text },
+    // Sanitized again here even though extraction already cleans it: this is
+    // a server action taking client-supplied text, so it can be reached with
+    // anything. A NUL byte would fail the insert with an opaque Postgres
+    // error rather than anything the user could act on.
+    data: {
+      userId: user.id,
+      type: "FILE",
+      name: sanitizeText(name),
+      textContent: sanitizeText(text),
+    },
   });
   revalidatePath("/memory");
   return { ok: true, data: { id: asset.id, name: asset.name } };

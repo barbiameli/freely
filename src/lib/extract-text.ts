@@ -1,3 +1,5 @@
+import { sanitizeText } from "@/lib/sanitize-text";
+
 /**
  * Extracts plain text from an uploaded source file for the Quote wizard and
  * Memory's Files tab. Supports .txt/.md (read directly), .pdf (unpdf), and
@@ -14,21 +16,24 @@ export async function extractTextFromFile(file: File): Promise<string> {
   const name = file.name.toLowerCase();
   const buffer = Buffer.from(await file.arrayBuffer());
 
+  // Everything below runs through sanitizeText on the way out. Extracted
+  // text routinely contains NUL bytes, which Postgres rejects outright, so
+  // cleaning here means the rest of the app never has to think about it.
   if (name.endsWith(".txt") || name.endsWith(".md")) {
-    return buffer.toString("utf-8");
+    return sanitizeText(buffer.toString("utf-8"));
   }
 
   if (name.endsWith(".pdf")) {
     const { extractText, getDocumentProxy } = await import("unpdf");
     const pdf = await getDocumentProxy(new Uint8Array(buffer));
     const { text } = await extractText(pdf, { mergePages: true });
-    return text;
+    return sanitizeText(text);
   }
 
   if (name.endsWith(".docx")) {
     const mammoth = await import("mammoth");
     const result = await mammoth.extractRawText({ buffer });
-    return result.value;
+    return sanitizeText(result.value);
   }
 
   throw new Error(
