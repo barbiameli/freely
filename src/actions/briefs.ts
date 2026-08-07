@@ -116,6 +116,7 @@ export async function generateBriefAction(
       expertiseLevel: draft.expertiseLevel,
       sourceText: draft.sourceText,
       template: draft.template || "classic",
+      branding: draft.branding || "freely",
       settings: {
         instructions: draft.instructions,
         memoryProjectTitles: draft.memoryProjectTitles,

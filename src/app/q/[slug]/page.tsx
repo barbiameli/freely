@@ -1,14 +1,17 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import type { Strategy } from "@/lib/anthropic";
-import { ClassicTemplate, EditorialTemplate, MinimalTemplate, type PublicBrief } from "./templates";
+import { resolveBrand } from "@/lib/branding";
+import { ClassicTemplate, EditorialTemplate, MinimalTemplate, MonoTemplate, type PublicBrief } from "./templates";
 
 export const dynamic = "force-dynamic";
 
 /** Public, no-login "HTML page" quote — what the Quote wizard's "HTML page"
  * format option actually links to. Mirrors the public Diary page pattern
- * (/p/[slug]) but for a Brief instead of a Project. Renders one of 3 visual
- * templates (classic/editorial/minimal), chosen when the quote was created. */
+ * (/p/[slug]) but for a Brief instead of a Project. Renders one of the 3
+ * layout templates (classic/editorial/minimal) with the branding chosen when
+ * the quote was created, or the dedicated Mono layout for the two
+ * brandless presets (see lib/branding.ts). */
 export default async function PublicQuotePage({ params }: { params: { slug: string } }) {
   const brief = await prisma.brief.findUnique({
     where: { publicSlug: params.slug },
@@ -36,11 +39,10 @@ export default async function PublicQuotePage({ params }: { params: { slug: stri
     examples: brief.examples.map((e) => ({ name: e.name, dataUrl: e.dataUrl, caption: e.caption })),
   };
 
-  const brand = {
-    primary: brief.user.brandPrimaryColor || "#F45B69",
-    accent: brief.user.brandAccentColor || "#6320EE",
-    logoDataUrl: brief.user.brandLogoDataUrl,
-  };
+  const resolved = resolveBrand(brief.branding, brief.user);
+  if (resolved.mono) return <MonoTemplate brief={publicBrief} dark={resolved.dark} />;
+
+  const brand = { primary: resolved.primary, accent: resolved.accent, logoDataUrl: resolved.logoDataUrl };
 
   if (brief.template === "editorial") return <EditorialTemplate brief={publicBrief} brand={brand} />;
   if (brief.template === "minimal") return <MinimalTemplate brief={publicBrief} brand={brand} />;

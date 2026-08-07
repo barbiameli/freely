@@ -161,6 +161,11 @@ model Brief {
   publicSlug     String      @unique @default(cuid())
   // Which of the 3 public-page visual templates to render at /q/[publicSlug].
   template       String      @default("classic")
+  // Which color/logo treatment to render with: "freely" (Freely's own look),
+  // "own" (this freelancer's saved brand colors/logo from Memory), or a
+  // built-in neutral preset not tied to either ("mono-light"/"mono-dark").
+  // Chosen per-quote in the wizard, applied to both the public page and PDF.
+  branding       String      @default("freely")
 
   project  Project?
   examples BriefExample[]

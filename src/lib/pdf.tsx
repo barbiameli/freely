@@ -37,6 +37,12 @@ export interface BriefPdfData {
   examples?: BriefExamplePdfData[];
   preparedByEmail?: string | null;
   template?: PdfTemplate;
+  /** When true, renders the dedicated brandless Mono layout instead of the
+   * chosen `template`, ignoring brandPrimaryColor/brandAccentColor/logo
+   * entirely — see lib/branding.ts's "mono-light"/"mono-dark" presets. */
+  mono?: boolean;
+  /** Only meaningful when mono is true: light vs. dark background. */
+  dark?: boolean;
 }
 
 // Freely's own palette — used as the fixed identity color for things like
@@ -579,7 +585,139 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
   );
 }
 
+/** Mono — a deliberately generic, brandless black-and-white layout for when
+ * a quote shouldn't carry either Freely's or the freelancer's own
+ * colors/logo (see lib/branding.ts). Mirrors the Minimal layout's structure
+ * but with every color computed from `dark` instead of pulled from brand
+ * fields, and no logo/wordmark shown at all. */
+function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
+  const symbol = currencySymbol(brief.currency);
+  const bg = dark ? "#0B0B0C" : "#FFFFFF";
+  const ink = dark ? "#FFFFFF" : "#111111";
+  const muted = dark ? "rgba(255,255,255,0.55)" : "rgba(17,17,17,0.55)";
+  const line = dark ? "rgba(255,255,255,0.18)" : "rgba(17,17,17,0.18)";
+  const page = { ...styles.page, backgroundColor: bg, color: ink };
+  const body = { ...styles.body, color: ink };
+  return (
+    <Document>
+      <Page size="A4" style={page}>
+        <View style={{ paddingHorizontal: 44, paddingTop: 36, paddingBottom: 18, borderBottomWidth: 1.5, borderBottomColor: ink }}>
+          <Text style={{ fontSize: 8.5, textTransform: "uppercase", letterSpacing: 2, color: muted, marginTop: 18 }}>
+            Quote
+          </Text>
+          <Text style={{ fontSize: 20, fontWeight: 700, marginTop: 8, color: ink }}>{brief.title}</Text>
+          <Text style={{ fontSize: 9.5, color: muted, marginTop: 4 }}>
+            <Text style={{ fontWeight: 700, color: ink }}>{brief.client}</Text>
+            {" · "}
+            {new Date(brief.createdAt).toLocaleDateString()}
+          </Text>
+          <View style={{ flexDirection: "row", marginTop: 14 }}>
+            <Text style={{ fontSize: 10.5, marginRight: 22, fontWeight: 700, color: ink }}>
+              {symbol}
+              {brief.price.toLocaleString()} total
+            </Text>
+            <Text style={{ fontSize: 10.5, marginRight: 22, fontWeight: 700, color: ink }}>
+              {brief.hours}h estimated
+            </Text>
+            {brief.hourlyRate && (
+              <Text style={{ fontSize: 10.5, fontWeight: 700, color: ink }}>
+                {symbol}
+                {brief.hourlyRate}/hr
+              </Text>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.content}>
+          {brief.strategy && (
+            <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }} wrap={false}>
+              <Text style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
+                Strategy
+              </Text>
+              <Text style={[body, styles.semibold]}>{brief.strategy.goal}</Text>
+              {brief.strategy.findings.length > 0 && (
+                <View style={{ marginTop: 8 }}>
+                  {brief.strategy.findings.map((f, i) => (
+                    <View key={i} style={styles.bulletRow}>
+                      <Text style={{ ...styles.bulletMark, color: ink }}>•</Text>
+                      <Text style={{ ...styles.bulletText, color: ink }}>{f}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+
+          <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }} wrap={false}>
+            <Text style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
+              Scope
+            </Text>
+            <Text style={body}>{brief.scope}</Text>
+          </View>
+
+          <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }} wrap={false}>
+            <Text style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
+              Deliverables
+            </Text>
+            {brief.deliverables.map((d, i) => (
+              <View key={i} style={styles.deliverableRow}>
+                <Text style={{ ...styles.deliverableMark, color: ink }}>•</Text>
+                <Text style={{ ...styles.deliverableText, color: ink }}>{d}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }} wrap={false}>
+            <Text style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
+              Timeline
+            </Text>
+            <TimelineVisual timeline={brief.timeline} dotColor={ink} />
+          </View>
+
+          {brief.examples && brief.examples.length > 0 && (
+            <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }}>
+              <Text style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
+                Examples
+              </Text>
+              <Examples examples={brief.examples} />
+            </View>
+          )}
+
+          {brief.includeSOW && (
+            <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }} wrap={false}>
+              <Text style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
+                Statement of Work
+              </Text>
+              <Text style={body}>
+                This quote constitutes a Statement of Work for the deliverables listed above, to
+                be completed within the stated timeline for the stated price.
+              </Text>
+            </View>
+          )}
+
+          {brief.includeAI && (
+            <Text style={{ ...styles.disclosure, color: muted }}>
+              Portions of this quote were drafted with AI assistance and reviewed before sending.
+            </Text>
+          )}
+
+          <View style={{ borderTopWidth: 1, borderTopColor: line, marginTop: 24, paddingTop: 16, flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" }}>
+            <Text style={{ fontSize: 9, color: muted }}>
+              {brief.preparedByEmail || ""}
+            </Text>
+            <Text style={{ fontSize: 9, color: muted, textAlign: "right" }}>
+              Prepared {new Date(brief.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+            </Text>
+          </View>
+        </View>
+      </Page>
+    </Document>
+  );
+}
+
 export async function renderBriefPdf(brief: BriefPdfData): Promise<Buffer> {
+  if (brief.mono) return renderToBuffer(<MonoDocument brief={brief} dark={Boolean(brief.dark)} />);
+
   const template = brief.template || "classic";
   const doc =
     template === "editorial" ? (

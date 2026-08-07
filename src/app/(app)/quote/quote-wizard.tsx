@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Upload, FileText, ChevronLeft, ArrowRight, Sparkles, CircleStop } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
@@ -15,6 +16,7 @@ import { generateBriefAction, type QuoteDraftPayload } from "@/actions/briefs";
 import { industryQuoteExample } from "@/lib/industries";
 import { CURRENCIES, currencySymbol } from "@/lib/currencies";
 import { MAX_DOCUMENT_UPLOAD_BYTES, documentTooLargeError } from "@/lib/upload-limits";
+import { BRANDING_OPTIONS } from "@/lib/branding";
 
 type BriefSummary = { id: string; title: string; status: "DRAFT" | "TRACKED" };
 
@@ -102,11 +104,13 @@ export function QuoteWizard({
   recentBriefs,
   userIndustry,
   userCurrency,
+  hasBrand,
 }: {
   projectTitles: string[];
   recentBriefs: BriefSummary[];
   userIndustry?: string | null;
   userCurrency?: string | null;
+  hasBrand?: boolean;
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -124,6 +128,7 @@ export function QuoteWizard({
     currency: userCurrency || "USD",
     expertiseLevel: "Senior",
     template: "classic",
+    branding: "freely",
   });
   const [sourceMode, setSourceMode] = useState<"paste" | "upload">("paste");
   const [fileName, setFileName] = useState("");
@@ -523,6 +528,37 @@ export function QuoteWizard({
                     <div className="text-slate text-[11.5px] mt-1">{tpl.desc}</div>
                   </Card>
                 ))}
+              </div>
+            </Card>
+          )}
+          {(draft.format === "HTML" || draft.format === "PDF") && (
+            <Card>
+              <Label>Branding</Label>
+              <div className="flex gap-4">
+                {BRANDING_OPTIONS.map((opt) => {
+                  const disabled = opt.id === "own" && !hasBrand;
+                  return (
+                    <Card
+                      key={opt.id}
+                      onClick={disabled ? undefined : () => setDraft((d) => ({ ...d, branding: opt.id }))}
+                      className={`flex-1 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"} ${
+                        draft.branding === opt.id ? "border-violet border-[1.5px]" : ""
+                      }`}
+                    >
+                      <div className="font-body font-semibold text-[13.5px] text-ink">{opt.name}</div>
+                      <div className="text-slate text-[11.5px] mt-1">{opt.desc}</div>
+                      {disabled && (
+                        <Link
+                          href="/memory#branding"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-violet text-[11.5px] font-bold mt-1.5 inline-block"
+                        >
+                          Add your branding
+                        </Link>
+                      )}
+                    </Card>
+                  );
+                })}
               </div>
             </Card>
           )}

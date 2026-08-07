@@ -87,6 +87,9 @@ export interface QuoteDraftInput {
   /** Which of the 3 public-quote-page visual templates this brief should
    * render with — purely a presentation choice, doesn't affect generation. */
   template?: "classic" | "editorial" | "minimal";
+  /** Which color/logo treatment to render with — see lib/branding.ts. Also
+   * purely a presentation choice, doesn't affect generation. */
+  branding?: "freely" | "own" | "mono-light" | "mono-dark";
   /** ISO 4217 code (e.g. "USD", "EUR") — defaults from the user's saved
    * preference. Purely a display choice; the underlying number is the same
    * regardless of currency. */

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import { renderBriefPdf, type StrategyPdfData, type PdfTemplate } from "@/lib/pdf";
+import { resolveBrand } from "@/lib/branding";
 
 const VALID_TEMPLATES: PdfTemplate[] = ["classic", "editorial", "minimal"];
 
@@ -30,6 +31,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     ? (brief.template as PdfTemplate)
     : "classic";
 
+  const resolved = resolveBrand(brief.branding, user);
+
   const pdf = await renderBriefPdf({
     title: brief.title,
     client: brief.client,
@@ -44,9 +47,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     createdAt: brief.createdAt.toISOString(),
     includeSOW: settings.includeSOW,
     includeAI: settings.includeAI,
-    brandPrimaryColor: user.brandPrimaryColor,
-    brandAccentColor: user.brandAccentColor,
-    brandLogoDataUrl: user.brandLogoDataUrl,
+    brandPrimaryColor: resolved.primary,
+    brandAccentColor: resolved.accent,
+    brandLogoDataUrl: resolved.logoDataUrl,
+    mono: resolved.mono,
+    dark: resolved.dark,
     examples: brief.examples.map((e) => ({ name: e.name, dataUrl: e.dataUrl, caption: e.caption })),
     preparedByEmail: user.email,
     template,

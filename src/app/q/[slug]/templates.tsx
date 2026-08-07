@@ -247,6 +247,98 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
   );
 }
 
+/** Mono — a deliberately generic, brandless black-and-white treatment for
+ * when a quote shouldn't carry either Freely's or the freelancer's own
+ * colors/logo (see lib/branding.ts). Light and dark are the same layout,
+ * just inverted, so it's one component instead of two near-duplicates. */
+export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolean }) {
+  const bg = dark ? "#0B0B0C" : "#FFFFFF";
+  const ink = dark ? "#FFFFFF" : "#111111";
+  const muted = dark ? "rgba(255,255,255,0.55)" : "rgba(17,17,17,0.55)";
+  const line = dark ? "rgba(255,255,255,0.18)" : "rgba(17,17,17,0.18)";
+  return (
+    <div className="min-h-screen" style={{ background: bg, color: ink }}>
+      <div className="max-w-xl mx-auto px-8 py-14">
+        <div className="flex items-center justify-between pb-6" style={{ borderBottom: `1.5px solid ${ink}` }}>
+          <span className="text-sm font-bold tracking-[0.08em] uppercase">Quote</span>
+          <span className="text-[10px] tracking-[0.15em] uppercase" style={{ color: muted }}>
+            {brief.client}
+          </span>
+        </div>
+
+        <h1 className="text-[24px] font-bold m-0 mt-8">{brief.title}</h1>
+
+        <div className="flex gap-8 mt-6 pb-6 text-[13px]" style={{ borderBottom: `1px solid ${line}` }}>
+          <span>
+            <strong>{currencySymbol(brief.currency)}{brief.price.toLocaleString()}</strong> total
+          </span>
+          <span>
+            <strong>{brief.hours}h</strong> estimated
+          </span>
+          {brief.hourlyRate && (
+            <span>
+              <strong>{currencySymbol(brief.currency)}{brief.hourlyRate}</strong>/hr
+            </span>
+          )}
+        </div>
+
+        {brief.strategy && (
+          <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
+            <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">Strategy</div>
+            <p className="text-[13.5px] leading-relaxed m-0">{brief.strategy.goal}</p>
+            {brief.strategy.findings.map((f, i) => (
+              <p
+                key={i}
+                className="text-[13px] leading-relaxed m-0 mt-2 pl-4"
+                style={{ borderLeft: `1px solid ${line}` }}
+              >
+                {f}
+              </p>
+            ))}
+          </div>
+        )}
+
+        <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
+          <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">Scope</div>
+          <p className="text-[13.5px] leading-relaxed m-0">{brief.scope}</p>
+        </div>
+
+        <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
+          <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">Deliverables</div>
+          <div className="flex flex-col gap-1">
+            {brief.deliverables.map((d, i) => (
+              <div key={i} className="text-[13.5px]">
+                - {d}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
+          <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">Timeline</div>
+          <p className="text-[13.5px] leading-relaxed m-0">{brief.timeline}</p>
+        </div>
+
+        {brief.examples.length > 0 && (
+          <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
+            <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">Examples</div>
+            <ExampleGallery examples={brief.examples} />
+          </div>
+        )}
+
+        <div className="flex justify-between items-center pt-6">
+          <span className="text-[13px]" style={{ color: muted }}>
+            Total
+          </span>
+          <span className="text-[22px] font-bold">
+            {currencySymbol(brief.currency)}{brief.price.toLocaleString()}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Minimal — plain, high-contrast, no shadows or card chrome; letter-spaced
  * labels and hairline rules do the separating instead of color blocks. */
 export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: BrandProps }) {

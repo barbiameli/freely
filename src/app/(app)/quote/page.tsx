@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
+import { hasOwnBranding } from "@/lib/branding";
 import { QuoteWizard } from "./quote-wizard";
 
 // Brief generation (invoked from this page via generateBriefAction) can
@@ -33,6 +34,7 @@ export default async function QuotePage() {
       recentBriefs={briefs}
       userIndustry={user.industry}
       userCurrency={user.currency}
+      hasBrand={hasOwnBranding(user)}
     />
   );
 }
