@@ -36,6 +36,11 @@ model User {
   // Nullable so Google-only accounts (no password set) can exist. The
   // Credentials provider must reject sign-in attempts where this is null.
   passwordHash       String?
+  // Basic info collected at signup — kept minimal on purpose (no phone,
+  // address, or other collection yet). Both optional so existing accounts
+  // created before this field existed aren't broken.
+  name               String?
+  studioName         String?
   memoryInstructions String   @default("") @db.Text
   toneNotes          String   @default("") @db.Text
   storyNotes         String   @default("") @db.Text
