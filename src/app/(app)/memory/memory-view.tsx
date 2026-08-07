@@ -791,12 +791,7 @@ function ConnectorsCard({ connections }: { connections: ConnectionInfo[] }) {
     <Card>
       <Label>Connectors</Label>
       <div className="flex flex-col gap-3 mt-2">
-        <ConnectorRow
-          provider="FIGMA"
-          icon={<PenTool size={16} />}
-          info={connected.get("FIGMA")}
-          available
-        />
+        <ConnectorRow provider="FIGMA" icon={<PenTool size={16} />} info={connected.get("FIGMA")} />
         <ConnectorRow provider="NOTION" icon={<Link2 size={16} />} info={connected.get("NOTION")} />
         <ConnectorRow provider="GITHUB" icon={<Link2 size={16} />} info={connected.get("GITHUB")} />
       </div>
@@ -808,12 +803,10 @@ function ConnectorRow({
   provider,
   icon,
   info,
-  available,
 }: {
   provider: Provider;
   icon: React.ReactNode;
   info?: ConnectionInfo;
-  available?: boolean;
 }) {
   const [working, setWorking] = useState(false);
 
@@ -826,7 +819,7 @@ function ConnectorRow({
         <div>
           <div className="flex items-center gap-1.5">
             <span className="font-body font-semibold text-sm text-ink">{PROVIDER_LABEL[provider]}</span>
-            {!available && !info && (
+            {!info && (
               <span className="font-body font-semibold text-[10px] uppercase tracking-wide text-text-muted bg-white border border-line rounded-full px-2 py-0.5">
                 Coming soon
               </span>
@@ -850,8 +843,6 @@ function ConnectorRow({
         >
           Disconnect
         </Button>
-      ) : available ? (
-        <Button onClick={() => (window.location.href = `/api/connect/figma/start`)}>Connect</Button>
       ) : (
         <Button variant="ghost" disabled>
           Coming soon
