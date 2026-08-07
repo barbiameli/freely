@@ -334,6 +334,47 @@ export async function generatePersona(input: PersonaInput): Promise<string> {
   return callClaude(system, user);
 }
 
+export const brandGuideSchema = z.object({
+  primaryColor: z.string().nullable().default(null),
+  accentColor: z.string().nullable().default(null),
+  headingFont: z.string().nullable().default(null),
+  bodyFont: z.string().nullable().default(null),
+  notes: z.string().nullable().default(null),
+});
+export type BrandGuideAnalysis = z.infer<typeof brandGuideSchema>;
+
+/** Reads the (already text-extracted) contents of an uploaded brand
+ * guidelines PDF and pulls out whatever it can find: a primary color, an
+ * accent color, and heading/body font names. Reasons from what the document
+ * actually says (hex codes, named colors, typeface names) — doesn't guess
+ * at anything not present. Logos are handled as a separate, explicit upload
+ * (see uploadBrandLogoAction) since reliably extracting a specific logo
+ * asset out of a laid-out PDF page isn't something text extraction can do. */
+export async function analyzeBrandGuide(sourceText: string): Promise<BrandGuideAnalysis> {
+  const system = [
+    "You read brand/style guideline documents and extract concrete, stated facts only.",
+    "primaryColor and accentColor must be valid hex codes (e.g. \"#6320EE\") — if the document only names a color (\"deep violet\") without a hex code, convert it to the closest reasonable hex value. If no color guidance is present at all, use null.",
+    "headingFont and bodyFont are typeface names exactly as written in the document (e.g. \"Raleway\", \"Helvetica Neue\"). If the document only specifies one font for everything, use it for both. If no typography guidance is present, use null.",
+    "notes is one short sentence flagging anything else worth a human's attention (e.g. \"Guide also specifies a secondary/tertiary palette not captured here\") — or null if there's nothing else notable.",
+    'Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly: {"primaryColor": string|null, "accentColor": string|null, "headingFont": string|null, "bodyFont": string|null, "notes": string|null}',
+  ].join(" ");
+  const user = `Brand guideline document:\n${sourceText.slice(0, 12000)}\n\nExtract the primary color, accent color, heading font, and body font.`;
+  const text = await callClaude(system, user);
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  const cleaned = (jsonMatch ? jsonMatch[0] : text).replace(/```json/gi, "").replace(/```/g, "").trim();
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch {
+    throw new Error("Couldn't read a brand guide out of that document.");
+  }
+  const result = brandGuideSchema.safeParse(parsed);
+  if (!result.success) {
+    throw new Error(`Brand guide analysis failed validation: ${result.error.message}`);
+  }
+  return result.data;
+}
+
 export async function refineBrief(
   memory: MemoryContext,
   current: GeneratedBrief,

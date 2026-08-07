@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Trash2, PenTool, Link2, Sparkles, Pencil, Upload } from "lucide-react";
+import { Trash2, PenTool, Link2, Sparkles, Pencil, Upload, FileText, CheckCircle2 } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,7 @@ import {
   updatePersonaAction,
   updateBrandingAction,
   uploadBrandLogoAction,
+  analyzeBrandGuideAction,
   deleteMemoryAssetAction,
 } from "@/actions/memory";
 import { disconnectProviderAction, type Provider } from "@/actions/connections";
@@ -80,6 +81,8 @@ export function MemoryView({
   brandPrimaryColor,
   brandAccentColor,
   brandLogoDataUrl,
+  brandHeadingFont,
+  brandBodyFont,
   currency,
   files,
   images,
@@ -96,6 +99,8 @@ export function MemoryView({
   brandPrimaryColor: string | null;
   brandAccentColor: string | null;
   brandLogoDataUrl: string | null;
+  brandHeadingFont: string | null;
+  brandBodyFont: string | null;
   currency: string;
   files: FileAsset[];
   images: ImageAsset[];
@@ -174,6 +179,8 @@ export function MemoryView({
             primaryColor={brandPrimaryColor}
             accentColor={brandAccentColor}
             logoDataUrl={brandLogoDataUrl}
+            headingFont={brandHeadingFont}
+            bodyFont={brandBodyFont}
             currency={currency}
           />
         </section>
@@ -530,18 +537,35 @@ function BrandingCard({
   primaryColor,
   accentColor,
   logoDataUrl,
+  headingFont,
+  bodyFont,
   currency,
 }: {
   primaryColor: string | null;
   accentColor: string | null;
   logoDataUrl: string | null;
+  headingFont: string | null;
+  bodyFont: string | null;
   currency: string;
 }) {
   const [primary, setPrimary] = useState(primaryColor ?? "#F45B69");
   const [accent, setAccent] = useState(accentColor ?? "#6320EE");
   const [logo, setLogo] = useState(logoDataUrl);
+  const [logoError, setLogoError] = useState("");
   const [curr, setCurr] = useState(currency);
   const [pending, startTransition] = useTransition();
+
+  const [heading, setHeading] = useState(headingFont);
+  const [body, setBody] = useState(bodyFont);
+  const [guideUploading, setGuideUploading] = useState(false);
+  const [guideError, setGuideError] = useState("");
+  const [guideResult, setGuideResult] = useState<{
+    primaryColor: string | null;
+    accentColor: string | null;
+    headingFont: string | null;
+    bodyFont: string | null;
+    notes: string | null;
+  } | null>(null);
 
   function save(patch: { brandPrimaryColor?: string; brandAccentColor?: string; currency?: string }) {
     startTransition(() => {
@@ -550,14 +574,43 @@ function BrandingCard({
   }
 
   async function handleLogoUpload(file: File) {
+    setLogoError("");
     const formData = new FormData();
     formData.set("file", file);
     const result = await uploadBrandLogoAction(formData);
-    if (result.ok) {
-      const reader = new FileReader();
-      reader.onload = () => setLogo(String(reader.result));
-      reader.readAsDataURL(file);
+    if (!result.ok) {
+      setLogoError(result.error);
+      return;
     }
+    const reader = new FileReader();
+    reader.onload = () => setLogo(String(reader.result));
+    reader.readAsDataURL(file);
+  }
+
+  async function handleGuideUpload(file: File) {
+    setGuideUploading(true);
+    setGuideError("");
+    setGuideResult(null);
+    const formData = new FormData();
+    formData.set("file", file);
+    const res = await fetch("/api/extract-text", { method: "POST", body: formData });
+    const extracted = await res.json();
+    if (!res.ok) {
+      setGuideUploading(false);
+      setGuideError(extracted.error || "Couldn't read that file.");
+      return;
+    }
+    const result = await analyzeBrandGuideAction(extracted.text);
+    setGuideUploading(false);
+    if (!result.ok) {
+      setGuideError(result.error);
+      return;
+    }
+    setGuideResult(result.data);
+    if (result.data.primaryColor) setPrimary(result.data.primaryColor);
+    if (result.data.accentColor) setAccent(result.data.accentColor);
+    if (result.data.headingFont) setHeading(result.data.headingFont);
+    if (result.data.bodyFont) setBody(result.data.bodyFont);
   }
 
   return (
@@ -567,6 +620,50 @@ function BrandingCard({
         Applied to your public client site, public quote pages, and PDF exports — so clients see
         your studio&apos;s look, not Freely&apos;s default.
       </p>
+
+      <div className="bg-paper rounded-lg p-3.5 mb-4">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate mb-1.5 uppercase tracking-wide">
+          <FileText size={12} /> Brand guidelines
+        </div>
+        <p className="text-[11.5px] text-text-muted mb-2">
+          Upload your brand guide PDF and Claude will pull out your colors and typeface names.
+          Colors apply immediately below; fonts are shown for reference (not yet applied to
+          rendered pages automatically).
+        </p>
+        <label className="flex items-center gap-1.5 cursor-pointer mb-1">
+          <input
+            type="file"
+            accept=".pdf"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleGuideUpload(file);
+            }}
+          />
+          <Upload size={12} className="text-violet" />
+          <span className="font-body font-bold text-[12.5px] text-violet">
+            {guideUploading ? "Reading & analyzing..." : "Upload brand guidelines (PDF)"}
+          </span>
+        </label>
+        {guideError && <div className="text-overdue text-xs mt-1.5">{guideError}</div>}
+        {guideResult && (
+          <div className="flex items-start gap-1.5 bg-mint rounded-lg px-3 py-2.5 mt-2 text-[12px] text-ink">
+            <CheckCircle2 size={13} className="text-success shrink-0 mt-0.5" />
+            <div>
+              Found: {[
+                guideResult.primaryColor && `primary ${guideResult.primaryColor}`,
+                guideResult.accentColor && `accent ${guideResult.accentColor}`,
+                guideResult.headingFont && `heading font "${guideResult.headingFont}"`,
+                guideResult.bodyFont && `body font "${guideResult.bodyFont}"`,
+              ]
+                .filter(Boolean)
+                .join(", ") || "nothing specific — try a more detailed guide."}
+              {guideResult.notes && <div className="text-text-muted mt-1">{guideResult.notes}</div>}
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="flex gap-8 items-start">
         <div>
           <div className="text-[11px] font-semibold text-slate mb-2 uppercase tracking-wide">Logo</div>
@@ -579,7 +676,7 @@ function BrandingCard({
           <label className="flex items-center gap-1.5 cursor-pointer">
             <input
               type="file"
-              accept="image/*"
+              accept="image/png"
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
@@ -589,6 +686,10 @@ function BrandingCard({
             <Upload size={12} className="text-violet" />
             <span className="font-body font-bold text-[12.5px] text-violet">Upload logo</span>
           </label>
+          <div className="text-[10.5px] text-text-muted mt-1 max-w-[160px]">
+            PNG with a transparent background, at least 200×200px.
+          </div>
+          {logoError && <div className="text-overdue text-[11px] mt-1 max-w-[180px]">{logoError}</div>}
         </div>
         <div className="flex gap-6">
           <div>
@@ -634,6 +735,26 @@ function BrandingCard({
           </div>
         </div>
       </div>
+      {(heading || body) && (
+        <div className="flex gap-6 mt-4 pt-4 border-t border-line">
+          {heading && (
+            <div>
+              <div className="text-[11px] font-semibold text-slate mb-1 uppercase tracking-wide">
+                Heading font
+              </div>
+              <div className="text-sm text-ink">{heading}</div>
+            </div>
+          )}
+          {body && (
+            <div>
+              <div className="text-[11px] font-semibold text-slate mb-1 uppercase tracking-wide">
+                Body font
+              </div>
+              <div className="text-sm text-ink">{body}</div>
+            </div>
+          )}
+        </div>
+      )}
       <p className="text-[11px] text-text-muted mt-2.5">
         Default currency for new quotes — each quote can still be changed individually in the
         wizard.

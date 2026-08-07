@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser, requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
-import { generatePersona } from "@/lib/anthropic";
+import { generatePersona, analyzeBrandGuide, type BrandGuideAnalysis } from "@/lib/anthropic";
 import type { ActionResult } from "@/actions/briefs";
 
 export async function updateMemoryInstructionsAction(
@@ -156,17 +156,94 @@ export async function updateBrandingAction(patch: {
   return { ok: true, data: undefined };
 }
 
-/** Uploads a logo used in place of the "Freely" wordmark on public pages. */
+/** Reads a PNG's IHDR chunk directly (no image-processing dependency needed)
+ * to check it actually has an alpha channel and meets a minimum resolution,
+ * before it's accepted as a logo. PNG layout: 8-byte signature, then the
+ * IHDR chunk — 4-byte length, "IHDR", 4-byte width, 4-byte height, 1-byte
+ * bit depth, 1-byte color type, ... Color type 6 = truecolor+alpha,
+ * 4 = greyscale+alpha; anything else has no transparency. */
+function readPngHeader(buffer: Buffer): { width: number; height: number; hasAlpha: boolean } | null {
+  const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  if (buffer.length < 33 || !buffer.subarray(0, 8).equals(PNG_SIGNATURE)) return null;
+  if (buffer.toString("ascii", 12, 16) !== "IHDR") return null;
+
+  const width = buffer.readUInt32BE(16);
+  const height = buffer.readUInt32BE(20);
+  const colorType = buffer.readUInt8(25);
+  const hasAlpha = colorType === 6 || colorType === 4;
+  return { width, height, hasAlpha };
+}
+
+const MIN_LOGO_DIMENSION = 200;
+
+/** Uploads a logo used in place of the "Freely" wordmark on public pages.
+ * Requires a transparent PNG at a reasonable resolution — anything else is
+ * rejected outright rather than silently used, since a logo on a white
+ * rectangle or a blurry upload looks broken everywhere it's placed. */
 export async function uploadBrandLogoAction(formData: FormData): Promise<ActionResult<undefined>> {
   const user = await requireUser();
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return { ok: false, error: "No file provided." };
-  if (file.size > 1 * 1024 * 1024) return { ok: false, error: "Logos are limited to 1MB." };
+  if (file.size > 2 * 1024 * 1024) return { ok: false, error: "Logos are limited to 2MB." };
+  if (file.type !== "image/png") {
+    return { ok: false, error: "Logo must be a PNG with a transparent background (not JPG or other formats)." };
+  }
+
   const buffer = Buffer.from(await file.arrayBuffer());
+  const header = readPngHeader(buffer);
+  if (!header) return { ok: false, error: "That doesn't look like a valid PNG file." };
+  if (!header.hasAlpha) {
+    return {
+      ok: false,
+      error: "This PNG doesn't have a transparent background — export it with a transparent canvas, not a white one.",
+    };
+  }
+  if (header.width < MIN_LOGO_DIMENSION || header.height < MIN_LOGO_DIMENSION) {
+    return {
+      ok: false,
+      error: `Too low-resolution (${header.width}×${header.height}px) — upload at least ${MIN_LOGO_DIMENSION}×${MIN_LOGO_DIMENSION}px.`,
+    };
+  }
+
   const dataUrl = `data:${file.type};base64,${buffer.toString("base64")}`;
   await prisma.user.update({ where: { id: user.id }, data: { brandLogoDataUrl: dataUrl } });
   revalidatePath("/memory");
   return { ok: true, data: undefined };
+}
+
+/** Reads an uploaded brand guidelines PDF (already text-extracted client-side
+ * via /api/extract-text, same as everywhere else a PDF gets read) and
+ * applies whatever colors/fonts Claude can find directly to the user's
+ * branding — colors take effect immediately; fonts are stored and shown to
+ * the user, informational for now. */
+export async function analyzeBrandGuideAction(
+  text: string
+): Promise<ActionResult<BrandGuideAnalysis>> {
+  const user = await requireUser();
+  if (!text.trim()) return { ok: false, error: "Couldn't read any text out of that file." };
+
+  let analysis: BrandGuideAnalysis;
+  try {
+    analysis = await analyzeBrandGuide(text);
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Couldn't analyze that brand guide right now.",
+    };
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      ...(analysis.primaryColor ? { brandPrimaryColor: analysis.primaryColor } : {}),
+      ...(analysis.accentColor ? { brandAccentColor: analysis.accentColor } : {}),
+      ...(analysis.headingFont ? { brandHeadingFont: analysis.headingFont } : {}),
+      ...(analysis.bodyFont ? { brandBodyFont: analysis.bodyFont } : {}),
+    },
+  });
+
+  revalidatePath("/memory");
+  return { ok: true, data: analysis };
 }
 
 export async function deleteMemoryAssetAction(assetId: string): Promise<ActionResult<undefined>> {

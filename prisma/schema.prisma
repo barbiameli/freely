@@ -63,6 +63,11 @@ model User {
   brandPrimaryColor  String?
   brandAccentColor   String?
   brandLogoDataUrl   String?  @db.Text
+  // Font names detected from an uploaded brand-guide PDF (see
+  // analyzeBrandGuideAction) — informational for now, not yet applied to
+  // rendered PDFs/pages automatically.
+  brandHeadingFont   String?
+  brandBodyFont      String?
 
   // Default currency (ISO 4217 code, e.g. "USD") for new quotes — set in
   // Memory → Branding. Each Brief/Project stores its own currency too, so

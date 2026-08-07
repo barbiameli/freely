@@ -28,6 +28,8 @@ export default async function MemoryPage() {
       brandPrimaryColor={user.brandPrimaryColor}
       brandAccentColor={user.brandAccentColor}
       brandLogoDataUrl={user.brandLogoDataUrl}
+      brandHeadingFont={user.brandHeadingFont}
+      brandBodyFont={user.brandBodyFont}
       currency={user.currency}
       files={assets
         .filter((a) => a.type === "FILE")
