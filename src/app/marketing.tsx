@@ -44,7 +44,7 @@ function Header() {
 
 function Hero() {
   return (
-    <section className="max-w-3xl mx-auto text-center px-6 pt-10 pb-16">
+    <section className="max-w-4xl mx-auto text-center px-6 pt-10 pb-16">
       <h1 className="font-display italic text-[44px] leading-[1.1] text-ink m-0">
         Quote, track, and report on client work, <span className="text-coral">without the busywork.</span>
       </h1>
@@ -55,6 +55,12 @@ function Hero() {
         project once it&apos;s won, and keep a running diary the client can see, with AI drafting
         the first pass of each quote from your own rates and past work.
       </p>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/marketing-hero.png"
+        alt="The Quote wizard in Freely, showing the first step where you paste or upload a client brief."
+        className="w-full rounded-card border border-line shadow-panel mt-10"
+      />
       <div className="flex items-center justify-center gap-3 mt-8">
         <Link
           href="/signup"
