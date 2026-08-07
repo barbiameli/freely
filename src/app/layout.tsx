@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Instrument_Serif, Raleway, Architects_Daughter } from "next/font/google";
+import { Instrument_Serif, Raleway } from "next/font/google";
 import "./globals.css";
 
 const fontDisplay = Instrument_Serif({
@@ -13,11 +13,13 @@ const fontBody = Raleway({
   weight: ["400", "500", "600", "700"],
   variable: "--font-body",
 });
-const fontLabel = Architects_Daughter({
-  subsets: ["latin"],
-  weight: "400",
-  variable: "--font-label",
-});
+// "Neutra Text Light Alt" is a commercial font, not available via Google
+// Fonts — there's no file to load here, so this variable just sets the
+// font-family *name* with a clean sans-serif fallback stack. If a licensed
+// Neutra Text Light Alt font file (.otf/.ttf/.woff2) is added under
+// src/fonts/, wire it up with next/font/local using this same variable name
+// and real rendering will kick in everywhere --font-label is used.
+const fontLabelFamily = `"Neutra Text Light Alt", "Neutra Text", ui-sans-serif, -apple-system, sans-serif`;
 
 export const metadata: Metadata = {
   title: "Freely",
@@ -30,10 +32,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${fontDisplay.variable} ${fontBody.variable} ${fontLabel.variable} antialiased font-body text-ink`}
-      >
+    <html lang="en" style={{ "--font-label": fontLabelFamily } as React.CSSProperties}>
+      <body className={`${fontDisplay.variable} ${fontBody.variable} antialiased font-body text-ink`}>
         {children}
       </body>
     </html>

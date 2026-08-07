@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Card } from "@/components/ui/card";
+import { FreelyLogo } from "@/components/freely-logo";
 import { InviteForm } from "./invite-form";
 
 export default async function InvitePage({ params }: { params: { token: string } }) {
@@ -13,7 +14,9 @@ export default async function InvitePage({ params }: { params: { token: string }
   return (
     <div className="min-h-screen flex items-center justify-center bg-paper">
       <Card className="w-full max-w-sm">
-        <h1 className="font-display italic text-3xl text-coral mb-1">Freely</h1>
+        <div className="mb-1">
+          <FreelyLogo />
+        </div>
         {invalid ? (
           <p className="text-slate text-sm">
             This invite link is invalid or has already been used — ask whoever sent it for a new one.

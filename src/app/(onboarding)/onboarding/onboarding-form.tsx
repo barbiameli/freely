@@ -13,8 +13,14 @@ import {
   CONTEXT_PRESETS,
 } from "@/lib/memory-presets";
 import { completeOnboardingAction } from "@/actions/onboarding";
-import { saveMemoryFileAction, saveMemoryLinkAction, deleteMemoryAssetAction } from "@/actions/memory";
-import { ArrowRight, TriangleAlert, Upload, Trash2, FileText, Link2 } from "lucide-react";
+import {
+  saveMemoryFileAction,
+  saveMemoryLinkAction,
+  deleteMemoryAssetAction,
+  analyzeBrandGuideAction,
+  uploadBrandLogoAction,
+} from "@/actions/memory";
+import { ArrowRight, TriangleAlert, Upload, Trash2, FileText, Link2, CheckCircle2 } from "lucide-react";
 
 type StepId = "industry" | "instructions" | "toneNotes" | "storyNotes" | "contextNotes";
 
@@ -68,10 +74,12 @@ export function OnboardingForm() {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
 
-  const totalSteps = 2 + MEMORY_STEPS.length;
+  const totalSteps = 3 + MEMORY_STEPS.length;
   const onIndustryStep = step === 0;
   const onReferencesStep = step === 1;
-  const memoryStep = onIndustryStep || onReferencesStep ? null : MEMORY_STEPS[step - 2];
+  const onBrandingStep = step === 2;
+  const memoryStep =
+    onIndustryStep || onReferencesStep || onBrandingStep ? null : MEMORY_STEPS[step - 3];
 
   function finish() {
     if (!industry) return;
@@ -131,6 +139,8 @@ export function OnboardingForm() {
         </>
       ) : onReferencesStep ? (
         <ReferencesStep onContinue={goNext} isLast={step === totalSteps - 1} />
+      ) : onBrandingStep ? (
+        <BrandingStep onContinue={goNext} isLast={step === totalSteps - 1} />
       ) : (
         memoryStep && (
           <MemoryStep
@@ -329,6 +339,179 @@ function ReferencesStep({ onContinue, isLast }: { onContinue: () => void; isLast
           <span className="text-[12.5px] text-success font-semibold">
             {files.length + links.length} added — add more, or continue.
           </span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              if (!showSkipWarning) {
+                setShowSkipWarning(true);
+                return;
+              }
+              onContinue();
+            }}
+            className="font-body font-semibold text-[13px] text-slate bg-none border-none cursor-pointer p-0"
+          >
+            {showSkipWarning ? "Skip anyway" : "Skip this step"}
+          </button>
+        )}
+        <Button icon={ArrowRight} onClick={onContinue}>
+          {isLast ? "Finish setup" : "Continue"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** Optional — lets a new user upload their brand guide PDF and/or logo right
+ * away, instead of only discovering this later in Memory > Branding. Reuses
+ * the exact same actions that page uses, so anything set here shows up
+ * there too. Colors apply immediately; fonts are shown for reference only
+ * (not yet auto-applied to rendered pages). */
+function BrandingStep({ onContinue, isLast }: { onContinue: () => void; isLast: boolean }) {
+  const [guideUploading, setGuideUploading] = useState(false);
+  const [guideError, setGuideError] = useState("");
+  const [guideResult, setGuideResult] = useState<{
+    primaryColor: string | null;
+    accentColor: string | null;
+    headingFont: string | null;
+    bodyFont: string | null;
+  } | null>(null);
+  const [logo, setLogo] = useState<string | null>(null);
+  const [logoError, setLogoError] = useState("");
+  const [showSkipWarning, setShowSkipWarning] = useState(false);
+
+  const hasContent = Boolean(guideResult || logo);
+
+  async function handleGuideUpload(file: File) {
+    setGuideUploading(true);
+    setGuideError("");
+    setGuideResult(null);
+    const formData = new FormData();
+    formData.set("file", file);
+    const res = await fetch("/api/extract-text", { method: "POST", body: formData });
+    const extracted = await res.json();
+    if (!res.ok) {
+      setGuideUploading(false);
+      setGuideError(extracted.error || "Couldn't read that file.");
+      return;
+    }
+    const result = await analyzeBrandGuideAction(extracted.text);
+    setGuideUploading(false);
+    if (!result.ok) {
+      setGuideError(result.error);
+      return;
+    }
+    setGuideResult(result.data);
+  }
+
+  async function handleLogoUpload(file: File) {
+    setLogoError("");
+    const formData = new FormData();
+    formData.set("file", file);
+    const result = await uploadBrandLogoAction(formData);
+    if (!result.ok) {
+      setLogoError(result.error);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setLogo(String(reader.result));
+    reader.readAsDataURL(file);
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <h2 className="font-display italic text-2xl text-coral m-0">Got brand guidelines?</h2>
+        <p className="text-slate text-[13px] mt-1.5">
+          Upload your brand guide PDF and Claude will pull out your colors and typeface names, and/or
+          upload your logo — so client-facing quotes and pages look like your studio, not Freely&apos;s
+          default. Both optional, and you can always do this later in Memory.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-paper rounded-lg p-3.5 border border-dashed border-line">
+          <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate uppercase tracking-wide mb-2.5">
+            <FileText size={12} /> Brand guidelines
+          </div>
+          <label className="flex flex-col gap-2 cursor-pointer mb-2.5">
+            <input
+              type="file"
+              accept=".pdf"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleGuideUpload(file);
+              }}
+            />
+            <span className="flex items-center gap-1.5 font-body font-bold text-[12.5px] text-violet">
+              <Upload size={12} />
+              {guideUploading ? "Reading & analyzing..." : "Upload brand guidelines (PDF)"}
+            </span>
+          </label>
+          {guideError && <div className="text-overdue text-xs">{guideError}</div>}
+          {guideResult && (
+            <div className="flex items-start gap-1.5 bg-mint rounded-lg px-2.5 py-2 text-[11.5px] text-ink">
+              <CheckCircle2 size={13} className="text-success shrink-0 mt-0.5" />
+              <span>
+                Found:{" "}
+                {[
+                  guideResult.primaryColor && `primary ${guideResult.primaryColor}`,
+                  guideResult.accentColor && `accent ${guideResult.accentColor}`,
+                  guideResult.headingFont && `heading font "${guideResult.headingFont}"`,
+                  guideResult.bodyFont && `body font "${guideResult.bodyFont}"`,
+                ]
+                  .filter(Boolean)
+                  .join(", ") || "nothing specific — try a more detailed guide."}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-paper rounded-lg p-3.5 border border-dashed border-line">
+          <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate uppercase tracking-wide mb-2.5">
+            <Upload size={12} /> Logo
+          </div>
+          {logo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logo} alt="Logo" className="h-9 mb-2" />
+          ) : (
+            <label className="flex flex-col gap-2 cursor-pointer mb-2.5">
+              <input
+                type="file"
+                accept="image/png"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleLogoUpload(file);
+                }}
+              />
+              <span className="flex items-center gap-1.5 font-body font-bold text-[12.5px] text-violet">
+                <Upload size={12} />
+                Upload logo
+              </span>
+            </label>
+          )}
+          <div className="text-[10.5px] text-text-muted">
+            PNG with a transparent background, at least 200×200px.
+          </div>
+          {logoError && <div className="text-overdue text-[11px] mt-1">{logoError}</div>}
+        </div>
+      </div>
+
+      {showSkipWarning && !hasContent && (
+        <div className="flex items-start gap-2 bg-coral-tint rounded-lg px-3.5 py-3 text-[12.5px] text-overdue">
+          <TriangleAlert size={15} className="shrink-0 mt-0.5" />
+          <span>
+            Skipping this means client-facing pages use Freely&apos;s default look instead of yours
+            (you can always add it later in Memory).
+          </span>
+        </div>
+      )}
+
+      <div className="flex justify-between items-center">
+        {hasContent ? (
+          <span className="text-[12.5px] text-success font-semibold">Saved — continue whenever.</span>
         ) : (
           <button
             type="button"

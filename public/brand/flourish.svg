@@ -1,0 +1,21 @@
+<!--
+  TEMPORARY stand-in for the real flourish exported from Figma
+  (fileKey 3QQq1JuNx5X14Ucapglehw, node 19:58 / asset 3f8a1049-ec13-42a6-9275-c080c2c9f0a4).
+  This sandbox's network couldn't reach figma.com to download the exact
+  bytes, so this is a hand-drawn approximation of the same coral swoosh,
+  just so nothing looks broken in the meantime.
+
+  Replace this file with the real export — run this from your own machine
+  (the Figma URL is short-lived, do it soon):
+
+    curl -L -o public/brand/flourish.svg "https://www.figma.com/api/mcp/asset/3f8a1049-ec13-42a6-9275-c080c2c9f0a4.svg"
+-->
+<svg width="87" height="12" viewBox="0 0 87 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path
+    d="M2 9.5C10 2.5 18 1 27 5C36 9 46 9.5 55 5.5C64 1.5 74 2 84 8"
+    stroke="#F45B69"
+    stroke-width="2"
+    stroke-linecap="round"
+    fill="none"
+  />
+</svg>

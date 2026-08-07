@@ -810,7 +810,14 @@ function ConnectorRow({
           {icon}
         </div>
         <div>
-          <div className="font-body font-semibold text-sm text-ink">{PROVIDER_LABEL[provider]}</div>
+          <div className="flex items-center gap-1.5">
+            <span className="font-body font-semibold text-sm text-ink">{PROVIDER_LABEL[provider]}</span>
+            {!available && !info && (
+              <span className="font-body font-semibold text-[10px] uppercase tracking-wide text-text-muted bg-white border border-line rounded-full px-2 py-0.5">
+                Coming soon
+              </span>
+            )}
+          </div>
           <div className="text-xs text-text-muted">
             {info ? `Connected${info.accountLabel ? ` as ${info.accountLabel}` : ""}` : "Not connected"}
           </div>

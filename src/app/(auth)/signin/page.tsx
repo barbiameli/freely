@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { FreelyLogo } from "@/components/freely-logo";
 import Link from "next/link";
 
 export default function SignInPage() {
@@ -36,7 +37,9 @@ export default function SignInPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-paper">
       <Card className="w-full max-w-sm">
-        <h1 className="font-display italic text-3xl text-coral mb-1">Freely</h1>
+        <div className="mb-1">
+          <FreelyLogo />
+        </div>
         <p className="text-slate text-sm mb-6">Sign in to your studio.</p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <TextField

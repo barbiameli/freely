@@ -368,26 +368,36 @@ export function QuoteWizard({
           </div>
           <Stepper activeIndex={2} />
           <div className="flex gap-5">
-            {(["HTML", "PDF", "Figma"] as const).map((fmt) => (
-              <Card
-                key={fmt}
-                onClick={() => setDraft((d) => ({ ...d, format: fmt }))}
-                className={`flex-1 cursor-pointer ${
-                  draft.format === fmt ? "border-violet border-[1.5px]" : ""
-                }`}
-              >
-                <div className="font-body font-semibold text-[15px] text-ink">
-                  {fmt === "HTML" ? "HTML page" : fmt === "PDF" ? "PDF" : "Figma file"}
-                </div>
-                <div className="text-slate text-[12.5px] mt-1.5">
-                  {fmt === "HTML"
-                    ? "A hosted, linkable page the client can open in any browser. Works today."
-                    : fmt === "PDF"
-                    ? "A signed-ready document for print or download. Coming soon — stored as a preference."
-                    : "An editable file if you want another pass yourself. Coming soon."}
-                </div>
-              </Card>
-            ))}
+            {(["HTML", "PDF", "Figma"] as const).map((fmt) => {
+              const disabled = fmt === "Figma";
+              return (
+                <Card
+                  key={fmt}
+                  onClick={disabled ? undefined : () => setDraft((d) => ({ ...d, format: fmt }))}
+                  className={`flex-1 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"} ${
+                    draft.format === fmt ? "border-violet border-[1.5px]" : ""
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="font-body font-semibold text-[15px] text-ink">
+                      {fmt === "HTML" ? "HTML page" : fmt === "PDF" ? "PDF" : "Figma file"}
+                    </div>
+                    {disabled && (
+                      <span className="font-body font-semibold text-[10px] uppercase tracking-wide text-text-muted bg-paper border border-line rounded-full px-2 py-0.5">
+                        Coming soon
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-slate text-[12.5px] mt-1.5">
+                    {fmt === "HTML"
+                      ? "A hosted, linkable page the client can open in any browser. Works today."
+                      : fmt === "PDF"
+                      ? "A polished, downloadable document for print or email. Works today."
+                      : "An editable file pushed to your Figma account — not yet built."}
+                  </div>
+                </Card>
+              );
+            })}
           </div>
           {(draft.format === "HTML" || draft.format === "PDF") && (
             <Card>

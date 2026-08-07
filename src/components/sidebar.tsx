@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { FreelyLogo } from "@/components/freely-logo";
 
 const ITEMS = [
   { key: "quote", label: "Quote", glyph: "Q", href: "/quote" },
@@ -15,7 +16,7 @@ export function Sidebar() {
 
   return (
     <div className="w-[104px] bg-white border-r border-line flex flex-col items-center py-7 gap-11 flex-shrink-0 h-screen sticky top-0">
-      <span className="font-display italic text-[22px] text-coral">Freely</span>
+      <FreelyLogo size="sm" />
       <div className="flex flex-col gap-[26px] items-center">
         {ITEMS.map((item) => {
           const active = pathname?.startsWith(item.href);

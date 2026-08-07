@@ -29,7 +29,7 @@ const config: Config = {
       fontFamily: {
         display: ["var(--font-display)", "Georgia", "serif"],
         body: ["var(--font-body)", "-apple-system", "sans-serif"],
-        label: ["var(--font-label)", "cursive"],
+        label: ["var(--font-label)", "ui-sans-serif", "sans-serif"],
       },
       borderRadius: {
         card: "16px",

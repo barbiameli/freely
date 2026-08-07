@@ -71,7 +71,7 @@ export interface QuoteDraftInput {
   includeSOW: boolean;
   includeAI: boolean;
   /** Includable "Strategy" section — audit findings, approach, AI will/won't,
-   * open questions — modeled on how Barbara writes her own quotes. */
+   * open questions. */
   includeStrategy: boolean;
   /** Whether Timeline should be broken out as its own explicit, staged
    * section (it's always present on a brief, but this controls how much
