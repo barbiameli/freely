@@ -140,6 +140,20 @@ function formatPricingHistory(history: PricingHistoryEntry[], symbol: string): s
   return `\nPricing history, past projects this freelancer has quoted, use these as the primary anchor for price and hours on similarly-scoped work:\n${rows}`;
 }
 
+// A big uploaded PDF (a past quote, a lengthy SOW) can extract to tens of
+// thousands of characters. Sending all of it adds latency and risks the
+// serverless function running long enough to get killed, with no benefit —
+// Claude only needs enough of the brief to scope and price it, not every
+// word of a 40-page document. Truncate defensively; the note tells Claude
+// (and, via the source text shown on the brief page, the user) that this
+// happened.
+const MAX_SOURCE_TEXT_CHARS = 20_000;
+
+function truncateSourceText(text: string): string {
+  if (text.length <= MAX_SOURCE_TEXT_CHARS) return text;
+  return `${text.slice(0, MAX_SOURCE_TEXT_CHARS)}\n\n[...source material truncated for length — ${text.length.toLocaleString()} characters total, only the first ${MAX_SOURCE_TEXT_CHARS.toLocaleString()} were used.]`;
+}
+
 export function buildGenerateUserPrompt(
   draft: QuoteDraftInput,
   pricingHistory: PricingHistoryEntry[] = []
@@ -161,7 +175,9 @@ export function buildGenerateUserPrompt(
     : "";
 
   return [
-    `Client brief / source material:\n${draft.sourceText || "(no source text provided)"}`,
+    `Client brief / source material:\n${
+      draft.sourceText ? truncateSourceText(draft.sourceText) : "(no source text provided)"
+    }`,
     `\nInstructions for this quote: ${draft.instructions || "none given"}`,
     `Detail level: ${draft.detailLevel}`,
     `Reference past projects to draw style from: ${
@@ -270,7 +286,7 @@ export async function extractProjectFromDocument(sourceText: string): Promise<Ex
     "Timeline should be a short human-readable description (e.g. '4 weeks, kicking off Aug 1').",
     'Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly: {"title": string, "client": string, "timeline": string, "deliverables": string[]}',
   ].join(" ");
-  const user = `Document:\n${sourceText}\n\nExtract the project title, client name, timeline, and deliverables checklist.`;
+  const user = `Document:\n${truncateSourceText(sourceText)}\n\nExtract the project title, client name, timeline, and deliverables checklist.`;
   const text = await callClaude(system, user);
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   const cleaned = (jsonMatch ? jsonMatch[0] : text).replace(/```json/gi, "").replace(/```/g, "").trim();

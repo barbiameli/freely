@@ -26,7 +26,9 @@ export function Marketing() {
 function Header() {
   return (
     <header className="max-w-5xl mx-auto flex items-center justify-between px-6 py-6">
-      <FreelyLogo size="sm" />
+      <Link href="/" aria-label="Home">
+        <FreelyLogo size="sm" />
+      </Link>
       <nav className="flex items-center gap-4">
         <Link href="/signin" className="font-body font-semibold text-sm text-slate">
           Log in

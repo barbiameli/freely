@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import { generatePersona, analyzeBrandGuide, type BrandGuideAnalysis } from "@/lib/anthropic";
+import { extractDominantColor } from "@/lib/png-color";
 import type { ActionResult } from "@/actions/briefs";
 
 export async function updateMemoryInstructionsAction(
@@ -180,7 +181,9 @@ const MIN_LOGO_DIMENSION = 200;
  * Requires a transparent PNG at a reasonable resolution — anything else is
  * rejected outright rather than silently used, since a logo on a white
  * rectangle or a blurry upload looks broken everywhere it's placed. */
-export async function uploadBrandLogoAction(formData: FormData): Promise<ActionResult<undefined>> {
+export async function uploadBrandLogoAction(
+  formData: FormData
+): Promise<ActionResult<{ suggestedColor: string | null }>> {
   const user = await requireUser();
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return { ok: false, error: "No file provided." };
@@ -206,9 +209,26 @@ export async function uploadBrandLogoAction(formData: FormData): Promise<ActionR
   }
 
   const dataUrl = `data:${file.type};base64,${buffer.toString("base64")}`;
-  await prisma.user.update({ where: { id: user.id }, data: { brandLogoDataUrl: dataUrl } });
+
+  // If they haven't picked a brand color yet, take a stab at one from the
+  // logo itself instead of leaving it at Freely's default coral — easy to
+  // override afterward in the color pickers below, this is just a better
+  // starting point than "no relationship to their actual brand at all."
+  const existing = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { brandPrimaryColor: true },
+  });
+  const suggestedColor = existing?.brandPrimaryColor ? null : extractDominantColor(buffer);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      brandLogoDataUrl: dataUrl,
+      ...(suggestedColor ? { brandPrimaryColor: suggestedColor } : {}),
+    },
+  });
   revalidatePath("/memory");
-  return { ok: true, data: undefined };
+  return { ok: true, data: { suggestedColor } };
 }
 
 /** Reads an uploaded brand guidelines PDF (already text-extracted client-side

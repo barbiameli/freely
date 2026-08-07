@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, FileText, ChevronLeft, ArrowRight, Sparkles } from "lucide-react";
+import { Upload, FileText, ChevronLeft, ArrowRight, Sparkles, CircleStop } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,28 @@ const STATUS_COLOR: Record<string, string> = {
   DRAFT: "text-violet",
   TRACKED: "text-slate",
 };
+
+// Generation involves a real Claude call (sometimes with web search on top),
+// so it can genuinely take a while — but it should never just hang with no
+// feedback. If nothing comes back within this window, give up and show a
+// real error instead of spinning forever (matches the server action's own
+// maxDuration in actions/briefs.ts, plus a little slack).
+const GENERATION_TIMEOUT_MS = 65_000;
+
+// Lighthearted, rotating stand-ins for a static "Generating..." label —
+// purely cosmetic, but a wall of silence during a 20-40 second wait reads as
+// broken even when it isn't.
+const GENERATION_STATUS_MESSAGES = [
+  "Reading through everything you've handed over...",
+  "Doing some quick napkin math on hours...",
+  "Cross-checking against your past quotes...",
+  "Negotiating gently with your hourly rate...",
+  "Making sure the timeline doesn't sound delusional...",
+  "Borrowing a bit of your studio's voice...",
+  "Tightening up the scope...",
+  "Proofreading like a very picky editor...",
+  "Nearly there...",
+];
 
 /** A tiny mocked-up page thumbnail so users can see roughly what each
  * template looks like, instead of just reading a name and description. */
@@ -91,7 +113,25 @@ export function QuoteWizard({
   const [fileName, setFileName] = useState("");
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [statusMessage, setStatusMessage] = useState(GENERATION_STATUS_MESSAGES[0]);
   const [error, setError] = useState("");
+
+  // A late-arriving response from a request the user already cancelled (or
+  // that we already gave up on via the timeout) should be silently ignored,
+  // not applied to the UI or navigated to.
+  const cancelledRef = useRef(false);
+  const timersRef = useRef<{
+    interval?: ReturnType<typeof setInterval>;
+    timeout?: ReturnType<typeof setTimeout>;
+  }>({});
+
+  function clearGenerationTimers() {
+    if (timersRef.current.interval) clearInterval(timersRef.current.interval);
+    if (timersRef.current.timeout) clearTimeout(timersRef.current.timeout);
+    timersRef.current = {};
+  }
+
+  useEffect(() => clearGenerationTimers, []);
 
   async function handleFile(file: File) {
     setUploading(true);
@@ -112,13 +152,49 @@ export function QuoteWizard({
   async function handleGenerate() {
     setGenerating(true);
     setError("");
-    const result = await generateBriefAction(draft);
-    setGenerating(false);
-    if (!result.ok) {
-      setError(result.error);
-      return;
+    cancelledRef.current = false;
+
+    let messageIndex = 0;
+    setStatusMessage(GENERATION_STATUS_MESSAGES[0]);
+    timersRef.current.interval = setInterval(() => {
+      messageIndex = (messageIndex + 1) % GENERATION_STATUS_MESSAGES.length;
+      setStatusMessage(GENERATION_STATUS_MESSAGES[messageIndex]);
+    }, 3500);
+
+    const timeout = new Promise<never>((_, reject) => {
+      timersRef.current.timeout = setTimeout(
+        () => reject(new Error("TIMEOUT")),
+        GENERATION_TIMEOUT_MS
+      );
+    });
+
+    try {
+      const result = await Promise.race([generateBriefAction(draft), timeout]);
+      if (cancelledRef.current) return;
+      clearGenerationTimers();
+      setGenerating(false);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      router.push(`/quote/${result.data.briefId}`);
+    } catch (err) {
+      clearGenerationTimers();
+      if (cancelledRef.current) return;
+      setGenerating(false);
+      setError(
+        err instanceof Error && err.message === "TIMEOUT"
+          ? "This is taking longer than it should — it may still finish in the background, but don't wait on it. Try again, or simplify the source material first (a very large uploaded file slows this down a lot)."
+          : "Something went wrong generating the brief. Try again."
+      );
     }
-    router.push(`/quote/${result.data.briefId}`);
+  }
+
+  function handleStopGenerating() {
+    cancelledRef.current = true;
+    clearGenerationTimers();
+    setGenerating(false);
+    setError("Generation stopped — change anything above and try again whenever you're ready.");
   }
 
   return (
@@ -457,14 +533,33 @@ export function QuoteWizard({
               </Chip>
             </div>
           </Card>
+          {generating && (
+            <div className="flex items-center gap-2 text-violet text-[13px] font-body font-semibold">
+              <Sparkles size={14} className="animate-spin-slow" />
+              {statusMessage}
+            </div>
+          )}
           {error && <div className="text-overdue text-[13px]">{error}</div>}
           <div className="flex justify-between mt-auto">
-            <Button variant="ghost" icon={ChevronLeft} onClick={() => setStep(1)}>
+            <Button
+              variant="ghost"
+              icon={ChevronLeft}
+              onClick={() => {
+                if (generating) handleStopGenerating();
+                setStep(1);
+              }}
+            >
               Back
             </Button>
-            <Button icon={Sparkles} spinIcon={generating} disabled={generating} onClick={handleGenerate}>
-              {generating ? "Generating..." : "Generate brief"}
-            </Button>
+            {generating ? (
+              <Button variant="ghost" icon={CircleStop} onClick={handleStopGenerating}>
+                Stop
+              </Button>
+            ) : (
+              <Button icon={Sparkles} onClick={handleGenerate}>
+                Generate brief
+              </Button>
+            )}
           </div>
         </>
       )}

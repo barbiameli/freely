@@ -39,9 +39,9 @@ export const INDUSTRY_OPTIONS: IndustryOption[] = [
   },
   {
     key: "data",
-    label: "Data & analytics",
+    label: "Data (engineering, science, analytics, architecture)",
     quoteInstructionsExample:
-      "e.g. note data sources needed upfront, separate analysis from reporting/dashboarding",
+      "e.g. note data sources and access needed upfront, separate pipeline/infra work from analysis or modeling",
   },
   {
     key: "consulting",

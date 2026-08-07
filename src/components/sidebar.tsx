@@ -16,7 +16,9 @@ export function Sidebar() {
 
   return (
     <div className="w-[104px] bg-white border-r border-line flex flex-col items-center py-7 gap-11 flex-shrink-0 h-screen sticky top-0">
-      <FreelyLogo size="sm" />
+      <Link href="/quote" aria-label="Home">
+        <FreelyLogo size="sm" />
+      </Link>
       <div className="flex flex-col gap-[26px] items-center">
         {ITEMS.map((item) => {
           const active = pathname?.startsWith(item.href);

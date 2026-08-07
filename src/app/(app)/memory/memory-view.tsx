@@ -582,6 +582,7 @@ function BrandingCard({
       setLogoError(result.error);
       return;
     }
+    if (result.data.suggestedColor) setPrimary(result.data.suggestedColor);
     const reader = new FileReader();
     reader.onload = () => setLogo(String(reader.result));
     reader.readAsDataURL(file);
