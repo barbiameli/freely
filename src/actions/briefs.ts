@@ -96,40 +96,60 @@ export async function generateBriefAction(
     };
   }
 
-  const brief = await prisma.brief.create({
-    data: {
-      userId: user.id,
-      title: generated.title,
-      client: generated.client,
-      scope: generated.scope,
-      deliverables: generated.deliverables,
-      timeline: generated.timeline,
-      // Prisma's Json? columns treat an explicit `null` specially (it wants
-      // Prisma.JsonNull, not the JS literal) — so when there's no strategy we
-      // just omit the field entirely (undefined) and let the column default
-      // to NULL, rather than passing null directly.
-      ...(generated.strategy ? { strategy: generated.strategy } : {}),
-      price: generated.price,
-      hours: generated.hours,
-      hourlyRate: draft.hourlyRate,
-      currency: draft.currency || "USD",
-      expertiseLevel: draft.expertiseLevel,
-      sourceText: draft.sourceText,
-      template: draft.template || "classic",
-      branding: draft.branding || "freely",
-      settings: {
-        instructions: draft.instructions,
-        memoryProjectTitles: draft.memoryProjectTitles,
-        detailLevel: draft.detailLevel,
-        format: draft.format,
-        includeSOW: draft.includeSOW,
-        includeAI: draft.includeAI,
-        includeStrategy: draft.includeStrategy,
-        includeTimeline: draft.includeTimeline,
-        usedPricingResearch: pricingHistory.length === 0,
+  // Saving is wrapped separately from generation on purpose: by this point
+  // the AI call has already succeeded and been paid for, so a failure here
+  // (most often a schema/database mismatch after a deploy) should say what
+  // actually went wrong rather than surfacing as a generic "try again",
+  // which sends people back through another slow generation for nothing.
+  let brief;
+  try {
+    brief = await prisma.brief.create({
+      data: {
+        userId: user.id,
+        title: generated.title,
+        client: generated.client,
+        scope: generated.scope,
+        deliverables: generated.deliverables,
+        timeline: generated.timeline,
+        // Prisma's Json? columns treat an explicit `null` specially (it wants
+        // Prisma.JsonNull, not the JS literal) — so when there's no strategy
+        // we just omit the field entirely (undefined) and let the column
+        // default to NULL, rather than passing null directly.
+        ...(generated.strategy ? { strategy: generated.strategy } : {}),
+        price: generated.price,
+        hours: generated.hours,
+        hourlyRate: draft.hourlyRate,
+        currency: draft.currency || "USD",
+        expertiseLevel: draft.expertiseLevel,
+        sourceText: draft.sourceText,
+        template: draft.template || "classic",
+        branding: draft.branding || "freely",
+        settings: {
+          instructions: draft.instructions,
+          memoryProjectTitles: draft.memoryProjectTitles,
+          detailLevel: draft.detailLevel,
+          format: draft.format,
+          includeSOW: draft.includeSOW,
+          includeAI: draft.includeAI,
+          includeStrategy: draft.includeStrategy,
+          includeTimeline: draft.includeTimeline,
+          usedPricingResearch: pricingHistory.length === 0,
+        },
       },
-    },
-  });
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    // A column that exists in schema.prisma but not in the live database
+    // yet: the app was deployed before `prisma db push` was run against it.
+    if (/column|does not exist|Unknown arg/i.test(message)) {
+      return {
+        ok: false,
+        error:
+          "The quote was generated but couldn't be saved: the database is missing a column this version of the app expects. Run `npx prisma db push` against the live database, then try again.",
+      };
+    }
+    return { ok: false, error: `The quote was generated but couldn't be saved. ${message}` };
+  }
 
   revalidatePath("/quote");
   return { ok: true, data: { briefId: brief.id } };
