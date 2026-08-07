@@ -30,6 +30,7 @@ import {
   deleteBriefExampleAction,
 } from "@/actions/briefs";
 import { currencySymbol } from "@/lib/currencies";
+import { TimelineView } from "@/components/timeline-view";
 
 interface Strategy {
   goal: string;
@@ -285,7 +286,7 @@ export function BriefView({
           </Section>
 
           <Section eyebrow="Timeline" tint="paper" accent="violet">
-            <p className="text-sm m-0 text-ink">{brief.timeline}</p>
+            <TimelineView timeline={brief.timeline} className="text-ink" />
           </Section>
 
           <div className="bg-ink rounded-card px-5 py-4 flex justify-between items-center">

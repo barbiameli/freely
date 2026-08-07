@@ -1,4 +1,5 @@
 import { currencySymbol } from "@/lib/currencies";
+import { TimelineView } from "@/components/timeline-view";
 
 interface Strategy {
   goal: string;
@@ -111,7 +112,7 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
 
           <div className="rounded-lg p-4 bg-paper">
             <div className="font-label text-xs text-slate uppercase mb-2">Timeline</div>
-            <p className="text-[13.5px] text-ink m-0">{brief.timeline}</p>
+            <TimelineView timeline={brief.timeline} accent={brand.accent} className="text-ink" />
           </div>
 
           {brief.examples.length > 0 && (
@@ -225,7 +226,7 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
           <h2 className="font-display italic text-2xl m-0 mb-4" style={{ color: brand.primary }}>
             Timeline
           </h2>
-          <p className="text-[15px] leading-relaxed text-ink">{brief.timeline}</p>
+          <TimelineView timeline={brief.timeline} accent={brand.primary} className="text-ink" />
         </div>
 
         {brief.examples.length > 0 && (
@@ -316,7 +317,7 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
 
         <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
           <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">Timeline</div>
-          <p className="text-[13.5px] leading-relaxed m-0">{brief.timeline}</p>
+          <TimelineView timeline={brief.timeline} accent={ink} muted={muted} />
         </div>
 
         {brief.examples.length > 0 && (
@@ -402,7 +403,7 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
 
         <div className="py-6 border-b border-line">
           <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">Timeline</div>
-          <p className="text-[13.5px] leading-relaxed m-0">{brief.timeline}</p>
+          <TimelineView timeline={brief.timeline} accent="#181722" />
         </div>
 
         {brief.examples.length > 0 && (

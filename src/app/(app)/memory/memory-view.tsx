@@ -27,6 +27,7 @@ import { disconnectProviderAction, type Provider } from "@/actions/connections";
 import { industryLabel } from "@/lib/industries";
 import { MAX_DOCUMENT_UPLOAD_BYTES, documentTooLargeError } from "@/lib/upload-limits";
 import { CURRENCIES } from "@/lib/currencies";
+import { hostnameOf, normalizeUrl } from "@/lib/links";
 import {
   type Preset,
   TONE_PRESETS,
@@ -397,17 +398,23 @@ function ReferencesCard({
     reader.readAsDataURL(file);
   }
 
+  const canAddLink = linkUrl.trim().length > 0 && uploading !== "link";
+
   async function handleAddLink() {
+    if (!canAddLink) return;
     setUploading("link");
     setError("");
-    const result = await saveMemoryLinkAction(linkName, linkUrl);
+    // Naming a link is optional: the hostname is almost always what someone
+    // would have typed, and requiring it made this form needlessly fiddly.
+    const url = normalizeUrl(linkUrl);
+    const result = await saveMemoryLinkAction(linkName.trim() || hostnameOf(url), url);
     setUploading(null);
     if (!result.ok) {
       setError(result.error);
       return;
     }
     setLinkItems((prev) => [
-      { id: result.data.id, name: result.data.name, url: linkUrl, createdAt: new Date().toISOString() },
+      { id: result.data.id, name: result.data.name, url, createdAt: new Date().toISOString() },
       ...prev,
     ]);
     setLinkName("");
@@ -491,27 +498,33 @@ function ReferencesCard({
 
         <div>
           <div className="text-[11px] font-semibold text-slate mb-2 uppercase tracking-wide">Links</div>
-          <div className="flex flex-col gap-1.5 mb-3">
-            <input
-              value={linkName}
-              onChange={(e) => setLinkName(e.target.value)}
-              placeholder="Label (e.g. Portfolio)"
-              className="w-full font-body text-xs text-ink bg-paper border border-line rounded-lg px-2.5 py-2 outline-none"
-            />
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleAddLink();
+            }}
+            className="flex flex-col gap-1.5 mb-3"
+          >
             <input
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
-              placeholder="https://..."
+              placeholder="Paste a link, then press enter"
+              className="w-full font-body text-xs text-ink bg-paper border border-line rounded-lg px-2.5 py-2 outline-none"
+            />
+            <input
+              value={linkName}
+              onChange={(e) => setLinkName(e.target.value)}
+              placeholder="Name it (optional)"
               className="w-full font-body text-xs text-ink bg-paper border border-line rounded-lg px-2.5 py-2 outline-none"
             />
             <button
-              onClick={handleAddLink}
-              disabled={uploading === "link" || !linkName || !linkUrl}
+              type="submit"
+              disabled={!canAddLink}
               className="font-body font-bold text-[12.5px] text-violet text-left disabled:opacity-40 disabled:cursor-default"
             >
-              {uploading === "link" ? "Saving..." : "+ Add link"}
+              {uploading === "link" ? "Saving..." : "Save link"}
             </button>
-          </div>
+          </form>
           <div className="flex flex-col gap-2">
             {linkItems.map((l) => (
               <div key={l.id} className="flex justify-between items-center bg-paper rounded-lg px-3 py-2">

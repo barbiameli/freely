@@ -1,5 +1,6 @@
 import { Document, Page, Text, View, Image, StyleSheet, renderToBuffer } from "@react-pdf/renderer";
 import { currencySymbol } from "@/lib/currencies";
+import { parseTimelineStages, isRoadmapWorthy, stageTick } from "@/lib/timeline";
 
 export interface StrategyPdfData {
   goal: string;
@@ -125,7 +126,9 @@ const styles = StyleSheet.create({
   timelineStages: { flexDirection: "row", marginTop: -5 },
   timelineStage: { flex: 1, alignItems: "center", paddingHorizontal: 4 },
   timelineDot: { width: 9, height: 9, borderRadius: 5, marginBottom: 8 },
-  timelineLabel: { fontSize: 8.5, textAlign: "center", lineHeight: 1.4, color: "#343434" },
+  timelineLabel: { fontSize: 8, textAlign: "center", lineHeight: 1.4, color: "#565656" },
+  timelineDetailList: { marginTop: 16 },
+  timelineDetail: { fontSize: 10, lineHeight: 1.6, marginBottom: 5 },
 
   footer: {
     borderTopWidth: 1,
@@ -162,33 +165,30 @@ const styles = StyleSheet.create({
   minLabel: { fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 },
 });
 
-/** Splits a freeform timeline string into stages for the visual roadmap.
- * Tries, in order: explicit newlines, "Week/Month/Phase/Day N" boundaries,
- * then semicolons. Falls back to a single stage (caller renders plain text
- * instead of a roadmap when there's only one). */
-function parseTimelineStages(timeline: string): string[] {
-  const clean = (s: string) => s.replace(/^[-•·]\s*/, "").trim();
-  let stages = timeline
-    .split("\n")
-    .map(clean)
-    .filter(Boolean);
-  if (stages.length < 2) {
-    stages = timeline
-      .split(/(?=(?:Week|Weeks|Month|Months|Phase|Day|Days|Stage)\s+\d)/i)
-      .map(clean)
-      .filter(Boolean);
-  }
-  if (stages.length < 2) {
-    stages = timeline.split(";").map(clean).filter(Boolean);
-  }
-  return stages;
-}
-
-function TimelineVisual({ timeline, dotColor }: { timeline: string; dotColor: string }) {
+/** Draws the roadmap graphic and then spells the stages out underneath.
+ * Both, deliberately: the graphic shows the shape of the project at a
+ * glance, the lines below carry the detail a client needs in order to agree
+ * to it. Parsing is shared with the web renderers via lib/timeline so the
+ * PDF and the public page can't disagree about the stages. */
+function TimelineVisual({
+  timeline,
+  dotColor,
+  textColor,
+  mutedColor,
+}: {
+  timeline: string;
+  dotColor: string;
+  textColor?: string;
+  mutedColor?: string;
+}) {
   const stages = parseTimelineStages(timeline);
-  if (stages.length < 2 || stages.some((s) => s.length > 220)) {
-    return <Text style={styles.body}>{timeline}</Text>;
+  const ink = textColor || "#343434";
+  const muted = mutedColor || "#565656";
+
+  if (!isRoadmapWorthy(stages)) {
+    return <Text style={[styles.body, { color: ink }]}>{timeline}</Text>;
   }
+
   return (
     <View style={styles.timelineWrap}>
       <View style={[styles.timelineLine, { borderTopColor: dotColor }]} />
@@ -196,8 +196,19 @@ function TimelineVisual({ timeline, dotColor }: { timeline: string; dotColor: st
         {stages.map((s, i) => (
           <View key={i} style={styles.timelineStage}>
             <View style={[styles.timelineDot, { backgroundColor: dotColor }]} />
-            <Text style={styles.timelineLabel}>{s}</Text>
+            <Text style={[styles.timelineLabel, { color: muted }]}>{stageTick(s)}</Text>
           </View>
+        ))}
+      </View>
+      <View style={styles.timelineDetailList}>
+        {stages.map((s, i) => (
+          <Text key={i} style={[styles.timelineDetail, { color: ink }]}>
+            <Text style={styles.bold}>
+              {s.period ? `${s.period}: ` : ""}
+              {s.label}
+            </Text>
+            {s.detail ? ` ${s.detail}` : ""}
+          </Text>
         ))}
       </View>
     </View>
@@ -671,7 +682,12 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
             <Text style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
               Timeline
             </Text>
-            <TimelineVisual timeline={brief.timeline} dotColor={ink} />
+            <TimelineVisual
+              timeline={brief.timeline}
+              dotColor={ink}
+              textColor={ink}
+              mutedColor={muted}
+            />
           </View>
 
           {brief.examples && brief.examples.length > 0 && (

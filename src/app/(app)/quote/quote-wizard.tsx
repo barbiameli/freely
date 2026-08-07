@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Upload, FileText, ChevronLeft, ArrowRight, Sparkles, CircleStop } from "lucide-react";
@@ -60,6 +60,32 @@ const GENERATION_STATUS_MESSAGES = [
   "Adding a dash of confidence, subtracting the filler...",
   "Nearly there, promise...",
 ];
+
+/** Marks a field as required or optional. Worth the visual noise: without
+ * it, every card looks equally load-bearing, and the only signal that
+ * something was missing was a Continue button that silently refused to
+ * work. */
+function FieldBadge({ required }: { required?: boolean }) {
+  return (
+    <span
+      className={`font-body font-semibold text-[10px] uppercase tracking-wide rounded-full px-2 py-0.5 ${
+        required ? "text-violet bg-violet-tint" : "text-text-muted bg-paper border border-line"
+      }`}
+    >
+      {required ? "Required" : "Optional"}
+    </span>
+  );
+}
+
+/** A Label with a required/optional badge alongside it. */
+function FieldHeading({ children, required }: { children: ReactNode; required?: boolean }) {
+  return (
+    <div className="flex items-center gap-2 mb-1">
+      <Label>{children}</Label>
+      <FieldBadge required={required} />
+    </div>
+  );
+}
 
 /** A tiny mocked-up page thumbnail so users can see roughly what each
  * template looks like, instead of just reading a name and description. */
@@ -128,7 +154,9 @@ export function QuoteWizard({
     currency: userCurrency || "USD",
     expertiseLevel: "Senior",
     template: "classic",
-    branding: "freely",
+    // Someone who has set up their own branding almost always wants to send
+    // a quote under it, so that's the default whenever it's available.
+    branding: hasBrand ? "own" : "freely",
   });
   const [sourceMode, setSourceMode] = useState<"paste" | "upload">("paste");
   const [fileName, setFileName] = useState("");
@@ -224,6 +252,29 @@ export function QuoteWizard({
     }
   }
 
+  // Step navigation validates and explains, rather than leaving Continue
+  // disabled with no indication of what's missing. A greyed-out button that
+  // won't say why is the least helpful possible failure state.
+  function goToBriefStep() {
+    if (!draft.sourceText.trim()) {
+      setError(
+        "Add the client's brief first, either paste the text in or upload a file. Everything else on the next steps is optional."
+      );
+      return;
+    }
+    setError("");
+    setStep(1);
+  }
+
+  function goToPackagingStep() {
+    if (!draft.hourlyRate || draft.hourlyRate <= 0) {
+      setError("Add your hourly rate before continuing. It's what pricing and hours are worked out from.");
+      return;
+    }
+    setError("");
+    setStep(2);
+  }
+
   function handleStopGenerating() {
     cancelledRef.current = true;
     clearGenerationTimers();
@@ -312,11 +363,7 @@ export function QuoteWizard({
           )}
           {error && <div className="text-overdue text-[13px]">{error}</div>}
           <div className="flex justify-end mt-auto">
-            <Button
-              icon={ArrowRight}
-              disabled={!draft.sourceText.trim()}
-              onClick={() => setStep(1)}
-            >
+            <Button icon={ArrowRight} onClick={goToBriefStep}>
               Continue
             </Button>
           </div>
@@ -329,12 +376,13 @@ export function QuoteWizard({
           <div>
             <h1 className="font-display italic text-4xl text-coral m-0">How should we brief it?</h1>
             <p className="text-slate text-[15px] mt-2">
-              Tell it what to lean on from memory, and how much to spell out.
+              Only your hourly rate is required here. The rest sharpens the result, so fill in
+              what&apos;s useful and skip what isn&apos;t.
             </p>
           </div>
           <Stepper activeIndex={1} />
           <Card>
-            <Label>Instructions</Label>
+            <FieldHeading>Instructions</FieldHeading>
             <TextField
               value={draft.instructions}
               onChange={(v) => setDraft((d) => ({ ...d, instructions: v }))}
@@ -344,7 +392,7 @@ export function QuoteWizard({
           </Card>
           <div className="flex gap-5">
             <Card className="flex-1">
-              <Label>Pull from memory</Label>
+              <FieldHeading>Pull from memory</FieldHeading>
               {projectTitles.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {projectTitles.map((name) => {
@@ -375,7 +423,7 @@ export function QuoteWizard({
               )}
             </Card>
             <Card className="w-[300px]">
-              <Label>Detail level</Label>
+              <FieldHeading>Detail level</FieldHeading>
               <div className="flex bg-paper rounded-full p-[3px]">
                 {(["Generic", "Detailed"] as const).map((lvl) => (
                   <button
@@ -396,7 +444,7 @@ export function QuoteWizard({
           </div>
           <div className="flex gap-5">
             <Card className="flex-1">
-              <Label>Your hourly rate</Label>
+              <FieldHeading required>Your hourly rate</FieldHeading>
               <div className="flex items-center gap-2">
                 <select
                   value={draft.currency}
@@ -430,7 +478,7 @@ export function QuoteWizard({
               </div>
             </Card>
             <Card className="flex-1">
-              <Label>Your expertise level</Label>
+              <FieldHeading>Your expertise level</FieldHeading>
               <div className="flex flex-wrap gap-2">
                 {(["Junior", "Mid-level", "Senior", "Expert"] as const).map((lvl) => (
                   <Chip
@@ -448,15 +496,19 @@ export function QuoteWizard({
               </div>
             </Card>
           </div>
+          {error && <div className="text-overdue text-[13px]">{error}</div>}
           <div className="flex justify-between mt-auto">
-            <Button variant="ghost" icon={ChevronLeft} onClick={() => setStep(0)}>
+            <Button
+              variant="ghost"
+              icon={ChevronLeft}
+              onClick={() => {
+                setError("");
+                setStep(0);
+              }}
+            >
               Back
             </Button>
-            <Button
-              icon={ArrowRight}
-              disabled={!draft.hourlyRate || draft.hourlyRate <= 0}
-              onClick={() => setStep(2)}
-            >
+            <Button icon={ArrowRight} onClick={goToPackagingStep}>
               Continue
             </Button>
           </div>
@@ -469,102 +521,136 @@ export function QuoteWizard({
           <div>
             <h1 className="font-display italic text-4xl text-coral m-0">How should we package it?</h1>
             <p className="text-slate text-[15px] mt-2">
-              Pick a format and what gets included before we generate the brief.
+              How the finished quote looks and what it includes. The defaults are fine if you
+              just want to see it.
             </p>
           </div>
           <Stepper activeIndex={2} />
-          <div className="flex gap-5">
-            {(["HTML", "PDF", "Figma"] as const).map((fmt) => {
-              const disabled = fmt === "Figma";
-              return (
-                <Card
-                  key={fmt}
-                  onClick={disabled ? undefined : () => setDraft((d) => ({ ...d, format: fmt }))}
-                  className={`flex-1 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"} ${
-                    draft.format === fmt ? "border-violet border-[1.5px]" : ""
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="font-body font-semibold text-[15px] text-ink">
-                      {fmt === "HTML" ? "HTML page" : fmt === "PDF" ? "PDF" : "Figma file"}
-                    </div>
-                    {disabled && (
-                      <span className="font-body font-semibold text-[10px] uppercase tracking-wide text-text-muted bg-paper border border-line rounded-full px-2 py-0.5">
-                        Coming soon
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-slate text-[12.5px] mt-1.5">
-                    {fmt === "HTML"
-                      ? "A hosted, linkable page the client can open in any browser. Works today."
-                      : fmt === "PDF"
-                      ? "A polished, downloadable document for print or email. Works today."
-                      : "An editable file pushed to your Figma account, not yet built."}
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-          {(draft.format === "HTML" || draft.format === "PDF") && (
-            <Card>
-              <Label>{draft.format === "HTML" ? "Public page template" : "PDF template"}</Label>
-              <div className="flex gap-4">
-                {(
-                  [
-                    { id: "classic", name: "Classic", desc: "Dark cover, tinted sections, the default look." },
-                    { id: "editorial", name: "Editorial", desc: "Large headline, magazine-style whitespace." },
-                    { id: "minimal", name: "Minimal", desc: "Plain, high-contrast, hairline rules only." },
-                  ] as const
-                ).map((tpl) => (
+
+          <Card>
+            <FieldHeading required>Output</FieldHeading>
+            <p className="text-xs text-text-muted mb-3">
+              What the client receives, and how it looks.
+            </p>
+
+            <div className="text-[11px] font-bold text-slate uppercase tracking-wide mb-2">
+              Page format
+            </div>
+            <div className="flex gap-4 mb-5">
+              {(["HTML", "PDF", "Figma"] as const).map((fmt) => {
+                const disabled = fmt === "Figma";
+                return (
                   <Card
-                    key={tpl.id}
-                    onClick={() => setDraft((d) => ({ ...d, template: tpl.id }))}
-                    className={`flex-1 cursor-pointer ${
-                      draft.template === tpl.id ? "border-violet border-[1.5px]" : ""
+                    key={fmt}
+                    onClick={disabled ? undefined : () => setDraft((d) => ({ ...d, format: fmt }))}
+                    className={`flex-1 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"} ${
+                      draft.format === fmt ? "border-violet border-[1.5px]" : ""
                     }`}
                   >
-                    <TemplatePreview id={tpl.id} />
-                    <div className="font-body font-semibold text-[13.5px] text-ink mt-2.5">{tpl.name}</div>
-                    <div className="text-slate text-[11.5px] mt-1">{tpl.desc}</div>
+                    <div className="flex items-center justify-between">
+                      <div className="font-body font-semibold text-[13.5px] text-ink">
+                        {fmt === "HTML" ? "HTML page" : fmt === "PDF" ? "PDF" : "Figma file"}
+                      </div>
+                      {disabled && (
+                        <span className="font-body font-semibold text-[10px] uppercase tracking-wide text-text-muted bg-paper border border-line rounded-full px-2 py-0.5">
+                          Coming soon
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-slate text-[11.5px] mt-1">
+                      {fmt === "HTML"
+                        ? "A hosted link the client opens in any browser."
+                        : fmt === "PDF"
+                        ? "A downloadable document for print or email."
+                        : "Pushed to your Figma account, not yet built."}
+                    </div>
                   </Card>
-                ))}
-              </div>
-            </Card>
-          )}
-          {(draft.format === "HTML" || draft.format === "PDF") && (
-            <Card>
-              <Label>Branding</Label>
-              <div className="flex gap-4">
-                {BRANDING_OPTIONS.map((opt) => {
-                  const disabled = opt.id === "own" && !hasBrand;
-                  return (
+                );
+              })}
+            </div>
+
+            {(draft.format === "HTML" || draft.format === "PDF") && (
+              <>
+                <div className="text-[11px] font-bold text-slate uppercase tracking-wide mb-2">
+                  Branding
+                </div>
+                <div className="flex gap-4 mb-5">
+                  {BRANDING_OPTIONS.map((opt) => {
+                    const disabled = opt.id === "own" && !hasBrand;
+                    return (
+                      <Card
+                        key={opt.id}
+                        onClick={
+                          disabled ? undefined : () => setDraft((d) => ({ ...d, branding: opt.id }))
+                        }
+                        className={`flex-1 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"} ${
+                          draft.branding === opt.id ? "border-violet border-[1.5px]" : ""
+                        }`}
+                      >
+                        <div className="font-body font-semibold text-[13px] text-ink">{opt.name}</div>
+                        <div className="text-slate text-[11px] mt-1">{opt.desc}</div>
+                        {disabled && (
+                          <Link
+                            href="/memory#branding"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-violet text-[11px] font-bold mt-1.5 inline-block"
+                          >
+                            Add your branding
+                          </Link>
+                        )}
+                      </Card>
+                    );
+                  })}
+                </div>
+
+                <div className="text-[11px] font-bold text-slate uppercase tracking-wide mb-2">
+                  Style
+                </div>
+                <div className="flex gap-4">
+                  {(
+                    [
+                      { id: "classic", name: "Classic", desc: "Dark cover, tinted sections." },
+                      { id: "editorial", name: "Editorial", desc: "Large headline, lots of air." },
+                      { id: "minimal", name: "Minimal", desc: "Plain, hairline rules only." },
+                    ] as const
+                  ).map((tpl) => (
                     <Card
-                      key={opt.id}
-                      onClick={disabled ? undefined : () => setDraft((d) => ({ ...d, branding: opt.id }))}
-                      className={`flex-1 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"} ${
-                        draft.branding === opt.id ? "border-violet border-[1.5px]" : ""
+                      key={tpl.id}
+                      onClick={() => setDraft((d) => ({ ...d, template: tpl.id }))}
+                      className={`flex-1 cursor-pointer ${
+                        draft.template === tpl.id ? "border-violet border-[1.5px]" : ""
                       }`}
                     >
-                      <div className="font-body font-semibold text-[13.5px] text-ink">{opt.name}</div>
-                      <div className="text-slate text-[11.5px] mt-1">{opt.desc}</div>
-                      {disabled && (
-                        <Link
-                          href="/memory#branding"
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-violet text-[11.5px] font-bold mt-1.5 inline-block"
-                        >
-                          Add your branding
-                        </Link>
-                      )}
+                      <TemplatePreview id={tpl.id} />
+                      <div className="font-body font-semibold text-[13px] text-ink mt-2.5">
+                        {tpl.name}
+                      </div>
+                      <div className="text-slate text-[11px] mt-1">{tpl.desc}</div>
                     </Card>
-                  );
-                })}
-              </div>
-            </Card>
-          )}
+                  ))}
+                </div>
+              </>
+            )}
+          </Card>
+
           <Card>
-            <Label>Include in this quote</Label>
-            <p className="text-xs text-text-muted mt-1 mb-3">
+            <FieldHeading>Anything specific for this quote?</FieldHeading>
+            <TextField
+              value={draft.outputNotes || ""}
+              onChange={(v) => setDraft((d) => ({ ...d, outputNotes: v }))}
+              placeholder="e.g. keep it to one page, lead with the timeline, don't mention the discovery phase, address it to their CFO..."
+              multiline
+              rows={3}
+            />
+            <div className="text-xs text-text-muted mt-2">
+              A one-off note for this quote only. Anything you want every quote to follow belongs
+              in Memory instead.
+            </div>
+          </Card>
+
+          <Card>
+            <FieldHeading>Include in this quote</FieldHeading>
+            <p className="text-xs text-text-muted mb-3">
               All off by default, turn on only what this quote needs.
             </p>
             <div className="flex gap-2.5 flex-wrap">

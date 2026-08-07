@@ -146,6 +146,7 @@ export async function generateBriefAction(
         branding: draft.branding || "freely",
         settings: {
           instructions: sanitizeText(draft.instructions),
+          outputNotes: sanitizeText(draft.outputNotes || ""),
           memoryProjectTitles: draft.memoryProjectTitles.map(sanitizeText),
           detailLevel: draft.detailLevel,
           format: draft.format,

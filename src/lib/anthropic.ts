@@ -90,6 +90,11 @@ export interface QuoteDraftInput {
   /** Which color/logo treatment to render with — see lib/branding.ts. Also
    * purely a presentation choice, doesn't affect generation. */
   branding?: "freely" | "own" | "mono-light" | "mono-dark";
+  /** Free-text steer that applies to this one quote only, collected in the
+   * wizard's final step. Distinct from `instructions` (how to brief it) and
+   * from Memory (how every quote should read): this is for one-off asks like
+   * "keep it to one page" or "lead with the timeline". */
+  outputNotes?: string;
   /** ISO 4217 code (e.g. "USD", "EUR") — defaults from the user's saved
    * preference. Purely a display choice; the underlying number is the same
    * regardless of currency. */
@@ -173,8 +178,26 @@ export function buildGenerateUserPrompt(
     ? `\nInclude a "strategy" object, written the way a senior consultant frames a proposal's approach: "goal" is one sentence naming the outcome this project is actually for. "findings" is 2-4 concrete, standalone observations drawn from the source material (what's currently true / what's missing / what was asked for), each its own bullet, not one merged sentence. "openQuestions" is 1-3 things worth confirming with the client before kicking off (can be empty if there's genuinely nothing to ask). Do not mention AI usage anywhere in this object, that's handled separately.`
     : "";
 
-  const timelineInstruction = draft.includeTimeline
-    ? `\nBreak the timeline into named stages/milestones, with EACH STAGE ON ITS OWN LINE separated by a newline character, e.g. "Week 1-2: Discovery & audit\\nWeek 3-4: Design\\nWeek 5-6: Build & QA", not one run-on sentence, since Timeline is being included as its own visual section with one stage per line.`
+  // Vague timelines ("design phase, then build") are the most common weak
+  // spot in generated quotes, and they're also the part a client scrutinises
+  // most. This spells out the required shape rather than asking for detail in
+  // the abstract, and it applies whether or not Timeline is broken out as its
+  // own section, since the string is always rendered somewhere.
+  const timelineInstruction = `\nTimeline requirements. Return "timeline" as ${
+    draft.includeTimeline ? "4-6" : "3-5"
+  } stages, EACH ON ITS OWN LINE separated by a newline character, in the exact form "Week 1-2: Label - what actually happens". Rules:
+- Start every line with a concrete week or day range ("Week 1", "Week 2-3", "Day 1-3"). Never "Phase one" or "Later" with no timing.
+- Give each stage a short label, then a dash, then specifics: the actual activities and what the client ends up holding at the end of it.
+- Name real artifacts and real activities drawn from the deliverables and the source material, not generic filler like "design work" or "iteration".
+- Say what is needed from the client and when (reviews, sign-off, content, access), since that is usually what actually determines the schedule.
+- The stages must add up to a total duration consistent with the estimated hours.
+Good: "Week 3-4: Design - wireframes for the 6 core screens, then two rounds of visual design on the strongest direction. Needs your sign-off on wireframes before visuals start."
+Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`;
+
+  // A per-quote steer, kept last so it reads as the most specific
+  // instruction in the prompt and can override the general guidance above.
+  const outputNotesInstruction = draft.outputNotes?.trim()
+    ? `\nSpecific request for this one quote, follow it closely, it takes precedence over the general guidance above: "${draft.outputNotes.trim()}"`
     : "";
 
   return [
@@ -191,6 +214,7 @@ export function buildGenerateUserPrompt(
     formatPricingHistory(pricingHistory, symbol),
     strategyInstruction,
     timelineInstruction,
+    outputNotesInstruction,
     `\nWrite a project quote based on this. Keep deliverables as a list of short, concrete items (4-7 items), name actual artifacts, not phases. Give a realistic timeline, a price in ${currencyCode}, and estimated hours that are consistent with the pricing approach above.`,
   ]
     .filter(Boolean)

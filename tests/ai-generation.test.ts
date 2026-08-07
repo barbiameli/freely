@@ -113,10 +113,30 @@ describe("buildGenerateUserPrompt", () => {
     expect(withoutStrategy).not.toContain('strategy" object');
   });
 
-  it("asks for named milestones, one per line, when includeTimeline is set", () => {
-    const prompt = buildGenerateUserPrompt({ ...draft, includeTimeline: true });
-    expect(prompt).toContain("named stages/milestones");
-    expect(prompt).toContain("ITS OWN LINE");
+  it("always asks for concrete staged timelines, one stage per line", () => {
+    // Timeline detail used to be requested only when includeTimeline was on,
+    // which left the other quotes with vague one-liners even though the
+    // string is still rendered. It's now always asked for, just at a
+    // different length.
+    for (const includeTimeline of [true, false]) {
+      const prompt = buildGenerateUserPrompt({ ...draft, includeTimeline });
+      expect(prompt).toContain("EACH ON ITS OWN LINE");
+      expect(prompt).toContain("Week 1-2: Label - what actually happens");
+    }
+
+    expect(buildGenerateUserPrompt({ ...draft, includeTimeline: true })).toContain("4-6");
+    expect(buildGenerateUserPrompt({ ...draft, includeTimeline: false })).toContain("3-5");
+  });
+
+  it("passes a per-quote output note through, and omits the section when blank", () => {
+    const withNote = buildGenerateUserPrompt({ ...draft, outputNotes: "keep it to one page" });
+    expect(withNote).toContain("keep it to one page");
+    expect(withNote).toContain("takes precedence");
+
+    expect(buildGenerateUserPrompt({ ...draft, outputNotes: "   " })).not.toContain(
+      "takes precedence"
+    );
+    expect(buildGenerateUserPrompt(draft)).not.toContain("takes precedence");
   });
 });
 

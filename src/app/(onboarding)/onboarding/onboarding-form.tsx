@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type Dispatch, type SetStateAction } from "react";
 import { Chip } from "@/components/ui/chip";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
@@ -22,6 +22,7 @@ import {
   uploadBrandLogoAction,
 } from "@/actions/memory";
 import { MAX_DOCUMENT_UPLOAD_BYTES, documentTooLargeError } from "@/lib/upload-limits";
+import { hostnameOf, normalizeUrl } from "@/lib/links";
 import {
   ArrowRight,
   ChevronLeft,
@@ -86,6 +87,17 @@ export function OnboardingForm() {
   });
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
+
+  // References and Branding state lives up here rather than inside those
+  // step components. Both steps save to the database the moment something
+  // is added, but the components unmount when you navigate away, so holding
+  // this locally meant stepping Back and forward again showed an empty list
+  // for material that had in fact been saved. Keeping it at this level makes
+  // the whole flow survive navigation in both directions.
+  const [refFiles, setRefFiles] = useState<RefFile[]>([]);
+  const [refLinks, setRefLinks] = useState<RefLink[]>([]);
+  const [brandLogo, setBrandLogo] = useState<string | null>(null);
+  const [brandGuide, setBrandGuide] = useState<BrandGuideSummary | null>(null);
 
   const totalSteps = 3 + MEMORY_STEPS.length;
   const onIndustryStep = step === 0;
@@ -163,9 +175,25 @@ export function OnboardingForm() {
           </Button>
         </>
       ) : onReferencesStep ? (
-        <ReferencesStep onBack={goBack} onContinue={goNext} isLast={step === totalSteps - 1} />
+        <ReferencesStep
+          onBack={goBack}
+          onContinue={goNext}
+          isLast={step === totalSteps - 1}
+          files={refFiles}
+          setFiles={setRefFiles}
+          links={refLinks}
+          setLinks={setRefLinks}
+        />
       ) : onBrandingStep ? (
-        <BrandingStep onBack={goBack} onContinue={goNext} isLast={step === totalSteps - 1} />
+        <BrandingStep
+          onBack={goBack}
+          onContinue={goNext}
+          isLast={step === totalSteps - 1}
+          logo={brandLogo}
+          setLogo={setBrandLogo}
+          guideResult={brandGuide}
+          setGuideResult={setBrandGuide}
+        />
       ) : (
         memoryStep && (
           <MemoryStep
@@ -197,6 +225,14 @@ interface RefLink {
   name: string;
   url: string;
 }
+/** What the brand-guide analyzer reports back, held at the form level so the
+ * result survives stepping away from the Branding step and back. */
+interface BrandGuideSummary {
+  primaryColor: string | null;
+  accentColor: string | null;
+  headingFont: string | null;
+  bodyFont: string | null;
+}
 
 /** The most load-bearing onboarding step: real material about how this
  * freelancer actually works, not just preferences. A CV, portfolio link,
@@ -208,13 +244,19 @@ function ReferencesStep({
   onBack,
   onContinue,
   isLast,
+  files,
+  setFiles,
+  links,
+  setLinks,
 }: {
   onBack: () => void;
   onContinue: () => void;
   isLast: boolean;
+  files: RefFile[];
+  setFiles: Dispatch<SetStateAction<RefFile[]>>;
+  links: RefLink[];
+  setLinks: Dispatch<SetStateAction<RefLink[]>>;
 }) {
-  const [files, setFiles] = useState<RefFile[]>([]);
-  const [links, setLinks] = useState<RefLink[]>([]);
   const [linkName, setLinkName] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
   const [uploading, setUploading] = useState<"file" | "link" | null>(null);
@@ -248,16 +290,23 @@ function ReferencesStep({
     setFiles((prev) => [{ id: result.data.id, name: result.data.name }, ...prev]);
   }
 
+  const canAddLink = linkUrl.trim().length > 0 && uploading !== "link";
+
   async function handleAddLink() {
+    if (!canAddLink) return;
     setUploading("link");
     setError("");
-    const result = await saveMemoryLinkAction(linkName, linkUrl);
+    // The label is optional: falling back to the URL's hostname is almost
+    // always what someone would have typed anyway, and requiring it was the
+    // main reason this form felt fiddly.
+    const url = normalizeUrl(linkUrl);
+    const result = await saveMemoryLinkAction(linkName.trim() || hostnameOf(url), url);
     setUploading(null);
     if (!result.ok) {
       setError(result.error);
       return;
     }
-    setLinks((prev) => [{ id: result.data.id, name: result.data.name, url: linkUrl }, ...prev]);
+    setLinks((prev) => [{ id: result.data.id, name: result.data.name, url }, ...prev]);
     setLinkName("");
     setLinkUrl("");
   }
@@ -314,28 +363,33 @@ function ReferencesStep({
           <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate uppercase tracking-wide mb-2.5">
             <Link2 size={12} /> Links
           </div>
-          <div className="flex flex-col gap-1.5 mb-2.5">
-            <input
-              value={linkName}
-              onChange={(e) => setLinkName(e.target.value)}
-              placeholder="Label (e.g. Portfolio, LinkedIn)"
-              className="w-full font-body text-xs text-ink bg-white border border-line rounded-lg px-2.5 py-2 outline-none"
-            />
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleAddLink();
+            }}
+            className="flex flex-col gap-1.5 mb-2.5"
+          >
             <input
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
-              placeholder="https://..."
+              placeholder="Paste a link, then press enter"
+              className="w-full font-body text-xs text-ink bg-white border border-line rounded-lg px-2.5 py-2 outline-none"
+            />
+            <input
+              value={linkName}
+              onChange={(e) => setLinkName(e.target.value)}
+              placeholder="Name it (optional)"
               className="w-full font-body text-xs text-ink bg-white border border-line rounded-lg px-2.5 py-2 outline-none"
             />
             <button
-              type="button"
-              onClick={handleAddLink}
-              disabled={uploading === "link" || !linkName || !linkUrl}
+              type="submit"
+              disabled={!canAddLink}
               className="font-body font-bold text-[12.5px] text-violet text-left disabled:opacity-40 disabled:cursor-default bg-none border-none cursor-pointer p-0"
             >
-              {uploading === "link" ? "Saving..." : "+ Add link"}
+              {uploading === "link" ? "Saving..." : "Save link"}
             </button>
-          </div>
+          </form>
           <div className="flex flex-col gap-1.5">
             {links.map((l) => (
               <div key={l.id} className="flex justify-between items-center bg-white rounded-lg px-2.5 py-1.5">
@@ -407,20 +461,21 @@ function BrandingStep({
   onBack,
   onContinue,
   isLast,
+  logo,
+  setLogo,
+  guideResult,
+  setGuideResult,
 }: {
   onBack: () => void;
   onContinue: () => void;
   isLast: boolean;
+  logo: string | null;
+  setLogo: Dispatch<SetStateAction<string | null>>;
+  guideResult: BrandGuideSummary | null;
+  setGuideResult: Dispatch<SetStateAction<BrandGuideSummary | null>>;
 }) {
   const [guideUploading, setGuideUploading] = useState(false);
   const [guideError, setGuideError] = useState("");
-  const [guideResult, setGuideResult] = useState<{
-    primaryColor: string | null;
-    accentColor: string | null;
-    headingFont: string | null;
-    bodyFont: string | null;
-  } | null>(null);
-  const [logo, setLogo] = useState<string | null>(null);
   const [logoError, setLogoError] = useState("");
   const [showSkipWarning, setShowSkipWarning] = useState(false);
 
