@@ -239,9 +239,9 @@ export function QuoteWizard({
           <div className="flex gap-5">
             <Card className="flex-1">
               <Label>Pull from memory</Label>
-              <div className="flex flex-wrap gap-2">
-                {(projectTitles.length ? projectTitles : ["Acme Rebrand", "Nordic App"]).map(
-                  (name) => {
+              {projectTitles.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {projectTitles.map((name) => {
                     const active = draft.memoryProjectTitles.includes(name);
                     return (
                       <Chip
@@ -259,9 +259,14 @@ export function QuoteWizard({
                         {name}
                       </Chip>
                     );
-                  }
-                )}
-              </div>
+                  })}
+                </div>
+              ) : (
+                <div className="text-text-muted text-[12.5px]">
+                  Nothing to pull from yet — once you&apos;ve tracked a few projects, they&apos;ll
+                  show up here to reference for style.
+                </div>
+              )}
             </Card>
             <Card className="w-[300px]">
               <Label>Detail level</Label>
