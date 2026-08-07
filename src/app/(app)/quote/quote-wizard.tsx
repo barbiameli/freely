@@ -125,7 +125,7 @@ export function QuoteWizard({
     <>
       {step === 0 && (
         <>
-          <Topbar eyebrow="Quote — Step 1 of 3" />
+          <Topbar eyebrow="Quote - Step 1 of 3" />
           <div>
             <h1 className="font-display italic text-4xl text-coral m-0">
               What are we quoting?
@@ -189,7 +189,7 @@ export function QuoteWizard({
                     ? "Reading file..."
                     : fileName
                     ? `Loaded: ${fileName}`
-                    : "Click to choose a file — .txt, .md, .pdf, and .docx are supported."}
+                    : "Click to choose a file, .txt, .md, .pdf, and .docx are supported."}
                 </span>
                 <input
                   type="file"
@@ -219,7 +219,7 @@ export function QuoteWizard({
 
       {step === 1 && (
         <>
-          <Topbar eyebrow="Quote — Step 2 of 3" />
+          <Topbar eyebrow="Quote - Step 2 of 3" />
           <div>
             <h1 className="font-display italic text-4xl text-coral m-0">How should we brief it?</h1>
             <p className="text-slate text-[15px] mt-2">
@@ -263,7 +263,7 @@ export function QuoteWizard({
                 </div>
               ) : (
                 <div className="text-text-muted text-[12.5px]">
-                  Nothing to pull from yet — once you&apos;ve tracked a few projects, they&apos;ll
+                  Nothing to pull from yet, once you&apos;ve tracked a few projects, they&apos;ll
                   show up here to reference for style.
                 </div>
               )}
@@ -284,7 +284,7 @@ export function QuoteWizard({
                 ))}
               </div>
               <div className="text-xs text-text-muted mt-2.5">
-                Detailed spells out every deliverable and assumption — good for new clients.
+                Detailed spells out every deliverable and assumption, good for new clients.
               </div>
             </Card>
           </div>
@@ -318,7 +318,7 @@ export function QuoteWizard({
                 <span className="text-slate text-sm">/hr</span>
               </div>
               <div className="text-xs text-text-muted mt-2.5">
-                Used to reason about price and hours — always asked, so estimates stay tied to
+                Used to reason about price and hours, always asked, so estimates stay tied to
                 what you actually charge. Defaults to your saved currency from Memory →
                 Branding.
               </div>
@@ -337,7 +337,7 @@ export function QuoteWizard({
                 ))}
               </div>
               <div className="text-xs text-text-muted mt-2.5">
-                Only used if there&apos;s no pricing history to draw from yet — it helps Freely
+                Only used if there&apos;s no pricing history to draw from yet, it helps Freely
                 research a realistic market baseline instead of guessing.
               </div>
             </Card>
@@ -359,7 +359,7 @@ export function QuoteWizard({
 
       {step === 2 && (
         <>
-          <Topbar eyebrow="Quote — Step 3 of 3" />
+          <Topbar eyebrow="Quote - Step 3 of 3" />
           <div>
             <h1 className="font-display italic text-4xl text-coral m-0">How should we package it?</h1>
             <p className="text-slate text-[15px] mt-2">
@@ -393,7 +393,7 @@ export function QuoteWizard({
                       ? "A hosted, linkable page the client can open in any browser. Works today."
                       : fmt === "PDF"
                       ? "A polished, downloadable document for print or email. Works today."
-                      : "An editable file pushed to your Figma account — not yet built."}
+                      : "An editable file pushed to your Figma account, not yet built."}
                   </div>
                 </Card>
               );
@@ -428,7 +428,7 @@ export function QuoteWizard({
           <Card>
             <Label>Include in this quote</Label>
             <p className="text-xs text-text-muted mt-1 mb-3">
-              All off by default — turn on only what this quote needs.
+              All off by default, turn on only what this quote needs.
             </p>
             <div className="flex gap-2.5 flex-wrap">
               <Chip

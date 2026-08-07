@@ -27,7 +27,7 @@ export function AccountView({
       <div>
         <h1 className="font-display italic text-[32px] text-coral m-0">Your account.</h1>
         <p className="text-slate text-[13px] mt-2">
-          Basic info only — nothing here is shared with clients. Branding and quoting preferences
+          Basic info only, nothing here is shared with clients. Branding and quoting preferences
           live in Memory.
         </p>
       </div>
@@ -135,7 +135,7 @@ function PasswordCard({ hasPassword }: { hasPassword: boolean }) {
       <Label>Password</Label>
       {!hasPassword && (
         <p className="text-[11px] text-text-muted mt-1 mb-1">
-          You signed in with Google and don&apos;t have a password yet — set one below if you&apos;d
+          You signed in with Google and don&apos;t have a password yet, set one below if you&apos;d
           like to be able to sign in with email too.
         </p>
       )}
@@ -195,7 +195,7 @@ function DangerZoneCard() {
   async function handleDelete() {
     if (
       !window.confirm(
-        "Delete your account? This permanently removes every quote, project, and file you've saved — this can't be undone."
+        "Delete your account? This permanently removes every quote, project, and file you've saved, this can't be undone."
       )
     ) {
       return;

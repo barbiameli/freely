@@ -36,7 +36,7 @@ export function SignUpForm() {
     const signInResult = await signIn("credentials", { email, password, redirect: false });
     setLoading(false);
     if (signInResult?.error) {
-      setError("Account created — sign in below.");
+      setError("Account created, sign in below.");
       router.push("/signin");
       return;
     }
@@ -72,7 +72,7 @@ export function SignUpForm() {
         className="w-full font-body text-[13.5px] text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
       />
       <p className="text-[11px] text-text-muted -mt-1">
-        That&apos;s all we ask for now — just enough to get you in.
+        That&apos;s all we ask for now, just enough to get you in.
       </p>
       {error && <div className="text-overdue text-xs">{error}</div>}
       <Button

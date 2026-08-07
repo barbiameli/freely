@@ -15,7 +15,7 @@ export async function GET(req: Request) {
   const clientId = process.env.FIGMA_CLIENT_ID;
   if (!clientId) {
     return new NextResponse(
-      "Figma isn't configured yet. Add FIGMA_CLIENT_ID and FIGMA_CLIENT_SECRET to your .env file — see .env.example.",
+      "Figma isn't configured yet. Add FIGMA_CLIENT_ID and FIGMA_CLIENT_SECRET to your .env file, see .env.example.",
       { status: 400 }
     );
   }

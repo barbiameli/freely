@@ -195,13 +195,13 @@ export async function uploadBrandLogoAction(formData: FormData): Promise<ActionR
   if (!header.hasAlpha) {
     return {
       ok: false,
-      error: "This PNG doesn't have a transparent background — export it with a transparent canvas, not a white one.",
+      error: "This PNG doesn't have a transparent background, export it with a transparent canvas, not a white one.",
     };
   }
   if (header.width < MIN_LOGO_DIMENSION || header.height < MIN_LOGO_DIMENSION) {
     return {
       ok: false,
-      error: `Too low-resolution (${header.width}×${header.height}px) — upload at least ${MIN_LOGO_DIMENSION}×${MIN_LOGO_DIMENSION}px.`,
+      error: `Too low-resolution (${header.width}×${header.height}px), upload at least ${MIN_LOGO_DIMENSION}×${MIN_LOGO_DIMENSION}px.`,
     };
   }
 

@@ -14,11 +14,11 @@ export const TONE_PRESETS: Preset[] = [
   },
   {
     label: "Startup / Techy",
-    text: "Write with an energetic, startup-techy voice — punchy, modern, a little informal. Short sentences. Confident but not stiff. Fine to use words like \"ship,\" \"build,\" \"iterate.\"",
+    text: "Write with an energetic, startup-techy voice, punchy, modern, a little informal. Short sentences. Confident but not stiff. Fine to use words like \"ship,\" \"build,\" \"iterate.\"",
   },
   {
     label: "Relaxed",
-    text: "Write in a warm, relaxed, conversational voice — like a trusted collaborator talking to a friend. Avoid corporate jargon. Contractions are fine.",
+    text: "Write in a warm, relaxed, conversational voice, like a trusted collaborator talking to a friend. Avoid corporate jargon. Contractions are fine.",
   },
   {
     label: "Corporate",
@@ -26,7 +26,7 @@ export const TONE_PRESETS: Preset[] = [
   },
   {
     label: "Straightforward",
-    text: "Write in a plain, no-frills voice. Short, direct sentences. State facts and numbers clearly. No flourishes, no persuasive language — just the information.",
+    text: "Write in a plain, no-frills voice. Short, direct sentences. State facts and numbers clearly. No flourishes, no persuasive language, just the information.",
   },
   {
     label: "Warm & Reassuring",
@@ -41,15 +41,15 @@ export const INSTRUCTIONS_PRESETS: Preset[] = [
   },
   {
     label: "Lean & Fast",
-    text: "Keep the brief tight — just the essential deliverables, timeline, and price. Assume the client trusts your judgment on the details. Avoid filler or over-explaining.",
+    text: "Keep the brief tight, just the essential deliverables, timeline, and price. Assume the client trusts your judgment on the details. Avoid filler or over-explaining.",
   },
   {
     label: "Client-Friendly, No Jargon",
-    text: "Write for a non-technical client. Avoid design/dev jargon — explain deliverables in terms of outcomes and value, not process or tools.",
+    text: "Write for a non-technical client. Avoid design/dev jargon, explain deliverables in terms of outcomes and value, not process or tools.",
   },
   {
     label: "Premium / High-Touch",
-    text: "Position this as premium, high-touch work. Emphasize craft, collaboration, and strategic thinking — not just execution. Price and hours should reflect a boutique engagement, not a commodity one.",
+    text: "Position this as premium, high-touch work. Emphasize craft, collaboration, and strategic thinking, not just execution. Price and hours should reflect a boutique engagement, not a commodity one.",
   },
   {
     label: "Fixed-Scope, No Surprises",
@@ -60,7 +60,7 @@ export const INSTRUCTIONS_PRESETS: Preset[] = [
 export const STORY_PRESETS: Preset[] = [
   {
     label: "New independent studio",
-    text: "I'm a newly independent freelancer/studio, previously in-house or at an agency. Emphasize the hands-on craft and direct access to me — no account managers, no handoffs.",
+    text: "I'm a newly independent freelancer/studio, previously in-house or at an agency. Emphasize the hands-on craft and direct access to me, no account managers, no handoffs.",
   },
   {
     label: "Established, years of experience",
@@ -72,7 +72,7 @@ export const STORY_PRESETS: Preset[] = [
   },
   {
     label: "Small team, not solo",
-    text: "I work with a small team, not solo — able to take on more or move faster than a single freelancer, while staying more personal than a big agency.",
+    text: "I work with a small team, not solo, able to take on more or move faster than a single freelancer, while staying more personal than a big agency.",
   },
 ];
 
@@ -83,7 +83,7 @@ export const CONTEXT_PRESETS: Preset[] = [
   },
   {
     label: "Rate is firm",
-    text: "My hourly rate is firm and not typically negotiated — the value is in the outcome, not the hourly number.",
+    text: "My hourly rate is firm and not typically negotiated, the value is in the outcome, not the hourly number.",
   },
   {
     label: "Limited availability",
@@ -91,6 +91,6 @@ export const CONTEXT_PRESETS: Preset[] = [
   },
   {
     label: "Industries I specialize in",
-    text: "I mostly work with early-stage startups and small businesses rather than large enterprises — quotes should assume a lean, fast-moving client.",
+    text: "I mostly work with early-stage startups and small businesses rather than large enterprises, quotes should assume a lean, fast-moving client.",
   },
 ];

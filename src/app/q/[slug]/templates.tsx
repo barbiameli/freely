@@ -190,7 +190,7 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
                 <ul className="list-none p-0 m-0 flex flex-col gap-2">
                   {brief.strategy.findings.map((f, i) => (
                     <li key={i} className="text-[14px] text-ink leading-relaxed pl-4 relative">
-                      <span className="absolute left-0" style={{ color: brand.primary }}>—</span>
+                      <span className="absolute left-0" style={{ color: brand.primary }}>-</span>
                       {f}
                     </li>
                   ))}
@@ -302,7 +302,7 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
           <div className="flex flex-col gap-1">
             {brief.deliverables.map((d, i) => (
               <div key={i} className="text-[13.5px]">
-                — {d}
+                - {d}
               </div>
             ))}
           </div>

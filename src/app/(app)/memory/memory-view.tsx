@@ -115,7 +115,7 @@ export function MemoryView({
           What it knows about your studio.
         </h1>
         <p className="text-slate text-[13px] mt-2">
-          This context actually shapes quote generation — try changing it and generating a new
+          This context actually shapes quote generation, try changing it and generating a new
           quote. Working as: <span className="font-semibold text-slate">{industryLabel(industry)}</span>.
         </p>
       </div>
@@ -164,7 +164,7 @@ export function MemoryView({
             field="contextNotes"
             initial={initialContext}
             label="Additional context"
-            placeholder="Anything else Claude should know — rates, typical engagement length, industries you specialize in..."
+            placeholder="Anything else the AI should know, rates, typical engagement length, industries you specialize in..."
             presets={CONTEXT_PRESETS}
             rows={4}
           />
@@ -228,14 +228,14 @@ function PersonaCard({ initial, updatedAt }: { initial: string | null; updatedAt
         </span>
       </div>
       <p className="text-[11px] text-text-muted mb-3">
-        Built from your Story, Tone, Context, saved files, and past projects — a starting picture
+        Built from your Story, Tone, Context, saved files, and past projects, a starting picture
         of how you work, not a locked-in fact. Correct it any time.
       </p>
       {editing ? (
         <TextField value={value} onChange={setValue} multiline rows={4} />
       ) : (
         <p className="text-sm leading-relaxed text-ink m-0 min-h-[3em]">
-          {value || "Nothing generated yet — add a bit to Story or Files below, then generate."}
+          {value || "Nothing generated yet, add a bit to Story or Files below, then generate."}
         </p>
       )}
       {error && <div className="text-overdue text-xs mt-2">{error}</div>}
@@ -307,7 +307,7 @@ function AutosaveNotes({
       {presets && presets.length > 0 && (
         <div className="mb-3">
           <div className="text-[11px] text-text-muted mb-1.5">
-            Start from a preset — one click sets the text below, then edit as you like.
+            Start from a preset, one click sets the text below, then edit as you like.
           </div>
           <div className="flex flex-wrap gap-2">
             {presets.map((p) => (
@@ -617,7 +617,7 @@ function BrandingCard({
     <Card>
       <Label>Branding</Label>
       <p className="text-[11px] text-text-muted mb-3">
-        Applied to your public client site, public quote pages, and PDF exports — so clients see
+        Applied to your public client site, public quote pages, and PDF exports, so clients see
         your studio&apos;s look, not Freely&apos;s default.
       </p>
 
@@ -626,7 +626,7 @@ function BrandingCard({
           <FileText size={12} /> Brand guidelines
         </div>
         <p className="text-[11.5px] text-text-muted mb-2">
-          Upload your brand guide PDF and Claude will pull out your colors and typeface names.
+          Upload your brand guide PDF and the AI will pull out your colors and typeface names.
           Colors apply immediately below; fonts are shown for reference (not yet applied to
           rendered pages automatically).
         </p>
@@ -657,7 +657,7 @@ function BrandingCard({
                 guideResult.bodyFont && `body font "${guideResult.bodyFont}"`,
               ]
                 .filter(Boolean)
-                .join(", ") || "nothing specific — try a more detailed guide."}
+                .join(", ") || "nothing specific, try a more detailed guide."}
               {guideResult.notes && <div className="text-text-muted mt-1">{guideResult.notes}</div>}
             </div>
           </div>
@@ -756,7 +756,7 @@ function BrandingCard({
         </div>
       )}
       <p className="text-[11px] text-text-muted mt-2.5">
-        Default currency for new quotes — each quote can still be changed individually in the
+        Default currency for new quotes, each quote can still be changed individually in the
         wizard.
       </p>
       {pending && <div className="text-xs text-text-muted mt-2">Saving...</div>}

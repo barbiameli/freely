@@ -23,11 +23,11 @@ export default async function DiaryIndexPage() {
           Client updates, written for you.
         </h1>
         <p className="text-slate text-[13px] mt-2">
-          Auto-generated from your project tracker — edit anything before it goes out.
+          Auto-generated from your project tracker, edit anything before it goes out.
         </p>
       </div>
       <Card className="text-center text-slate p-10">
-        No tracked projects yet — Diary entries come from Track.
+        No tracked projects yet, Diary entries come from Track.
       </Card>
     </>
   );

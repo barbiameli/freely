@@ -13,7 +13,7 @@ function getClient(): Anthropic {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       throw new Error(
-        "ANTHROPIC_API_KEY is not set. Add it to your .env file — see .env.example."
+        "ANTHROPIC_API_KEY is not set. Add it to your .env file, see .env.example."
       );
     }
     client = new Anthropic({ apiKey });
@@ -110,8 +110,8 @@ export function buildSystemPrompt(memory: MemoryContext | string): string {
     typeof memory === "string" ? { instructions: memory } : memory;
 
   const sections: (string | null)[] = [
-    "You are the quoting assistant inside Freely, an all-in-one platform for freelancers. You write client-facing quotes with the specificity, judgment, and confident tone of an experienced independent consultant who has sent hundreds of proposals — not generic boilerplate. Avoid vague filler like \"we will collaborate closely\" or \"ensure a high-quality outcome\"; instead, name the actual steps, artifacts, and decisions involved, grounded in the source material you're given.",
-    "Every number you write — hours, price, timeline — should be defensible. Reason from the stated hourly rate and any pricing history provided, not from round numbers that merely sound reasonable.",
+    "You are the quoting assistant inside Freely, an all-in-one platform for freelancers. You write client-facing quotes with the specificity, judgment, and confident tone of an experienced independent consultant who has sent hundreds of proposals, not generic boilerplate. Avoid vague filler like \"we will collaborate closely\" or \"ensure a high-quality outcome\"; instead, name the actual steps, artifacts, and decisions involved, grounded in the source material you're given.",
+    "Every number you write, hours, price, timeline, should be defensible. Reason from the stated hourly rate and any pricing history provided, not from round numbers that merely sound reasonable.",
     ctx.instructions?.trim() || null,
     ctx.toneNotes?.trim() ? `Tone notes: ${ctx.toneNotes.trim()}` : null,
     ctx.storyNotes?.trim() ? `Studio story / background: ${ctx.storyNotes.trim()}` : null,
@@ -121,7 +121,7 @@ export function buildSystemPrompt(memory: MemoryContext | string): string {
           .map((f) => `--- ${f.name} ---\n${f.text.slice(0, 4000)}`)
           .join("\n\n")}`
       : null,
-    'Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly this schema: {"title": string, "client": string, "scope": string, "deliverables": string[], "timeline": string, "strategy": {"goal": string, "findings": string[], "openQuestions": string[]} (optional object, omit entirely if Strategy wasn\'t requested), "price": number, "hours": number}. Each findings/openQuestions entry should be one short, standalone bullet point — not a run-on sentence with several ideas mashed together, and never numbered manually (e.g. no "(1)" prefixes) since the UI renders them as a real bulleted list. If you used web search to research rates, do not include citations or URLs in the JSON — fold the conclusion into your reasoning about price only.',
+    'Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly this schema: {"title": string, "client": string, "scope": string, "deliverables": string[], "timeline": string, "strategy": {"goal": string, "findings": string[], "openQuestions": string[]} (optional object, omit entirely if Strategy wasn\'t requested), "price": number, "hours": number}. Each findings/openQuestions entry should be one short, standalone bullet point, not a run-on sentence with several ideas mashed together, and never numbered manually (e.g. no "(1)" prefixes) since the UI renders them as a real bulleted list. If you used web search to research rates, do not include citations or URLs in the JSON, fold the conclusion into your reasoning about price only.',
   ];
 
   return sections.filter(Boolean).join(" ");
@@ -137,7 +137,7 @@ function formatPricingHistory(history: PricingHistoryEntry[], symbol: string): s
         )}/hr)`
     )
     .join("\n");
-  return `\nPricing history — past projects this freelancer has quoted, use these as the primary anchor for price and hours on similarly-scoped work:\n${rows}`;
+  return `\nPricing history, past projects this freelancer has quoted, use these as the primary anchor for price and hours on similarly-scoped work:\n${rows}`;
 }
 
 export function buildGenerateUserPrompt(
@@ -153,11 +153,11 @@ export function buildGenerateUserPrompt(
     : `Pricing approach: this freelancer charges ${symbol}${draft.hourlyRate}/hr (currency: ${currencyCode}) and has no comparable pricing history yet. Use web search to research typical freelance/agency rates and typical hour ranges for this kind of project, in ${currencyCode}, for a "${draft.expertiseLevel}"-level freelancer, in their likely region/market if it can be inferred from the brief. Use that research to sanity-check a realistic hour estimate, then set price = hours × ${symbol}${draft.hourlyRate}/hr.`;
 
   const strategyInstruction = draft.includeStrategy
-    ? `\nInclude a "strategy" object, written the way a senior consultant frames a proposal's approach: "goal" is one sentence naming the outcome this project is actually for. "findings" is 2-4 concrete, standalone observations drawn from the source material (what's currently true / what's missing / what was asked for) — each its own bullet, not one merged sentence. "openQuestions" is 1-3 things worth confirming with the client before kicking off (can be empty if there's genuinely nothing to ask). Do not mention AI usage anywhere in this object — that's handled separately.`
+    ? `\nInclude a "strategy" object, written the way a senior consultant frames a proposal's approach: "goal" is one sentence naming the outcome this project is actually for. "findings" is 2-4 concrete, standalone observations drawn from the source material (what's currently true / what's missing / what was asked for), each its own bullet, not one merged sentence. "openQuestions" is 1-3 things worth confirming with the client before kicking off (can be empty if there's genuinely nothing to ask). Do not mention AI usage anywhere in this object, that's handled separately.`
     : "";
 
   const timelineInstruction = draft.includeTimeline
-    ? `\nBreak the timeline into named stages/milestones, with EACH STAGE ON ITS OWN LINE separated by a newline character — e.g. "Week 1-2: Discovery & audit\\nWeek 3-4: Design\\nWeek 5-6: Build & QA" — not one run-on sentence, since Timeline is being included as its own visual section with one stage per line.`
+    ? `\nBreak the timeline into named stages/milestones, with EACH STAGE ON ITS OWN LINE separated by a newline character, e.g. "Week 1-2: Discovery & audit\\nWeek 3-4: Design\\nWeek 5-6: Build & QA", not one run-on sentence, since Timeline is being included as its own visual section with one stage per line.`
     : "";
 
   return [
@@ -172,7 +172,7 @@ export function buildGenerateUserPrompt(
     formatPricingHistory(pricingHistory, symbol),
     strategyInstruction,
     timelineInstruction,
-    `\nWrite a project quote based on this. Keep deliverables as a list of short, concrete items (4-7 items) — name actual artifacts, not phases. Give a realistic timeline, a price in ${currencyCode}, and estimated hours that are consistent with the pricing approach above.`,
+    `\nWrite a project quote based on this. Keep deliverables as a list of short, concrete items (4-7 items), name actual artifacts, not phases. Give a realistic timeline, a price in ${currencyCode}, and estimated hours that are consistent with the pricing approach above.`,
   ]
     .filter(Boolean)
     .join("\n");
@@ -198,7 +198,7 @@ export function parseBriefResponse(text: string): GeneratedBrief {
   try {
     parsed = JSON.parse(cleaned);
   } catch {
-    throw new Error("Claude did not return valid JSON for the brief.");
+    throw new Error("The AI did not return valid JSON for the brief.");
   }
   const result = briefSchema.safeParse(parsed);
   if (!result.success) {
@@ -234,7 +234,7 @@ async function callClaude(
     .filter((block): block is Anthropic.TextBlock => block.type === "text")
     .map((block) => block.text)
     .join("\n");
-  if (!text) throw new Error("Claude returned an empty response.");
+  if (!text) throw new Error("The AI returned an empty response.");
   return text;
 }
 
@@ -266,7 +266,7 @@ export type ExtractedProject = z.infer<typeof projectExtractionSchema>;
 export async function extractProjectFromDocument(sourceText: string): Promise<ExtractedProject> {
   const system = [
     "You read freelance briefs, statements of work, and contracts and extract structured project information.",
-    "Deliverables should be short, concrete checklist items (not phases) — 3-10 items.",
+    "Deliverables should be short, concrete checklist items (not phases), 3-10 items.",
     "Timeline should be a short human-readable description (e.g. '4 weeks, kicking off Aug 1').",
     'Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly: {"title": string, "client": string, "timeline": string, "deliverables": string[]}',
   ].join(" ");
@@ -278,7 +278,7 @@ export async function extractProjectFromDocument(sourceText: string): Promise<Ex
   try {
     parsed = JSON.parse(cleaned);
   } catch {
-    throw new Error("Claude did not return valid JSON for the project extraction.");
+    throw new Error("The AI did not return valid JSON for the project extraction.");
   }
   const result = projectExtractionSchema.safeParse(parsed);
   if (!result.success) {
@@ -303,7 +303,7 @@ export interface PersonaInput {
 export async function generatePersona(input: PersonaInput): Promise<string> {
   const system = [
     "You write short, third-person persona summaries for freelancers using a quoting tool called Freely.",
-    "The summary should read like a colleague's honest one-paragraph description of how this person works — specific, not generic corporate-bio language.",
+    "The summary should read like a colleague's honest one-paragraph description of how this person works, specific, not generic corporate-bio language.",
     "Base it only on the material given. If material is thin, keep the summary short and hedge lightly (e.g. 'appears to' / 'so far') rather than inventing detail.",
     "Respond with plain text only: 2-4 sentences, no headers, no markdown, no quotes around it.",
   ].join(" ");
@@ -324,7 +324,7 @@ export async function generatePersona(input: PersonaInput): Promise<string> {
   ].filter(Boolean);
 
   if (sections.length === 0) {
-    return "Not enough saved in Memory yet to build a persona — add a bit of Story, Tone, or a reference file first.";
+    return "Not enough saved in Memory yet to build a persona, add a bit of Story, Tone, or a reference file first.";
   }
 
   const user = `Here's what's saved about this freelancer:\n\n${sections.join(
@@ -353,9 +353,9 @@ export type BrandGuideAnalysis = z.infer<typeof brandGuideSchema>;
 export async function analyzeBrandGuide(sourceText: string): Promise<BrandGuideAnalysis> {
   const system = [
     "You read brand/style guideline documents and extract concrete, stated facts only.",
-    "primaryColor and accentColor must be valid hex codes (e.g. \"#6320EE\") — if the document only names a color (\"deep violet\") without a hex code, convert it to the closest reasonable hex value. If no color guidance is present at all, use null.",
+    "primaryColor and accentColor must be valid hex codes (e.g. \"#6320EE\"), if the document only names a color (\"deep violet\") without a hex code, convert it to the closest reasonable hex value. If no color guidance is present at all, use null.",
     "headingFont and bodyFont are typeface names exactly as written in the document (e.g. \"Raleway\", \"Helvetica Neue\"). If the document only specifies one font for everything, use it for both. If no typography guidance is present, use null.",
-    "notes is one short sentence flagging anything else worth a human's attention (e.g. \"Guide also specifies a secondary/tertiary palette not captured here\") — or null if there's nothing else notable.",
+    "notes is one short sentence flagging anything else worth a human's attention (e.g. \"Guide also specifies a secondary/tertiary palette not captured here\"), or null if there's nothing else notable.",
     'Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly: {"primaryColor": string|null, "accentColor": string|null, "headingFont": string|null, "bodyFont": string|null, "notes": string|null}',
   ].join(" ");
   const user = `Brand guideline document:\n${sourceText.slice(0, 12000)}\n\nExtract the primary color, accent color, heading font, and body font.`;

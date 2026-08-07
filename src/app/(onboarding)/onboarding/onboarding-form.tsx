@@ -34,29 +34,29 @@ const MEMORY_STEPS: {
   {
     id: "instructions",
     title: "How should quotes be written?",
-    subtitle: "Instructions Freely follows on every quote — tone, structure, level of detail.",
+    subtitle: "Instructions Freely follows on every quote, tone, structure, level of detail.",
     placeholder: "e.g. spell out every deliverable explicitly, keep it lean and fast, write for a non-technical client...",
     presets: INSTRUCTIONS_PRESETS,
   },
   {
     id: "toneNotes",
     title: "What voice should it write in?",
-    subtitle: "A short note on tone — Freely applies this to every quote's language.",
+    subtitle: "A short note on tone, Freely applies this to every quote's language.",
     placeholder: "e.g. warm but efficient, no exclamation points, avoid jargon...",
     presets: TONE_PRESETS,
   },
   {
     id: "storyNotes",
     title: "What's your studio's story?",
-    subtitle: "How you started, what you're known for — used to build your AI persona and inform tone.",
+    subtitle: "How you started, what you're known for, used to build your AI persona and inform tone.",
     placeholder: "How the studio started, what you're known for, values that should come through in quotes...",
     presets: STORY_PRESETS,
   },
   {
     id: "contextNotes",
     title: "Anything else worth knowing?",
-    subtitle: "Rates, typical engagement length, industries you specialize in — anything that should shape pricing or scope.",
-    placeholder: "Anything else Claude should know — rates, typical engagement length, industries you specialize in...",
+    subtitle: "Rates, typical engagement length, industries you specialize in, anything that should shape pricing or scope.",
+    placeholder: "Anything else the AI should know, rates, typical engagement length, industries you specialize in...",
     presets: CONTEXT_PRESETS,
   },
 ];
@@ -237,7 +237,7 @@ function ReferencesStep({ onContinue, isLast }: { onContinue: () => void; isLast
         <p className="text-slate text-[13px] mt-1.5">
           This is the single biggest thing that makes a quote sound like <em>you</em> instead of a
           generic template. Add your CV or portfolio link, past quotes you&apos;ve sent, case
-          studies, or anything that shows your experience and expertise level — the more you add,
+          studies, or anything that shows your experience and expertise level, the more you add,
           the more specific and credible every quote will be. Add as many as you have.
         </p>
       </div>
@@ -327,7 +327,7 @@ function ReferencesStep({ onContinue, isLast }: { onContinue: () => void; isLast
         <div className="flex items-start gap-2 bg-coral-tint rounded-lg px-3.5 py-3 text-[12.5px] text-overdue">
           <TriangleAlert size={15} className="shrink-0 mt-0.5" />
           <span>
-            Skipping this means quotes start from a blank slate instead of your actual work —
+            Skipping this means quotes start from a blank slate instead of your actual work -
             they&apos;ll read more generic until you add some of this (you can always add it later
             in Memory).
           </span>
@@ -337,7 +337,7 @@ function ReferencesStep({ onContinue, isLast }: { onContinue: () => void; isLast
       <div className="flex justify-between items-center">
         {hasContent ? (
           <span className="text-[12.5px] text-success font-semibold">
-            {files.length + links.length} added — add more, or continue.
+            {files.length + links.length} added, add more, or continue.
           </span>
         ) : (
           <button
@@ -423,8 +423,8 @@ function BrandingStep({ onContinue, isLast }: { onContinue: () => void; isLast: 
       <div>
         <h2 className="font-display italic text-2xl text-coral m-0">Got brand guidelines?</h2>
         <p className="text-slate text-[13px] mt-1.5">
-          Upload your brand guide PDF and Claude will pull out your colors and typeface names, and/or
-          upload your logo — so client-facing quotes and pages look like your studio, not Freely&apos;s
+          Upload your brand guide PDF and the AI will pull out your colors and typeface names, and/or
+          upload your logo, so client-facing quotes and pages look like your studio, not Freely&apos;s
           default. Both optional, and you can always do this later in Memory.
         </p>
       </div>
@@ -462,7 +462,7 @@ function BrandingStep({ onContinue, isLast }: { onContinue: () => void; isLast: 
                   guideResult.bodyFont && `body font "${guideResult.bodyFont}"`,
                 ]
                   .filter(Boolean)
-                  .join(", ") || "nothing specific — try a more detailed guide."}
+                  .join(", ") || "nothing specific, try a more detailed guide."}
               </span>
             </div>
           )}
@@ -511,7 +511,7 @@ function BrandingStep({ onContinue, isLast }: { onContinue: () => void; isLast: 
 
       <div className="flex justify-between items-center">
         {hasContent ? (
-          <span className="text-[12.5px] text-success font-semibold">Saved — continue whenever.</span>
+          <span className="text-[12.5px] text-success font-semibold">Saved, continue whenever.</span>
         ) : (
           <button
             type="button"
@@ -583,7 +583,7 @@ function MemoryStep({
         <div className="flex items-start gap-2 bg-coral-tint rounded-lg px-3.5 py-3 text-[12.5px] text-overdue">
           <TriangleAlert size={15} className="shrink-0 mt-0.5" />
           <span>
-            Skipping this means Freely has less to work with — quotes may be less accurate until
+            Skipping this means Freely has less to work with, quotes may be less accurate until
             you fill it in (you can always add it later in Memory).
           </span>
         </div>

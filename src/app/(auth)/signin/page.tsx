@@ -27,7 +27,7 @@ export default function SignInPage() {
     });
     setLoading(false);
     if (res?.error) {
-      setError("Couldn't sign in — check your email and password.");
+      setError("Couldn't sign in, check your email and password.");
       return;
     }
     router.push("/quote");

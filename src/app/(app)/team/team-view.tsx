@@ -61,7 +61,7 @@ export function TeamView({
           {teamName ?? "Your studio"}
         </h1>
         <p className="text-slate text-[13px] mt-2">
-          Everyone on your team sees the same Quotes, Projects, and Diary — invite a teammate to
+          Everyone on your team sees the same Quotes, Projects, and Diary, invite a teammate to
           share the work.
         </p>
       </div>
@@ -73,7 +73,7 @@ export function TeamView({
             <TextField
               value={inviteEmail}
               onChange={setInviteEmail}
-              placeholder="teammate@studio.com (optional — leave blank for a shareable link)"
+              placeholder="teammate@studio.com (optional, leave blank for a shareable link)"
             />
             <Button icon={UserPlus} disabled={working} onClick={handleInvite}>
               Create invite
@@ -120,7 +120,7 @@ export function TeamView({
           ))}
           {members.length === 0 && (
             <div className="text-text-muted text-[13px]">
-              Just you for now — invite a teammate above.
+              Just you for now, invite a teammate above.
             </div>
           )}
         </div>

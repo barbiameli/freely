@@ -10,7 +10,7 @@ function getKey(): Buffer {
   const secret = process.env.FREELY_ENCRYPTION_KEY;
   if (!secret) {
     throw new Error(
-      "FREELY_ENCRYPTION_KEY is not set. Add it to your .env file — see .env.example."
+      "FREELY_ENCRYPTION_KEY is not set. Add it to your .env file, see .env.example."
     );
   }
   return crypto.createHash("sha256").update(secret).digest();

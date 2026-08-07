@@ -57,7 +57,7 @@ export function DiaryView({
     e.stopPropagation();
     if (
       !window.confirm(
-        `Delete "${projectTitle}"? This removes its deliverables and diary entries too — this can't be undone.`
+        `Delete "${projectTitle}"? This removes its deliverables and diary entries too, this can't be undone.`
       )
     ) {
       return;
@@ -81,7 +81,7 @@ export function DiaryView({
           Client updates, written for you.
         </h1>
         <p className="text-slate text-[13px] mt-2">
-          Auto-generated from your project tracker — edit anything before it goes out.
+          Auto-generated from your project tracker, edit anything before it goes out.
         </p>
       </div>
       <div className="flex gap-2 flex-wrap">

@@ -23,7 +23,7 @@ const fontLabelFamily = `"Neutra Text Light Alt", "Neutra Text", ui-sans-serif, 
 
 export const metadata: Metadata = {
   title: "Freely",
-  description: "Quote, track, and report on client work — powered by AI.",
+  description: "Quote, track, and report on client work, powered by AI.",
 };
 
 export default function RootLayout({

@@ -61,7 +61,7 @@ export function TrackDashboard({ projects }: { projects: ProjectCard[] }) {
     e.stopPropagation();
     if (
       !window.confirm(
-        `Delete "${projectTitle}"? This removes its deliverables and diary entries too — this can't be undone.`
+        `Delete "${projectTitle}"? This removes its deliverables and diary entries too, this can't be undone.`
       )
     ) {
       return;
@@ -112,7 +112,7 @@ export function TrackDashboard({ projects }: { projects: ProjectCard[] }) {
 
   return (
     <>
-      <Topbar eyebrow="Track — Projects" />
+      <Topbar eyebrow="Track - Projects" />
       <div className="flex justify-between items-start">
         <div>
           <h1 className="font-display italic text-[32px] text-coral m-0">
@@ -139,7 +139,7 @@ export function TrackDashboard({ projects }: { projects: ProjectCard[] }) {
       {showUpload && (
         <Card className="flex flex-col gap-2.5">
           <div className="text-[13px] text-slate">
-            Drop a brief, SOW, or contract — Freely reads it and creates the project with
+            Drop a brief, SOW, or contract, Freely reads it and creates the project with
             deliverables and timeline already filled in.
           </div>
           <label className="flex flex-col gap-2 cursor-pointer">

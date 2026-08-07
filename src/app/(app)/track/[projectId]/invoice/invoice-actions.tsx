@@ -21,7 +21,7 @@ export function InvoiceActions({
   const [checkoutUrl, setCheckoutUrl] = useState(existingCheckoutUrl);
 
   if (invoiceStatus === "PAID") {
-    return <div className="text-success font-body font-semibold text-sm">Paid — nothing else to do.</div>;
+    return <div className="text-success font-body font-semibold text-sm">Paid, nothing else to do.</div>;
   }
 
   async function handleSend() {

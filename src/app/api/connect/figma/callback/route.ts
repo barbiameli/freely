@@ -29,7 +29,7 @@ export async function GET(req: Request) {
     ?.split("=")[1];
 
   if (!code || !state || state !== cookieState) {
-    return new NextResponse("Figma sign-in failed or expired — try connecting again from Memory.", {
+    return new NextResponse("Figma sign-in failed or expired, try connecting again from Memory.", {
       status: 400,
     });
   }

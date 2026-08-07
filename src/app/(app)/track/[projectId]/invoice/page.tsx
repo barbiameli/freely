@@ -23,13 +23,13 @@ export default async function InvoicePage({ params }: { params: { projectId: str
 
   return (
     <>
-      <Topbar eyebrow={`Track — ${project.title} — Invoice`} />
+      <Topbar eyebrow={`Track - ${project.title} - Invoice`} />
       <div>
         <h1 className="font-display italic text-[30px] text-coral m-0">Invoice summary</h1>
         <p className="text-slate text-[13px] mt-1.5">
           {isStripeConfigured()
-            ? "Send this for real payment via Stripe's hosted checkout — Freely never touches card details."
-            : "A computed summary — connect Stripe (STRIPE_SECRET_KEY in .env) to accept real payment."}{" "}
+            ? "Send this for real payment via Stripe's hosted checkout, Freely never touches card details."
+            : "A computed summary, connect Stripe (STRIPE_SECRET_KEY in .env) to accept real payment."}{" "}
           <Link href={`/track/${project.id}`} className="text-violet font-semibold">
             Back to project
           </Link>
@@ -50,9 +50,9 @@ export default async function InvoicePage({ params }: { params: { projectId: str
           <Row label="Hours logged" value={`${project.hoursLogged} / ${project.hours}`} />
           <Row
             label="Effective rate"
-            value={rate > 0 ? `${currencySymbol(project.currency)}${rate.toFixed(0)} / hr` : "—"}
+            value={rate > 0 ? `${currencySymbol(project.currency)}${rate.toFixed(0)} / hr` : "-"}
           />
-          <Row label="Timeline" value={project.timeline || "—"} />
+          <Row label="Timeline" value={project.timeline || "-"} />
           <Row label="Payment status" value={project.invoiceStatus} />
         </div>
         <div className="flex justify-between items-center pt-4">

@@ -19,7 +19,7 @@ export default async function InvitePage({ params }: { params: { token: string }
         </div>
         {invalid ? (
           <p className="text-slate text-sm">
-            This invite link is invalid or has already been used — ask whoever sent it for a new one.
+            This invite link is invalid or has already been used, ask whoever sent it for a new one.
           </p>
         ) : (
           <>

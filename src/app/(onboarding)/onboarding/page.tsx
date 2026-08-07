@@ -15,7 +15,7 @@ export default async function OnboardingPage() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/brand/flourish.svg" alt="" aria-hidden="true" className="w-11 mb-2.5" />
         <p className="text-slate text-sm mb-6">
-          A few quick questions so Freely has real context before you generate your first quote —
+          A few quick questions so Freely has real context before you generate your first quote -
           each one after this is optional, but the more it knows, the more accurate quotes will
           be. Everything here can be changed later in Memory.
         </p>

@@ -46,13 +46,13 @@ function Hero() {
   return (
     <section className="max-w-3xl mx-auto text-center px-6 pt-10 pb-16">
       <h1 className="font-display italic text-[44px] leading-[1.1] text-ink m-0">
-        Quote, track, and report on client work — <span className="text-coral">without the busywork.</span>
+        Quote, track, and report on client work, <span className="text-coral">without the busywork.</span>
       </h1>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/brand/flourish.svg" alt="" aria-hidden="true" className="w-16 mx-auto mt-4 mb-2" />
       <p className="text-slate text-[16px] mt-4 max-w-lg mx-auto">
         Freely is one place for a freelancer to turn a client brief into a priced quote, track the
-        project once it&apos;s won, and keep a running diary the client can see — with Claude drafting
+        project once it&apos;s won, and keep a running diary the client can see, with AI drafting
         the first pass of each quote from your own rates and past work.
       </p>
       <div className="flex items-center justify-center gap-3 mt-8">
@@ -77,11 +77,11 @@ function HowAIIsUsed() {
   const points = [
     {
       title: "It drafts from your own context, not a generic template",
-      body: "Everything you save in Memory — your rates, past projects, tone preferences, saved files and links — is what Claude reads before writing a quote. The more you've added, the less generic it sounds.",
+      body: "Everything you save in Memory (your rates, past projects, tone preferences, saved files and links) is what the AI reads before writing a quote. The more you've added, the less generic it sounds.",
     },
     {
       title: "You always review before a client sees anything",
-      body: "Claude writes a first draft. You edit it, refine it with a follow-up instruction, or rewrite it outright before publishing — nothing goes out automatically.",
+      body: "The AI writes a first draft. You edit it, refine it with a follow-up instruction, or rewrite it outright before publishing. Nothing goes out automatically.",
     },
     {
       title: "AI use is disclosed by choice, not hidden",
@@ -89,7 +89,7 @@ function HowAIIsUsed() {
     },
     {
       title: "Pricing is reasoned, not guessed",
-      body: "When you have pricing history, Claude anchors hours and price to your own past projects. When you don't, it researches typical market rates before proposing a number — and always shows its reasoning against your stated hourly rate.",
+      body: "When you have pricing history, the AI anchors hours and price to your own past projects. When you don't, it researches typical market rates before proposing a number, and always shows its reasoning against your stated hourly rate.",
     },
   ];
 
@@ -99,7 +99,7 @@ function HowAIIsUsed() {
         <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-violet uppercase tracking-wide mb-3">
           <Sparkles size={13} /> How AI is actually used
         </div>
-        <h2 className="font-display italic text-3xl text-ink m-0">Claude drafts. You decide.</h2>
+        <h2 className="font-display italic text-3xl text-ink m-0">AI drafts. You decide.</h2>
       </div>
       <div className="grid grid-cols-2 gap-6">
         {points.map((p) => (
@@ -118,12 +118,12 @@ function Features() {
     {
       icon: FileText,
       title: "AI-drafted quotes",
-      body: "Paste or upload a client brief and get a priced, structured quote back — scope, deliverables, timeline, and an optional Strategy section — as a hosted page or downloadable PDF.",
+      body: "Paste or upload a client brief and get a priced, structured quote back (scope, deliverables, timeline, and an optional Strategy section) as a hosted page or downloadable PDF.",
     },
     {
       icon: ListChecks,
       title: "Project tracking",
-      body: "Turn an accepted quote into a tracked project with milestones and status, all in one dashboard — no separate project-management tool needed for the basics.",
+      body: "Turn an accepted quote into a tracked project with milestones and status, all in one dashboard. No separate project-management tool needed for the basics.",
     },
     {
       icon: Users,
@@ -151,7 +151,7 @@ function Features() {
 
 function HowItWorks() {
   const steps = [
-    { n: "1", title: "Set up Memory", body: "Add your rates, tone, past work, and (optionally) your branding — takes a few minutes." },
+    { n: "1", title: "Set up Memory", body: "Add your rates, tone, past work, and (optionally) your branding, takes a few minutes." },
     { n: "2", title: "Generate a quote", body: "Drop in a client brief and get a priced, structured draft back in seconds." },
     { n: "3", title: "Review, send, track", body: "Edit anything, publish the page or PDF, then track the project once it's won." },
   ];
@@ -177,7 +177,7 @@ function ClosingCTA() {
   return (
     <section className="max-w-2xl mx-auto text-center px-6 py-16 border-t border-line">
       <div className="flex items-center justify-center gap-2 text-text-muted text-[12px] mb-4">
-        <ShieldCheck size={14} /> Free to start — no card required.
+        <ShieldCheck size={14} /> Free to start, no card required.
       </div>
       <h2 className="font-display italic text-3xl text-ink m-0">Try it on your next quote.</h2>
       <Link

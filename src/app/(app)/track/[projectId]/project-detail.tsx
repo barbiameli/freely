@@ -73,7 +73,7 @@ export function ProjectDetail({
   async function handleDeleteProject() {
     if (
       !window.confirm(
-        `Delete "${project.title}"? This removes its deliverables and diary entries too — this can't be undone.`
+        `Delete "${project.title}"? This removes its deliverables and diary entries too, this can't be undone.`
       )
     ) {
       return;
@@ -115,7 +115,7 @@ export function ProjectDetail({
         </div>
       </Card>
       <div className="flex flex-col gap-7 flex-1 min-w-0">
-      <Topbar eyebrow={`Track — ${project.title}`} />
+      <Topbar eyebrow={`Track - ${project.title}`} />
       <div className="flex justify-between items-start">
         <div>
           <h1 className="font-display italic text-[30px] text-coral m-0">{project.title}</h1>
@@ -136,7 +136,7 @@ export function ProjectDetail({
             Send to Diary
           </Button>
           <Button onClick={() => router.push(`/track/${project.id}/invoice`)}>
-            Generate invoice — {currencySymbol(project.currency)}
+            Generate invoice, {currencySymbol(project.currency)}
             {project.price.toLocaleString()}
           </Button>
           <Button

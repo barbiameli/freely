@@ -190,9 +190,9 @@ export function BriefView({
 
   return (
     <>
-      <Topbar eyebrow="Quote — Brief" />
+      <Topbar eyebrow="Quote - Brief" />
 
-      {/* Hero — mirrors a real quotation cover: dark block, big number stats */}
+      {/* Hero, mirrors a real quotation cover: dark block, big number stats */}
       <div className="bg-ink rounded-card px-7 py-6 flex justify-between items-start">
         <div>
           <span className="font-body font-bold text-[10px] tracking-[0.08em] uppercase text-coral">
@@ -237,7 +237,7 @@ export function BriefView({
             {publishing
               ? "Working..."
               : published
-              ? "Live — unpublish"
+              ? "Live, unpublish"
               : "Publish as HTML page"}
           </button>
         </div>
@@ -304,7 +304,7 @@ export function BriefView({
             </span>
           </div>
 
-          {/* Examples — reference files with a note on how they apply, e.g.
+          {/* Examples, reference files with a note on how they apply, e.g.
               "this is a landing page I built, I'd apply a similar structure
               here" or "this moodboard is the visual direction I'd take it in." */}
           <Section eyebrow="Examples" tint="paper" accent="coral">
@@ -328,7 +328,7 @@ export function BriefView({
                       <textarea
                         defaultValue={ex.caption}
                         onBlur={(e) => handleCaptionBlur(ex.id, e.target.value)}
-                        placeholder="How does this apply? e.g. this is a landing page I built — I'd apply a similar structure here."
+                        placeholder="How does this apply? e.g. this is a landing page I built, I'd apply a similar structure here."
                         className="w-full mt-1.5 text-[12px] leading-snug text-slate bg-paper rounded p-1.5 border border-line resize-none"
                         rows={3}
                       />
@@ -349,7 +349,7 @@ export function BriefView({
               <textarea
                 value={exampleCaption}
                 onChange={(e) => setExampleCaption(e.target.value)}
-                placeholder={`Explain how it applies — e.g. "This is a landing page I built for a past client. I'd apply a similar structure and layout here."`}
+                placeholder={`Explain how it applies, e.g. "This is a landing page I built for a past client. I'd apply a similar structure and layout here."`}
                 className="w-full mt-2 text-[12.5px] leading-snug bg-paper rounded p-2 border border-line resize-none"
                 rows={2}
               />
