@@ -178,21 +178,23 @@ export function buildGenerateUserPrompt(
     ? `\nInclude a "strategy" object, written the way a senior consultant frames a proposal's approach: "goal" is one sentence naming the outcome this project is actually for. "findings" is 2-4 concrete, standalone observations drawn from the source material (what's currently true / what's missing / what was asked for), each its own bullet, not one merged sentence. "openQuestions" is 1-3 things worth confirming with the client before kicking off (can be empty if there's genuinely nothing to ask). Do not mention AI usage anywhere in this object, that's handled separately.`
     : "";
 
-  // Vague timelines ("design phase, then build") are the most common weak
-  // spot in generated quotes, and they're also the part a client scrutinises
-  // most. This spells out the required shape rather than asking for detail in
-  // the abstract, and it applies whether or not Timeline is broken out as its
-  // own section, since the string is always rendered somewhere.
-  const timelineInstruction = `\nTimeline requirements. Return "timeline" as ${
-    draft.includeTimeline ? "4-6" : "3-5"
-  } stages, EACH ON ITS OWN LINE separated by a newline character, in the exact form "Week 1-2: Label - what actually happens". Rules:
+  // The Timeline toggle in the wizard is what decides this. Turned on, the
+  // client gets a full staged breakdown, which is the part they scrutinise
+  // most and where generated quotes are usually weakest, so the required
+  // shape is spelled out rather than asking for "detail" in the abstract.
+  // Turned off, they get a short summary line, because a quote that
+  // deliberately leaves Timeline out shouldn't smuggle a full schedule back
+  // in through the same field.
+  const timelineInstruction = draft.includeTimeline
+    ? `\nTimeline requirements. Return "timeline" as 4-6 stages, EACH ON ITS OWN LINE separated by a newline character, in the exact form "Week 1-2: Label - what actually happens". Rules:
 - Start every line with a concrete week or day range ("Week 1", "Week 2-3", "Day 1-3"). Never "Phase one" or "Later" with no timing.
 - Give each stage a short label, then a dash, then specifics: the actual activities and what the client ends up holding at the end of it.
 - Name real artifacts and real activities drawn from the deliverables and the source material, not generic filler like "design work" or "iteration".
 - Say what is needed from the client and when (reviews, sign-off, content, access), since that is usually what actually determines the schedule.
 - The stages must add up to a total duration consistent with the estimated hours.
 Good: "Week 3-4: Design - wireframes for the 6 core screens, then two rounds of visual design on the strongest direction. Needs your sign-off on wireframes before visuals start."
-Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`;
+Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
+    : `\nTimeline requirements. Timeline is NOT being broken out as its own section on this quote, so return "timeline" as a single short sentence giving the overall duration and rough shape, e.g. "About 6 weeks from kickoff to handover, with design in the first half and build in the second." Do not return a staged, line-by-line breakdown.`;
 
   // A per-quote steer, kept last so it reads as the most specific
   // instruction in the prompt and can override the general guidance above.

@@ -679,6 +679,11 @@ export function QuoteWizard({
                 AI-use disclosure
               </Chip>
             </div>
+            <div className="text-xs text-text-muted mt-3">
+              {draft.includeTimeline
+                ? "Timeline is on, so you'll get a week-by-week breakdown, shown as a roadmap with the detail spelled out under it."
+                : "Timeline is off, so you'll get a one-line summary of the overall duration. Turn it on for a week-by-week breakdown."}
+            </div>
           </Card>
           {generating && (
             <div className="flex flex-col gap-2">

@@ -113,19 +113,21 @@ describe("buildGenerateUserPrompt", () => {
     expect(withoutStrategy).not.toContain('strategy" object');
   });
 
-  it("always asks for concrete staged timelines, one stage per line", () => {
-    // Timeline detail used to be requested only when includeTimeline was on,
-    // which left the other quotes with vague one-liners even though the
-    // string is still rendered. It's now always asked for, just at a
-    // different length.
-    for (const includeTimeline of [true, false]) {
-      const prompt = buildGenerateUserPrompt({ ...draft, includeTimeline });
-      expect(prompt).toContain("EACH ON ITS OWN LINE");
-      expect(prompt).toContain("Week 1-2: Label - what actually happens");
-    }
+  it("asks for a concrete staged timeline when includeTimeline is set", () => {
+    const prompt = buildGenerateUserPrompt({ ...draft, includeTimeline: true });
+    expect(prompt).toContain("EACH ON ITS OWN LINE");
+    expect(prompt).toContain("Week 1-2: Label - what actually happens");
+    expect(prompt).toContain("4-6 stages");
+  });
 
-    expect(buildGenerateUserPrompt({ ...draft, includeTimeline: true })).toContain("4-6");
-    expect(buildGenerateUserPrompt({ ...draft, includeTimeline: false })).toContain("3-5");
+  it("asks for a one-line summary timeline when includeTimeline is not set", () => {
+    // The Timeline toggle is the user's call on how much schedule detail the
+    // client sees, so leaving it off must not smuggle a full staged
+    // breakdown back in through the same field.
+    const prompt = buildGenerateUserPrompt({ ...draft, includeTimeline: false });
+    expect(prompt).toContain("single short sentence");
+    expect(prompt).not.toContain("EACH ON ITS OWN LINE");
+    expect(prompt).not.toContain("4-6 stages");
   });
 
   it("passes a per-quote output note through, and omits the section when blank", () => {
