@@ -48,9 +48,7 @@ function Hero() {
       <h1 className="font-display italic text-[44px] leading-[1.1] text-ink m-0">
         Quote, track, and report on client work, <span className="text-coral">without the busywork.</span>
       </h1>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/brand/flourish.svg" alt="" aria-hidden="true" className="w-16 mx-auto mt-4 mb-2" />
-      <p className="text-slate text-[16px] mt-4 max-w-lg mx-auto">
+      <p className="text-slate text-[16px] mt-6 max-w-lg mx-auto">
         Freely is one place for a freelancer to turn a client brief into a priced quote, track the
         project once it&apos;s won, and keep a running diary the client can see, with AI drafting
         the first pass of each quote from your own rates and past work.
