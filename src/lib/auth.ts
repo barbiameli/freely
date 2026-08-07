@@ -35,7 +35,7 @@ export const authOptions: AuthOptions = {
         const valid = await bcrypt.compare(credentials.password, user.passwordHash);
         if (!valid) return null;
 
-        return { id: user.id, email: user.email };
+        return { id: user.id, email: user.email, name: user.name };
       },
     }),
     // Only registered when GOOGLE_CLIENT_ID/SECRET are set — the app works
@@ -64,14 +64,10 @@ export const authOptions: AuthOptions = {
         return true;
       }
 
-      // No account with this email yet. Same bootstrap rule as
-      // signUpAction: only the very first account can self-create: every
-      // account after that must come from a redeemed Team invite.
-      const accountCount = await prisma.user.count();
-      if (accountCount > 0) return false;
-
+      // No account with this email yet — signup is open, so just create one
+      // (mirrors signUpAction's credentials-based flow).
       const created = await prisma.user.create({
-        data: { email, passwordHash: null },
+        data: { email, passwordHash: null, name: user.name || null },
       });
       user.id = created.id;
       return true;
@@ -81,8 +77,20 @@ export const authOptions: AuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
+      if (session.user && token.id) {
         (session.user as { id?: string }).id = token.id as string;
+        // Re-fetch name/studioName fresh from the DB each time, rather than
+        // trusting whatever was true at login — so Account settings edits
+        // show up immediately without needing to sign out and back in.
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { name: true, studioName: true, email: true },
+        });
+        if (dbUser) {
+          session.user.name = dbUser.name;
+          session.user.studioName = dbUser.studioName;
+          session.user.email = dbUser.email;
+        }
       }
       return session;
     },

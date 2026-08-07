@@ -15,6 +15,7 @@ export const config = {
     "/diary/:path*",
     "/memory/:path*",
     "/team/:path*",
+    "/account/:path*",
     "/onboarding/:path*",
   ],
 };
