@@ -84,6 +84,7 @@ model User {
   projects    Project[]
   assets      MemoryAsset[]
   connections Connection[]
+  invoices    Invoice[]
 }
 
 model MemoryAsset {
@@ -238,6 +239,63 @@ model Project {
   deliverables Deliverable[]
   diaryEntries DiaryEntry[]
 
+  @@index([userId])
+}
+
+/// An invoice. Note what is NOT here: no bank account, sort code, IBAN or any
+/// other payment credential. Those are typed into the form each time an
+/// invoice is rendered, passed straight to the PDF, and never written down.
+/// Keeping them out of the database means a breach here exposes no payment
+/// details, and it's why the PDF is generated on demand rather than stored.
+model Invoice {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Sequential per user, so invoice numbers read 0001, 0002 and so on rather
+  /// than exposing a random id to the client.
+  number    Int
+  issuedAt  DateTime @default(now())
+  dueAt     DateTime
+  /// A free-text reference the client quotes when paying.
+  reference String   @default("")
+
+  /// Who it's billed to. Denormalised on purpose: an invoice is a record of
+  /// what was sent, so later edits to a project or client must not rewrite it.
+  clientName    String @default("")
+  clientCompany String @default("")
+  clientWebsite String @default("")
+  clientEmail   String @default("")
+
+  /// Who it's from, likewise frozen at issue time.
+  fromName    String @default("")
+  fromWebsite String @default("")
+  fromEmail   String @default("")
+  fromAddress String @default("")
+  /// The line under the sender's name, e.g. "UX design · Product design · CRO".
+  fromTagline String @default("")
+
+  /// [{ title, description, rate, hours, amount }]
+  lineItems Json
+  currency  String  @default("USD")
+  /// Percentage, e.g. 21 for 21%. Zero means the tax row is omitted entirely.
+  taxRate   Float   @default(0)
+  notes     String  @default("") @db.Text
+
+  /// Mirrors the quote's own options so an invoice looks like the quote it
+  /// followed. See lib/branding.ts.
+  branding String @default("freely")
+  template String @default("classic")
+
+  paid   Boolean @default(false)
+  paidAt DateTime?
+
+  projectId String?
+  briefId   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, number])
   @@index([userId])
 }
 

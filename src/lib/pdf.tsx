@@ -749,8 +749,9 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
   const symbol = currencySymbol(brief.currency);
   const bg = dark ? "#0B0B0C" : "#FFFFFF";
   const ink = dark ? "#FFFFFF" : "#111111";
-  const muted = dark ? "rgba(255,255,255,0.55)" : "rgba(17,17,17,0.55)";
-  const line = dark ? "rgba(255,255,255,0.18)" : "rgba(17,17,17,0.18)";
+  const muted = dark ? "#9A9AA0" : "#6B6B70";
+  // Solid hex, not rgba: react-pdf renders rgba border colours unpredictably.
+  const line = dark ? "#2E2E31" : "#D9D9DE";
   const page = { ...styles.page, backgroundColor: bg, color: ink };
   const body = { ...styles.body, color: ink };
   return (

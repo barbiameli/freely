@@ -8,6 +8,7 @@ const ITEMS = [
   { key: "quote", label: "Quote", glyph: "Q", href: "/quote" },
   { key: "track", label: "Track", glyph: "T", href: "/track" },
   { key: "diary", label: "Diary", glyph: "D", href: "/diary" },
+  { key: "invoices", label: "Invoice", glyph: "I", href: "/invoices" },
   { key: "memory", label: "Memory", glyph: "M", href: "/memory" },
 ];
 
