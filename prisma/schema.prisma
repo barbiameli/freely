@@ -142,6 +142,10 @@ model Brief {
   // openQuestions[] } — kept as JSON (not a prose blob) so every renderer
   // (brief view, PDF, public page) can lay it out as real bulleted sections.
   strategy       Json?
+  // The optional add-on sections (terms, revisions policy, availability,
+  // payment terms), kept as one JSON blob so adding another doesn't need a
+  // schema change. Never holds bank details: see briefExtrasSchema.
+  extras         Json?
   price          Float
   hours          Float
   hourlyRate     Float?

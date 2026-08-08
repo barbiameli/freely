@@ -130,15 +130,29 @@ describe("buildGenerateUserPrompt", () => {
     expect(prompt).not.toContain("4-6 stages");
   });
 
-  it("passes a per-quote output note through, and omits the section when blank", () => {
-    const withNote = buildGenerateUserPrompt({ ...draft, outputNotes: "keep it to one page" });
-    expect(withNote).toContain("keep it to one page");
-    expect(withNote).toContain("takes precedence");
+  it("asks for optional add-on sections only when they are switched on", () => {
+    const bare = buildGenerateUserPrompt({ ...draft, includeSOW: false });
+    expect(bare).not.toContain('"terms" object');
+    expect(bare).not.toContain('"revisions" string');
+    expect(bare).not.toContain('"availability" string');
+    expect(bare).not.toContain('"paymentTerms" string');
 
-    expect(buildGenerateUserPrompt({ ...draft, outputNotes: "   " })).not.toContain(
-      "takes precedence"
+    expect(buildGenerateUserPrompt({ ...draft, includeTerms: true })).toContain('"terms" object');
+    expect(buildGenerateUserPrompt({ ...draft, includeRevisions: true })).toContain(
+      '"revisions" string'
     );
-    expect(buildGenerateUserPrompt(draft)).not.toContain("takes precedence");
+    expect(buildGenerateUserPrompt({ ...draft, includeAvailability: true })).toContain(
+      '"availability" string'
+    );
+  });
+
+  it("asks for payment timing with the SOW, and forbids payment credentials", () => {
+    // A published quote sits on a public URL, so bank details must never end
+    // up in generated copy.
+    const withSow = buildGenerateUserPrompt({ ...draft, includeSOW: true });
+    expect(withSow).toContain('"paymentTerms" string');
+    expect(withSow).toContain("payment details are provided on the invoice");
+    expect(withSow).toContain("Never include bank account details");
   });
 });
 

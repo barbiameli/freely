@@ -1,7 +1,9 @@
+/** Two steps, not three: what you give it, then what comes out. The middle
+ * "Instructions" step was mostly optional fields, which made the flow feel
+ * longer than the work it was actually asking for. */
 const STEPS: [string, string][] = [
-  ["01", "Source"],
-  ["02", "Instructions"],
-  ["03", "Output"],
+  ["01", "The brief"],
+  ["02", "The quote"],
 ];
 
 export function Stepper({ activeIndex }: { activeIndex: number }) {

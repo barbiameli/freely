@@ -1,5 +1,6 @@
 import { currencySymbol } from "@/lib/currencies";
 import { TimelineView } from "@/components/timeline-view";
+import type { BriefExtras } from "@/lib/anthropic";
 
 interface Strategy {
   goal: string;
@@ -27,12 +28,30 @@ export interface PublicBrief {
   hourlyRate?: number | null;
   currency?: string | null;
   examples: Example[];
+  extras?: BriefExtras | null;
 }
 
 export interface BrandProps {
   primary: string;
   accent: string;
   logoDataUrl?: string | null;
+}
+
+/** Turns the optional add-on sections into label/body pairs, so each
+ * template can render them in its own style without duplicating the logic
+ * that decides which ones are present. */
+function extraBlocks(extras?: BriefExtras | null): [string, string][] {
+  if (!extras) return [];
+  const blocks: [string, string][] = [];
+  if (extras.paymentTerms) blocks.push(["Payment terms", extras.paymentTerms]);
+  if (extras.revisions) blocks.push(["Revisions", extras.revisions]);
+  if (extras.availability) blocks.push(["Availability", extras.availability]);
+  if (extras.terms) {
+    blocks.push(["Cancellation", extras.terms.cancellation]);
+    blocks.push(["Ownership", extras.terms.ownership]);
+    blocks.push(["Confidentiality", extras.terms.confidentiality]);
+  }
+  return blocks;
 }
 
 function ExampleGallery({ examples, tint }: { examples: Example[]; tint?: string }) {
@@ -121,6 +140,13 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
               <ExampleGallery examples={brief.examples} />
             </div>
           )}
+
+          {extraBlocks(brief.extras).map(([label, text]) => (
+            <div key={label} className="rounded-lg p-4 bg-paper">
+              <div className="font-label text-xs text-slate uppercase mb-2">{label}</div>
+              <p className="text-[13.5px] text-ink m-0 leading-relaxed">{text}</p>
+            </div>
+          ))}
 
           <div className="rounded-lg p-4 bg-ink flex justify-between items-center">
             <span className="text-[13.5px] text-white/70">
@@ -238,6 +264,15 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
           </div>
         )}
 
+        {extraBlocks(brief.extras).map(([label, text]) => (
+          <div key={label} className="py-10 border-b" style={{ borderColor: "#E8EAEF" }}>
+            <h2 className="font-display italic text-2xl m-0 mb-4" style={{ color: brand.primary }}>
+              {label}
+            </h2>
+            <p className="text-[15px] leading-relaxed text-ink">{text}</p>
+          </div>
+        ))}
+
         <div className="flex justify-end items-baseline pt-10">
           <span className="font-display italic text-[32px]" style={{ color: brand.accent }}>
             {currencySymbol(brief.currency)}{brief.price.toLocaleString()}
@@ -327,6 +362,13 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
           </div>
         )}
 
+        {extraBlocks(brief.extras).map(([label, text]) => (
+          <div key={label} className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
+            <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">{label}</div>
+            <p className="text-[13.5px] leading-relaxed m-0">{text}</p>
+          </div>
+        ))}
+
         <div className="flex justify-between items-center pt-6">
           <span className="text-[13px]" style={{ color: muted }}>
             Total
@@ -412,6 +454,13 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
             <ExampleGallery examples={brief.examples} />
           </div>
         )}
+
+        {extraBlocks(brief.extras).map(([label, text]) => (
+          <div key={label} className="py-6 border-b border-line">
+            <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">{label}</div>
+            <p className="text-[13.5px] leading-relaxed m-0">{text}</p>
+          </div>
+        ))}
 
         <div className="flex justify-between items-center pt-6">
           <span className="text-[13px] text-slate">Total</span>

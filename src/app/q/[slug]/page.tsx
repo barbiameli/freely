@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import type { Strategy } from "@/lib/anthropic";
+import type { Strategy, BriefExtras } from "@/lib/anthropic";
 import { resolveBrand } from "@/lib/branding";
 import { ClassicTemplate, EditorialTemplate, MinimalTemplate, MonoTemplate, type PublicBrief } from "./templates";
 
@@ -32,6 +32,7 @@ export default async function PublicQuotePage({ params }: { params: { slug: stri
     deliverables: brief.deliverables as string[],
     timeline: brief.timeline,
     strategy: (brief.strategy as Strategy | null) ?? null,
+    extras: (brief.extras as BriefExtras | null) ?? null,
     price: brief.price,
     hours: brief.hours,
     hourlyRate: brief.hourlyRate,

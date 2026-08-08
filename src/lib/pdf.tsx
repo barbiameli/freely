@@ -8,8 +8,10 @@ import {
   Font,
   renderToBuffer,
 } from "@react-pdf/renderer";
+import type { Style } from "@react-pdf/types";
 import { currencySymbol } from "@/lib/currencies";
 import { parseTimelineStages, isRoadmapWorthy, stageTick } from "@/lib/timeline";
+import type { BriefExtras } from "@/lib/anthropic";
 
 export interface StrategyPdfData {
   goal: string;
@@ -44,6 +46,7 @@ export interface BriefPdfData {
   brandPrimaryColor?: string | null;
   brandAccentColor?: string | null;
   brandLogoDataUrl?: string | null;
+  extras?: BriefExtras | null;
   examples?: BriefExamplePdfData[];
   preparedByEmail?: string | null;
   template?: PdfTemplate;
@@ -333,6 +336,43 @@ function Footer({
   );
 }
 
+/** The optional add-on sections. Deliberately plain: they're reference
+ * material a client reads once, not something to art-direct. */
+function ExtraSections({
+  extras,
+  labelStyle,
+  bodyStyle,
+  wrapStyle,
+}: {
+  extras?: BriefExtras | null;
+  labelStyle: Style;
+  bodyStyle: Style;
+  wrapStyle: Style;
+}) {
+  if (!extras) return null;
+  const blocks: [string, string][] = [];
+  if (extras.paymentTerms) blocks.push(["Payment terms", extras.paymentTerms]);
+  if (extras.revisions) blocks.push(["Revisions", extras.revisions]);
+  if (extras.availability) blocks.push(["Availability", extras.availability]);
+  if (extras.terms) {
+    blocks.push(["Cancellation", extras.terms.cancellation]);
+    blocks.push(["Ownership", extras.terms.ownership]);
+    blocks.push(["Confidentiality", extras.terms.confidentiality]);
+  }
+  if (!blocks.length) return null;
+
+  return (
+    <>
+      {blocks.map(([label, text]) => (
+        <View key={label} style={wrapStyle} minPresenceAhead={64}>
+          <Text style={labelStyle}>{label}</Text>
+          <Text style={bodyStyle}>{text}</Text>
+        </View>
+      ))}
+    </>
+  );
+}
+
 function Examples({ examples }: { examples?: BriefExamplePdfData[] }) {
   if (!examples || examples.length === 0) return null;
   return (
@@ -450,6 +490,13 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
             </View>
           )}
 
+          <ExtraSections
+            extras={brief.extras}
+            wrapStyle={{ ...styles.section, ...styles.sectionPaper }}
+            labelStyle={{ ...styles.subLabel, marginTop: 0, color: "#565656" }}
+            bodyStyle={styles.body}
+          />
+
           {brief.includeSOW && (
             <View style={[styles.section, styles.sectionPaper]} minPresenceAhead={64}>
               <Pill text="Statement of Work" tint="#EFEFEF" color="#565656" />
@@ -556,6 +603,13 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
             </View>
           )}
 
+          <ExtraSections
+            extras={brief.extras}
+            wrapStyle={styles.edSection}
+            labelStyle={{ ...styles.edSectionTitle, fontSize: 13, color: primary }}
+            bodyStyle={styles.body}
+          />
+
           {brief.includeSOW && (
             <View style={styles.edSection} minPresenceAhead={64}>
               <Text style={[styles.edSectionTitle, { color: primary }]}>Statement of Work</Text>
@@ -652,6 +706,13 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
               <Examples examples={brief.examples} />
             </View>
           )}
+
+          <ExtraSections
+            extras={brief.extras}
+            wrapStyle={styles.minSection}
+            labelStyle={styles.minLabel}
+            bodyStyle={styles.body}
+          />
 
           {brief.includeSOW && (
             <View style={styles.minSection} minPresenceAhead={64}>
@@ -781,6 +842,20 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
               <Examples examples={brief.examples} />
             </View>
           )}
+
+          <ExtraSections
+            extras={brief.extras}
+            wrapStyle={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }}
+            labelStyle={{
+              fontSize: 9,
+              fontFamily: "Helvetica-Bold",
+              textTransform: "uppercase",
+              letterSpacing: 1,
+              marginBottom: S2,
+              color: ink,
+            }}
+            bodyStyle={{ ...styles.body, color: ink }}
+          />
 
           {brief.includeSOW && (
             <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }} minPresenceAhead={64}>

@@ -3,7 +3,17 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Upload, FileText, ChevronLeft, ArrowRight, Sparkles, CircleStop } from "lucide-react";
+import {
+  Upload,
+  FileText,
+  ChevronLeft,
+  ArrowRight,
+  Sparkles,
+  CircleStop,
+  ImagePlus,
+  Trash2,
+  Check,
+} from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -12,13 +22,27 @@ import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
 import { Stepper } from "@/components/ui/stepper";
 import { DropZone } from "@/components/ui/drop-zone";
-import { generateBriefAction, type QuoteDraftPayload } from "@/actions/briefs";
+import {
+  generateBriefAction,
+  addBriefExampleAction,
+  type QuoteDraftPayload,
+} from "@/actions/briefs";
 import { industryQuoteExample } from "@/lib/industries";
 import { CURRENCIES, currencySymbol } from "@/lib/currencies";
 import { MAX_DOCUMENT_UPLOAD_BYTES, documentTooLargeError } from "@/lib/upload-limits";
 import { BRANDING_OPTIONS } from "@/lib/branding";
+import { INTERPRETATION_PRESETS, QUOTE_INCLUSIONS } from "@/lib/quote-prompts";
 
 type BriefSummary = { id: string; title: string; status: "DRAFT" | "TRACKED" };
+
+/** A visual reference held in wizard state. These can only be saved once the
+ * brief exists (a BriefExample needs a briefId), so they're attached
+ * immediately after generation succeeds. */
+interface ReferenceImage {
+  name: string;
+  dataUrl: string;
+  caption: string;
+}
 
 const STATUS_COLOR: Record<string, string> = {
   DRAFT: "text-violet",
@@ -126,13 +150,11 @@ function TemplatePreview({ id }: { id: "classic" | "editorial" | "minimal" }) {
 }
 
 export function QuoteWizard({
-  projectTitles,
   recentBriefs,
   userIndustry,
   userCurrency,
   hasBrand,
 }: {
-  projectTitles: string[];
   recentBriefs: BriefSummary[];
   userIndustry?: string | null;
   userCurrency?: string | null;
@@ -165,6 +187,8 @@ export function QuoteWizard({
   const [statusMessage, setStatusMessage] = useState(GENERATION_STATUS_MESSAGES[0]);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
+  const [references, setReferences] = useState<ReferenceImage[]>([]);
+  const [imageUploading, setImageUploading] = useState(false);
 
   // A late-arriving response from a request the user already cancelled (or
   // that we already gave up on via the timeout) should be silently ignored,
@@ -239,6 +263,18 @@ export function QuoteWizard({
         setError(result.error);
         return;
       }
+      // Visual references couldn't be saved before now: a BriefExample needs
+      // a briefId. Failures here are deliberately not fatal, the quote itself
+      // is already safely stored and the references can be re-added on the
+      // brief page.
+      for (const ref of references) {
+        await addBriefExampleAction(
+          result.data.briefId,
+          ref.name,
+          ref.dataUrl,
+          ref.caption.trim() || "Visual reference"
+        );
+      }
       router.push(`/quote/${result.data.briefId}`);
     } catch (err) {
       clearGenerationTimers();
@@ -252,27 +288,51 @@ export function QuoteWizard({
     }
   }
 
+  /** Presets append rather than replace, so several can be combined and
+   * anything already typed survives. */
+  function appendInstruction(text: string) {
+    setDraft((d) => ({
+      ...d,
+      instructions: d.instructions.trim() ? `${d.instructions.trim()}\n${text}` : text,
+    }));
+  }
+
+  function handleReferenceImage(file: File) {
+    setError("");
+    if (file.size > MAX_DOCUMENT_UPLOAD_BYTES) {
+      setError(documentTooLargeError(file));
+      return;
+    }
+    if (!/^image\/(png|jpeg)$/.test(file.type)) {
+      setError("Visual references need to be a PNG or JPG.");
+      return;
+    }
+    setImageUploading(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageUploading(false);
+      setReferences((prev) => [
+        ...prev,
+        { name: file.name, dataUrl: String(reader.result), caption: "" },
+      ]);
+    };
+    reader.onerror = () => {
+      setImageUploading(false);
+      setError("Couldn't read that image.");
+    };
+    reader.readAsDataURL(file);
+  }
+
   // Step navigation validates and explains, rather than leaving Continue
   // disabled with no indication of what's missing. A greyed-out button that
   // won't say why is the least helpful possible failure state.
-  function goToBriefStep() {
-    if (!draft.sourceText.trim()) {
-      setError(
-        "Add the client's brief first, either paste the text in or upload a file. Everything else on the next steps is optional."
-      );
-      return;
-    }
-    setError("");
-    setStep(1);
-  }
-
-  function goToPackagingStep() {
+  function goToOutputStep() {
     if (!draft.hourlyRate || draft.hourlyRate <= 0) {
       setError("Add your hourly rate before continuing. It's what pricing and hours are worked out from.");
       return;
     }
     setError("");
-    setStep(2);
+    setStep(1);
   }
 
   function handleStopGenerating() {
@@ -286,13 +346,14 @@ export function QuoteWizard({
     <>
       {step === 0 && (
         <>
-          <Topbar eyebrow="Quote - Step 1 of 3" />
+          <Topbar eyebrow="Quote - Step 1 of 2" />
           <div>
             <h1 className="font-display italic text-4xl text-coral m-0">
               What are we quoting?
             </h1>
             <p className="text-slate text-[15px] mt-2">
-              Start from a brief the client sent you, or write one in from scratch.
+              Everything the quote gets built from. Only the brief itself and your rate are
+              needed, the rest just sharpens the result.
             </p>
           </div>
           <Stepper activeIndex={0} />
@@ -361,87 +422,78 @@ export function QuoteWizard({
               </DropZone>
             </Card>
           )}
-          {error && <div className="text-overdue text-[13px]">{error}</div>}
-          <div className="flex justify-end mt-auto">
-            <Button icon={ArrowRight} onClick={goToBriefStep}>
-              Continue
-            </Button>
-          </div>
-        </>
-      )}
-
-      {step === 1 && (
-        <>
-          <Topbar eyebrow="Quote - Step 2 of 3" />
-          <div>
-            <h1 className="font-display italic text-4xl text-coral m-0">How should we brief it?</h1>
-            <p className="text-slate text-[15px] mt-2">
-              Only your hourly rate is required here. The rest sharpens the result, so fill in
-              what&apos;s useful and skip what isn&apos;t.
-            </p>
-          </div>
-          <Stepper activeIndex={1} />
           <Card>
-            <FieldHeading>Instructions</FieldHeading>
+            <FieldHeading>Visual references</FieldHeading>
+            <p className="text-xs text-text-muted mb-3">
+              Screenshots, moodboards, examples of the kind of thing you mean. Attached to the
+              quote so the client can see the direction, not just read about it.
+            </p>
+            <DropZone
+              onFile={handleReferenceImage}
+              accept="image/png,image/jpeg"
+              disabled={imageUploading}
+              className="flex items-center gap-1.5 cursor-pointer -m-1 p-1 mb-2"
+            >
+              <ImagePlus size={13} className="text-violet" />
+              <span className="font-body font-bold text-[12.5px] text-violet">
+                {imageUploading ? "Reading image..." : "Drag an image, or click to add one"}
+              </span>
+            </DropZone>
+            {references.length > 0 && (
+              <div className="flex flex-col gap-2 mt-1">
+                {references.map((ref, i) => (
+                  <div key={i} className="flex items-start gap-2.5 bg-paper rounded-lg p-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={ref.dataUrl}
+                      alt=""
+                      className="w-14 h-14 rounded object-cover shrink-0"
+                    />
+                    <input
+                      value={ref.caption}
+                      onChange={(e) =>
+                        setReferences((prev) =>
+                          prev.map((r, j) => (j === i ? { ...r, caption: e.target.value } : r))
+                        )
+                      }
+                      placeholder="What should the client take from this?"
+                      className="flex-1 self-center font-body text-xs text-ink bg-white border border-line rounded-lg px-2.5 py-2 outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setReferences((prev) => prev.filter((_, j) => j !== i))}
+                      className="text-text-muted hover:text-overdue bg-none border-none cursor-pointer p-1 shrink-0 self-center"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          <Card>
+            <FieldHeading>How should this be read?</FieldHeading>
+            <p className="text-xs text-text-muted mb-3">
+              How you want the brief interpreted and the quote structured. Leave it empty and the
+              AI decides based on the brief and your past quotes. Tap any of these to start:
+            </p>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {INTERPRETATION_PRESETS.map((preset) => (
+                <Chip key={preset.label} onClick={() => appendInstruction(preset.text)}>
+                  {preset.label}
+                </Chip>
+              ))}
+            </div>
             <TextField
               value={draft.instructions}
               onChange={(v) => setDraft((d) => ({ ...d, instructions: v }))}
               placeholder={industryQuoteExample(userIndustry)}
               multiline
+              rows={4}
             />
           </Card>
-          <div className="flex gap-5">
-            <Card className="flex-1">
-              <FieldHeading>Pull from memory</FieldHeading>
-              {projectTitles.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {projectTitles.map((name) => {
-                    const active = draft.memoryProjectTitles.includes(name);
-                    return (
-                      <Chip
-                        key={name}
-                        active={active}
-                        onClick={() =>
-                          setDraft((d) => ({
-                            ...d,
-                            memoryProjectTitles: active
-                              ? d.memoryProjectTitles.filter((n) => n !== name)
-                              : [...d.memoryProjectTitles, name],
-                          }))
-                        }
-                      >
-                        {name}
-                      </Chip>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-text-muted text-[12.5px]">
-                  Nothing to pull from yet, once you&apos;ve tracked a few projects, they&apos;ll
-                  show up here to reference for style.
-                </div>
-              )}
-            </Card>
-            <Card className="w-[300px]">
-              <FieldHeading>Detail level</FieldHeading>
-              <div className="flex bg-paper rounded-full p-[3px]">
-                {(["Generic", "Detailed"] as const).map((lvl) => (
-                  <button
-                    key={lvl}
-                    onClick={() => setDraft((d) => ({ ...d, detailLevel: lvl }))}
-                    className={`flex-1 py-2.5 rounded-full border-none cursor-pointer font-body font-semibold text-xs ${
-                      draft.detailLevel === lvl ? "bg-violet text-white" : "bg-transparent text-slate"
-                    }`}
-                  >
-                    {lvl}
-                  </button>
-                ))}
-              </div>
-              <div className="text-xs text-text-muted mt-2.5">
-                Detailed spells out every deliverable and assumption, good for new clients.
-              </div>
-            </Card>
-          </div>
+
           <div className="flex gap-5">
             <Card className="flex-1">
               <FieldHeading required>Your hourly rate</FieldHeading>
@@ -463,18 +515,15 @@ export function QuoteWizard({
                   min={0}
                   step={5}
                   value={draft.hourlyRate || ""}
-                  onChange={(e) =>
-                    setDraft((d) => ({ ...d, hourlyRate: Number(e.target.value) }))
-                  }
+                  onChange={(e) => setDraft((d) => ({ ...d, hourlyRate: Number(e.target.value) }))}
                   placeholder="e.g. 65"
                   className="w-full bg-paper rounded-lg border-none px-3 py-2.5 text-sm text-ink outline-none"
                 />
                 <span className="text-slate text-sm">/hr</span>
               </div>
               <div className="text-xs text-text-muted mt-2.5">
-                Used to reason about price and hours, always asked, so estimates stay tied to
-                what you actually charge. Defaults to your saved currency from Memory →
-                Branding.
+                Price and hours are worked out from this, so estimates stay tied to what you
+                actually charge.
               </div>
             </Card>
             <Card className="flex-1">
@@ -491,33 +540,24 @@ export function QuoteWizard({
                 ))}
               </div>
               <div className="text-xs text-text-muted mt-2.5">
-                Only used if there&apos;s no pricing history to draw from yet, it helps Freely
-                research a realistic market baseline instead of guessing.
+                Only used when there is no pricing history yet, to research a realistic baseline
+                instead of guessing.
               </div>
             </Card>
           </div>
+
           {error && <div className="text-overdue text-[13px]">{error}</div>}
-          <div className="flex justify-between mt-auto">
-            <Button
-              variant="ghost"
-              icon={ChevronLeft}
-              onClick={() => {
-                setError("");
-                setStep(0);
-              }}
-            >
-              Back
-            </Button>
-            <Button icon={ArrowRight} onClick={goToPackagingStep}>
+          <div className="flex justify-end mt-auto">
+            <Button icon={ArrowRight} onClick={goToOutputStep}>
               Continue
             </Button>
           </div>
         </>
       )}
 
-      {step === 2 && (
+      {step === 1 && (
         <>
-          <Topbar eyebrow="Quote - Step 3 of 3" />
+          <Topbar eyebrow="Quote - Step 2 of 2" />
           <div>
             <h1 className="font-display italic text-4xl text-coral m-0">How should we package it?</h1>
             <p className="text-slate text-[15px] mt-2">
@@ -525,7 +565,7 @@ export function QuoteWizard({
               just want to see it.
             </p>
           </div>
-          <Stepper activeIndex={2} />
+          <Stepper activeIndex={1} />
 
           <Card>
             <FieldHeading required>Output</FieldHeading>
@@ -634,57 +674,63 @@ export function QuoteWizard({
           </Card>
 
           <Card>
-            <FieldHeading>Anything specific for this quote?</FieldHeading>
-            <TextField
-              value={draft.outputNotes || ""}
-              onChange={(v) => setDraft((d) => ({ ...d, outputNotes: v }))}
-              placeholder="e.g. keep it to one page, lead with the timeline, don't mention the discovery phase, address it to their CFO..."
-              multiline
-              rows={3}
-            />
-            <div className="text-xs text-text-muted mt-2">
-              A one-off note for this quote only. Anything you want every quote to follow belongs
-              in Memory instead.
+            <FieldHeading>Detail level</FieldHeading>
+            <div className="flex bg-paper rounded-full p-[3px] max-w-[280px]">
+              {(["Generic", "Detailed"] as const).map((lvl) => (
+                <button
+                  key={lvl}
+                  onClick={() => setDraft((d) => ({ ...d, detailLevel: lvl }))}
+                  className={`flex-1 py-2.5 rounded-full border-none cursor-pointer font-body font-semibold text-xs ${
+                    draft.detailLevel === lvl ? "bg-violet text-white" : "bg-transparent text-slate"
+                  }`}
+                >
+                  {lvl}
+                </button>
+              ))}
+            </div>
+            <div className="text-xs text-text-muted mt-2.5">
+              Detailed spells out every deliverable and assumption, which is usually right for a
+              new client.
             </div>
           </Card>
 
           <Card>
-            <FieldHeading>Include in this quote</FieldHeading>
+            <FieldHeading>Add sections</FieldHeading>
             <p className="text-xs text-text-muted mb-3">
-              All off by default, turn on only what this quote needs.
+              Every quote covers the scope, what you will deliver, and the price with the
+              reasoning behind it. Add anything else this particular quote needs.
             </p>
-            <div className="flex gap-2.5 flex-wrap">
-              <Chip
-                active={draft.includeStrategy}
-                onClick={() => setDraft((d) => ({ ...d, includeStrategy: !d.includeStrategy }))}
-              >
-                Strategy
-              </Chip>
-              <Chip
-                active={draft.includeTimeline}
-                onClick={() => setDraft((d) => ({ ...d, includeTimeline: !d.includeTimeline }))}
-              >
-                Timeline
-              </Chip>
-              <Chip
-                active={draft.includeSOW}
-                onClick={() => setDraft((d) => ({ ...d, includeSOW: !d.includeSOW }))}
-              >
-                Statement of Work
-              </Chip>
-              <Chip
-                active={draft.includeAI}
-                onClick={() => setDraft((d) => ({ ...d, includeAI: !d.includeAI }))}
-              >
-                AI-use disclosure
-              </Chip>
-            </div>
-            <div className="text-xs text-text-muted mt-3">
-              {draft.includeTimeline
-                ? "Timeline is on, so you'll get a week-by-week breakdown, shown as a roadmap with the detail spelled out under it."
-                : "Timeline is off, so you'll get a one-line summary of the overall duration. Turn it on for a week-by-week breakdown."}
+            <div className="flex flex-col gap-2">
+              {QUOTE_INCLUSIONS.map((inc) => {
+                const on = Boolean(draft[inc.key]);
+                return (
+                  <button
+                    key={inc.key}
+                    type="button"
+                    onClick={() => setDraft((d) => ({ ...d, [inc.key]: !d[inc.key] }))}
+                    className={`flex items-start gap-3 text-left rounded-lg px-3.5 py-3 cursor-pointer border ${
+                      on ? "border-violet bg-violet-tint" : "border-line bg-paper"
+                    }`}
+                  >
+                    <span
+                      className={`w-4 h-4 rounded-[5px] shrink-0 mt-0.5 flex items-center justify-center ${
+                        on ? "bg-violet" : "bg-white border border-line"
+                      }`}
+                    >
+                      {on && <Check size={11} className="text-white" />}
+                    </span>
+                    <span>
+                      <span className="font-body font-semibold text-[13.5px] text-ink block">
+                        {inc.label}
+                      </span>
+                      <span className="text-[11.5px] text-slate">{inc.hint}</span>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </Card>
+
           {generating && (
             <div className="flex flex-col gap-2">
               <div className="h-1.5 w-full bg-line rounded-full overflow-hidden">

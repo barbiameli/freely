@@ -33,6 +33,7 @@ import {
 } from "@/actions/briefs";
 import { currencySymbol } from "@/lib/currencies";
 import { TimelineView } from "@/components/timeline-view";
+import type { BriefExtras } from "@/lib/anthropic";
 
 interface Strategy {
   goal: string;
@@ -56,6 +57,7 @@ interface Brief {
   scope: string;
   deliverables: string[];
   timeline: string;
+  extras?: BriefExtras | null;
   strategy?: Strategy | null;
   currency?: string | null;
   price: number;
@@ -287,6 +289,48 @@ export function BriefView({
           <Section eyebrow="Timeline" tint="paper" accent="violet">
             <TimelineView timeline={brief.timeline} className="text-ink" />
           </Section>
+
+          {brief.extras?.paymentTerms && (
+            <Section eyebrow="Payment terms" tint="paper" accent="violet">
+              <p className="text-sm m-0 text-ink">{brief.extras.paymentTerms}</p>
+              <p className="text-xs text-text-muted mt-2 m-0">
+                Bank details are never included here. They go on the invoice.
+              </p>
+            </Section>
+          )}
+
+          {brief.extras?.revisions && (
+            <Section eyebrow="Revisions" tint="paper" accent="violet">
+              <p className="text-sm m-0 text-ink">{brief.extras.revisions}</p>
+            </Section>
+          )}
+
+          {brief.extras?.availability && (
+            <Section eyebrow="Availability" tint="paper" accent="violet">
+              <p className="text-sm m-0 text-ink">{brief.extras.availability}</p>
+            </Section>
+          )}
+
+          {brief.extras?.terms && (
+            <Section eyebrow="Terms" tint="paper" accent="violet">
+              <div className="flex flex-col gap-2.5">
+                {(
+                  [
+                    ["Cancellation", brief.extras.terms.cancellation],
+                    ["Ownership", brief.extras.terms.ownership],
+                    ["Confidentiality", brief.extras.terms.confidentiality],
+                  ] as const
+                ).map(([label, text]) => (
+                  <div key={label}>
+                    <span className="text-[11px] font-bold text-slate uppercase tracking-[0.04em]">
+                      {label}
+                    </span>
+                    <p className="text-[13.5px] m-0 mt-0.5 text-ink leading-relaxed">{text}</p>
+                  </div>
+                ))}
+              </div>
+            </Section>
+          )}
 
           <div className="bg-ink rounded-card px-5 py-4 flex justify-between items-center">
             <div>

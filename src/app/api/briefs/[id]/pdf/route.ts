@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import { renderBriefPdf, type StrategyPdfData, type PdfTemplate } from "@/lib/pdf";
+import type { BriefExtras } from "@/lib/anthropic";
 import { resolveBrand } from "@/lib/branding";
 
 const VALID_TEMPLATES: PdfTemplate[] = ["classic", "editorial", "minimal"];
@@ -40,6 +41,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     deliverables: brief.deliverables as string[],
     timeline: brief.timeline,
     strategy: brief.strategy as StrategyPdfData | null,
+    extras: brief.extras as BriefExtras | null,
     price: brief.price,
     hours: brief.hours,
     hourlyRate: brief.hourlyRate,

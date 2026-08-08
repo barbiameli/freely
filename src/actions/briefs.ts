@@ -14,6 +14,7 @@ import {
   type MemoryContext,
   type PricingHistoryEntry,
   type Strategy,
+  type BriefExtras,
 } from "@/lib/anthropic";
 
 export type ActionResult<T = undefined> =
@@ -50,6 +51,31 @@ async function buildMemoryContext(user: {
 // Next's server-action bundler. See src/app/api/extract-text/route.ts.
 
 export type QuoteDraftPayload = QuoteDraftInput;
+
+/** Pulls the optional add-on sections off the generated brief into the shape
+ * stored in Brief.extras, sanitized. */
+function sanitizeExtras(generated: GeneratedBrief): BriefExtras {
+  return {
+    ...(generated.terms
+      ? {
+          terms: {
+            cancellation: sanitizeText(generated.terms.cancellation),
+            ownership: sanitizeText(generated.terms.ownership),
+            confidentiality: sanitizeText(generated.terms.confidentiality),
+          },
+        }
+      : {}),
+    ...(generated.revisions ? { revisions: sanitizeText(generated.revisions) } : {}),
+    ...(generated.availability ? { availability: sanitizeText(generated.availability) } : {}),
+    ...(generated.paymentTerms ? { paymentTerms: sanitizeText(generated.paymentTerms) } : {}),
+  };
+}
+
+function hasExtras(generated: GeneratedBrief): boolean {
+  return Boolean(
+    generated.terms || generated.revisions || generated.availability || generated.paymentTerms
+  );
+}
 
 /** Postgres rejects NUL bytes inside jsonb just as it does in text columns,
  * so the Strategy object needs the same cleaning as the plain-text fields
@@ -136,6 +162,7 @@ export async function generateBriefAction(
         // we just omit the field entirely (undefined) and let the column
         // default to NULL, rather than passing null directly.
         ...(generated.strategy ? { strategy: sanitizeStrategy(generated.strategy) } : {}),
+        ...(hasExtras(generated) ? { extras: sanitizeExtras(generated) } : {}),
         price: generated.price,
         hours: generated.hours,
         hourlyRate: draft.hourlyRate,
@@ -146,7 +173,6 @@ export async function generateBriefAction(
         branding: draft.branding || "freely",
         settings: {
           instructions: sanitizeText(draft.instructions),
-          outputNotes: sanitizeText(draft.outputNotes || ""),
           memoryProjectTitles: draft.memoryProjectTitles.map(sanitizeText),
           detailLevel: draft.detailLevel,
           format: draft.format,
@@ -154,6 +180,9 @@ export async function generateBriefAction(
           includeAI: draft.includeAI,
           includeStrategy: draft.includeStrategy,
           includeTimeline: draft.includeTimeline,
+          includeTerms: draft.includeTerms ?? false,
+          includeRevisions: draft.includeRevisions ?? false,
+          includeAvailability: draft.includeAvailability ?? false,
           usedPricingResearch: pricingHistory.length === 0,
         },
       },

@@ -38,6 +38,24 @@ export const strategySchema = z.object({
 });
 export type Strategy = z.infer<typeof strategySchema>;
 
+/** The optional add-on sections, grouped so they can be stored in one JSON
+ * column rather than needing a migration each time we add another. */
+export const briefExtrasSchema = z.object({
+  terms: z
+    .object({
+      cancellation: z.string(),
+      ownership: z.string(),
+      confidentiality: z.string(),
+    })
+    .optional(),
+  revisions: z.string().optional(),
+  availability: z.string().optional(),
+  /** When money is due. Never contains bank details: those belong on an
+   * invoice, not on a quote that may be published to a public URL. */
+  paymentTerms: z.string().optional(),
+});
+export type BriefExtras = z.infer<typeof briefExtrasSchema>;
+
 export const briefSchema = z.object({
   title: z.string().min(1),
   client: z.string().min(1),
@@ -49,6 +67,10 @@ export const briefSchema = z.object({
   strategy: strategySchema.optional(),
   price: z.number().nonnegative(),
   hours: z.number().nonnegative(),
+  terms: briefExtrasSchema.shape.terms,
+  revisions: briefExtrasSchema.shape.revisions,
+  availability: briefExtrasSchema.shape.availability,
+  paymentTerms: briefExtrasSchema.shape.paymentTerms,
 });
 
 export type GeneratedBrief = z.infer<typeof briefSchema>;
@@ -90,11 +112,12 @@ export interface QuoteDraftInput {
   /** Which color/logo treatment to render with — see lib/branding.ts. Also
    * purely a presentation choice, doesn't affect generation. */
   branding?: "freely" | "own" | "mono-light" | "mono-dark";
-  /** Free-text steer that applies to this one quote only, collected in the
-   * wizard's final step. Distinct from `instructions` (how to brief it) and
-   * from Memory (how every quote should read): this is for one-off asks like
-   * "keep it to one page" or "lead with the timeline". */
-  outputNotes?: string;
+  /** Cancellation, ownership and confidentiality terms. */
+  includeTerms?: boolean;
+  /** How many revision rounds are included. */
+  includeRevisions?: boolean;
+  /** Capacity, start date and response times. */
+  includeAvailability?: boolean;
   /** ISO 4217 code (e.g. "USD", "EUR") — defaults from the user's saved
    * preference. Purely a display choice; the underlying number is the same
    * regardless of currency. */
@@ -129,7 +152,7 @@ export function buildSystemPrompt(memory: MemoryContext | string): string {
           .map((f) => `--- ${f.name} ---\n${f.text.slice(0, 4000)}`)
           .join("\n\n")}`
       : null,
-    'Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly this schema: {"title": string, "client": string, "scope": string, "deliverables": string[], "timeline": string, "strategy": {"goal": string, "findings": string[], "openQuestions": string[]} (optional object, omit entirely if Strategy wasn\'t requested), "price": number, "hours": number}. Each findings/openQuestions entry should be one short, standalone bullet point, not a run-on sentence with several ideas mashed together, and never numbered manually (e.g. no "(1)" prefixes) since the UI renders them as a real bulleted list. If you used web search to research rates, do not include citations or URLs in the JSON, fold the conclusion into your reasoning about price only.',
+    'Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly this schema: {"title": string, "client": string, "scope": string, "deliverables": string[], "timeline": string, "strategy": {"goal": string, "findings": string[], "openQuestions": string[]} (optional object, omit entirely if Strategy wasn\'t requested), "price": number, "hours": number, "terms": {"cancellation": string, "ownership": string, "confidentiality": string} (optional), "revisions": string (optional), "availability": string (optional), "paymentTerms": string (optional)}. Omit any optional key entirely unless it was explicitly requested. Never put bank account numbers, sort codes, IBANs, card details or any other payment credentials anywhere in the response, not even as an example or placeholder: quotes can be published to a public web address, so payment details belong only on an invoice. Each findings/openQuestions entry should be one short, standalone bullet point, not a run-on sentence with several ideas mashed together, and never numbered manually (e.g. no "(1)" prefixes) since the UI renders them as a real bulleted list. If you used web search to research rates, do not include citations or URLs in the JSON, fold the conclusion into your reasoning about price only.',
   ];
 
   return sections.filter(Boolean).join(" ");
@@ -196,10 +219,31 @@ Good: "Week 3-4: Design - wireframes for the 6 core screens, then two rounds of 
 Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
     : `\nTimeline requirements. Timeline is NOT being broken out as its own section on this quote, so return "timeline" as a single short sentence giving the overall duration and rough shape, e.g. "About 6 weeks from kickoff to handover, with design in the first half and build in the second." Do not return a staged, line-by-line breakdown.`;
 
-  // A per-quote steer, kept last so it reads as the most specific
-  // instruction in the prompt and can override the general guidance above.
-  const outputNotesInstruction = draft.outputNotes?.trim()
-    ? `\nSpecific request for this one quote, follow it closely, it takes precedence over the general guidance above: "${draft.outputNotes.trim()}"`
+  // Optional sections. Each is off unless asked for, so the baseline quote
+  // stays scope, deliverables and price rather than a wall of boilerplate.
+  const extraSections: string[] = [];
+  if (draft.includeTerms) {
+    extraSections.push(
+      'Include a "terms" object: {"cancellation": string, "ownership": string, "confidentiality": string}. Write each as one or two plain-English sentences a freelancer would actually stand behind, not legalese, and do not invent jurisdiction-specific clauses.'
+    );
+  }
+  if (draft.includeRevisions) {
+    extraSections.push(
+      'Include a "revisions" string: how many rounds of changes are included at which stages, and what would count as new work priced separately. Base the number on the deliverables and hours, not a generic "two rounds".'
+    );
+  }
+  if (draft.includeAvailability) {
+    extraSections.push(
+      'Include an "availability" string: when this work could start, roughly how much capacity per week it assumes, and expected response time. Keep it honest and non-committal about exact dates.'
+    );
+  }
+  if (draft.includeSOW) {
+    extraSections.push(
+      'Include a "paymentTerms" string describing WHEN money is due, for example a deposit split and invoicing points tied to the stages. Never include bank account details, card details or payment instructions: state that payment details are provided on the invoice.'
+    );
+  }
+  const extraSectionsInstruction = extraSections.length
+    ? `\n${extraSections.join("\n")}`
     : "";
 
   return [
@@ -216,7 +260,7 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
     formatPricingHistory(pricingHistory, symbol),
     strategyInstruction,
     timelineInstruction,
-    outputNotesInstruction,
+    extraSectionsInstruction,
     `\nWrite a project quote based on this. Keep deliverables as a list of short, concrete items (4-7 items), name actual artifacts, not phases. Give a realistic timeline, a price in ${currencyCode}, and estimated hours that are consistent with the pricing approach above.`,
   ]
     .filter(Boolean)

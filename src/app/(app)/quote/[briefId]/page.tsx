@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
-import type { Strategy } from "@/lib/anthropic";
+import type { Strategy, BriefExtras } from "@/lib/anthropic";
 import { BriefView } from "./brief-view";
 
 export default async function BriefPage({ params }: { params: { briefId: string } }) {
@@ -31,6 +31,7 @@ export default async function BriefPage({ params }: { params: { briefId: string 
         deliverables: brief.deliverables as string[],
         timeline: brief.timeline,
         strategy: (brief.strategy as Strategy | null) ?? null,
+        extras: (brief.extras as BriefExtras | null) ?? null,
         currency: brief.currency,
         price: brief.price,
         hours: brief.hours,
