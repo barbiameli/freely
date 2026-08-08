@@ -37,9 +37,11 @@ export interface InvoiceLineItem {
  * shape of payment details varies by country and by bank, and a rigid set of
  * fields would be wrong for most people. */
 export interface InvoicePaymentDetails {
-  /** e.g. "Wise - GBP account\nSort code: 23-14-70\nAccount: 95887925" */
+  /** Free text, printed as typed. What a client needs in order to pay differs
+   * by country (IBAN and BIC, sort code and account number, routing number,
+   * CLABE), so this is deliberately not a set of structured fields. */
   block: string;
-  /** e.g. "IBAN available on request" */
+  /** An optional trailing line, e.g. "full details on request". */
   note?: string;
 }
 

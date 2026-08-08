@@ -521,14 +521,23 @@ export function InvoiceEditor({
             label="Details as they should appear"
             value={paymentBlock}
             onChange={setPaymentBlock}
-            placeholder={"Wise - GBP account\nSort code: 00-00-00\nAccount: 12345678"}
+            placeholder={"Account name\nBank\nAccount identifier"}
             multiline
           />
+          {/* Free text, not structured fields: what a client needs to pay you
+              differs by country, so any fixed set of inputs would be wrong for
+              most people. */}
+          <p className="text-[11.5px] text-text-muted m-0 -mt-1">
+            Whatever your bank actually needs, typed exactly as it should print. IBAN and BIC or
+            SWIFT across the EU, sort code and account number in the UK, routing and account number
+            in the US, CLABE in Mexico, and so on. Include the account name, since some banks
+            reject a transfer without it.
+          </p>
           <Field
             label="Extra line, optional"
             value={paymentNote}
             onChange={setPaymentNote}
-            placeholder="IBAN available on request"
+            placeholder="e.g. full details on request, or a payment link"
           />
           <label className="flex items-start gap-2.5 text-[12.5px] text-slate cursor-pointer">
             <input
