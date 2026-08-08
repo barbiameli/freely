@@ -376,3 +376,91 @@ export async function addBriefToTrackAction(briefId: string) {
   revalidatePath("/track");
   redirect(`/track/${project.id}`);
 }
+
+/**
+ * Saves hand-edits to the generated text.
+ *
+ * Changing one word by re-prompting is slow, costs a generation, and can
+ * quietly rewrite the parts you were happy with. Everything client-facing is
+ * therefore directly editable, and this is what persists it. Sanitized on the
+ * way in like every other write.
+ */
+export async function updateBriefContentAction(
+  briefId: string,
+  patch: {
+    title?: string;
+    client?: string;
+    scope?: string;
+    deliverables?: string[];
+    timeline?: string;
+    price?: number;
+    hours?: number;
+    extras?: BriefExtras;
+  }
+): Promise<ActionResult<undefined>> {
+  const user = await requireFullUser();
+  const brief = await prisma.brief.findFirst({
+    where: { id: briefId, ...teamScopeWhere(user) },
+    select: { id: true },
+  });
+  if (!brief) return { ok: false, error: "Quote not found." };
+
+  if (patch.title !== undefined && !patch.title.trim()) {
+    return { ok: false, error: "The quote needs a title." };
+  }
+  if (patch.price !== undefined && (Number.isNaN(patch.price) || patch.price < 0)) {
+    return { ok: false, error: "Price needs to be a number, and not a negative one." };
+  }
+  if (patch.hours !== undefined && (Number.isNaN(patch.hours) || patch.hours < 0)) {
+    return { ok: false, error: "Hours needs to be a number, and not a negative one." };
+  }
+
+  try {
+    await prisma.brief.update({
+      where: { id: brief.id },
+      data: {
+        ...(patch.title !== undefined ? { title: sanitizeText(patch.title) } : {}),
+        ...(patch.client !== undefined ? { client: sanitizeText(patch.client) } : {}),
+        ...(patch.scope !== undefined ? { scope: sanitizeText(patch.scope) } : {}),
+        ...(patch.deliverables !== undefined
+          ? { deliverables: patch.deliverables.map(sanitizeText).filter(Boolean) }
+          : {}),
+        ...(patch.timeline !== undefined ? { timeline: sanitizeText(patch.timeline) } : {}),
+        ...(patch.price !== undefined ? { price: patch.price } : {}),
+        ...(patch.hours !== undefined ? { hours: patch.hours } : {}),
+        ...(patch.extras !== undefined ? { extras: sanitizeExtrasInput(patch.extras) } : {}),
+      },
+    });
+  } catch (err) {
+    console.error("[updateBriefContentAction] failed to save edits", err);
+    return {
+      ok: false,
+      error: `Couldn't save that edit. ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+
+  revalidatePath(`/quote/${briefId}`);
+  return { ok: true, data: undefined };
+}
+
+/** Same cleaning as generated extras, for user-typed edits. */
+function sanitizeExtrasInput(extras: BriefExtras): BriefExtras {
+  return {
+    ...(extras.terms
+      ? {
+          terms: {
+            cancellation: sanitizeText(extras.terms.cancellation),
+            ownership: sanitizeText(extras.terms.ownership),
+            confidentiality: sanitizeText(extras.terms.confidentiality),
+          },
+        }
+      : {}),
+    ...(extras.revisions !== undefined ? { revisions: sanitizeText(extras.revisions) } : {}),
+    ...(extras.availability !== undefined
+      ? { availability: sanitizeText(extras.availability) }
+      : {}),
+    ...(extras.paymentTerms !== undefined
+      ? { paymentTerms: sanitizeText(extras.paymentTerms) }
+      : {}),
+  };
+}

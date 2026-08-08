@@ -16,6 +16,7 @@ import {
   FileText,
   Copy,
   ExternalLink,
+  Eye,
 } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
@@ -27,6 +28,7 @@ import {
   refineBriefAction,
   addBriefToTrackAction,
   setBriefPublishedAction,
+  updateBriefContentAction,
   addBriefExampleAction,
   updateBriefExampleAction,
   deleteBriefExampleAction,
@@ -34,6 +36,7 @@ import {
 import { currencySymbol } from "@/lib/currencies";
 import { TimelineView } from "@/components/timeline-view";
 import type { BriefExtras } from "@/lib/anthropic";
+import { EditableText } from "@/components/editable-text";
 
 interface Strategy {
   goal: string;
@@ -69,6 +72,7 @@ interface Brief {
   publicSlug: string;
   template?: string;
   sourceText?: string | null;
+  accepted?: { name: string; email: string; at: string } | null;
   examples: Example[];
 }
 
@@ -125,6 +129,31 @@ export function BriefView({
   const [published, setPublished] = useState(brief.published);
   const [publishing, setPublishing] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Held locally so an edit appears instantly. The server action persists in
+  // the background and only surfaces if it fails.
+  const [content, setContent] = useState({
+    title: brief.title,
+    client: brief.client,
+    scope: brief.scope,
+    deliverables: brief.deliverables,
+    timeline: brief.timeline,
+    extras: brief.extras ?? null,
+  });
+
+  async function saveContent(patch: Parameters<typeof updateBriefContentAction>[1]) {
+    setContent((c) => ({
+      ...c,
+      ...(patch.title !== undefined ? { title: patch.title } : {}),
+      ...(patch.client !== undefined ? { client: patch.client } : {}),
+      ...(patch.scope !== undefined ? { scope: patch.scope } : {}),
+      ...(patch.deliverables !== undefined ? { deliverables: patch.deliverables } : {}),
+      ...(patch.timeline !== undefined ? { timeline: patch.timeline } : {}),
+      ...(patch.extras !== undefined ? { extras: patch.extras } : {}),
+    }));
+    const result = await updateBriefContentAction(brief.id, patch);
+    if (!result.ok) setError(result.error);
+  }
 
   const [showSource, setShowSource] = useState(false);
   const [examples, setExamples] = useState(brief.examples);
@@ -207,17 +236,62 @@ export function BriefView({
 
   return (
     <>
-      <Topbar eyebrow="Quote - Brief" />
+      <Topbar eyebrow={published ? "Quote - Published" : "Quote - Draft"} />
+
+      {/* This page is a working view, not the finished article: it shows the
+          content without any branding applied. That was reading as "done",
+          so the state is now stated outright rather than implied by a stamp. */}
+      {brief.accepted && (
+        <div className="flex items-start gap-2.5 bg-mint-solid rounded-card px-4 py-3">
+          <Check size={15} className="text-success shrink-0 mt-0.5" />
+          <div className="text-[12.5px] text-ink">
+            <span className="font-semibold">Accepted by {brief.accepted.name}</span> on{" "}
+            {new Date(brief.accepted.at).toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+            {brief.accepted.email ? ` (${brief.accepted.email})` : ""}. The published page records
+            it.
+          </div>
+        </div>
+      )}
+
+      {!published && !brief.accepted && (
+        <div className="flex items-start gap-2.5 bg-coral-tint rounded-card px-4 py-3">
+          <Eye size={15} className="text-coral shrink-0 mt-0.5" />
+          <div className="text-[12.5px] text-ink">
+            <span className="font-semibold">This is your working draft.</span> Nobody else can see
+            it yet, and your branding isn&apos;t applied here. Publish it as a page or download the
+            PDF to see how the client will actually receive it.
+          </div>
+        </div>
+      )}
 
       {/* Hero, mirrors a real quotation cover: dark block, big number stats */}
       <div className="bg-ink rounded-card px-7 py-6 flex justify-between items-start">
         <div>
           <span className="font-body font-bold text-[10px] tracking-[0.08em] uppercase text-coral">
-            Quotation
+            {published ? "Quotation, published" : "Quotation, draft"}
           </span>
-          <h1 className="font-display italic text-[28px] text-white m-0 mt-1">{brief.title}</h1>
-          <p className="text-[13px] text-white/60 mt-1.5">
-            {brief.client} · generated {new Date(brief.createdAt).toLocaleString()}
+          <div className="mt-1">
+            <EditableText
+              value={content.title}
+              onSave={(title) => saveContent({ title })}
+              ariaLabel="Quote title"
+              className="font-display italic text-[28px] text-white"
+            />
+          </div>
+          <p className="text-[13px] text-white/60 mt-1.5 flex items-center gap-1.5">
+            <span className="inline-block max-w-[260px]">
+              <EditableText
+                value={content.client}
+                onSave={(client) => saveContent({ client })}
+                ariaLabel="Client name"
+                className="text-[13px] text-white/60"
+              />
+            </span>
+            <span>· generated {new Date(brief.createdAt).toLocaleString()}</span>
           </p>
           <div className="flex gap-7 mt-4">
             <div>
@@ -272,60 +346,141 @@ export function BriefView({
           )}
 
           <Section eyebrow="Scope" tint="paper" accent="coral">
-            <p className="text-sm leading-relaxed m-0 text-ink">{brief.scope}</p>
+            <EditableText
+              value={content.scope}
+              onSave={(scope) => saveContent({ scope })}
+              ariaLabel="Scope"
+              multiline
+              className="text-sm leading-relaxed text-ink"
+            />
           </Section>
 
           <Section eyebrow="Deliverables" tint="coral" accent="coral">
             <div className="flex flex-col gap-2">
-              {brief.deliverables.map((d, i) => (
-                <div key={i} className="flex items-center gap-2 text-[13.5px] text-ink font-medium">
-                  <CheckCircle2 size={14} className="text-coral shrink-0" />
-                  <span>{d}</span>
+              {content.deliverables.map((d, i) => (
+                <div key={i} className="flex items-start gap-2 text-[13.5px] text-ink font-medium">
+                  <CheckCircle2 size={14} className="text-coral shrink-0 mt-0.5" />
+                  <span className="flex-1">
+                    <EditableText
+                      value={d}
+                      onSave={(next) =>
+                        saveContent({
+                          // An emptied line removes that deliverable, which is
+                          // the obvious meaning of deleting all its text.
+                          deliverables: content.deliverables
+                            .map((item, j) => (j === i ? next : item))
+                            .filter((item) => item.trim()),
+                        })
+                      }
+                      ariaLabel={`Deliverable ${i + 1}`}
+                      className="text-[13.5px] text-ink font-medium"
+                    />
+                  </span>
                 </div>
               ))}
+              <button
+                type="button"
+                onClick={() => saveContent({ deliverables: [...content.deliverables, "New deliverable"] })}
+                className="text-[12.5px] font-bold text-violet text-left bg-none border-none cursor-pointer p-0 mt-1"
+              >
+                Add a deliverable
+              </button>
             </div>
           </Section>
 
           <Section eyebrow="Timeline" tint="paper" accent="violet">
-            <TimelineView timeline={brief.timeline} className="text-ink" />
+            <TimelineView timeline={content.timeline} className="text-ink" />
+            <div className="mt-3 pt-3 border-t border-line">
+              <span className="text-[10px] font-bold text-slate uppercase tracking-[0.06em]">
+                Edit stages, one per line
+              </span>
+              <div className="mt-1.5">
+                <EditableText
+                  value={content.timeline}
+                  onSave={(timeline) => saveContent({ timeline })}
+                  ariaLabel="Timeline"
+                  multiline
+                  className="text-[12.5px] leading-relaxed text-slate"
+                />
+              </div>
+            </div>
           </Section>
 
-          {brief.extras?.paymentTerms && (
+          {content.extras?.paymentTerms && (
             <Section eyebrow="Payment terms" tint="paper" accent="violet">
-              <p className="text-sm m-0 text-ink">{brief.extras.paymentTerms}</p>
+              <EditableText
+                value={content.extras.paymentTerms}
+                onSave={(next) =>
+                  saveContent({ extras: { ...content.extras, paymentTerms: next } })
+                }
+                ariaLabel="Payment terms"
+                multiline
+                className="text-sm leading-relaxed text-ink"
+              />
               <p className="text-xs text-text-muted mt-2 m-0">
                 Bank details are never included here. They go on the invoice.
               </p>
             </Section>
           )}
 
-          {brief.extras?.revisions && (
+          {content.extras?.revisions && (
             <Section eyebrow="Revisions" tint="paper" accent="violet">
-              <p className="text-sm m-0 text-ink">{brief.extras.revisions}</p>
+              <EditableText
+                value={content.extras.revisions}
+                onSave={(next) =>
+                  saveContent({ extras: { ...content.extras, revisions: next } })
+                }
+                ariaLabel="Revisions"
+                multiline
+                className="text-sm leading-relaxed text-ink"
+              />
             </Section>
           )}
 
-          {brief.extras?.availability && (
+          {content.extras?.availability && (
             <Section eyebrow="Availability" tint="paper" accent="violet">
-              <p className="text-sm m-0 text-ink">{brief.extras.availability}</p>
+              <EditableText
+                value={content.extras.availability}
+                onSave={(next) =>
+                  saveContent({ extras: { ...content.extras, availability: next } })
+                }
+                ariaLabel="Availability"
+                multiline
+                className="text-sm leading-relaxed text-ink"
+              />
             </Section>
           )}
 
-          {brief.extras?.terms && (
+          {content.extras?.terms && (
             <Section eyebrow="Terms" tint="paper" accent="violet">
               <div className="flex flex-col gap-2.5">
                 {(
                   [
-                    ["Cancellation", brief.extras.terms.cancellation],
-                    ["Ownership", brief.extras.terms.ownership],
-                    ["Confidentiality", brief.extras.terms.confidentiality],
+                    ["Cancellation", "cancellation"],
+                    ["Ownership", "ownership"],
+                    ["Confidentiality", "confidentiality"],
                   ] as const
-                ).map(([label, text]) => (
-                  <div key={label}>
+                ).map(([label, field]) => (
+                  <div key={field}>
                     <span className="text-[11px] font-bold text-slate uppercase tracking-[0.04em]">
                       {label}
                     </span>
-                    <p className="text-[13.5px] m-0 mt-0.5 text-ink leading-relaxed">{text}</p>
+                    <div className="mt-0.5">
+                      <EditableText
+                        value={content.extras!.terms![field]}
+                        onSave={(next) =>
+                          saveContent({
+                            extras: {
+                              ...content.extras,
+                              terms: { ...content.extras!.terms!, [field]: next },
+                            },
+                          })
+                        }
+                        ariaLabel={label}
+                        multiline
+                        className="text-[13.5px] text-ink leading-relaxed"
+                      />
+                    </div>
                   </div>
                 ))}
               </div>

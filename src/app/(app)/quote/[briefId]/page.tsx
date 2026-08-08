@@ -14,6 +14,14 @@ export default async function BriefPage({ params }: { params: { briefId: string 
   });
   if (!brief) notFound();
 
+  // The generated Prisma client in this sandbox predates these columns; the
+  // schema has them and the deploy build regenerates it.
+  const acceptance = brief as unknown as {
+    acceptedAt: Date | null;
+    acceptedName: string | null;
+    acceptedEmail: string | null;
+  };
+
   const history = await prisma.brief.findMany({
     where: scope,
     orderBy: { createdAt: "desc" },
@@ -41,6 +49,13 @@ export default async function BriefPage({ params }: { params: { briefId: string 
         published: brief.published,
         publicSlug: brief.publicSlug,
         template: brief.template,
+        accepted: acceptance.acceptedAt
+          ? {
+              name: acceptance.acceptedName || "the client",
+              email: acceptance.acceptedEmail || "",
+              at: acceptance.acceptedAt.toISOString(),
+            }
+          : null,
         sourceText: brief.sourceText,
         examples: brief.examples.map((e) => ({
           id: e.id,

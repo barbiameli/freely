@@ -25,6 +25,11 @@ export default async function PublicQuotePage({ params }: { params: { slug: stri
 
   if (!brief || !brief.published) notFound();
 
+  const settings = (brief.settings as { includeSOW?: boolean } | null) ?? {};
+  // Same reason as in actions/acceptance.ts: the sandbox's generated Prisma
+  // client predates these columns, though the schema has them.
+  const acceptance = brief as unknown as { acceptedAt: Date | null; acceptedName: string | null };
+
   const publicBrief: PublicBrief = {
     title: brief.title,
     client: brief.client,
@@ -38,6 +43,16 @@ export default async function PublicQuotePage({ params }: { params: { slug: stri
     hourlyRate: brief.hourlyRate,
     currency: brief.currency,
     examples: brief.examples.map((e) => ({ name: e.name, dataUrl: e.dataUrl, caption: e.caption })),
+    slug: params.slug,
+    // Accepting a bare price estimate isn't meaningful, so signing is only
+    // offered when the quote carries a Statement of Work.
+    signable: Boolean(settings.includeSOW),
+    accepted: acceptance.acceptedAt
+      ? {
+          name: acceptance.acceptedName || "the client",
+          at: acceptance.acceptedAt.toISOString(),
+        }
+      : null,
   };
 
   const resolved = resolveBrand(brief.branding, brief.user);

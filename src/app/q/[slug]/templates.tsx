@@ -1,6 +1,7 @@
 import { currencySymbol } from "@/lib/currencies";
 import { TimelineView } from "@/components/timeline-view";
 import type { BriefExtras } from "@/lib/anthropic";
+import { AcceptBlock } from "./accept-block";
 
 interface Strategy {
   goal: string;
@@ -29,6 +30,11 @@ export interface PublicBrief {
   currency?: string | null;
   examples: Example[];
   extras?: BriefExtras | null;
+  /** Slug and acceptance state, so a published quote can be signed off. Only
+   * offered when the quote carries a Statement of Work. */
+  slug: string;
+  signable: boolean;
+  accepted?: { name: string; at: string } | null;
 }
 
 export interface BrandProps {
@@ -157,6 +163,14 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
               {currencySymbol(brief.currency)}{brief.price.toLocaleString()}
             </span>
           </div>
+
+          {brief.signable && (
+            <AcceptBlock
+              slug={brief.slug}
+              accepted={brief.accepted}
+              accent={brand.accent}
+            />
+          )}
         </div>
       </div>
     </div>
@@ -278,6 +292,10 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
             {currencySymbol(brief.currency)}{brief.price.toLocaleString()}
           </span>
         </div>
+
+        {brief.signable && (
+          <AcceptBlock slug={brief.slug} accepted={brief.accepted} accent={brand.accent} />
+        )}
       </div>
     </div>
   );
@@ -377,6 +395,16 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
             {currencySymbol(brief.currency)}{brief.price.toLocaleString()}
           </span>
         </div>
+
+        {brief.signable && (
+          <AcceptBlock
+            slug={brief.slug}
+            accepted={brief.accepted}
+            accent={ink}
+            muted={muted}
+            dark={dark}
+          />
+        )}
       </div>
     </div>
   );
@@ -466,6 +494,10 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
           <span className="text-[13px] text-slate">Total</span>
           <span className="text-[22px] font-bold">{currencySymbol(brief.currency)}{brief.price.toLocaleString()}</span>
         </div>
+
+        {brief.signable && (
+          <AcceptBlock slug={brief.slug} accepted={brief.accepted} accent="#181722" />
+        )}
       </div>
     </div>
   );

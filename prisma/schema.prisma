@@ -165,6 +165,17 @@ model Brief {
   publicSlug     String      @unique @default(cuid())
   // Which of the 3 public-page visual templates to render at /q/[publicSlug].
   template       String      @default("classic")
+
+  // Client acceptance, captured on the public page: a simple electronic
+  // signature (typed name plus an explicit tick), which is what most
+  // freelance engagements actually run on. Deliberately not a full e-sign
+  // provider: that needs a paid account and an envelope lifecycle, and can
+  // be layered on later without changing these fields.
+  acceptedAt     DateTime?
+  acceptedName   String?
+  acceptedEmail  String?
+  // Kept only as evidence of who accepted, alongside the timestamp.
+  acceptedIp     String?
   // Which color/logo treatment to render with: "freely" (Freely's own look),
   // "own" (this freelancer's saved brand colors/logo from Memory), or a
   // built-in neutral preset not tied to either ("mono-light"/"mono-dark").
