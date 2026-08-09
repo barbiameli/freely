@@ -396,6 +396,7 @@ export async function updateBriefContentAction(
     price?: number;
     hours?: number;
     extras?: BriefExtras;
+    strategy?: Strategy;
   }
 ): Promise<ActionResult<undefined>> {
   const user = await requireFullUser();
@@ -429,6 +430,7 @@ export async function updateBriefContentAction(
         ...(patch.price !== undefined ? { price: patch.price } : {}),
         ...(patch.hours !== undefined ? { hours: patch.hours } : {}),
         ...(patch.extras !== undefined ? { extras: sanitizeExtrasInput(patch.extras) } : {}),
+        ...(patch.strategy !== undefined ? { strategy: sanitizeStrategy(patch.strategy) } : {}),
       },
     });
   } catch (err) {

@@ -1,111 +1,140 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Pencil } from "lucide-react";
 
 /**
- * Click-to-edit text that saves on blur.
+ * A block of generated text with an explicit Edit link and a Save button.
  *
- * Re-prompting the AI to change one word is slow, costs a generation, and can
- * rewrite the parts you were already happy with. Anything client-facing is
- * therefore editable in place: click, type, click away.
+ * The first version of this was click-to-edit with a pencil that only appeared
+ * on hover, and saved silently on blur. Nobody could tell the text was
+ * editable, which is the whole point of it being there. So: a visible "Edit"
+ * link, a real textarea, and an explicit Save. Escape or Cancel backs out.
  *
- * Deliberately not a form with a Save button. The thing being edited is
- * usually a single sentence, and a modal or an explicit save step for that
- * makes small corrections feel more expensive than they are.
+ * `children` renders the read-only view, which can be richer than the raw text
+ * (the timeline draws a roadmap from it, for instance). When omitted the raw
+ * value is shown.
  */
-export function EditableText({
+export function EditableBlock({
   value,
   onSave,
-  multiline,
+  children,
+  ariaLabel,
+  hint,
   className,
   placeholder,
-  ariaLabel,
+  singleLine,
 }: {
   value: string;
-  /** Called only when the text actually changed. */
   onSave: (next: string) => void | Promise<void>;
-  multiline?: boolean;
+  children?: ReactNode;
+  ariaLabel?: string;
+  /** Shown under the textarea while editing, e.g. "one stage per line". */
+  hint?: string;
   className?: string;
   placeholder?: string;
-  ariaLabel?: string;
+  singleLine?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
-  const inputRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
+  const [saving, setSaving] = useState(false);
+  const ref = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
 
-  // Regenerating or refining replaces the text underneath us, so track the
+  // Regenerating or refining replaces the text underneath, so follow the
   // incoming value whenever we aren't mid-edit.
   useEffect(() => {
     if (!editing) setDraft(value);
   }, [value, editing]);
 
   useEffect(() => {
-    if (editing && inputRef.current) {
-      inputRef.current.focus();
-      const len = inputRef.current.value.length;
-      inputRef.current.setSelectionRange(len, len);
+    if (editing && ref.current) {
+      ref.current.focus();
+      const end = ref.current.value.length;
+      ref.current.setSelectionRange(end, end);
     }
   }, [editing]);
 
-  function commit() {
-    setEditing(false);
+  async function commit() {
     const next = draft.trim();
-    if (next !== value.trim()) onSave(next);
+    if (next === value.trim()) {
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    await onSave(next);
+    setSaving(false);
+    setEditing(false);
+  }
+
+  function cancel() {
+    setDraft(value);
+    setEditing(false);
   }
 
   if (editing) {
     const shared = {
-      ref: inputRef as never,
+      ref: ref as never,
       value: draft,
       onChange: (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) =>
         setDraft(e.target.value),
-      onBlur: commit,
+      placeholder,
       "aria-label": ariaLabel,
-      className: `w-full bg-white border border-violet rounded-lg px-2.5 py-2 outline-none font-body ${
-        className || ""
-      }`,
+      className:
+        "w-full font-body text-[13.5px] text-ink leading-relaxed bg-white border border-violet rounded-lg px-3 py-2.5 outline-none",
     };
-    return multiline ? (
-      <textarea
-        {...shared}
-        rows={Math.min(12, Math.max(3, draft.split("\n").length + 1))}
-        onKeyDown={(e) => {
-          // Enter inserts a newline here, so Escape is the way out.
-          if (e.key === "Escape") {
-            setDraft(value);
-            setEditing(false);
-          }
-        }}
-      />
-    ) : (
-      <input
-        {...shared}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") commit();
-          if (e.key === "Escape") {
-            setDraft(value);
-            setEditing(false);
-          }
-        }}
-      />
+    return (
+      <div>
+        {singleLine ? (
+          <input
+            {...shared}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commit();
+              if (e.key === "Escape") cancel();
+            }}
+          />
+        ) : (
+          <textarea
+            {...shared}
+            rows={Math.min(14, Math.max(3, draft.split("\n").length + 1))}
+            onKeyDown={(e) => {
+              // Enter makes a newline in a textarea, so Escape is the way out.
+              if (e.key === "Escape") cancel();
+            }}
+          />
+        )}
+        {hint && <div className="text-[11px] text-text-muted mt-1">{hint}</div>}
+        <div className="flex items-center gap-3 mt-2">
+          <button
+            type="button"
+            onClick={commit}
+            disabled={saving}
+            className="font-body font-bold text-[12px] text-white bg-violet rounded-lg px-3.5 py-1.5 border-none cursor-pointer disabled:opacity-50"
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+          <button
+            type="button"
+            onClick={cancel}
+            disabled={saving}
+            className="text-[12px] text-text-muted bg-none border-none cursor-pointer p-0"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
     );
   }
 
   return (
-    <button
-      type="button"
-      onClick={() => setEditing(true)}
-      title="Click to edit"
-      className={`group text-left w-full bg-none border-none cursor-text p-0 whitespace-pre-wrap ${
-        className || ""
-      }`}
-    >
-      {value || <span className="text-text-muted">{placeholder || "Click to add"}</span>}
-      <Pencil
-        size={11}
-        className="inline-block ml-1.5 mb-0.5 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity"
-      />
-    </button>
+    <div className="group">
+      <div className={className}>{children ?? value}</div>
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className="flex items-center gap-1 text-[11.5px] font-bold text-violet bg-none border-none cursor-pointer p-0 mt-2"
+      >
+        <Pencil size={11} /> Edit
+      </button>
+    </div>
   );
 }

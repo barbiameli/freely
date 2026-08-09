@@ -36,7 +36,7 @@ import {
 import { currencySymbol } from "@/lib/currencies";
 import { TimelineView } from "@/components/timeline-view";
 import type { BriefExtras } from "@/lib/anthropic";
-import { EditableText } from "@/components/editable-text";
+import { EditableBlock } from "@/components/editable-text";
 
 interface Strategy {
   goal: string;
@@ -139,6 +139,9 @@ export function BriefView({
     deliverables: brief.deliverables,
     timeline: brief.timeline,
     extras: brief.extras ?? null,
+    strategy: brief.strategy ?? null,
+    price: brief.price,
+    hours: brief.hours,
   });
 
   async function saveContent(patch: Parameters<typeof updateBriefContentAction>[1]) {
@@ -150,6 +153,9 @@ export function BriefView({
       ...(patch.deliverables !== undefined ? { deliverables: patch.deliverables } : {}),
       ...(patch.timeline !== undefined ? { timeline: patch.timeline } : {}),
       ...(patch.extras !== undefined ? { extras: patch.extras } : {}),
+      ...(patch.strategy !== undefined ? { strategy: patch.strategy } : {}),
+      ...(patch.price !== undefined ? { price: patch.price } : {}),
+      ...(patch.hours !== undefined ? { hours: patch.hours } : {}),
     }));
     const result = await updateBriefContentAction(brief.id, patch);
     if (!result.ok) setError(result.error);
@@ -274,24 +280,28 @@ export function BriefView({
           <span className="font-body font-bold text-[10px] tracking-[0.08em] uppercase text-coral">
             {published ? "Quotation, published" : "Quotation, draft"}
           </span>
-          <div className="mt-1">
-            <EditableText
+          <div className="mt-1 max-w-[520px]">
+            <EditableBlock
               value={content.title}
               onSave={(title) => saveContent({ title })}
               ariaLabel="Quote title"
               className="font-display italic text-[28px] text-white"
+              singleLine
             />
           </div>
-          <p className="text-[13px] text-white/60 mt-1.5 flex items-center gap-1.5">
-            <span className="inline-block max-w-[260px]">
-              <EditableText
+          <p className="text-[13px] text-white/60 mt-1.5">
+            <span className="inline-block max-w-[320px] align-middle">
+              <EditableBlock
                 value={content.client}
                 onSave={(client) => saveContent({ client })}
                 ariaLabel="Client name"
                 className="text-[13px] text-white/60"
+                singleLine
               />
             </span>
-            <span>· generated {new Date(brief.createdAt).toLocaleString()}</span>
+          </p>
+          <p className="text-[12px] text-white/40 mt-1">
+            Generated {new Date(brief.createdAt).toLocaleString()}
           </p>
           <div className="flex gap-7 mt-4">
             <div>
@@ -321,100 +331,128 @@ export function BriefView({
 
       <div className="flex gap-5 flex-1 min-h-0 mt-5">
         <div className="flex-[2] flex flex-col gap-4 overflow-y-auto pr-1">
-          {brief.strategy && (
+          {content.strategy && (
             <Section eyebrow="Strategy" tint="violet" accent="violet">
-              <p className="text-sm leading-relaxed m-0 text-ink font-medium">{brief.strategy.goal}</p>
-              {brief.strategy.findings.length > 0 && (
-                <div className="mt-3">
-                  <span className="text-[11px] font-bold text-slate uppercase tracking-[0.04em]">Findings</span>
-                  <div className="mt-1.5">
-                    <Bullets items={brief.strategy.findings} />
-                  </div>
+              <EditableBlock
+                value={content.strategy.goal}
+                onSave={(goal) =>
+                  saveContent({ strategy: { ...content.strategy!, goal } })
+                }
+                ariaLabel="Strategy goal"
+                className="text-sm leading-relaxed text-ink font-medium"
+              />
+
+              <div className="mt-4">
+                <span className="text-[11px] font-bold text-slate uppercase tracking-[0.04em]">
+                  Findings
+                </span>
+                <div className="mt-1.5">
+                  <EditableBlock
+                    value={content.strategy.findings.join("\n")}
+                    onSave={(next) =>
+                      saveContent({
+                        strategy: {
+                          ...content.strategy!,
+                          findings: next
+                            .split("\n")
+                            .map((l) => l.replace(/^[-*\u2022\u00b7]\s*/, "").trim())
+                            .filter(Boolean),
+                        },
+                      })
+                    }
+                    ariaLabel="Findings"
+                    hint="One finding per line."
+                  >
+                    <Bullets items={content.strategy.findings} />
+                  </EditableBlock>
                 </div>
-              )}
-              {brief.strategy.openQuestions.length > 0 && (
-                <div className="mt-3">
-                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate uppercase tracking-[0.04em]">
-                    <HelpCircle size={13} /> Open questions
-                  </div>
-                  <div className="mt-1.5">
-                    <Bullets items={brief.strategy.openQuestions} dense />
-                  </div>
+              </div>
+
+              <div className="mt-4">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate uppercase tracking-[0.04em]">
+                  <HelpCircle size={13} /> Open questions
                 </div>
-              )}
+                <div className="mt-1.5">
+                  <EditableBlock
+                    value={content.strategy.openQuestions.join("\n")}
+                    onSave={(next) =>
+                      saveContent({
+                        strategy: {
+                          ...content.strategy!,
+                          openQuestions: next
+                            .split("\n")
+                            .map((l) => l.replace(/^[-*\u2022\u00b7]\s*/, "").trim())
+                            .filter(Boolean),
+                        },
+                      })
+                    }
+                    ariaLabel="Open questions"
+                    hint="One question per line. Leave empty if there are none."
+                  >
+                    {content.strategy.openQuestions.length ? (
+                      <Bullets items={content.strategy.openQuestions} dense />
+                    ) : (
+                      <span className="text-[13px] text-text-muted">None.</span>
+                    )}
+                  </EditableBlock>
+                </div>
+              </div>
             </Section>
           )}
 
           <Section eyebrow="Scope" tint="paper" accent="coral">
-            <EditableText
+            <EditableBlock
               value={content.scope}
               onSave={(scope) => saveContent({ scope })}
               ariaLabel="Scope"
-              multiline
               className="text-sm leading-relaxed text-ink"
             />
           </Section>
 
           <Section eyebrow="Deliverables" tint="coral" accent="coral">
-            <div className="flex flex-col gap-2">
-              {content.deliverables.map((d, i) => (
-                <div key={i} className="flex items-start gap-2 text-[13.5px] text-ink font-medium">
-                  <CheckCircle2 size={14} className="text-coral shrink-0 mt-0.5" />
-                  <span className="flex-1">
-                    <EditableText
-                      value={d}
-                      onSave={(next) =>
-                        saveContent({
-                          // An emptied line removes that deliverable, which is
-                          // the obvious meaning of deleting all its text.
-                          deliverables: content.deliverables
-                            .map((item, j) => (j === i ? next : item))
-                            .filter((item) => item.trim()),
-                        })
-                      }
-                      ariaLabel={`Deliverable ${i + 1}`}
-                      className="text-[13.5px] text-ink font-medium"
-                    />
-                  </span>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => saveContent({ deliverables: [...content.deliverables, "New deliverable"] })}
-                className="text-[12.5px] font-bold text-violet text-left bg-none border-none cursor-pointer p-0 mt-1"
-              >
-                Add a deliverable
-              </button>
-            </div>
+            <EditableBlock
+              value={content.deliverables.join("\n")}
+              onSave={(next) =>
+                saveContent({
+                  deliverables: next
+                    .split("\n")
+                    .map((line) => line.replace(/^[-*\u2022]\s*/, "").trim())
+                    .filter(Boolean),
+                })
+              }
+              ariaLabel="Deliverables"
+              hint="One deliverable per line. Delete a line to remove it."
+            >
+              <div className="flex flex-col gap-2">
+                {content.deliverables.map((d, i) => (
+                  <div key={i} className="flex items-start gap-2 text-[13.5px] text-ink font-medium">
+                    <CheckCircle2 size={14} className="text-coral shrink-0 mt-0.5" />
+                    <span>{d}</span>
+                  </div>
+                ))}
+              </div>
+            </EditableBlock>
           </Section>
 
           <Section eyebrow="Timeline" tint="paper" accent="violet">
-            <TimelineView timeline={content.timeline} className="text-ink" />
-            <div className="mt-3 pt-3 border-t border-line">
-              <span className="text-[10px] font-bold text-slate uppercase tracking-[0.06em]">
-                Edit stages, one per line
-              </span>
-              <div className="mt-1.5">
-                <EditableText
-                  value={content.timeline}
-                  onSave={(timeline) => saveContent({ timeline })}
-                  ariaLabel="Timeline"
-                  multiline
-                  className="text-[12.5px] leading-relaxed text-slate"
-                />
-              </div>
-            </div>
+            <EditableBlock
+              value={content.timeline}
+              onSave={(timeline) => saveContent({ timeline })}
+              ariaLabel="Timeline"
+              hint={'One stage per line, as "Week 1-2: Label - what happens".'}
+            >
+              <TimelineView timeline={content.timeline} className="text-ink" />
+            </EditableBlock>
           </Section>
 
           {content.extras?.paymentTerms && (
             <Section eyebrow="Payment terms" tint="paper" accent="violet">
-              <EditableText
+              <EditableBlock
                 value={content.extras.paymentTerms}
                 onSave={(next) =>
                   saveContent({ extras: { ...content.extras, paymentTerms: next } })
                 }
                 ariaLabel="Payment terms"
-                multiline
                 className="text-sm leading-relaxed text-ink"
               />
               <p className="text-xs text-text-muted mt-2 m-0">
@@ -425,13 +463,12 @@ export function BriefView({
 
           {content.extras?.revisions && (
             <Section eyebrow="Revisions" tint="paper" accent="violet">
-              <EditableText
+              <EditableBlock
                 value={content.extras.revisions}
                 onSave={(next) =>
                   saveContent({ extras: { ...content.extras, revisions: next } })
                 }
                 ariaLabel="Revisions"
-                multiline
                 className="text-sm leading-relaxed text-ink"
               />
             </Section>
@@ -439,13 +476,12 @@ export function BriefView({
 
           {content.extras?.availability && (
             <Section eyebrow="Availability" tint="paper" accent="violet">
-              <EditableText
+              <EditableBlock
                 value={content.extras.availability}
                 onSave={(next) =>
                   saveContent({ extras: { ...content.extras, availability: next } })
                 }
                 ariaLabel="Availability"
-                multiline
                 className="text-sm leading-relaxed text-ink"
               />
             </Section>
@@ -466,7 +502,7 @@ export function BriefView({
                       {label}
                     </span>
                     <div className="mt-0.5">
-                      <EditableText
+                      <EditableBlock
                         value={content.extras!.terms![field]}
                         onSave={(next) =>
                           saveContent({
@@ -477,7 +513,6 @@ export function BriefView({
                           })
                         }
                         ariaLabel={label}
-                        multiline
                         className="text-[13.5px] text-ink leading-relaxed"
                       />
                     </div>
@@ -487,20 +522,56 @@ export function BriefView({
             </Section>
           )}
 
-          <div className="bg-ink rounded-card px-5 py-4 flex justify-between items-center">
-            <div>
+          <div className="bg-ink rounded-card px-5 py-4 flex justify-between items-start gap-6">
+            <div className="min-w-0">
               <span className="font-body font-bold text-[10px] tracking-[0.08em] uppercase text-white/50">
                 Investment
               </span>
-              <p className="text-[13px] m-0 mt-1 text-white/80">
-                {brief.hours} hours
-                {brief.hourlyRate ? ` · ~${currencySymbol(brief.currency)}${brief.hourlyRate}/hr` : ""}
-              </p>
+              <div className="mt-1 max-w-[160px]">
+                <EditableBlock
+                  value={String(content.hours)}
+                  onSave={(next) => {
+                    const hours = Number(next);
+                    if (!Number.isFinite(hours) || hours < 0) {
+                      setError("Hours needs to be a number.");
+                      return;
+                    }
+                    saveContent({ hours });
+                  }}
+                  ariaLabel="Estimated hours"
+                  className="text-[13px] text-white/80"
+                  singleLine
+                >
+                  <span>
+                    {content.hours} hours
+                    {brief.hourlyRate
+                      ? ` · ~${currencySymbol(brief.currency)}${brief.hourlyRate}/hr`
+                      : ""}
+                  </span>
+                </EditableBlock>
+              </div>
             </div>
-            <span className="font-body font-bold text-[24px] text-white">
-              {currencySymbol(brief.currency)}
-              {brief.price.toLocaleString()}
-            </span>
+            <div className="max-w-[190px] text-right">
+              <EditableBlock
+                value={String(content.price)}
+                onSave={(next) => {
+                  const price = Number(next);
+                  if (!Number.isFinite(price) || price < 0) {
+                    setError("Price needs to be a number.");
+                    return;
+                  }
+                  saveContent({ price });
+                }}
+                ariaLabel="Total price"
+                className="font-body font-bold text-[24px] text-white"
+                singleLine
+              >
+                <span>
+                  {currencySymbol(brief.currency)}
+                  {content.price.toLocaleString()}
+                </span>
+              </EditableBlock>
+            </div>
           </div>
 
           {/* Examples, reference files with a note on how they apply, e.g.
