@@ -188,6 +188,10 @@ export function QuoteWizard({
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
   const [references, setReferences] = useState<ReferenceImage[]>([]);
+  // Which interpretation presets are currently in the instructions, so they
+  // read as selected and clicking again takes them out rather than pasting a
+  // second copy.
+  const [appliedPresets, setAppliedPresets] = useState<string[]>([]);
   const [imageUploading, setImageUploading] = useState(false);
 
   // A late-arriving response from a request the user already cancelled (or
@@ -288,13 +292,29 @@ export function QuoteWizard({
     }
   }
 
-  /** Presets append rather than replace, so several can be combined and
-   * anything already typed survives. */
-  function appendInstruction(text: string) {
-    setDraft((d) => ({
-      ...d,
-      instructions: d.instructions.trim() ? `${d.instructions.trim()}\n${text}` : text,
-    }));
+  /** Presets toggle. Several can be combined, anything typed by hand survives,
+   * and clicking a selected one removes just that preset's text. */
+  function togglePreset(label: string, text: string) {
+    const on = appliedPresets.includes(label);
+    setAppliedPresets((prev) => (on ? prev.filter((l) => l !== label) : [...prev, label]));
+    setDraft((d) => {
+      if (on) {
+        // Remove that preset's exact text. If it isn't found (because it was
+        // edited by hand) the chip still deselects, rather than silently
+        // stripping something the user wrote.
+        const without = d.instructions
+          .split("\n")
+          .filter((line) => line.trim() !== text)
+          .join("\n")
+          .replace(/\n{3,}/g, "\n\n")
+          .trim();
+        return { ...d, instructions: without };
+      }
+      return {
+        ...d,
+        instructions: d.instructions.trim() ? `${d.instructions.trim()}\n${text}` : text,
+      };
+    });
   }
 
   function handleReferenceImage(file: File) {
@@ -480,7 +500,11 @@ export function QuoteWizard({
             </p>
             <div className="flex flex-wrap gap-2 mb-3">
               {INTERPRETATION_PRESETS.map((preset) => (
-                <Chip key={preset.label} onClick={() => appendInstruction(preset.text)}>
+                <Chip
+                  key={preset.label}
+                  active={appliedPresets.includes(preset.label)}
+                  onClick={() => togglePreset(preset.label, preset.text)}
+                >
                   {preset.label}
                 </Chip>
               ))}
