@@ -136,7 +136,7 @@ export function MemoryView({
           <PersonaCard initial={aiPersona} updatedAt={personaUpdatedAt} />
         </section>
 
-        <section id="voice" className="scroll-mt-6 grid grid-cols-2 gap-5">
+        <section id="voice" className="scroll-mt-6 grid grid-cols-1 md:grid-cols-2 gap-5">
           <AutosaveNotes
             field={null}
             initial={initialInstructions}
@@ -155,7 +155,7 @@ export function MemoryView({
           />
         </section>
 
-        <section id="story" className="scroll-mt-6 grid grid-cols-2 gap-5">
+        <section id="story" className="scroll-mt-6 grid grid-cols-1 md:grid-cols-2 gap-5">
           <AutosaveNotes
             field="storyNotes"
             initial={initialStory}
@@ -437,7 +437,7 @@ function ReferencesCard({
         </span>
       </div>
 
-      <div className="grid grid-cols-3 gap-5 mt-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mt-3">
         <div>
           <div className="text-[11px] font-semibold text-slate mb-2 uppercase tracking-wide">Files</div>
           <DropZone
@@ -475,7 +475,7 @@ function ReferencesCard({
               {uploading === "image" ? "Uploading..." : "+ Upload or drag an image"}
             </span>
           </DropZone>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {imageItems.map((img) => (
               // eslint-disable-next-line @next/next/no-img-element
               <div key={img.id} className="relative group">
@@ -696,7 +696,7 @@ function BrandingCard({
         )}
       </div>
 
-      <div className="flex gap-8 items-start">
+      <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 items-start">
         <div>
           <div className="text-[11px] font-semibold text-slate mb-2 uppercase tracking-wide">Logo</div>
           {logo ? (
@@ -718,7 +718,7 @@ function BrandingCard({
           </div>
           {logoError && <div className="text-overdue text-[11px] mt-1 max-w-[180px]">{logoError}</div>}
         </div>
-        <div className="flex gap-6">
+        <div className="flex flex-wrap gap-6">
           <div>
             <div className="text-[11px] font-semibold text-slate mb-2 uppercase tracking-wide">Primary color</div>
             <input
@@ -824,7 +824,7 @@ function ConnectorRow({
   const [working, setWorking] = useState(false);
 
   return (
-    <div className="flex items-center justify-between bg-paper rounded-lg px-4 py-3">
+    <div className="flex flex-wrap items-center justify-between gap-3 bg-paper rounded-lg px-4 py-3">
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-white border border-line flex items-center justify-center text-slate">
           {icon}

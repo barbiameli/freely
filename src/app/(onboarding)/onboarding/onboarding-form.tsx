@@ -327,7 +327,7 @@ function ReferencesStep({
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-paper rounded-lg p-3.5 border border-dashed border-line">
           <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate uppercase tracking-wide mb-2.5">
             <FileText size={12} /> Files
@@ -550,7 +550,7 @@ function BrandingStep({
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-paper rounded-lg p-3.5 border border-dashed border-line">
           <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate uppercase tracking-wide mb-2.5">
             <FileText size={12} /> Brand guidelines

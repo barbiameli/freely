@@ -4,7 +4,7 @@ import { FreelyLogo } from "@/components/freely-logo";
 
 export default function SignUpPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-paper">
+    <div className="min-h-screen flex items-center justify-center bg-paper px-5 py-10">
       <Card className="w-full max-w-sm">
         <div className="mb-1">
           <FreelyLogo />

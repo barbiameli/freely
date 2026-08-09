@@ -275,7 +275,7 @@ export function BriefView({
       )}
 
       {/* Hero, mirrors a real quotation cover: dark block, big number stats */}
-      <div className="bg-ink rounded-card px-7 py-6 flex justify-between items-start">
+      <div className="bg-ink rounded-card px-5 py-5 md:px-7 md:py-6 flex justify-between items-start gap-4">
         <div>
           <span className="font-body font-bold text-[10px] tracking-[0.08em] uppercase text-coral">
             {published ? "Quotation, published" : "Quotation, draft"}
@@ -303,7 +303,7 @@ export function BriefView({
           <p className="text-[12px] text-white/40 mt-1">
             Generated {new Date(brief.createdAt).toLocaleString()}
           </p>
-          <div className="flex gap-7 mt-4">
+          <div className="flex flex-wrap gap-5 md:gap-7 mt-4">
             <div>
               <div className="font-body font-bold text-[20px] text-white">
                 {currencySymbol(brief.currency)}
@@ -329,7 +329,7 @@ export function BriefView({
         <Stamp status={brief.status} size={56} />
       </div>
 
-      <div className="flex gap-5 flex-1 min-h-0 mt-5">
+      <div className="flex flex-col md:flex-row gap-5 flex-1 min-h-0 mt-5">
         <div className="flex-[2] flex flex-col gap-4 overflow-y-auto pr-1">
           {content.strategy && (
             <Section eyebrow="Strategy" tint="violet" accent="violet">
@@ -637,7 +637,7 @@ export function BriefView({
           </Section>
         </div>
 
-        <div className="w-[300px] flex flex-col gap-[18px]">
+        <div className="w-full md:w-[300px] flex flex-col gap-[18px]">
           <Card>
             <Label>Refine</Label>
             <TextField
@@ -710,7 +710,7 @@ export function BriefView({
           CTA here rather than a faint link tucked next to the stamp. Once
           it's live the button is replaced in place by the link itself, since
           that's what you came back for, with unpublish demoted underneath. */}
-      <div className="flex justify-end items-start gap-3">
+      <div className="flex flex-wrap justify-start md:justify-end items-start gap-3">
         <Button variant="ghost" onClick={() => router.push("/quote")}>
           New quote
         </Button>

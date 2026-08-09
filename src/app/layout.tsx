@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Raleway } from "next/font/google";
 import "./globals.css";
 
@@ -24,6 +24,15 @@ const fontLabelFamily = `"Neutra Text Light Alt", "Neutra Text", ui-sans-serif, 
 export const metadata: Metadata = {
   title: "Freely",
   description: "Quote, track, and report on client work, powered by AI.",
+};
+
+/** Without this, mobile browsers render at a ~980px virtual width and scale
+ * the whole page down, so everything looks tiny however carefully the
+ * breakpoints are written. maximumScale is left alone deliberately: capping
+ * zoom breaks pinch-to-zoom for anyone who needs it. */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({

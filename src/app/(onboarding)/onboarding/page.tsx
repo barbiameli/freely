@@ -9,7 +9,7 @@ export default async function OnboardingPage() {
   if (user.industry) redirect("/quote");
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-paper p-6">
+    <div className="min-h-screen flex items-center justify-center bg-paper px-5 py-8 sm:p-6">
       <Card className="w-full max-w-lg">
         <h1 className="font-display italic text-3xl text-coral mb-1">What kind of work do you do?</h1>
         <p className="text-slate text-sm mb-6">

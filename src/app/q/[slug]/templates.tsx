@@ -63,7 +63,7 @@ function extraBlocks(extras?: BriefExtras | null): [string, string][] {
 function ExampleGallery({ examples, tint }: { examples: Example[]; tint?: string }) {
   if (examples.length === 0) return null;
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       {examples.map((ex, i) => (
         <div key={i} className="rounded-lg overflow-hidden border border-line" style={tint ? { background: tint } : undefined}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -82,9 +82,9 @@ function ExampleGallery({ examples, tint }: { examples: Example[]; tint?: string
  * and bullets instead of a flat scroll of text. */
 export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: BrandProps }) {
   return (
-    <div className="min-h-screen bg-paper flex items-center justify-center p-6">
+    <div className="min-h-screen bg-paper flex items-center justify-center p-3 sm:p-6">
       <div className="w-full max-w-2xl bg-white border border-line rounded-card shadow-panel overflow-hidden">
-        <div className="bg-paper px-8 py-5 flex items-center justify-between">
+        <div className="bg-paper px-5 sm:px-8 py-5 flex items-center justify-between gap-3">
           {brand.logoDataUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={brand.logoDataUrl} alt="" className="h-8" />
@@ -95,7 +95,7 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
           )}
           <span className="font-label text-xs text-slate uppercase">Quote</span>
         </div>
-        <div className="p-9 flex flex-col gap-4">
+        <div className="p-5 sm:p-9 flex flex-col gap-4">
           <div>
             <h1 className="font-display italic text-3xl m-0" style={{ color: brand.primary }}>
               {brief.title}
@@ -182,7 +182,7 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
 export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand: BrandProps }) {
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-3xl mx-auto px-10 py-16">
+      <div className="max-w-3xl mx-auto px-5 sm:px-10 py-10 sm:py-16">
         <div className="flex items-center justify-between mb-14">
           {brand.logoDataUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -198,11 +198,11 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
         <span className="text-[11px] tracking-[0.15em] uppercase" style={{ color: brand.primary }}>
           For {brief.client}
         </span>
-        <h1 className="font-display italic text-[44px] leading-[1.1] m-0 mt-3 text-ink">
+        <h1 className="font-display italic text-[30px] sm:text-[44px] leading-[1.15] sm:leading-[1.1] m-0 mt-3 text-ink">
           {brief.title}
         </h1>
 
-        <div className="flex gap-10 mt-10 pb-10 border-b" style={{ borderColor: brand.accent }}>
+        <div className="flex flex-wrap gap-6 sm:gap-10 mt-10 pb-10 border-b" style={{ borderColor: brand.accent }}>
           <div>
             <div className="font-body font-bold text-[26px] text-ink">{currencySymbol(brief.currency)}{brief.price.toLocaleString()}</div>
             <div className="text-[10px] uppercase tracking-[0.08em] text-slate mt-1">Total</div>
@@ -312,7 +312,7 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
   const line = dark ? "rgba(255,255,255,0.18)" : "rgba(17,17,17,0.18)";
   return (
     <div className="min-h-screen" style={{ background: bg, color: ink }}>
-      <div className="max-w-xl mx-auto px-8 py-14">
+      <div className="max-w-xl mx-auto px-5 sm:px-8 py-10 sm:py-14">
         <div className="flex items-center justify-between pb-6" style={{ borderBottom: `1.5px solid ${ink}` }}>
           <span className="text-sm font-bold tracking-[0.08em] uppercase">Quote</span>
           <span className="text-[10px] tracking-[0.15em] uppercase" style={{ color: muted }}>
@@ -322,7 +322,7 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
 
         <h1 className="text-[24px] font-bold m-0 mt-8">{brief.title}</h1>
 
-        <div className="flex gap-8 mt-6 pb-6 text-[13px]" style={{ borderBottom: `1px solid ${line}` }}>
+        <div className="flex flex-wrap gap-4 sm:gap-8 mt-6 pb-6 text-[13px]" style={{ borderBottom: `1px solid ${line}` }}>
           <span>
             <strong>{currencySymbol(brief.currency)}{brief.price.toLocaleString()}</strong> total
           </span>
@@ -415,7 +415,7 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
 export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: BrandProps }) {
   return (
     <div className="min-h-screen bg-white text-ink">
-      <div className="max-w-xl mx-auto px-8 py-14">
+      <div className="max-w-xl mx-auto px-5 sm:px-8 py-10 sm:py-14">
         <div className="flex items-center justify-between pb-6 border-b border-ink">
           {brand.logoDataUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -429,7 +429,7 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
         <h1 className="text-[24px] font-bold m-0 mt-8">{brief.title}</h1>
         <p className="text-[13px] text-slate mt-1">{brief.client}</p>
 
-        <div className="flex gap-8 mt-6 pb-6 border-b border-line text-[13px]">
+        <div className="flex flex-wrap gap-4 sm:gap-8 mt-6 pb-6 border-b border-line text-[13px]">
           <span>
             <strong>{currencySymbol(brief.currency)}{brief.price.toLocaleString()}</strong> total
           </span>

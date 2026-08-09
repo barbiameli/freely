@@ -217,9 +217,9 @@ export function InvoiceEditor({
     <>
       <Topbar eyebrow={`Invoice #${String(invoice.number).padStart(4, "0")}`} />
 
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
         <div>
-          <h1 className="font-display italic text-4xl text-coral m-0">
+          <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">
             Invoice #{String(invoice.number).padStart(4, "0")}
           </h1>
           <p className="text-slate text-[15px] mt-2">
@@ -229,7 +229,7 @@ export function InvoiceEditor({
             </Link>
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Button
             variant="outline"
             icon={Check}
@@ -247,7 +247,7 @@ export function InvoiceEditor({
         </div>
       </div>
 
-      <div className="flex gap-5">
+      <div className="flex flex-col md:flex-row gap-4 md:gap-5">
         <Card className="flex-1">
           <Label>From</Label>
           <div className="flex flex-col gap-2.5 mt-1">
@@ -335,7 +335,7 @@ export function InvoiceEditor({
         <div className="flex flex-col gap-3 mt-1">
           {form.lineItems.map((item, i) => (
             <div key={i} className="bg-paper rounded-lg p-3">
-              <div className="flex gap-2.5 items-start">
+              <div className="flex flex-col md:flex-row gap-2.5 items-stretch md:items-start">
                 <div className="flex-1 flex flex-col gap-2">
                   <input
                     value={item.title}
@@ -365,7 +365,7 @@ export function InvoiceEditor({
                     className="w-full font-body text-[12.5px] text-slate bg-white border border-line rounded-lg px-2.5 py-2 outline-none"
                   />
                 </div>
-                <div className="flex flex-col gap-2 w-[92px]">
+                <div className="flex flex-row md:flex-col gap-2 md:w-[92px]">
                   <input
                     value={item.rate ?? ""}
                     onChange={(e) =>
@@ -395,7 +395,7 @@ export function InvoiceEditor({
                     className="w-full font-body text-[12.5px] text-ink bg-white border border-line rounded-lg px-2 py-2 outline-none"
                   />
                 </div>
-                <div className="w-[110px]">
+                <div className="md:w-[110px]">
                   <input
                     value={item.amount}
                     onChange={(e) =>
@@ -457,7 +457,7 @@ export function InvoiceEditor({
           </button>
         </div>
 
-        <div className="flex justify-end gap-8 mt-4 pt-4 border-t border-line">
+        <div className="flex flex-wrap justify-start md:justify-end gap-4 md:gap-8 mt-4 pt-4 border-t border-line">
           <span className="text-[13px] text-slate">
             Subtotal {symbol}
             {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
@@ -556,7 +556,7 @@ export function InvoiceEditor({
 
       {error && <div className="text-overdue text-[13px]">{error}</div>}
 
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col-reverse md:flex-row md:justify-between md:items-center gap-4">
         <button
           type="button"
           onClick={async () => {
@@ -568,7 +568,7 @@ export function InvoiceEditor({
         >
           Delete this invoice
         </button>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Button variant="outline" disabled={saving} onClick={() => save()}>
             {saving ? "Saving..." : "Save"}
           </Button>

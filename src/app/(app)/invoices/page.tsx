@@ -24,9 +24,9 @@ export default async function InvoicesPage() {
   return (
     <>
       <Topbar eyebrow="Invoices" />
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
         <div>
-          <h1 className="font-display italic text-4xl text-coral m-0">Invoices</h1>
+          <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">Invoices</h1>
           <p className="text-slate text-[15px] mt-2">
             Built from a tracked project, in the same branding as its quote. Your payment details
             are typed in at download and never saved.
@@ -48,7 +48,7 @@ export default async function InvoicesPage() {
             const overdue = !inv.paid && inv.dueAt.getTime() < Date.now();
             return (
               <Link key={inv.id} href={`/invoices/${inv.id}`} className="no-underline">
-                <Card className="flex items-center justify-between cursor-pointer">
+                <Card className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 cursor-pointer">
                   <div>
                     <div className="flex items-center gap-2.5">
                       <span className="font-body font-bold text-[15px] text-ink">
@@ -63,7 +63,7 @@ export default async function InvoicesPage() {
                       {inv.dueAt.toLocaleDateString("en-GB")}
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 shrink-0">
                     <span className="font-body font-bold text-[15px] text-ink">
                       {currencySymbol(inv.currency)}
                       {total.toLocaleString(undefined, { minimumFractionDigits: 2 })}

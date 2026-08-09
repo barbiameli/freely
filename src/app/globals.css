@@ -26,6 +26,20 @@ select:focus {
   outline-offset: 0;
 }
 
+/* iOS Safari zooms the whole page in when you focus a field whose text is
+   smaller than 16px, and doesn't zoom back out afterwards. The interface uses
+   13px inputs throughout, so on a phone every tap into a field would shunt the
+   layout sideways. Forcing 16px on small screens is the standard fix, and is
+   better than capping maximum-scale in the viewport, which would also disable
+   deliberate pinch-zoom. */
+@media (max-width: 767px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);

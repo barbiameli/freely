@@ -91,7 +91,7 @@ export function ProjectDetail({
 
   return (
     <div className="flex gap-6 flex-1 min-h-0">
-      <Card className="w-[220px] flex-shrink-0 overflow-y-auto">
+      <Card className="w-full md:w-[220px] md:flex-shrink-0 md:overflow-y-auto">
         <Label>All projects</Label>
         <div className="flex flex-col gap-1 mt-1">
           {projectList.map((p) => (
@@ -116,7 +116,7 @@ export function ProjectDetail({
       </Card>
       <div className="flex flex-col gap-7 flex-1 min-w-0">
       <Topbar eyebrow={`Track - ${project.title}`} />
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
         <div>
           <h1 className="font-display italic text-[30px] text-coral m-0">{project.title}</h1>
           <p className="text-slate text-[13px] mt-1.5">{project.client}</p>
@@ -211,7 +211,7 @@ export function ProjectDetail({
             </Button>
           </div>
         </Card>
-        <Card className="w-[300px]">
+        <Card className="w-full md:w-[300px]">
           <Label>Edit details</Label>
           <div className="flex flex-col gap-2.5">
             <Field label="Price ($)">

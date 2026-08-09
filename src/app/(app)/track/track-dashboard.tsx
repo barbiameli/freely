@@ -113,7 +113,7 @@ export function TrackDashboard({ projects }: { projects: ProjectCard[] }) {
   return (
     <>
       <Topbar eyebrow="Track - Projects" />
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
         <div>
           <h1 className="font-display italic text-[32px] text-coral m-0">
             Everything you&apos;re running right now.

@@ -25,7 +25,7 @@ export function Marketing() {
 
 function Header() {
   return (
-    <header className="max-w-5xl mx-auto flex items-center justify-between px-6 py-6">
+    <header className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-4 px-5 sm:px-6 py-6">
       <Link href="/" aria-label="Home">
         <FreelyLogo size="sm" />
       </Link>
@@ -46,8 +46,8 @@ function Header() {
 
 function Hero() {
   return (
-    <section className="max-w-4xl mx-auto text-center px-6 pt-10 pb-16">
-      <h1 className="font-display italic text-[44px] leading-[1.1] text-ink m-0">
+    <section className="max-w-4xl mx-auto text-center px-5 sm:px-6 pt-8 sm:pt-10 pb-12 sm:pb-16">
+      <h1 className="font-display italic text-[32px] sm:text-[44px] leading-[1.15] sm:leading-[1.1] text-ink m-0">
         Quote, track, and report on client work, <span className="text-coral">without the busywork.</span>
       </h1>
       <p className="text-slate text-[16px] mt-6 max-w-lg mx-auto">
@@ -61,16 +61,16 @@ function Hero() {
         alt="The Quote wizard in Freely, showing the first step where you paste or upload a client brief."
         className="w-full rounded-card border border-line shadow-panel mt-10"
       />
-      <div className="flex items-center justify-center gap-3 mt-8">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 mt-8">
         <Link
           href="/signup"
-          className="font-body font-bold text-sm text-white bg-violet px-6 py-3.5 rounded-lg"
+          className="font-body font-bold text-sm text-white bg-violet px-6 py-3.5 rounded-lg text-center"
         >
           Get started for free
         </Link>
         <Link
           href="/signin"
-          className="font-body font-bold text-sm text-violet bg-white border border-violet px-6 py-3.5 rounded-lg"
+          className="font-body font-bold text-sm text-violet bg-white border border-violet px-6 py-3.5 rounded-lg text-center"
         >
           Log in
         </Link>
@@ -100,14 +100,14 @@ function HowAIIsUsed() {
   ];
 
   return (
-    <section className="max-w-3xl mx-auto px-6 py-14 border-t border-line">
+    <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-14 border-t border-line">
       <div className="text-center mb-10">
         <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-violet uppercase tracking-wide mb-3">
           <Sparkles size={13} /> How AI is actually used
         </div>
         <h2 className="font-display italic text-3xl text-ink m-0">AI drafts. You decide.</h2>
       </div>
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {points.map((p) => (
           <div key={p.title}>
             <div className="font-body font-bold text-[14.5px] text-ink mb-1.5">{p.title}</div>
@@ -139,8 +139,8 @@ function Features() {
   ];
 
   return (
-    <section className="max-w-4xl mx-auto px-6 py-14 border-t border-line">
-      <div className="grid grid-cols-3 gap-6">
+    <section className="max-w-4xl mx-auto px-5 sm:px-6 py-12 sm:py-14 border-t border-line">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         {items.map(({ icon: Icon, title, body }) => (
           <div key={title} className="bg-white border border-line rounded-card px-5 py-6">
             <div className="w-9 h-9 rounded-lg bg-violet-tint flex items-center justify-center text-violet mb-3">
@@ -162,9 +162,9 @@ function HowItWorks() {
     { n: "3", title: "Review, send, track", body: "Edit anything, publish the page or PDF, then track the project once it's won." },
   ];
   return (
-    <section className="max-w-3xl mx-auto px-6 py-14 border-t border-line">
+    <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-14 border-t border-line">
       <h2 className="font-display italic text-3xl text-ink text-center m-0 mb-10">How it works</h2>
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         {steps.map((s) => (
           <div key={s.n} className="text-center">
             <div className="w-8 h-8 rounded-full bg-coral text-white font-body font-bold text-sm flex items-center justify-center mx-auto mb-3">
@@ -181,7 +181,7 @@ function HowItWorks() {
 
 function ClosingCTA() {
   return (
-    <section className="max-w-2xl mx-auto text-center px-6 py-16 border-t border-line">
+    <section className="max-w-2xl mx-auto text-center px-5 sm:px-6 py-12 sm:py-16 border-t border-line">
       <div className="flex items-center justify-center gap-2 text-text-muted text-[12px] mb-4">
         <ShieldCheck size={14} /> Free to start, no card required.
       </div>
@@ -198,7 +198,7 @@ function ClosingCTA() {
 
 function Footer() {
   return (
-    <footer className="max-w-5xl mx-auto flex items-center justify-between px-6 py-8 border-t border-line">
+    <footer className="max-w-5xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-5 sm:px-6 py-8 border-t border-line">
       <div className="flex items-center gap-2 text-text-muted text-xs">
         <FreelyLogo size="sm" />
         <span>© {new Date().getFullYear()} Freely.</span>

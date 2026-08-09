@@ -368,7 +368,7 @@ export function QuoteWizard({
         <>
           <Topbar eyebrow="Quote - Step 1 of 2" />
           <div>
-            <h1 className="font-display italic text-4xl text-coral m-0">
+            <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">
               What are we quoting?
             </h1>
             <p className="text-slate text-[15px] mt-2">
@@ -377,7 +377,7 @@ export function QuoteWizard({
             </p>
           </div>
           <Stepper activeIndex={0} />
-          <div className="flex gap-5">
+          <div className="flex flex-col md:flex-row gap-4 md:gap-5">
             <Card
               onClick={() => setSourceMode("upload")}
               className={`flex-1 cursor-pointer ${
@@ -518,7 +518,7 @@ export function QuoteWizard({
             />
           </Card>
 
-          <div className="flex gap-5">
+          <div className="flex flex-col md:flex-row gap-4 md:gap-5">
             <Card className="flex-1">
               <FieldHeading required>Your hourly rate</FieldHeading>
               <div className="flex items-center gap-2">
@@ -571,7 +571,7 @@ export function QuoteWizard({
           </div>
 
           {error && <div className="text-overdue text-[13px]">{error}</div>}
-          <div className="flex justify-end mt-auto">
+          <div className="flex justify-end mt-auto pt-2">
             <Button icon={ArrowRight} onClick={goToOutputStep}>
               Continue
             </Button>
@@ -583,7 +583,7 @@ export function QuoteWizard({
         <>
           <Topbar eyebrow="Quote - Step 2 of 2" />
           <div>
-            <h1 className="font-display italic text-4xl text-coral m-0">How should we package it?</h1>
+            <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">How should we package it?</h1>
             <p className="text-slate text-[15px] mt-2">
               How the finished quote looks and what it includes. The defaults are fine if you
               just want to see it.
@@ -600,7 +600,7 @@ export function QuoteWizard({
             <div className="text-[11px] font-bold text-slate uppercase tracking-wide mb-2">
               Page format
             </div>
-            <div className="flex gap-4 mb-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
               {(["HTML", "PDF", "Figma"] as const).map((fmt) => {
                 const disabled = fmt === "Figma";
                 return (
@@ -638,7 +638,7 @@ export function QuoteWizard({
                 <div className="text-[11px] font-bold text-slate uppercase tracking-wide mb-2">
                   Branding
                 </div>
-                <div className="flex gap-4 mb-5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
                   {BRANDING_OPTIONS.map((opt) => {
                     const disabled = opt.id === "own" && !hasBrand;
                     return (
@@ -670,7 +670,7 @@ export function QuoteWizard({
                 <div className="text-[11px] font-bold text-slate uppercase tracking-wide mb-2">
                   Style
                 </div>
-                <div className="flex gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {(
                     [
                       { id: "classic", name: "Classic", desc: "Dark cover, tinted sections." },
@@ -770,7 +770,7 @@ export function QuoteWizard({
             </div>
           )}
           {error && <div className="text-overdue text-[13px]">{error}</div>}
-          <div className="flex justify-between mt-auto">
+          <div className="flex flex-wrap justify-between items-center gap-3 mt-auto">
             <Button
               variant="ghost"
               icon={ChevronLeft}

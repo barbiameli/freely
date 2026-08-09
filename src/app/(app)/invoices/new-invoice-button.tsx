@@ -40,7 +40,7 @@ export function NewInvoiceButton({
   }
 
   return (
-    <div className="bg-white border border-line rounded-card shadow-panel p-4 w-[320px]">
+    <div className="bg-white border border-line rounded-card shadow-panel p-4 w-full md:w-[320px]">
       <div className="text-[11px] font-bold text-slate uppercase tracking-wide mb-2.5">
         Start from
       </div>
