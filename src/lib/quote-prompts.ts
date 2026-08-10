@@ -31,15 +31,14 @@ export interface QuotePromptPreset {
  * design starts. So the free text is the input and these are four examples of
  * the kind of thing that belongs in it.
  */
-export const PROJECT_PREFERENCE_EXAMPLES: string[] = [
-  "Price this fixed rather than by the hour",
-  "Split it into milestones with a payment at each",
-  "Agree the visual direction before any design starts",
-  "Do the research first and present findings before scoping the rest",
-];
-
-export const PROJECT_PREFERENCE_PLACEHOLDER =
-  "e.g. it is long, so I want the visual direction signed off before the design phase, and payment split across three milestones";
+/** Keys into the dictionary rather than the text itself, so the examples are
+ * translated with everything else. */
+export const PROJECT_PREFERENCE_KEYS = [
+  "exampleFixedPrice",
+  "exampleMilestones",
+  "exampleDirectionFirst",
+  "exampleResearchFirst",
+] as const;
 
 export interface QuoteInclusion {
   key:
@@ -50,45 +49,60 @@ export interface QuoteInclusion {
     | "includeTerms"
     | "includeAvailability"
     | "includeRevisions";
-  label: string;
-  hint: string;
+  /** Dictionary keys, so the list is translated with everything else. */
+  labelKey:
+    | "sectionStrategy"
+    | "sectionTimeline"
+    | "sectionSow"
+    | "sectionTerms"
+    | "sectionRevisions"
+    | "sectionAvailability"
+    | "sectionAi";
+  hintKey:
+    | "sectionStrategyHint"
+    | "sectionTimelineHint"
+    | "sectionSowHint"
+    | "sectionTermsHint"
+    | "sectionRevisionsHint"
+    | "sectionAvailabilityHint"
+    | "sectionAiHint";
 }
 
 export const QUOTE_INCLUSIONS: QuoteInclusion[] = [
   {
     key: "includeStrategy",
-    label: "Strategy",
-    hint: "The goal, what the brief tells you, and what still needs confirming.",
+    labelKey: "sectionStrategy",
+    hintKey: "sectionStrategyHint",
   },
   {
     key: "includeTimeline",
-    label: "Timeline",
-    hint: "A week-by-week breakdown.",
+    labelKey: "sectionTimeline",
+    hintKey: "sectionTimelineHint",
   },
   {
     key: "includeSOW",
-    label: "Statement of Work",
-    hint: "Makes the quote signable, with payment terms and what happens if scope changes.",
+    labelKey: "sectionSow",
+    hintKey: "sectionSowHint",
   },
   {
     key: "includeTerms",
-    label: "Terms",
-    hint: "Cancellation, ownership of the work, and confidentiality.",
+    labelKey: "sectionTerms",
+    hintKey: "sectionTermsHint",
   },
   {
     key: "includeRevisions",
-    label: "Revisions policy",
-    hint: "How many rounds are included, and what counts as new work.",
+    labelKey: "sectionRevisions",
+    hintKey: "sectionRevisionsHint",
   },
   {
     key: "includeAvailability",
-    label: "Availability",
-    hint: "Your capacity, start date, and how quickly you reply.",
+    labelKey: "sectionAvailability",
+    hintKey: "sectionAvailabilityHint",
   },
   {
     key: "includeAI",
-    label: "AI-use disclosure",
-    hint: "Which parts of this project use AI, and which stay entirely human.",
+    labelKey: "sectionAi",
+    hintKey: "sectionAiHint",
   },
 ];
 
@@ -100,9 +114,6 @@ export const QUOTE_INCLUSIONS: QuoteInclusion[] = [
  * specific things, so it is a single free text field now and the chips are
  * gone. The placeholder does the teaching.
  */
-export const AVAILABILITY_PLACEHOLDER =
-  "e.g. could start the first week of September, two days a week, not held unless the quote is agreed";
-
 /** What was said, as facts for the prompt. Empty means the section is
  * skipped rather than invented. */
 export function availabilityFacts(note?: string): string[] {
@@ -126,34 +137,39 @@ export interface SectionQuestion {
   key: "payment" | "terms" | "revisions" | "aiUsage";
   /** Which inclusion reveals it. */
   inclusion: string;
-  prompt: string;
-  placeholder: string;
+  /** Dictionary keys, so the question is translated with the rest. */
+  promptKey: "askPayment" | "askTerms" | "askRevisions" | "askAiUsage";
+  placeholderKey:
+    | "askPaymentPlaceholder"
+    | "askTermsPlaceholder"
+    | "askRevisionsPlaceholder"
+    | "askAiUsagePlaceholder";
 }
 
 export const SECTION_QUESTIONS: SectionQuestion[] = [
   {
     key: "payment",
     inclusion: "includeSOW",
-    prompt: "How do you want to be paid?",
-    placeholder: "e.g. 40% up front, the rest on delivery, invoiced at each milestone",
+    promptKey: "askPayment",
+    placeholderKey: "askPaymentPlaceholder",
   },
   {
     key: "terms",
     inclusion: "includeTerms",
-    prompt: "Any terms you always work to?",
-    placeholder: "e.g. two weeks notice to cancel, I keep the rights until the final invoice clears",
+    promptKey: "askTerms",
+    placeholderKey: "askTermsPlaceholder",
   },
   {
     key: "revisions",
     inclusion: "includeRevisions",
-    prompt: "How many rounds do you include?",
-    placeholder: "e.g. two rounds per deliverable, anything after that is quoted separately",
+    promptKey: "askRevisions",
+    placeholderKey: "askRevisionsPlaceholder",
   },
   {
     key: "aiUsage",
     inclusion: "includeAI",
-    prompt: "Which AI do you actually use, and where?",
-    placeholder: "e.g. Claude for first-pass copy and repetitive variants, never for design decisions",
+    promptKey: "askAiUsage",
+    placeholderKey: "askAiUsagePlaceholder",
   },
 ];
 

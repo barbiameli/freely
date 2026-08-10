@@ -33,10 +33,8 @@ import { LOCALES, LOCALE_NAMES, type Locale } from "@/lib/i18n";
 import { MAX_DOCUMENT_UPLOAD_BYTES, documentTooLargeError } from "@/lib/upload-limits";
 import { BRANDING_OPTIONS } from "@/lib/branding";
 import {
-  PROJECT_PREFERENCE_EXAMPLES,
-  PROJECT_PREFERENCE_PLACEHOLDER,
+  PROJECT_PREFERENCE_KEYS,
   QUOTE_INCLUSIONS,
-  AVAILABILITY_PLACEHOLDER,
   SECTION_QUESTIONS,
   sectionNoteLines,
   toggleExampleLine,
@@ -336,8 +334,8 @@ export function QuoteWizard({
       setGenerating(false);
       setError(
         err instanceof Error && err.message === "TIMEOUT"
-          ? "This is taking longer than it should. It may still finish in the background, but don't wait on it. Try again, or simplify the source material first (a very large uploaded file slows this down a lot)."
-          : "Something went wrong generating the brief. Try again."
+          ? t.quote.generatingTooLong
+          : t.quote.generateFailed
       );
     }
   }
@@ -448,7 +446,7 @@ export function QuoteWizard({
     ) {
       setShowRateHelp(true);
       setError(
-        "Add your rate, or say where you or the client are based so a rate can be researched."
+        t.quote.addRateOrLocationLong
       );
       return;
     }
@@ -467,14 +465,14 @@ export function QuoteWizard({
     <>
       {step === 0 && (
         <>
-          <Topbar eyebrow="Quote - Step 1 of 2" />
+          <Topbar eyebrow={t.quote.eyebrowStep1} />
           <BriefHistory briefs={recentBriefs} />
           <div>
             <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">
-              What are we quoting?
+              {t.quote.titleStep1}
             </h1>
             <p className="text-slate text-lead mt-2">
-              Everything the quote gets built from. Only the brief and your rate are needed.
+              {t.quote.subtitleStep1}
             </p>
           </div>
           <Stepper activeIndex={0} />
@@ -488,14 +486,14 @@ export function QuoteWizard({
                   {
                     mode: "upload" as const,
                     icon: Upload,
-                    title: "Upload a brief",
-                    blurb: "PDF, DOCX, or a text file.",
+                    title: t.quote.uploadBrief,
+                    blurb: t.quote.uploadBriefHint,
                   },
                   {
                     mode: "paste" as const,
                     icon: FileText,
-                    title: "Paste text",
-                    blurb: "Notes, a transcript, or a scope you've typed up.",
+                    title: t.quote.pasteText,
+                    blurb: t.quote.pasteTextHint,
                   },
                 ]
               ).map(({ mode, icon: Icon, title, blurb }, i) => {
@@ -541,7 +539,7 @@ export function QuoteWizard({
                     value={draft.sourceText}
                     onChange={(e) => setDraft((d) => ({ ...d, sourceText: e.target.value }))}
                     onPaste={handlePasteSource}
-                    placeholder="Paste the client's brief, email, or notes here..."
+                    placeholder={t.quote.pasteHere}
                     rows={9}
                     className="w-full font-body text-body leading-relaxed text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border resize-y whitespace-pre-wrap"
                   />
@@ -557,9 +555,9 @@ export function QuoteWizard({
                         ? "Reading file..."
                         : fileName
                         ? `Loaded: ${fileName}`
-                        : "Drag a file here, or click to choose one (.txt, .md, .pdf, .docx)."}
+                        : t.quote.dragFileHere}
                     </span>
-                    <span className="font-body font-bold text-small text-violet">Choose file</span>
+                    <span className="font-body font-bold text-small text-violet">{t.quote.chooseFile}</span>
                   </DropZone>
                 )}
               </div>
@@ -567,7 +565,7 @@ export function QuoteWizard({
           </div>
 
           <Card>
-            <FieldHeading>Visual references</FieldHeading>
+            <FieldHeading>{t.quote.visualReferences}</FieldHeading>
             <p className="text-meta text-text-muted mb-3">
               Screenshots, moodboards, or examples of the kind of thing you mean. Attached to the quote so the client can see the direction.
             </p>
@@ -599,7 +597,7 @@ export function QuoteWizard({
                           prev.map((r, j) => (j === i ? { ...r, caption: e.target.value } : r))
                         )
                       }
-                      placeholder="What should the client take from this?"
+                      placeholder={t.quote.whatShouldClientTake}
                       className="flex-1 self-center font-body text-xs text-ink bg-white border border-line rounded-lg px-2.5 py-2 outline-none"
                     />
                     <button
@@ -616,15 +614,14 @@ export function QuoteWizard({
           </Card>
 
           <Card>
-            <FieldHeading>How should this project run?</FieldHeading>
+            <FieldHeading>{t.quote.howShouldItRun}</FieldHeading>
             <p className="text-meta text-slate mb-3 leading-relaxed">
-              Anything you have already decided about this particular job: how it should be priced,
-              how it should be split up, what needs agreeing before the next part starts.
+              {t.quote.howShouldItRunHint}
             </p>
             <TextField
               value={draft.instructions}
               onChange={(v) => setDraft((d) => ({ ...d, instructions: v }))}
-              placeholder={PROJECT_PREFERENCE_PLACEHOLDER}
+              placeholder={t.quote.howShouldItRunPlaceholder}
               multiline
               rows={4}
             />
@@ -632,9 +629,10 @@ export function QuoteWizard({
                 gives no way to take it back, so clicking one twice put the
                 same sentence in twice. */}
             <div className="mt-3">
-              <div className="text-caption text-text-muted mb-1.5">Common ones</div>
+              <div className="text-caption text-text-muted mb-1.5">{t.common.commonOnes}</div>
               <div className="flex flex-wrap gap-1.5">
-                {PROJECT_PREFERENCE_EXAMPLES.map((example) => {
+                {PROJECT_PREFERENCE_KEYS.map((exampleKey) => {
+                  const example = t.quote[exampleKey];
                   const picked = pickedExamples.includes(example);
                   return (
                     <Chip
@@ -657,20 +655,20 @@ export function QuoteWizard({
               </div>
             </div>
             <p className="text-caption text-text-muted mt-3 mb-0">
-              Left blank, this gets worked out from the brief and your past quotes.
+              {t.quote.workedOutFromBrief}
             </p>
           </Card>
 
           <div className="flex flex-col md:flex-row gap-4 md:gap-5">
             <Card className="flex-1">
-              <FieldHeading>Your rate</FieldHeading>
+              <FieldHeading>{t.quote.yourRate}</FieldHeading>
               {/* Plenty of freelancers price in days, and converting to an
                   hourly figure to fit the form means inventing a day length. */}
               <div className="flex gap-1.5 mb-2.5">
                 {(
                   [
-                    ["HOUR", "Per hour"],
-                    ["DAY", "Per day"],
+                    ["HOUR", t.quote.perHour],
+                    ["DAY", t.quote.perDay],
                   ] as const
                 ).map(([unit, label]) => (
                   <Chip
@@ -710,7 +708,7 @@ export function QuoteWizard({
               </div>
               <div className="flex flex-wrap items-center justify-between gap-2 mt-2.5">
                 <span className="text-meta text-text-muted">
-                  {draft.hourlyRate > 0 ? "Used exactly as typed." : "Or have one researched."}
+                  {draft.hourlyRate > 0 ? t.quote.usedAsTyped : t.quote.orResearched}
                 </span>
                 <button
                   type="button"
@@ -720,7 +718,7 @@ export function QuoteWizard({
                   }}
                   className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0"
                 >
-                  {showRateHelp ? "I know my rate" : "Not sure what to charge?"}
+                  {showRateHelp ? t.quote.iKnowMyRate : t.quote.notSureWhatToCharge}
                 </button>
               </div>
               {draft.hourlyRate > 0 && draft.hourlyRate !== savedRate && (
@@ -731,12 +729,12 @@ export function QuoteWizard({
                     onChange={(e) => setRememberRate(e.target.checked)}
                     className="accent-violet"
                   />
-                  <span className="text-meta text-slate">Remember this as my usual rate</span>
+                  <span className="text-meta text-slate">{t.quote.rememberThisRate}</span>
                 </label>
               )}
             </Card>
             <Card className="flex-1">
-              <FieldHeading>Your expertise level</FieldHeading>
+              <FieldHeading>{t.quote.expertise}</FieldHeading>
               <div className="flex flex-wrap gap-2">
                 {(["Junior", "Mid-level", "Senior", "Expert"] as const).map((lvl) => (
                   <Chip
@@ -749,49 +747,48 @@ export function QuoteWizard({
                 ))}
               </div>
               <div className="text-meta text-text-muted mt-2.5">
-                Used when no rate is given, to research a realistic one.
+                {t.quote.expertiseHint}
               </div>
             </Card>
           </div>
 
           {showRateHelp && (
             <Card>
-              <FieldHeading required>Where is this being priced for?</FieldHeading>
+              <FieldHeading required>{t.quote.pricedFor}</FieldHeading>
               <p className="text-meta text-text-muted mb-3">
-                The same job pays very differently from one market to the next, so a location is
-                the one thing needed to research a rate.
+                {t.quote.pricedForHint}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {(
                   [
                     {
                       key: "yourLocation" as const,
-                      label: "Where you are based",
+                      label: t.quote.yourLocation,
                       placeholder: "e.g. Buenos Aires, Argentina",
                     },
                     {
                       key: "clientLocation" as const,
-                      label: "Where the client is",
+                      label: t.quote.clientLocation,
                       placeholder: "e.g. London, UK",
                     },
                     {
                       key: "clientType" as const,
-                      label: "What kind of client",
+                      label: t.quote.clientType,
                       placeholder: "e.g. seed-stage startup",
                     },
                     {
                       key: "budgetHint" as const,
-                      label: "Anything they said about budget",
+                      label: t.quote.budgetHint,
                       placeholder: "e.g. mentioned around 5k",
                     },
                     {
                       key: "urgency" as const,
-                      label: "Timing",
+                      label: t.quote.urgency,
                       placeholder: "e.g. needs it in three weeks",
                     },
                     {
                       key: "experienceNote" as const,
-                      label: "Done this kind of work before?",
+                      label: t.quote.experienceNote,
                       placeholder: "e.g. twice, unpaid, for friends",
                     },
                   ]
@@ -815,7 +812,7 @@ export function QuoteWizard({
                 ))}
               </div>
               <p className="text-meta text-text-muted mt-3">
-                Your location or the client&apos;s is needed. The rest is optional.
+                {t.quote.pricedForFooter}
               </p>
             </Card>
           )}
@@ -823,7 +820,7 @@ export function QuoteWizard({
           {error && <div className="text-overdue text-small">{error}</div>}
           <div className="flex justify-end mt-auto pt-2">
             <Button icon={ArrowRight} onClick={goToOutputStep}>
-              Continue
+              {t.common.continue}
             </Button>
           </div>
         </>
@@ -831,11 +828,13 @@ export function QuoteWizard({
 
       {step === 1 && (
         <>
-          <Topbar eyebrow="Quote - Step 2 of 2" />
+          <Topbar eyebrow={t.quote.eyebrowStep2} />
           <div>
-            <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">How should we package it?</h1>
+            <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">
+              {t.quote.titleStep2}
+            </h1>
             <p className="text-slate text-lead mt-2">
-              How the finished quote looks and what it includes.
+              {t.quote.subtitleStep2}
             </p>
           </div>
           <Stepper
@@ -848,9 +847,9 @@ export function QuoteWizard({
           />
 
           <Card>
-            <FieldHeading required>Output</FieldHeading>
+            <FieldHeading required>{t.quote.output}</FieldHeading>
             <p className="text-meta text-text-muted mb-3">
-              What the client receives, and how it looks.
+              {t.quote.outputHint}
             </p>
 
             {/* Separate from the interface language: a Spanish freelancer
@@ -872,7 +871,7 @@ export function QuoteWizard({
             <p className="text-caption text-text-muted mb-5">{t.quote.quoteLanguageHint}</p>
 
             <div className="text-caption font-bold text-slate uppercase tracking-wide mb-2">
-              Page format
+              {t.quote.pageFormat}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
               {(["HTML", "PDF", "Figma"] as const).map((fmt) => {
@@ -988,9 +987,9 @@ export function QuoteWizard({
                       >
                         <span className="flex items-center gap-1.5 font-body font-bold text-small text-violet">
                           <ImagePlus size={12} />
-                          {brandBusy === "logo" ? "Uploading..." : "Logo"}
+                          {brandBusy === "logo" ? t.quote.uploading : t.quote.logo}
                         </span>
-                        <span className="text-caption text-text-muted">Transparent PNG.</span>
+                        <span className="text-caption text-text-muted">{t.quote.transparentPng}</span>
                       </DropZone>
                     </div>
 
@@ -1034,11 +1033,9 @@ export function QuoteWizard({
           </Card>
 
           <Card>
-            <FieldHeading>Add sections</FieldHeading>
+            <FieldHeading>{t.quote.addSections}</FieldHeading>
             <p className="text-meta text-slate mb-3 leading-relaxed">
-              Every quote covers the scope, deliverables and the price. Add anything else this one
-              needs. Where a section asks a question, answering is optional: left blank, it gets
-              worked out from the brief and your past quotes.
+              {t.quote.addSectionsHint}
             </p>
             <div className="flex flex-col gap-2">
               {QUOTE_INCLUSIONS.map((inc) => {
@@ -1061,9 +1058,9 @@ export function QuoteWizard({
                     </span>
                     <span>
                       <span className="font-body font-semibold text-body text-ink block">
-                        {inc.label}
+                        {t.quote[inc.labelKey]}
                       </span>
-                      <span className="text-meta text-slate">{inc.hint}</span>
+                      <span className="text-meta text-slate">{t.quote[inc.hintKey]}</span>
                     </span>
                   </button>
                 );
@@ -1076,18 +1073,17 @@ export function QuoteWizard({
                       {toggle}
                       <div className="rounded-lg border border-line bg-white px-3.5 py-3 sm:ml-7">
                         <p className="text-meta text-slate mt-0 mb-2 leading-relaxed">
-                          Anything specific worth saying? Start dates, how much time you can give
-                          it, or that availability is not held until the quote is agreed.
+                          {t.quote.availabilityPrompt}
                         </p>
                         <TextField
                           value={availabilityNote}
                           onChange={setAvailabilityNote}
-                          placeholder={AVAILABILITY_PLACEHOLDER}
+                          placeholder={t.quote.availabilityPlaceholder}
                           multiline
                           rows={2}
                         />
                         <p className="text-caption text-text-muted mt-2 mb-0">
-                          Left blank, this section is skipped rather than guessed at.
+                          {t.quote.availabilitySkipped}
                         </p>
                       </div>
                     </div>
@@ -1102,13 +1098,13 @@ export function QuoteWizard({
                     <div key={inc.key} className="flex flex-col gap-2">
                       {toggle}
                       <div className="rounded-lg border border-line bg-white px-3.5 py-3 sm:ml-7">
-                        <p className="text-meta text-slate mt-0 mb-2">{question.prompt}</p>
+                        <p className="text-meta text-slate mt-0 mb-2">{t.quote[question.promptKey]}</p>
                         <TextField
                           value={sectionNotes[question.key] ?? ""}
                           onChange={(v) =>
                             setSectionNotes((n) => ({ ...n, [question.key]: v }))
                           }
-                          placeholder={question.placeholder}
+                          placeholder={t.quote[question.placeholderKey]}
                         />
                       </div>
                     </div>
@@ -1148,15 +1144,15 @@ export function QuoteWizard({
                 setStep(0);
               }}
             >
-              Back
+              {t.common.back}
             </Button>
             {generating ? (
               <Button variant="ghost" icon={CircleStop} onClick={handleStopGenerating}>
-                Stop
+                {t.quote.stop}
               </Button>
             ) : (
               <Button icon={Sparkles} onClick={handleGenerate}>
-                Generate brief
+                {t.quote.generate}
               </Button>
             )}
           </div>

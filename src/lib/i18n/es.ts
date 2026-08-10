@@ -123,6 +123,7 @@ export const es: Dictionary = {
     availabilitySkipped:
       "Si lo dejas en blanco, esta sección se omite en lugar de inventarse.",
 
+    availabilityPlaceholder: "p. ej. podría empezar la primera semana de septiembre, dos días por semana, sin reservar hasta aceptar",
     quoteLanguage: "Idioma del presupuesto",
     quoteLanguageHint: "El idioma en el que se escribe el presupuesto, que no tiene que ser el tuyo.",
 
@@ -136,6 +137,45 @@ export const es: Dictionary = {
     addRateOrLocation: "Añade tu tarifa o indica dónde estáis tú o el cliente.",
     addRateOrLocationLong:
       "Añade tu tarifa o indica dónde estáis tú o el cliente para poder investigar una.",
+    output: "Resultado",
+    outputHint: "Lo que recibe el cliente y qué aspecto tiene.",
+    pageFormat: "Formato de la página",
+    briefHistory: "Historial de briefs",
+    chooseFile: "Elegir archivo",
+    visualReferences: "Referencias visuales",
+    removeExample: "Quitar referencia",
+    whatShouldClientTake: "¿Qué quieres que vea el cliente aquí?",
+    pasteHere: "Pega aquí el brief, el email o las notas del cliente...",
+    transparentPng: "PNG con fondo transparente.",
+    exampleFixedPrice: "Precio cerrado en vez de por horas",
+    exampleMilestones: "Dividirlo en hitos con un pago en cada uno",
+    exampleDirectionFirst: "Cerrar la dirección visual antes de empezar a diseñar",
+    exampleResearchFirst: "Hacer la investigación primero y presentar hallazgos antes de definir el resto",
+    askPayment: "¿Cómo quieres cobrar?",
+    askPaymentPlaceholder: "p. ej. 40% por adelantado, el resto a la entrega, facturando en cada hito",
+    askTerms: "¿Tienes condiciones que apliques siempre?",
+    askTermsPlaceholder: "p. ej. dos semanas de preaviso para cancelar, los derechos son míos hasta cobrar la última factura",
+    askRevisions: "¿Cuántas rondas incluyes?",
+    askRevisionsPlaceholder: "p. ej. dos rondas por entregable, lo que venga después se presupuesta aparte",
+    askAiUsage: "¿Qué IA usas de verdad, y para qué?",
+    askAiUsagePlaceholder: "p. ej. Claude para primeros borradores de textos y variantes repetitivas, nunca para decisiones de diseño",
+    sectionStrategy: "Estrategia",
+    sectionStrategyHint: "El objetivo, lo que dice el brief y lo que queda por confirmar.",
+    sectionTimeline: "Calendario",
+    sectionTimelineHint: "Un desglose semana a semana.",
+    sectionSow: "Contrato de trabajo",
+    sectionSowHint: "Hace el presupuesto firmable, con condiciones de pago y qué pasa si cambia el alcance.",
+    sectionTerms: "Condiciones",
+    sectionTermsHint: "Cancelación, propiedad del trabajo y confidencialidad.",
+    sectionRevisions: "Política de revisiones",
+    sectionRevisionsHint: "Cuántas rondas se incluyen y qué cuenta como trabajo nuevo.",
+    sectionAvailability: "Disponibilidad",
+    sectionAvailabilityHint: "Tu capacidad, fecha de inicio y en cuánto respondes.",
+    sectionAi: "Uso de IA",
+    sectionAiHint: "Qué partes del proyecto usan IA y cuáles son del todo humanas.",
+    dragFileHere: "Arrastra un archivo aquí, o haz clic para elegir uno (.txt, .md, .pdf, .docx).",
+    uploading: "Subiendo...",
+    logo: "Logo",
   },
 
   brief: {
@@ -160,6 +200,9 @@ export const es: Dictionary = {
     hoursNeedNumber: "Las horas tienen que ser un número.",
     priceNeedNumber: "El precio tiene que ser un número.",
     oneDeliverablePerLine: "Un entregable por línea. Borra una línea para quitarlo.",
+    workingDraft: "Este es tu borrador de trabajo.",
+    originalRequest: "Petición original",
+    refine: "Afinar",
   },
 
   track: {
@@ -222,6 +265,9 @@ export const es: Dictionary = {
     sendToDiary: "Pasar al Diario",
     generateInvoice: "Generar factura",
     deleteProject: "Eliminar proyecto",
+    projectTitle: "Título del proyecto",
+    clientName: "Nombre del cliente",
+    deleteProjectLabel: "Eliminar proyecto",
   },
 
   memory: {
