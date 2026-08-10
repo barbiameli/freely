@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { Check, ChevronDown, ChevronRight, Plus, Sparkles, Trash2, X } from "lucide-react";
+import { useState } from "react";
+import { Check, ChevronDown, ChevronRight, Plus, Sparkles, Trash2 } from "lucide-react";
 import {
   breakDownDeliverableAction,
   toggleStepAction,
@@ -14,6 +13,8 @@ import {
 import { toggleDeliverableAction } from "@/actions/projects";
 import { deliverableCompletion, shortName } from "@/lib/project-health";
 import { formatDay, relativeDay } from "@/lib/schedule";
+import { useAction } from "@/lib/use-action";
+import { ActionError } from "@/components/ui/action-error";
 
 export interface StepView {
   id: string;
@@ -60,8 +61,7 @@ function Checkbox({ done, onClick, label }: { done: boolean; onClick: () => void
 /** One step, editable in place. Generated steps are a starting point, not an
  * instruction, so changing the wording has to be as easy as ticking it. */
 function StepRow({ step }: { step: StepView }) {
-  const router = useRouter();
-  const [, startTransition] = useTransition();
+  const { run, pending, error } = useAction();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(step.name);
 
@@ -72,23 +72,16 @@ function StepRow({ step }: { step: StepView }) {
       setDraft(step.name);
       return;
     }
-    startTransition(async () => {
-      await updateStepAction(step.id, next);
-      router.refresh();
-    });
+    void run(() => updateStepAction(step.id, next));
   }
 
   return (
-    <div className="group flex items-start gap-2.5 py-1.5">
+    <div className="group py-1.5">
+      <div className="flex items-start gap-2.5">
       <Checkbox
         done={step.done}
         label={`Mark "${step.name}" ${step.done ? "not done" : "done"}`}
-        onClick={() =>
-          startTransition(async () => {
-            await toggleStepAction(step.id, !step.done);
-            router.refresh();
-          })
-        }
+        onClick={() => run(() => toggleStepAction(step.id, !step.done))}
       />
       {editing ? (
         <input
@@ -122,17 +115,15 @@ function StepRow({ step }: { step: StepView }) {
       )}
       <button
         type="button"
+        disabled={pending}
         aria-label={`Delete step "${step.name}"`}
-        onClick={() =>
-          startTransition(async () => {
-            await deleteStepAction(step.id);
-            router.refresh();
-          })
-        }
-        className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-text-muted hover:text-overdue bg-none border-none cursor-pointer p-0 pt-0.5 shrink-0"
+        onClick={() => run(() => deleteStepAction(step.id))}
+        className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-text-muted hover:text-overdue bg-none border-none cursor-pointer p-0 pt-0.5 shrink-0 disabled:opacity-30"
       >
         <Trash2 size={11} />
       </button>
+      </div>
+      <ActionError error={error} className="ml-7 mt-1" />
     </div>
   );
 }
@@ -148,10 +139,8 @@ export function DeliverableItem({
   expanded: boolean;
   onToggleExpanded: () => void;
 }) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const { run, pending, error } = useAction();
   const [breaking, setBreaking] = useState(false);
-  const [error, setError] = useState("");
   const [newStep, setNewStep] = useState("");
   const [editingDate, setEditingDate] = useState(false);
 
@@ -168,11 +157,8 @@ export function DeliverableItem({
 
   async function runBreakdown() {
     setBreaking(true);
-    setError("");
-    const result = await breakDownDeliverableAction(deliverable.id);
+    await run(() => breakDownDeliverableAction(deliverable.id));
     setBreaking(false);
-    if (result.ok) router.refresh();
-    else setError(result.error);
   }
 
   return (
@@ -181,12 +167,7 @@ export function DeliverableItem({
         <Checkbox
           done={deliverable.done}
           label={`Mark "${deliverable.name}" ${deliverable.done ? "not done" : "done"}`}
-          onClick={() =>
-            startTransition(async () => {
-              await toggleDeliverableAction(projectId, deliverable.id);
-              router.refresh();
-            })
-          }
+          onClick={() => run(() => toggleDeliverableAction(projectId, deliverable.id))}
         />
 
         <button
@@ -234,13 +215,11 @@ export function DeliverableItem({
               autoFocus
               defaultValue={deliverable.dueAt ? deliverable.dueAt.slice(0, 10) : ""}
               onBlur={() => setEditingDate(false)}
-              onChange={(e) =>
-                startTransition(async () => {
-                  await setDeliverableDueAction(deliverable.id, e.target.value || null);
-                  setEditingDate(false);
-                  router.refresh();
-                })
-              }
+              onChange={(e) => {
+                const value = e.target.value || null;
+                setEditingDate(false);
+                void run(() => setDeliverableDueAction(deliverable.id, value));
+              }}
               className="font-body text-[11.5px] text-ink bg-white border border-violet rounded-md px-1.5 py-1 outline-none"
             />
           ) : (
@@ -295,11 +274,9 @@ export function DeliverableItem({
                   onChange={(e) => setNewStep(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && newStep.trim()) {
-                      startTransition(async () => {
-                        await addStepAction(deliverable.id, newStep);
-                        setNewStep("");
-                        router.refresh();
-                      });
+                      const value = newStep;
+                      setNewStep("");
+                      void run(() => addStepAction(deliverable.id, value));
                     }
                   }}
                   placeholder="Add a step"
@@ -308,13 +285,11 @@ export function DeliverableItem({
                 <button
                   type="button"
                   disabled={!newStep.trim() || pending}
-                  onClick={() =>
-                    startTransition(async () => {
-                      await addStepAction(deliverable.id, newStep);
-                      setNewStep("");
-                      router.refresh();
-                    })
-                  }
+                  onClick={() => {
+                    const value = newStep;
+                    setNewStep("");
+                    void run(() => addStepAction(deliverable.id, value));
+                  }}
                   aria-label="Add step"
                   className="w-7 h-7 rounded-lg bg-paper border-none flex items-center justify-center cursor-pointer text-slate disabled:opacity-40"
                 >
@@ -337,12 +312,7 @@ export function DeliverableItem({
             </>
           )}
 
-          {error && (
-            <div className="flex items-start gap-1.5 text-overdue text-[12px] mt-2">
-              <X size={12} className="mt-0.5 shrink-0" />
-              {error}
-            </div>
-          )}
+          <ActionError error={error} className="mt-2" />
         </div>
       )}
     </div>

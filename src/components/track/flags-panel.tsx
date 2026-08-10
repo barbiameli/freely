@@ -1,8 +1,8 @@
 "use client";
 
-import { useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { resolveFlagAction } from "@/actions/track";
+import { useAction } from "@/lib/use-action";
+import { ActionError } from "@/components/ui/action-error";
 import type { DeliverableView, FlagView } from "@/components/track/deliverable-item";
 
 const KIND_LABEL: Record<FlagView["kind"], string> = {
@@ -26,8 +26,7 @@ const KIND_STYLE: Record<FlagView["kind"], string> = {
  * you actually send. The panel follows whichever deliverable is open.
  */
 export function FlagsPanel({ deliverable }: { deliverable: DeliverableView | null }) {
-  const router = useRouter();
-  const [, startTransition] = useTransition();
+  const { run, pending, error } = useAction();
 
   if (!deliverable) {
     return (
@@ -67,13 +66,9 @@ export function FlagsPanel({ deliverable }: { deliverable: DeliverableView | nul
               )}
               <button
                 type="button"
-                onClick={() =>
-                  startTransition(async () => {
-                    await resolveFlagAction(flag.id, true);
-                    router.refresh();
-                  })
-                }
-                className="text-[11.5px] font-semibold text-violet bg-none border-none cursor-pointer p-0 mt-2"
+                disabled={pending}
+                onClick={() => run(() => resolveFlagAction(flag.id, true))}
+                className="text-[11.5px] font-semibold text-violet bg-none border-none cursor-pointer p-0 mt-2 disabled:opacity-50"
               >
                 Mark answered
               </button>
@@ -92,13 +87,9 @@ export function FlagsPanel({ deliverable }: { deliverable: DeliverableView | nul
                   </span>
                   <button
                     type="button"
-                    onClick={() =>
-                      startTransition(async () => {
-                        await resolveFlagAction(flag.id, false);
-                        router.refresh();
-                      })
-                    }
-                    className="text-[11px] text-violet bg-none border-none cursor-pointer p-0 shrink-0"
+                    disabled={pending}
+                    onClick={() => run(() => resolveFlagAction(flag.id, false))}
+                    className="text-[11px] text-violet bg-none border-none cursor-pointer p-0 shrink-0 disabled:opacity-50"
                   >
                     Reopen
                   </button>
@@ -108,6 +99,7 @@ export function FlagsPanel({ deliverable }: { deliverable: DeliverableView | nul
           )}
         </div>
       )}
+      <ActionError error={error} className="mt-2" />
     </div>
   );
 }

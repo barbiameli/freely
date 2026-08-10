@@ -32,6 +32,8 @@ import {
 import { currencySymbol } from "@/lib/currencies";
 import { repriceForHours, effectiveRate } from "@/lib/repricing";
 import { paragraphs } from "@/lib/rich-text";
+import { useAction } from "@/lib/use-action";
+import { ActionError } from "@/components/ui/action-error";
 import { rateSuffix, describeEffort, parseRateUnit } from "@/lib/rate-unit";
 import { DeliverableList } from "@/components/deliverable-list";
 import { TimelineView } from "@/components/timeline-view";
@@ -127,6 +129,9 @@ export function BriefView({
   const [refinePrompt, setRefinePrompt] = useState("");
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
+  // Used for the actions that redirect, where a failure otherwise looks like
+  // nothing happening at all.
+  const { run: track, error: trackError } = useAction();
   const [published, setPublished] = useState(brief.published);
   const [publishing, setPublishing] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -201,12 +206,28 @@ export function BriefView({
 
   async function handleAddToTrack() {
     setWorking(true);
-    await addBriefToTrackAction(brief.id);
+    // The action redirects on success, so reaching the next line means it
+    // failed. This used to leave the button stuck on its working state with
+    // nothing said.
+    await track(
+      async () => {
+        await addBriefToTrackAction(brief.id);
+        return { ok: true as const, data: undefined };
+      },
+      { skipRefresh: true, errorMessage: "Couldn't send that to Track. Try again." }
+    );
+    setWorking(false);
   }
 
   async function handleDeleteExample(id: string) {
+    const previous = examples;
     setExamples((prev) => prev.filter((e) => e.id !== id));
-    await deleteBriefExampleAction(id);
+    const result = await deleteBriefExampleAction(id);
+    // Put it back if the delete did not take, rather than showing it gone.
+    if (!result.ok) {
+      setExamples(previous);
+      setError(result.error);
+    }
   }
 
   return (
@@ -723,7 +744,7 @@ export function BriefView({
                 {working ? "Working..." : "Regenerate"}
               </Button>
             </div>
-            {error && <div className="text-overdue text-xs mt-2">{error}</div>}
+            <ActionError error={error || trackError} className="mt-2" />
           </Card>
           {brief.sourceText && (
             <Card>

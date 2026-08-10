@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAction } from "@/lib/use-action";
 import { Plus, Copy, Check as CheckIcon, Trash2 } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
+import { ActionError } from "@/components/ui/action-error";
 import { Label } from "@/components/ui/label";
 import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
@@ -44,7 +46,7 @@ export function DiaryView({
   allProjects: { id: string; title: string }[];
 }) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const { run, pending: isPending, error } = useAction();
   const [newEntry, setNewEntry] = useState("");
   const [copied, setCopied] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -127,17 +129,16 @@ export function DiaryView({
               variant="ghost"
               icon={Plus}
               disabled={!newEntry.trim() || isPending}
-              onClick={() =>
-                startTransition(async () => {
-                  await addDiaryEntryAction(project.id, "New update", newEntry);
-                  setNewEntry("");
-                  router.refresh();
-                })
-              }
+              onClick={() => {
+                const value = newEntry;
+                setNewEntry("");
+                void run(() => addDiaryEntryAction(project.id, "New update", value));
+              }}
             >
               Add entry
             </Button>
           </div>
+          <ActionError error={error} />
           {project.diaryEntries.map((e) => (
             <Card key={e.id}>
               <div className="flex gap-2.5 items-center mb-1.5">
@@ -158,12 +159,7 @@ export function DiaryView({
             <Label>Client site</Label>
             <Button
               disabled={isPending}
-              onClick={() =>
-                startTransition(async () => {
-                  await setPublishedAction(project.id, !project.published);
-                  router.refresh();
-                })
-              }
+              onClick={() => run(() => setPublishedAction(project.id, !project.published))}
             >
               {project.published ? "Published" : "Publish"}
             </Button>

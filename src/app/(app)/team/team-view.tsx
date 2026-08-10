@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAction } from "@/lib/use-action";
 import { UserPlus, Copy, X } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
+import { ActionError } from "@/components/ui/action-error";
 import { Label } from "@/components/ui/label";
 import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
@@ -34,6 +36,7 @@ export function TeamView({
   pendingInvites: PendingInvite[];
 }) {
   const router = useRouter();
+  const { run, pending, error: actionError } = useAction();
   const [inviteEmail, setInviteEmail] = useState("");
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
@@ -96,6 +99,8 @@ export function TeamView({
         </Card>
       ) : null}
 
+      <ActionError error={actionError} />
+
       <Card>
         <Label>Members</Label>
         <div className="flex flex-col gap-2">
@@ -106,11 +111,9 @@ export function TeamView({
               </span>
               {isOwner && m.id !== currentUserId && (
                 <button
-                  onClick={async () => {
-                    await removeMemberAction(m.id);
-                    router.refresh();
-                  }}
-                  className="text-text-muted hover:text-overdue"
+                  disabled={pending}
+                  onClick={() => run(() => removeMemberAction(m.id))}
+                  className="text-text-muted hover:text-overdue disabled:opacity-40"
                   title="Remove from team"
                 >
                   <X size={14} />
@@ -144,11 +147,9 @@ export function TeamView({
                     <Copy size={14} />
                   </button>
                   <button
-                    onClick={async () => {
-                      await revokeInviteAction(inv.id);
-                      router.refresh();
-                    }}
-                    className="text-text-muted hover:text-overdue"
+                    disabled={pending}
+                    onClick={() => run(() => revokeInviteAction(inv.id))}
+                    className="text-text-muted hover:text-overdue disabled:opacity-40"
                     title="Revoke"
                   >
                     <X size={14} />

@@ -32,6 +32,8 @@ import {
 } from "@/lib/project-health";
 import { formatDay, relativeDay } from "@/lib/schedule";
 import { currencySymbol } from "@/lib/currencies";
+import { useAction } from "@/lib/use-action";
+import { ActionError } from "@/components/ui/action-error";
 
 interface Project {
   id: string;
@@ -172,7 +174,7 @@ export function ProjectDetail({
   projectList: ProjectSummary[];
 }) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const { run, pending: isPending, error: actionError } = useAction();
   const [price, setPrice] = useState(String(project.price));
   const [hours, setHours] = useState(String(project.hours));
   const [hoursLogged, setHoursLogged] = useState(String(project.hoursLogged));
@@ -201,10 +203,7 @@ export function ProjectDetail({
   const next = deadlines[0] ?? null;
 
   function commit(patch: Parameters<typeof updateProjectAction>[1]) {
-    startTransition(async () => {
-      await updateProjectAction(project.id, patch);
-      router.refresh();
-    });
+    void run(() => updateProjectAction(project.id, patch));
   }
 
   async function handleDeleteProject() {
@@ -216,12 +215,13 @@ export function ProjectDetail({
       return;
     }
     setDeleting(true);
-    const result = await deleteProjectAction(project.id);
-    if (!result.ok) {
-      setDeleting(false);
-      return;
-    }
-    router.push("/track");
+    // A failed delete used to leave the button stuck on "Deleting..." with no
+    // explanation, since the result was checked but never shown.
+    await run(() => deleteProjectAction(project.id), {
+      skipRefresh: true,
+      onSuccess: () => router.push("/track"),
+    });
+    setDeleting(false);
   }
 
   return (
@@ -266,9 +266,9 @@ export function ProjectDetail({
               icon={Send}
               disabled={isPending}
               onClick={() =>
-                startTransition(async () => {
-                  await sendToDiaryAction(project.id);
-                  router.push(`/diary/${project.id}`);
+                run(() => sendToDiaryAction(project.id), {
+                  skipRefresh: true,
+                  onSuccess: () => router.push(`/diary/${project.id}`),
                 })
               }
             >
@@ -349,6 +349,8 @@ export function ProjectDetail({
           total={project.deliverables.length}
         />
 
+        <ActionError error={actionError} />
+
         <FrictionPanel friction={friction} />
 
         {deadlines.length > 0 && (
@@ -404,13 +406,11 @@ export function ProjectDetail({
               />
               <Button
                 disabled={!newDeliverable.trim() || isPending}
-                onClick={() =>
-                  startTransition(async () => {
-                    await addDeliverableAction(project.id, newDeliverable);
-                    setNewDeliverable("");
-                    router.refresh();
-                  })
-                }
+                onClick={() => {
+                  const value = newDeliverable;
+                  setNewDeliverable("");
+                  void run(() => addDeliverableAction(project.id, value));
+                }}
               >
                 Add
               </Button>
