@@ -88,7 +88,7 @@ export default async function InvoicesPage() {
 
       <Card>
         <Label>Payment details</Label>
-        <p className="text-[12.5px] text-slate mt-1 mb-0">
+        <p className="text-[12px] text-text-muted mt-1 mb-0">
           Freely does not store your bank details. You add them when you download an invoice, and
           they go into the PDF only. See the{" "}
           <Link href="/terms" className="text-violet font-semibold">

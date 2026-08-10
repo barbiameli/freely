@@ -562,7 +562,7 @@ export function QuoteWizard({
 
           <Card>
             <FieldHeading>Visual references</FieldHeading>
-            <p className="text-xs text-text-muted mb-3">
+            <p className="text-[12px] text-text-muted mb-3">
               Screenshots, moodboards, or examples of the kind of thing you mean. Attached to the quote so the client can see the direction.
             </p>
             <DropZone
@@ -611,7 +611,7 @@ export function QuoteWizard({
 
           <Card>
             <FieldHeading>How should this be read?</FieldHeading>
-            <p className="text-xs text-text-muted mb-3">
+            <p className="text-[12px] text-text-muted mb-3">
               How you want the brief interpreted and the quote structured. Leave it empty and the AI decides from the brief and your past quotes.
             </p>
             <div className="flex flex-wrap gap-2 mb-3">
@@ -661,7 +661,7 @@ export function QuoteWizard({
                 />
                 <span className="text-slate text-sm">/hr</span>
               </div>
-              <div className="text-xs text-text-muted mt-2.5">
+              <div className="text-[12px] text-text-muted mt-2.5">
                 Price and hours are worked out from this.
               </div>
             </Card>
@@ -678,7 +678,7 @@ export function QuoteWizard({
                   </Chip>
                 ))}
               </div>
-              <div className="text-xs text-text-muted mt-2.5">
+              <div className="text-[12px] text-text-muted mt-2.5">
                 Used when there is no pricing history yet, to research a realistic baseline.
               </div>
             </Card>
@@ -706,7 +706,7 @@ export function QuoteWizard({
 
           <Card>
             <FieldHeading required>Output</FieldHeading>
-            <p className="text-xs text-text-muted mb-3">
+            <p className="text-[12px] text-text-muted mb-3">
               What the client receives, and how it looks.
             </p>
 
@@ -874,7 +874,7 @@ export function QuoteWizard({
 
           <Card>
             <FieldHeading>Add sections</FieldHeading>
-            <p className="text-xs text-text-muted mb-3">
+            <p className="text-[12px] text-text-muted mb-3">
               Every quote covers the scope, deliverables, and the price with the reasoning behind it. Add anything else this one needs.
             </p>
             <div className="flex flex-col gap-2">

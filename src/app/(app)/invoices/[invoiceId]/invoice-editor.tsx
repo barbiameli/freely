@@ -488,7 +488,7 @@ export function InvoiceEditor({
 
       <Card>
         <SectionHeading>Branding</SectionHeading>
-        <p className="text-xs text-text-muted mb-3">
+        <p className="text-[12px] text-text-muted mb-3">
           Defaults to whatever the matching quote used.
         </p>
         <div className="flex gap-2.5 flex-wrap">
@@ -526,7 +526,7 @@ export function InvoiceEditor({
           <ShieldOff size={15} className="text-violet shrink-0 mt-0.5" />
           <div>
             <SectionHeading required>Payment details</SectionHeading>
-            <p className="text-[12.5px] text-slate mt-1 mb-0">
+            <p className="text-[12px] text-text-muted mt-1 mb-0">
               These go into the PDF and are not saved to your Freely account.
             </p>
           </div>
