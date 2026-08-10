@@ -257,3 +257,36 @@ describe("parseBriefResponse", () => {
     expect(result.success).toBe(false);
   });
 });
+
+describe("section notes", () => {
+  it("builds terms, revisions and payment around what was stated", () => {
+    const prompt = buildGenerateUserPrompt({
+      ...draft,
+      includeTerms: true,
+      includeRevisions: true,
+      includeSOW: true,
+      sectionNotes: {
+        terms: "two weeks notice to cancel",
+        revisions: "two rounds per deliverable",
+        payment: "40% up front",
+      },
+    });
+    expect(prompt).toContain("two weeks notice to cancel");
+    expect(prompt).toContain("two rounds per deliverable");
+    expect(prompt).toContain("40% up front");
+  });
+
+  it("still writes the sections when nothing was stated", () => {
+    const prompt = buildGenerateUserPrompt({ ...draft, includeRevisions: true });
+    expect(prompt).toContain('"revisions" string');
+  });
+
+  it("keeps payment credentials out even when payment terms were stated", () => {
+    const prompt = buildGenerateUserPrompt({
+      ...draft,
+      includeSOW: true,
+      sectionNotes: { payment: "40% up front" },
+    });
+    expect(prompt).toContain("Never include bank account details");
+  });
+});

@@ -35,7 +35,10 @@ import {
   PROJECT_PREFERENCE_PLACEHOLDER,
   QUOTE_INCLUSIONS,
   AVAILABILITY_PLACEHOLDER,
+  SECTION_QUESTIONS,
+  sectionNoteLines,
   availabilityFacts,
+  type SectionNotes,
 } from "@/lib/quote-prompts";
 import { readPastedText } from "@/lib/paste-text";
 import { extractFileText } from "@/lib/extract-file";
@@ -189,6 +192,9 @@ export function QuoteWizard({
     pricing: { yourLocation: savedLocation || "" },
   });
   const [availabilityNote, setAvailabilityNote] = useState("");
+  // One optional question per section that rests on a decision only the
+  // freelancer can make. See SECTION_QUESTIONS.
+  const [sectionNotes, setSectionNotes] = useState<SectionNotes>({});
   const [sourceMode, setSourceMode] = useState<"paste" | "upload">("upload");
   const [fileName, setFileName] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -280,6 +286,7 @@ export function QuoteWizard({
       const payload: QuoteDraftPayload = {
         ...draft,
         availability: { facts: availabilityFacts(availabilityNote) },
+        sectionNotes: sectionNoteLines(sectionNotes),
       };
       // Not awaited: failing to remember a rate is no reason to hold up
       // someone's quote.
@@ -993,8 +1000,10 @@ export function QuoteWizard({
 
           <Card>
             <FieldHeading>Add sections</FieldHeading>
-            <p className="text-meta text-text-muted mb-3">
-              Every quote covers the scope, deliverables, and the price with the reasoning behind it. Add anything else this one needs.
+            <p className="text-meta text-slate mb-3 leading-relaxed">
+              Every quote covers the scope, deliverables and the price. Add anything else this one
+              needs. Where a section asks a question, answering is optional: left blank, it gets
+              worked out from the brief and your past quotes.
             </p>
             <div className="flex flex-col gap-2">
               {QUOTE_INCLUSIONS.map((inc) => {
@@ -1045,6 +1054,27 @@ export function QuoteWizard({
                         <p className="text-caption text-text-muted mt-2 mb-0">
                           Left blank, this section is skipped rather than guessed at.
                         </p>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Sections that rest on a decision the model cannot read out
+                // of the brief get one question each.
+                const question = SECTION_QUESTIONS.find((q) => q.inclusion === inc.key);
+                if (question && on) {
+                  return (
+                    <div key={inc.key} className="flex flex-col gap-2">
+                      {toggle}
+                      <div className="rounded-lg border border-line bg-white px-3.5 py-3 sm:ml-7">
+                        <p className="text-meta text-slate mt-0 mb-2">{question.prompt}</p>
+                        <TextField
+                          value={sectionNotes[question.key] ?? ""}
+                          onChange={(v) =>
+                            setSectionNotes((n) => ({ ...n, [question.key]: v }))
+                          }
+                          placeholder={question.placeholder}
+                        />
                       </div>
                     </div>
                   );

@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { currencySymbol } from "@/lib/currencies";
+import type { SectionNotes } from "@/lib/quote-prompts";
 import {
   priceFor,
   rateSuffix,
@@ -127,6 +128,10 @@ export interface QuoteDraftInput {
   hourlyRate: number;
   /** Whether the rate above is per hour or per day. */
   rateUnit?: RateUnit;
+  /** What the freelancer said about the optional sections that rest on a
+   * decision only they can make. Blank means it is written from the brief
+   * instead. */
+  sectionNotes?: SectionNotes;
   /** Self-reported seniority, only really load-bearing when there's no
    * pricing history to anchor to and Claude has to research market rates. */
   expertiseLevel: "Junior" | "Mid-level" | "Senior" | "Expert";
@@ -313,15 +318,20 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
 
   // Optional sections. Each is off unless asked for, so the baseline quote
   // stays scope, deliverables and price rather than a wall of boilerplate.
+  const notes = draft.sectionNotes ?? {};
   const extraSections: string[] = [];
   if (draft.includeTerms) {
     extraSections.push(
-      'Include a "terms" object: {"cancellation": string, "ownership": string, "confidentiality": string}. Write each as one or two plain-English sentences a freelancer would actually stand behind, not legalese, and do not invent jurisdiction-specific clauses.'
+      `Include a "terms" object: {"cancellation": string, "ownership": string, "confidentiality": string}. Write each as one or two plain-English sentences a freelancer would actually stand behind, not legalese, and do not invent jurisdiction-specific clauses.${
+        notes.terms ? ` Build them around what they have stated: ${notes.terms}` : ""
+      }`
     );
   }
   if (draft.includeRevisions) {
     extraSections.push(
-      'Include a "revisions" string: how many rounds of changes are included at which stages, and what would count as new work priced separately. Base the number on the deliverables and hours, not a generic "two rounds".'
+      notes.revisions
+        ? `Include a "revisions" string built on what they have stated: ${notes.revisions}. Say which stages it applies to and what counts as new work priced separately.`
+        : 'Include a "revisions" string: how many rounds of changes are included at which stages, and what would count as new work priced separately. Base the number on the deliverables and hours, not a generic "two rounds".'
     );
   }
   // Only written when there is something to write it from. The old version
@@ -340,12 +350,18 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
   }
   if (draft.includeAI) {
     extraSections.push(
-      'Include an "aiUsage" object: {"will": string[], "willNot": string[]}. This is a disclosure of how AI is used on THIS project, so both lists must name specific tasks from this brief, not general statements about AI. "will" is 2-4 mechanical or repetitive parts of the work where AI genuinely helps, for example scaffolding file structure, generating repetitive variants, first-pass copy, or converting formats. "willNot" is 2-4 parts that stay entirely human because they are judgement, taste or client-specific reasoning, for example deciding what to build, visual design decisions, or interpreting research. Write each entry as a short phrase naming the actual task.'
+      `Include an "aiUsage" object: {"will": string[], "willNot": string[]}. This is a disclosure of how AI is used on THIS project, so both lists must name specific tasks from this brief, not general statements about AI.${
+        notes.aiUsage ? ` They have said: ${notes.aiUsage}. Build both lists around that.` : ""
+      } "will" is 2-4 mechanical or repetitive parts of the work where AI genuinely helps, for example scaffolding file structure, generating repetitive variants, first-pass copy, or converting formats. "willNot" is 2-4 parts that stay entirely human because they are judgement, taste or client-specific reasoning, for example deciding what to build, visual design decisions, or interpreting research. Write each entry as a short phrase naming the actual task.`
     );
   }
   if (draft.includeSOW) {
     extraSections.push(
-      'Include a "paymentTerms" string describing WHEN money is due, for example a deposit split and invoicing points tied to the stages. Never include bank account details, card details or payment instructions: state that payment details are provided on the invoice.'
+      `Include a "paymentTerms" string describing WHEN money is due.${
+        notes.payment
+          ? ` Use what they have stated: ${notes.payment}`
+          : " For example a deposit split and invoicing points tied to the stages."
+      } Never include bank account details, card details or payment instructions: state that payment details are provided on the invoice.`
     );
   }
   const extraSectionsInstruction = extraSections.length

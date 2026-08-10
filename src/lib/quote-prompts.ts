@@ -109,3 +109,62 @@ export function availabilityFacts(note?: string): string[] {
   const trimmed = note?.trim();
   return trimmed ? [trimmed] : [];
 }
+
+
+/**
+ * The one question each optional section needs.
+ *
+ * Only for sections that rest on a decision the model cannot know: how you
+ * split payment, what your terms actually are, how many revision rounds you
+ * include, which AI tools you genuinely use. Strategy and Timeline are not
+ * here, because those are read out of the brief rather than out of your head.
+ *
+ * All optional. Left blank, the section is still written, just from the brief
+ * and past quotes rather than from a stated preference.
+ */
+export interface SectionQuestion {
+  key: "payment" | "terms" | "revisions" | "aiUsage";
+  /** Which inclusion reveals it. */
+  inclusion: string;
+  prompt: string;
+  placeholder: string;
+}
+
+export const SECTION_QUESTIONS: SectionQuestion[] = [
+  {
+    key: "payment",
+    inclusion: "includeSOW",
+    prompt: "How do you want to be paid?",
+    placeholder: "e.g. 40% up front, the rest on delivery, invoiced at each milestone",
+  },
+  {
+    key: "terms",
+    inclusion: "includeTerms",
+    prompt: "Any terms you always work to?",
+    placeholder: "e.g. two weeks notice to cancel, I keep the rights until the final invoice clears",
+  },
+  {
+    key: "revisions",
+    inclusion: "includeRevisions",
+    prompt: "How many rounds do you include?",
+    placeholder: "e.g. two rounds per deliverable, anything after that is quoted separately",
+  },
+  {
+    key: "aiUsage",
+    inclusion: "includeAI",
+    prompt: "Which AI do you actually use, and where?",
+    placeholder: "e.g. Claude for first-pass copy and repetitive variants, never for design decisions",
+  },
+];
+
+export type SectionNotes = Partial<Record<SectionQuestion["key"], string>>;
+
+/** The notes that were actually filled in, as lines for the prompt. */
+export function sectionNoteLines(notes: SectionNotes | undefined): SectionNotes {
+  if (!notes) return {};
+  return Object.fromEntries(
+    Object.entries(notes)
+      .map(([key, value]) => [key, value?.trim()])
+      .filter(([, value]) => Boolean(value))
+  );
+}
