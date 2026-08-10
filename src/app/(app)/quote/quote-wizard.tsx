@@ -1012,7 +1012,11 @@ export function QuoteWizard({
               icon={ChevronLeft}
               onClick={() => {
                 if (generating) handleStopGenerating();
-                setStep(1);
+                // Step 0 is the brief. This said setStep(1) when the wizard
+                // had three steps and step 1 was the middle one, so after the
+                // condensation Back set the step it was already on.
+                setError("");
+                setStep(0);
               }}
             >
               Back
