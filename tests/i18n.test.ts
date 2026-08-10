@@ -32,8 +32,14 @@ describe("dictionaries", () => {
   it("has no Spanish string left in English", () => {
     // Catches a key copied across and never translated. Short shared words
     // (Total, PDF) are legitimately identical, so only longer ones count.
+    //
+    // The listed keys are longer and still identical on purpose: a copyright
+    // line is a symbol, a year and a brand name, none of which translate.
+    // Anything added here should be a string with no translatable words in it.
+    const identicalOnPurpose = ["marketing.copyright"];
     const untranslated = Object.entries(spanish).filter(
-      ([key, value]) => value === english[key] && value.length > 14
+      ([key, value]) =>
+        value === english[key] && value.length > 14 && !identicalOnPurpose.includes(key)
     );
     expect(untranslated.map(([key]) => key)).toEqual([]);
   });
@@ -138,6 +144,13 @@ describe("strings fit where they are rendered", () => {
     "common.back": 12,
     "common.continue": 14,
     "quote.stop": 10,
+    // The marketing header puts the switcher, a link and a button on one row.
+    // It wraps on a narrow phone, so these are about staying on one line at
+    // the common widths rather than never overflowing.
+    "marketing.logIn": 14,
+    "marketing.signUp": 16,
+    "marketing.signUpFree": 22,
+    "marketing.getStarted": 26,
   };
 
   for (const [key, budget] of Object.entries(budgets)) {

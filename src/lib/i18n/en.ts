@@ -412,8 +412,59 @@ export const en = {
   },
 
   marketing: {
+    home: "Home",
+    logIn: "Log in",
+    signUp: "Sign up",
+    signUpFree: "Sign up free",
+    getStarted: "Get started for free",
+
+    // Two halves of one sentence, because the second is set in coral. Split
+    // where the clause breaks, so the colour lands on a phrase that survives
+    // translation as a phrase.
+    heroTitle: "Quote, track, and report on client work,",
+    heroTitleAccent: "without the busywork.",
+    heroBody:
+      "Freely is one place for a freelancer to turn a client brief into a priced quote, track the project once it's won, and keep a running diary the client can see, with AI drafting the first pass of each quote from your own rates and past work.",
+    heroImageAlt:
+      "The Quote wizard in Freely, showing the first step where you paste or upload a client brief.",
+
+    aiEyebrow: "How AI is actually used",
+    aiTitle: "AI drafts. You decide.",
+    aiContextTitle: "It drafts from your own context",
+    aiContextBody:
+      "Everything you save in Memory (your rates, past projects, tone preferences, saved files and links) is what the AI reads before writing a quote. The more you've added, the closer it lands to how you write.",
+    aiReviewTitle: "You always review before a client sees anything",
+    aiReviewBody:
+      "The AI writes a first draft. You edit it, refine it with a follow-up instruction, or rewrite it outright before publishing. Nothing goes out automatically.",
+    aiDisclosureTitle: "You choose whether to disclose AI use",
+    aiDisclosureBody:
+      "Every quote has an optional AI-use disclosure that adds a short, honest note to the client-facing page when you turn it on. It is off by default.",
+    aiPricingTitle: "Pricing is reasoned",
+    aiPricingBody:
+      "When you have pricing history, the AI anchors hours and price to your own past projects. When you don't, it researches typical market rates before proposing a number, and always shows its reasoning against your stated rate.",
+
+    featureQuotesTitle: "AI-drafted quotes",
+    featureQuotesBody:
+      "Paste or upload a client brief and get a priced, structured quote back (scope, deliverables, timeline, and an optional Strategy section) as a hosted page or downloadable PDF.",
+    featureTrackingTitle: "Project tracking",
+    featureTrackingBody:
+      "Turn an accepted quote into a tracked project with milestones and status, all in one dashboard.",
+    featureDiaryTitle: "Client diary and reporting",
+    featureDiaryBody:
+      "Keep a running log of project updates your client can follow, branded with your own colours and logo.",
+
     howItWorks: "How it works",
+    step1Title: "Set up Memory",
+    step1Body: "Add your rates, tone, past work, and if you want, your branding. Takes a few minutes.",
+    step2Title: "Generate a quote",
+    step2Body: "Drop in a client brief and get a priced, structured draft back in seconds.",
+    step3Title: "Review, send, track",
+    step3Body:
+      "Edit anything, publish the page or PDF, then track the project once it's won.",
+
+    freeToStart: "Free to start, no card required.",
     tryIt: "Try it on your next quote.",
+    copyright: "© {year} Freely.",
   },
 
   publicPage: {

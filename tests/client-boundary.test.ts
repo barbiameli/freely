@@ -69,3 +69,35 @@ describe("client-only hooks stay inside client components", () => {
     ).toEqual([]);
   });
 });
+
+describe("the marketing page reads every string from the dictionary", () => {
+  /**
+   * The page at "/" is the one screen a Spanish speaker sees before they have
+   * an account, and it spent a while half translated: two strings came from
+   * the dictionary and the rest were English literals in the JSX. Nothing
+   * failed, because a hardcoded string is valid TypeScript.
+   *
+   * This reads the rendered text out of the JSX and fails on any of it that is
+   * a literal. Text belongs in en.ts and es.ts.
+   */
+  it("has no hardcoded text between JSX tags", () => {
+    const source = stripComments(readFileSync("src/app/marketing.tsx", "utf8"));
+
+    // Text sitting directly between tags: >Log in<. Braces are excluded, so
+    // >{t.marketing.logIn}< does not match, and neither does nesting.
+    // exec in a loop rather than matchAll, whose iterator needs a newer
+    // compile target than this project uses.
+    const pattern = />([^<>{}]*[A-Za-z]{3,}[^<>{}]*)</g;
+    const literals: string[] = [];
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(source)) !== null) {
+      const text = match[1].trim();
+      if (text) literals.push(text);
+    }
+
+    expect(
+      literals,
+      `Hardcoded text on the marketing page. Move it into en.ts and es.ts:\n${literals.join("\n")}`,
+    ).toEqual([]);
+  });
+});

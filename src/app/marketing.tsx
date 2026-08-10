@@ -1,69 +1,72 @@
 import Link from "next/link";
 import { FileText, ListChecks, Users, ShieldCheck, Sparkles } from "lucide-react";
 import { FreelyLogo } from "@/components/freely-logo";
-import type { Dictionary } from "@/lib/i18n";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { LocaleProvider } from "@/lib/i18n/context";
+import { fill, type Dictionary, type Locale } from "@/lib/i18n";
 
 /**
  * The public marketing page, shown at "/" to signed-out visitors only
- * (signed-in users are redirected straight to /quote — see page.tsx). Kept
+ * (signed-in users are redirected straight to /quote, see page.tsx). Kept
  * deliberately simple and honest: every claim here matches something that
  * actually exists in the app today. No fabricated testimonials, no made-up
  * user counts, no "coming soon" features described as if they already work.
  *
  * This renders on the server, so its strings arrive as a prop rather than
  * through useT(): that hook reads a client context, and the provider is
- * mounted in the (app) layout, which this page sits outside of.
+ * mounted in the (app) layout, which this page sits outside of. The provider
+ * is mounted here too, but only so the switcher in the header knows which
+ * language is currently showing.
  */
-export function Marketing({ t }: { t: Dictionary }) {
+export function Marketing({ t, locale }: { t: Dictionary; locale: Locale }) {
   return (
-    <div className="bg-paper">
-      <Header />
-      <Hero />
-      <HowAIIsUsed />
-      <Features />
-      <HowItWorks t={t} />
-      <ClosingCTA t={t} />
-      <Footer />
-    </div>
+    <LocaleProvider locale={locale}>
+      <div className="bg-paper">
+        <Header t={t} />
+        <Hero t={t} />
+        <HowAIIsUsed t={t} />
+        <Features t={t} />
+        <HowItWorks t={t} />
+        <ClosingCTA t={t} />
+        <Footer t={t} />
+      </div>
+    </LocaleProvider>
   );
 }
 
-function Header() {
+function Header({ t }: { t: Dictionary }) {
   return (
     <header className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-4 px-5 sm:px-6 py-6">
-      <Link href="/" aria-label="Home">
+      <Link href="/" aria-label={t.marketing.home}>
         <FreelyLogo size="sm" />
       </Link>
-      <nav className="flex items-center gap-4">
+      <nav className="flex items-center gap-3 sm:gap-4">
+        <LanguageSwitcher compact />
         <Link href="/signin" className="font-body font-semibold text-sm text-slate">
-          Log in
+          {t.marketing.logIn}
         </Link>
         <Link
           href="/signup"
           className="font-body font-bold text-sm text-white bg-violet px-4 py-2.5 rounded-lg"
         >
-          Sign up free
+          {t.marketing.signUpFree}
         </Link>
       </nav>
     </header>
   );
 }
 
-function Hero() {
+function Hero({ t }: { t: Dictionary }) {
   return (
     <section className="max-w-4xl mx-auto text-center px-5 sm:px-6 pt-8 sm:pt-10 pb-12 sm:pb-16">
       <h1 className="font-display italic text-[32px] sm:text-[44px] leading-[1.15] sm:leading-[1.1] text-ink m-0">
-        Quote, track, and report on client work, <span className="text-coral">without the busywork.</span>
+        {t.marketing.heroTitle} <span className="text-coral">{t.marketing.heroTitleAccent}</span>
       </h1>
-      <p className="text-slate text-lead mt-6 max-w-lg mx-auto">
-        Freely is one place for a freelancer to turn a client brief into a priced quote, track the
-        project once it&apos;s won, and keep a running diary the client can see, with AI drafting
-        the first pass of each quote from your own rates and past work.
-      </p>
+      <p className="text-slate text-lead mt-6 max-w-lg mx-auto">{t.marketing.heroBody}</p>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/marketing-hero.png"
-        alt="The Quote wizard in Freely, showing the first step where you paste or upload a client brief."
+        alt={t.marketing.heroImageAlt}
         className="w-full rounded-card border border-line shadow-panel mt-10"
       />
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 mt-8">
@@ -71,46 +74,34 @@ function Hero() {
           href="/signup"
           className="font-body font-bold text-sm text-white bg-violet px-6 py-3.5 rounded-lg text-center"
         >
-          Get started for free
+          {t.marketing.getStarted}
         </Link>
         <Link
           href="/signin"
           className="font-body font-bold text-sm text-violet bg-white border border-violet px-6 py-3.5 rounded-lg text-center"
         >
-          Log in
+          {t.marketing.logIn}
         </Link>
       </div>
     </section>
   );
 }
 
-function HowAIIsUsed() {
+function HowAIIsUsed({ t }: { t: Dictionary }) {
   const points = [
-    {
-      title: "It drafts from your own context, not a generic template",
-      body: "Everything you save in Memory (your rates, past projects, tone preferences, saved files and links) is what the AI reads before writing a quote. The more you've added, the less generic it sounds.",
-    },
-    {
-      title: "You always review before a client sees anything",
-      body: "The AI writes a first draft. You edit it, refine it with a follow-up instruction, or rewrite it outright before publishing. Nothing goes out automatically.",
-    },
-    {
-      title: "AI use is disclosed by choice, not hidden",
-      body: "Every quote has an optional \"AI-use disclosure\" toggle that adds a short, honest note to the client-facing page when you turn it on. It's off by default.",
-    },
-    {
-      title: "Pricing is reasoned, not guessed",
-      body: "When you have pricing history, the AI anchors hours and price to your own past projects. When you don't, it researches typical market rates before proposing a number, and always shows its reasoning against your stated hourly rate.",
-    },
+    { title: t.marketing.aiContextTitle, body: t.marketing.aiContextBody },
+    { title: t.marketing.aiReviewTitle, body: t.marketing.aiReviewBody },
+    { title: t.marketing.aiDisclosureTitle, body: t.marketing.aiDisclosureBody },
+    { title: t.marketing.aiPricingTitle, body: t.marketing.aiPricingBody },
   ];
 
   return (
     <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-14 border-t border-line">
       <div className="text-center mb-10">
         <div className="inline-flex items-center gap-1.5 text-caption font-bold text-violet uppercase tracking-wide mb-3">
-          <Sparkles size={13} /> How AI is actually used
+          <Sparkles size={13} /> {t.marketing.aiEyebrow}
         </div>
-        <h2 className="font-display italic text-3xl text-ink m-0">AI drafts. You decide.</h2>
+        <h2 className="font-display italic text-3xl text-ink m-0">{t.marketing.aiTitle}</h2>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {points.map((p) => (
@@ -124,22 +115,22 @@ function HowAIIsUsed() {
   );
 }
 
-function Features() {
+function Features({ t }: { t: Dictionary }) {
   const items = [
     {
       icon: FileText,
-      title: "AI-drafted quotes",
-      body: "Paste or upload a client brief and get a priced, structured quote back (scope, deliverables, timeline, and an optional Strategy section) as a hosted page or downloadable PDF.",
+      title: t.marketing.featureQuotesTitle,
+      body: t.marketing.featureQuotesBody,
     },
     {
       icon: ListChecks,
-      title: "Project tracking",
-      body: "Turn an accepted quote into a tracked project with milestones and status, all in one dashboard. No separate project-management tool needed for the basics.",
+      title: t.marketing.featureTrackingTitle,
+      body: t.marketing.featureTrackingBody,
     },
     {
       icon: Users,
-      title: "Client diary & reporting",
-      body: "Keep a running log of project updates your client can follow, branded with your own colors and logo.",
+      title: t.marketing.featureDiaryTitle,
+      body: t.marketing.featureDiaryBody,
     },
   ];
 
@@ -162,13 +153,15 @@ function Features() {
 
 function HowItWorks({ t }: { t: Dictionary }) {
   const steps = [
-    { n: "1", title: "Set up Memory", body: "Add your rates, tone, past work, and (optionally) your branding, takes a few minutes." },
-    { n: "2", title: "Generate a quote", body: "Drop in a client brief and get a priced, structured draft back in seconds." },
-    { n: "3", title: "Review, send, track", body: "Edit anything, publish the page or PDF, then track the project once it's won." },
+    { n: "1", title: t.marketing.step1Title, body: t.marketing.step1Body },
+    { n: "2", title: t.marketing.step2Title, body: t.marketing.step2Body },
+    { n: "3", title: t.marketing.step3Title, body: t.marketing.step3Body },
   ];
   return (
     <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-14 border-t border-line">
-      <h2 className="font-display italic text-3xl text-ink text-center m-0 mb-10">{t.marketing.howItWorks}</h2>
+      <h2 className="font-display italic text-3xl text-ink text-center m-0 mb-10">
+        {t.marketing.howItWorks}
+      </h2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         {steps.map((s) => (
           <div key={s.n} className="text-center">
@@ -188,32 +181,32 @@ function ClosingCTA({ t }: { t: Dictionary }) {
   return (
     <section className="max-w-2xl mx-auto text-center px-5 sm:px-6 py-12 sm:py-16 border-t border-line">
       <div className="flex items-center justify-center gap-2 text-text-muted text-meta mb-4">
-        <ShieldCheck size={14} /> Free to start, no card required.
+        <ShieldCheck size={14} /> {t.marketing.freeToStart}
       </div>
       <h2 className="font-display italic text-3xl text-ink m-0">{t.marketing.tryIt}</h2>
       <Link
         href="/signup"
         className="inline-block font-body font-bold text-sm text-white bg-violet px-6 py-3.5 rounded-lg mt-6"
       >
-        Get started for free
+        {t.marketing.getStarted}
       </Link>
     </section>
   );
 }
 
-function Footer() {
+function Footer({ t }: { t: Dictionary }) {
   return (
     <footer className="max-w-5xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-5 sm:px-6 py-8 border-t border-line">
       <div className="flex items-center gap-2 text-text-muted text-xs">
         <FreelyLogo size="sm" />
-        <span>© {new Date().getFullYear()} Freely.</span>
+        <span>{fill(t.marketing.copyright, { year: new Date().getFullYear() })}</span>
       </div>
       <div className="flex items-center gap-4">
         <Link href="/signin" className="font-body font-semibold text-xs text-slate">
-          Log in
+          {t.marketing.logIn}
         </Link>
         <Link href="/signup" className="font-body font-semibold text-xs text-violet">
-          Sign up
+          {t.marketing.signUp}
         </Link>
       </div>
     </footer>

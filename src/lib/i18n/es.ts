@@ -413,8 +413,58 @@ export const es: Dictionary = {
   },
 
   marketing: {
+    home: "Inicio",
+    logIn: "Entrar",
+    signUp: "Crear cuenta",
+    signUpFree: "Crear cuenta gratis",
+    getStarted: "Empezar gratis",
+
+    heroTitle: "Presupuesta, haz seguimiento y da parte del trabajo con tus clientes,",
+    heroTitleAccent: "sin el papeleo de siempre.",
+    heroBody:
+      "Freely reúne en un sitio lo que necesitas como freelance: convertir el proyecto de un cliente en un presupuesto con precio, hacerle seguimiento cuando lo ganas y llevar un diario que el cliente puede ver, con la IA escribiendo el primer borrador de cada presupuesto a partir de tus tarifas y de tus trabajos anteriores.",
+    heroImageAlt:
+      "El asistente de presupuestos de Freely, en el primer paso, donde pegas o subes el proyecto del cliente.",
+
+    aiEyebrow: "Cómo se usa la IA aquí",
+    aiTitle: "La IA redacta. Tú decides.",
+    aiContextTitle: "Escribe con tu contexto",
+    aiContextBody:
+      "Todo lo que guardas en Memoria (tus tarifas, tus proyectos anteriores, tu tono, los archivos y enlaces que subes) es lo que lee la IA antes de escribir un presupuesto. Cuanto más tengas ahí, más se parece a como escribes tú.",
+    aiReviewTitle: "Lo revisas tú antes de que lo vea el cliente",
+    aiReviewBody:
+      "La IA escribe un primer borrador. Tú lo editas, lo afinas con una instrucción o lo reescribes entero antes de publicarlo. No sale nada solo.",
+    aiDisclosureTitle: "Tú decides si declaras el uso de IA",
+    aiDisclosureBody:
+      "Cada presupuesto lleva una declaración de uso de IA opcional que añade una nota breve y honesta a la página del cliente cuando la activas. Viene desactivada.",
+    aiPricingTitle: "El precio va razonado",
+    aiPricingBody:
+      "Si tienes histórico de precios, la IA calcula las horas y el precio a partir de tus proyectos anteriores. Si no lo tienes, busca las tarifas de mercado antes de proponer una cifra, y siempre enseña de dónde sale respecto a la tarifa que has puesto.",
+
+    featureQuotesTitle: "Presupuestos escritos por IA",
+    featureQuotesBody:
+      "Pega o sube el proyecto del cliente y recibes un presupuesto con precio y estructura (alcance, entregables, calendario y una sección de Estrategia opcional), como página web o como PDF.",
+    featureTrackingTitle: "Seguimiento de proyectos",
+    featureTrackingBody:
+      "Convierte un presupuesto aceptado en un proyecto con hitos y estado, todo en un panel.",
+    featureDiaryTitle: "Diario y partes para el cliente",
+    featureDiaryBody:
+      "Lleva un registro de avances que tu cliente puede seguir, con tus colores y tu logo.",
+
     howItWorks: "Cómo funciona",
+    step1Title: "Configura Memoria",
+    step1Body:
+      "Añade tus tarifas, tu tono, tus trabajos anteriores y, si quieres, tu marca. Son unos minutos.",
+    step2Title: "Genera un presupuesto",
+    step2Body:
+      "Suelta ahí el proyecto del cliente y recibes un borrador con precio y estructura en segundos.",
+    step3Title: "Revisa, envía, haz seguimiento",
+    step3Body:
+      "Edita lo que quieras, publica la página o el PDF y haz seguimiento del proyecto cuando lo ganes.",
+
+    freeToStart: "Gratis para empezar, sin tarjeta.",
     tryIt: "Pruébalo en tu próximo presupuesto.",
+    copyright: "© {year} Freely.",
   },
 
   publicPage: {

@@ -14,6 +14,17 @@ export const LOCALE_NAMES: Record<Locale, string> = {
   es: "Español",
 };
 
+/**
+ * Where a deliberate choice of language is kept.
+ *
+ * The account column only helps once there is an account, and the marketing
+ * page is read by people who do not have one yet. The cookie is written by the
+ * switcher in both cases, so it holds the most recent deliberate choice and is
+ * checked first.
+ */
+export const LOCALE_COOKIE = "locale";
+export const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+
 export function parseLocale(value?: string | null): Locale {
   return value === "es" ? "es" : "en";
 }

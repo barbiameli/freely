@@ -2,9 +2,10 @@
 
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { requireUser, requireFullUser } from "@/lib/session";
-import { parseLocale } from "@/lib/i18n";
+import { getCurrentUser, requireUser, requireFullUser } from "@/lib/session";
+import { parseLocale, LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE } from "@/lib/i18n";
 import type { ActionResult } from "@/actions/briefs";
 
 /** Updates the basic-info fields collected at signup — kept to just these
@@ -75,14 +76,29 @@ export async function deleteAccountAction(): Promise<ActionResult<undefined>> {
 /** Saves the interface language. Stored on the account rather than a cookie,
  * so it follows someone between devices. */
 export async function updateLocaleAction(locale: string): Promise<ActionResult<undefined>> {
-  const user = await requireUser();
-  await prisma.user.update({
-    where: { id: user.id },
-    // The generated client here predates the column; see lib/track-db.
-    data: { locale: parseLocale(locale) } as unknown as Parameters<
-      typeof prisma.user.update
-    >[0]["data"],
+  const chosen = parseLocale(locale);
+
+  // The cookie first, and for everyone: the marketing page and the sign-in
+  // screens are read by people who have no account to store this on yet, and
+  // the choice still has to survive to the next page.
+  (await cookies()).set(LOCALE_COOKIE, chosen, {
+    maxAge: LOCALE_COOKIE_MAX_AGE,
+    sameSite: "lax",
+    httpOnly: true,
+    path: "/",
   });
+
+  const user = await getCurrentUser();
+  if (user) {
+    await prisma.user.update({
+      where: { id: user.id },
+      // The generated client here predates the column; see lib/track-db.
+      data: { locale: chosen } as unknown as Parameters<
+        typeof prisma.user.update
+      >[0]["data"],
+    });
+  }
+
   revalidatePath("/", "layout");
   return { ok: true, data: undefined };
 }
