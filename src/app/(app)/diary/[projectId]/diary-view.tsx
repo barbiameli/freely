@@ -82,7 +82,7 @@ export function DiaryView({
         <h1 className="font-display italic text-[32px] text-coral m-0">
           Client updates, written for you.
         </h1>
-        <p className="text-slate text-[13px] mt-2">
+        <p className="text-slate text-small mt-2">
           Auto-generated from your project tracker, edit anything before it goes out.
         </p>
       </div>
@@ -142,16 +142,16 @@ export function DiaryView({
           {project.diaryEntries.map((e) => (
             <Card key={e.id}>
               <div className="flex gap-2.5 items-center mb-1.5">
-                <span className="font-body font-semibold text-[11px] text-text-muted">
+                <span className="font-body font-semibold text-caption text-text-muted">
                   {new Date(e.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                 </span>
                 <span className="font-body font-bold text-sm text-ink">{e.title}</span>
               </div>
-              <p className="text-[13px] text-slate m-0 leading-relaxed">{e.body}</p>
+              <p className="text-small text-slate m-0 leading-relaxed">{e.body}</p>
             </Card>
           ))}
           {project.diaryEntries.length === 0 && (
-            <div className="text-text-muted text-[13px]">No entries yet.</div>
+            <div className="text-text-muted text-small">No entries yet.</div>
           )}
         </div>
         <div className="w-full md:w-[340px]">
@@ -190,7 +190,7 @@ export function DiaryView({
             <div className="p-5 flex flex-col gap-3">
               <div className="font-display italic text-lg text-coral">{project.title}</div>
               {project.status === "DONE" ? (
-                <div className="bg-mint-solid rounded-md px-3 py-2 font-label text-[13px] text-success">
+                <div className="bg-mint-solid rounded-md px-3 py-2 font-label text-small text-success">
                   Milestone sign-off received
                 </div>
               ) : (
@@ -200,12 +200,12 @@ export function DiaryView({
                 </div>
               )}
               <Label>Latest update</Label>
-              <p className="text-[13px] text-slate m-0">
+              <p className="text-small text-slate m-0">
                 {project.diaryEntries[0]?.body || "No updates yet."}
               </p>
               <Label>Deliverables</Label>
               {project.deliverables.map((d) => (
-                <div key={d.id} className={`text-[13px] ${d.done ? "text-success" : "text-slate"}`}>
+                <div key={d.id} className={`text-small ${d.done ? "text-success" : "text-slate"}`}>
                   {d.done ? "✓" : "○"} {d.name}
                 </div>
               ))}

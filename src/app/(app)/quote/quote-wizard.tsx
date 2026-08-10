@@ -99,7 +99,7 @@ const GENERATION_STATUS_MESSAGES = [
  * a chip, and chips in this interface are things you click. */
 function FieldBadge({ required }: { required?: boolean }) {
   return (
-    <span className="text-[11px] text-text-muted">{required ? "Required" : "Optional"}</span>
+    <span className="text-caption text-text-muted">{required ? "Required" : "Optional"}</span>
   );
 }
 
@@ -487,7 +487,7 @@ export function QuoteWizard({
             <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">
               What are we quoting?
             </h1>
-            <p className="text-slate text-[15px] mt-2">
+            <p className="text-slate text-lead mt-2">
               Everything the quote gets built from. Only the brief and your rate are needed.
             </p>
           </div>
@@ -533,13 +533,13 @@ export function QuoteWizard({
                     </div>
                     <span className="min-w-0">
                       <span
-                        className={`block font-body font-semibold text-[14px] ${
+                        className={`block font-body font-semibold text-body ${
                           selected ? "text-violet" : "text-ink"
                         }`}
                       >
                         {title}
                       </span>
-                      <span className="block text-slate text-[12.5px] mt-0.5">{blurb}</span>
+                      <span className="block text-slate text-small mt-0.5">{blurb}</span>
                     </span>
                   </button>
                 );
@@ -557,7 +557,7 @@ export function QuoteWizard({
                     onPaste={handlePasteSource}
                     placeholder="Paste the client's brief, email, or notes here..."
                     rows={9}
-                    className="w-full font-body text-[13.5px] leading-relaxed text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border resize-y whitespace-pre-wrap"
+                    className="w-full font-body text-body leading-relaxed text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border resize-y whitespace-pre-wrap"
                   />
                 ) : (
                   <DropZone
@@ -566,14 +566,14 @@ export function QuoteWizard({
                     disabled={uploading}
                     className="flex flex-col gap-2 cursor-pointer bg-paper border border-dashed border-line rounded-lg px-4 py-6"
                   >
-                    <span className="text-[13px] text-text-muted">
+                    <span className="text-small text-text-muted">
                       {uploading
                         ? "Reading file..."
                         : fileName
                         ? `Loaded: ${fileName}`
                         : "Drag a file here, or click to choose one (.txt, .md, .pdf, .docx)."}
                     </span>
-                    <span className="font-body font-bold text-[13px] text-violet">Choose file</span>
+                    <span className="font-body font-bold text-small text-violet">Choose file</span>
                   </DropZone>
                 )}
               </div>
@@ -582,7 +582,7 @@ export function QuoteWizard({
 
           <Card>
             <FieldHeading>Visual references</FieldHeading>
-            <p className="text-[12px] text-text-muted mb-3">
+            <p className="text-meta text-text-muted mb-3">
               Screenshots, moodboards, or examples of the kind of thing you mean. Attached to the quote so the client can see the direction.
             </p>
             <DropZone
@@ -592,7 +592,7 @@ export function QuoteWizard({
               className="flex items-center gap-1.5 cursor-pointer -m-1 p-1 mb-2"
             >
               <ImagePlus size={13} className="text-violet" />
-              <span className="font-body font-bold text-[12.5px] text-violet">
+              <span className="font-body font-bold text-small text-violet">
                 {imageUploading ? "Reading image..." : "Drag an image, or click to add one"}
               </span>
             </DropZone>
@@ -631,7 +631,7 @@ export function QuoteWizard({
 
           <Card>
             <FieldHeading>How should this be read?</FieldHeading>
-            <p className="text-[12px] text-text-muted mb-3">
+            <p className="text-meta text-text-muted mb-3">
               How you want the brief interpreted and the quote structured. Leave it empty and the AI decides from the brief and your past quotes. Pick as many as you like, contradictory ones cannot both be on.
             </p>
             <div className="flex flex-wrap gap-2 mb-3">
@@ -701,7 +701,7 @@ export function QuoteWizard({
                   {rateSuffix((draft.rateUnit ?? "HOUR") as RateUnit)}
                 </span>
               </div>
-              <div className="text-[12px] text-text-muted mt-2.5">
+              <div className="text-meta text-text-muted mt-2.5">
                 {draft.hourlyRate > 0
                   ? `The price is your rate times the ${
                       (draft.rateUnit ?? "HOUR") === "DAY" ? "days" : "hours"
@@ -722,7 +722,7 @@ export function QuoteWizard({
                   </Chip>
                 ))}
               </div>
-              <div className="text-[12px] text-text-muted mt-2.5">
+              <div className="text-meta text-text-muted mt-2.5">
                 Used when no rate is given, to research a realistic one.
               </div>
             </Card>
@@ -731,7 +731,7 @@ export function QuoteWizard({
           {draft.hourlyRate <= 0 && (
             <Card>
               <FieldHeading required>Where is this being priced for?</FieldHeading>
-              <p className="text-[12px] text-text-muted mb-3">
+              <p className="text-meta text-text-muted mb-3">
                 No hourly rate given, so one gets researched. The same job pays very differently
                 from one market to the next, so a location is needed.
               </p>
@@ -771,7 +771,7 @@ export function QuoteWizard({
                   ]
                 ).map((field) => (
                   <label key={field.key} className="block">
-                    <span className="block text-[10.5px] font-bold text-slate uppercase tracking-wide mb-1">
+                    <span className="block text-caption font-bold text-slate uppercase tracking-wide mb-1">
                       {field.label}
                     </span>
                     <input
@@ -783,19 +783,19 @@ export function QuoteWizard({
                         }))
                       }
                       placeholder={field.placeholder}
-                      className="w-full font-body text-[13px] text-ink bg-paper border border-line rounded-lg px-2.5 py-2 outline-none"
+                      className="w-full font-body text-small text-ink bg-paper border border-line rounded-lg px-2.5 py-2 outline-none"
                     />
                   </label>
                 ))}
               </div>
-              <p className="text-[11.5px] text-text-muted mt-3">
+              <p className="text-meta text-text-muted mt-3">
                 Your location or the client&apos;s is needed. The rest is optional. Where the client is
                 usually matters most, since that is what sets what you can charge.
               </p>
             </Card>
           )}
 
-          {error && <div className="text-overdue text-[13px]">{error}</div>}
+          {error && <div className="text-overdue text-small">{error}</div>}
           <div className="flex justify-end mt-auto pt-2">
             <Button icon={ArrowRight} onClick={goToOutputStep}>
               Continue
@@ -809,7 +809,7 @@ export function QuoteWizard({
           <Topbar eyebrow="Quote - Step 2 of 2" />
           <div>
             <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">How should we package it?</h1>
-            <p className="text-slate text-[15px] mt-2">
+            <p className="text-slate text-lead mt-2">
               How the finished quote looks and what it includes.
             </p>
           </div>
@@ -824,11 +824,11 @@ export function QuoteWizard({
 
           <Card>
             <FieldHeading required>Output</FieldHeading>
-            <p className="text-[12px] text-text-muted mb-3">
+            <p className="text-meta text-text-muted mb-3">
               What the client receives, and how it looks.
             </p>
 
-            <div className="text-[11px] font-bold text-slate uppercase tracking-wide mb-2">
+            <div className="text-caption font-bold text-slate uppercase tracking-wide mb-2">
               Page format
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
@@ -843,16 +843,16 @@ export function QuoteWizard({
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="font-body font-semibold text-[13.5px] text-ink">
+                      <div className="font-body font-semibold text-body text-ink">
                         {fmt === "HTML" ? "HTML page" : fmt === "PDF" ? "PDF" : "Figma file"}
                       </div>
                       {disabled && (
-                        <span className="font-body font-semibold text-[10px] uppercase tracking-wide text-text-muted bg-paper border border-line rounded-full px-2 py-0.5">
+                        <span className="font-body font-semibold text-caption uppercase tracking-wide text-text-muted bg-paper border border-line rounded-full px-2 py-0.5">
                           Coming soon
                         </span>
                       )}
                     </div>
-                    <div className="text-slate text-[11.5px] mt-1">
+                    <div className="text-slate text-meta mt-1">
                       {fmt === "HTML"
                         ? "A hosted link the client opens in any browser."
                         : fmt === "PDF"
@@ -866,7 +866,7 @@ export function QuoteWizard({
 
             {(draft.format === "HTML" || draft.format === "PDF") && (
               <>
-                <div className="text-[11px] font-bold text-slate uppercase tracking-wide mb-2">
+                <div className="text-caption font-bold text-slate uppercase tracking-wide mb-2">
                   Branding
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
@@ -882,8 +882,8 @@ export function QuoteWizard({
                           draft.branding === opt.id ? "border-violet border-[1.5px]" : ""
                         }`}
                       >
-                        <div className="font-body font-semibold text-[13px] text-ink">{opt.name}</div>
-                        <div className="text-slate text-[11px] mt-1">{opt.desc}</div>
+                        <div className="font-body font-semibold text-small text-ink">{opt.name}</div>
+                        <div className="text-slate text-caption mt-1">{opt.desc}</div>
                         {disabled && (
                           <button
                             type="button"
@@ -891,7 +891,7 @@ export function QuoteWizard({
                               e.stopPropagation();
                               setShowBrandUpload(true);
                             }}
-                            className="text-violet text-[11px] font-bold mt-1.5 bg-none border-none cursor-pointer p-0"
+                            className="text-violet text-caption font-bold mt-1.5 bg-none border-none cursor-pointer p-0"
                           >
                             Add your branding
                           </button>
@@ -905,17 +905,17 @@ export function QuoteWizard({
                   <div className="bg-paper border border-line rounded-lg p-4 mb-5">
                     <div className="flex justify-between items-start gap-3">
                       <div>
-                        <div className="font-body font-semibold text-[13px] text-ink">
+                        <div className="font-body font-semibold text-small text-ink">
                           Add your branding
                         </div>
-                        <div className="text-slate text-[11.5px] mt-0.5">
+                        <div className="text-slate text-meta mt-0.5">
                           A logo, a brand guide, or both. Saved to Memory and applied here.
                         </div>
                       </div>
                       <button
                         type="button"
                         onClick={() => setShowBrandUpload(false)}
-                        className="text-[11.5px] text-text-muted bg-none border-none cursor-pointer p-0"
+                        className="text-meta text-text-muted bg-none border-none cursor-pointer p-0"
                       >
                         Close
                       </button>
@@ -928,11 +928,11 @@ export function QuoteWizard({
                         disabled={brandBusy !== null}
                         className="flex-1 flex flex-col gap-1.5 cursor-pointer bg-white border border-dashed border-line rounded-lg px-3.5 py-3"
                       >
-                        <span className="flex items-center gap-1.5 font-body font-bold text-[12.5px] text-violet">
+                        <span className="flex items-center gap-1.5 font-body font-bold text-small text-violet">
                           <FileText size={12} />
                           {brandBusy === "guide" ? "Reading..." : "Brand guidelines"}
                         </span>
-                        <span className="text-[11px] text-text-muted">
+                        <span className="text-caption text-text-muted">
                           PDF, DOCX, TXT, MD, PNG or JPG.
                         </span>
                       </DropZone>
@@ -943,24 +943,24 @@ export function QuoteWizard({
                         disabled={brandBusy !== null}
                         className="flex-1 flex flex-col gap-1.5 cursor-pointer bg-white border border-dashed border-line rounded-lg px-3.5 py-3"
                       >
-                        <span className="flex items-center gap-1.5 font-body font-bold text-[12.5px] text-violet">
+                        <span className="flex items-center gap-1.5 font-body font-bold text-small text-violet">
                           <ImagePlus size={12} />
                           {brandBusy === "logo" ? "Uploading..." : "Logo"}
                         </span>
-                        <span className="text-[11px] text-text-muted">Transparent PNG.</span>
+                        <span className="text-caption text-text-muted">Transparent PNG.</span>
                       </DropZone>
                     </div>
 
-                    {brandError && <div className="text-overdue text-[12px] mt-2">{brandError}</div>}
+                    {brandError && <div className="text-overdue text-meta mt-2">{brandError}</div>}
                     {brandSaved && (
-                      <div className="flex items-center gap-1.5 text-success text-[12px] mt-2">
+                      <div className="flex items-center gap-1.5 text-success text-meta mt-2">
                         <Check size={12} /> Saved. &quot;Your brand&quot; is ready to pick.
                       </div>
                     )}
                   </div>
                 )}
 
-                <div className="text-[11px] font-bold text-slate uppercase tracking-wide mb-2">
+                <div className="text-caption font-bold text-slate uppercase tracking-wide mb-2">
                   Style
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -979,10 +979,10 @@ export function QuoteWizard({
                       }`}
                     >
                       <TemplatePreview id={tpl.id} />
-                      <div className="font-body font-semibold text-[13px] text-ink mt-2.5">
+                      <div className="font-body font-semibold text-small text-ink mt-2.5">
                         {tpl.name}
                       </div>
-                      <div className="text-slate text-[11px] mt-1">{tpl.desc}</div>
+                      <div className="text-slate text-caption mt-1">{tpl.desc}</div>
                     </Card>
                   ))}
                 </div>
@@ -992,7 +992,7 @@ export function QuoteWizard({
 
           <Card>
             <FieldHeading>Add sections</FieldHeading>
-            <p className="text-[12px] text-text-muted mb-3">
+            <p className="text-meta text-text-muted mb-3">
               Every quote covers the scope, deliverables, and the price with the reasoning behind it. Add anything else this one needs.
             </p>
             <div className="flex flex-col gap-2">
@@ -1015,10 +1015,10 @@ export function QuoteWizard({
                       {on && <Check size={11} className="text-white" />}
                     </span>
                     <span>
-                      <span className="font-body font-semibold text-[13.5px] text-ink block">
+                      <span className="font-body font-semibold text-body text-ink block">
                         {inc.label}
                       </span>
-                      <span className="text-[11.5px] text-slate">{inc.hint}</span>
+                      <span className="text-meta text-slate">{inc.hint}</span>
                     </span>
                   </button>
                 );
@@ -1030,12 +1030,12 @@ export function QuoteWizard({
                     <div key={inc.key} className="flex flex-col gap-2">
                       {toggle}
                       <div className="rounded-lg border border-line bg-white px-3.5 py-3 ml-0 sm:ml-7">
-                        <p className="text-[12px] text-text-muted mt-0 mb-3">
+                        <p className="text-meta text-text-muted mt-0 mb-3">
                           Only what you pick here goes in the quote.
                         </p>
                         {(["start", "capacity", "response"] as const).map((group) => (
                           <div key={group} className="mb-3 last:mb-0">
-                            <div className="text-[10.5px] font-bold text-slate uppercase tracking-wide mb-1.5">
+                            <div className="text-caption font-bold text-slate uppercase tracking-wide mb-1.5">
                               {AVAILABILITY_GROUP_LABEL[group]}
                             </div>
                             <div className="flex flex-wrap gap-1.5">
@@ -1076,13 +1076,13 @@ export function QuoteWizard({
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              <div className="flex items-center gap-2 text-violet text-[13px] font-body font-semibold">
+              <div className="flex items-center gap-2 text-violet text-small font-body font-semibold">
                 <Sparkles size={14} className="animate-spin-slow" />
                 {statusMessage}
               </div>
             </div>
           )}
-          {error && <div className="text-overdue text-[13px]">{error}</div>}
+          {error && <div className="text-overdue text-small">{error}</div>}
           <div className="flex flex-wrap justify-between items-center gap-3 mt-auto">
             <Button
               variant="ghost"

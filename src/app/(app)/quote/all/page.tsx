@@ -50,19 +50,19 @@ export default async function AllQuotesPage() {
           <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">
             Every quote you&apos;ve made.
           </h1>
-          <p className="text-slate text-[13px] mt-2">
+          <p className="text-slate text-small mt-2">
             {cards.length} quote{cards.length === 1 ? "" : "s"}
             {drafts.length > 0 ? `, ${drafts.length} not yet in Track.` : "."}
           </p>
         </div>
-        <Link href="/quote" className="text-[13px] font-semibold text-violet">
+        <Link href="/quote" className="text-small font-semibold text-violet">
           New quote
         </Link>
       </div>
 
       {cards.length === 0 ? (
         <Card>
-          <div className="text-slate text-[13.5px]">
+          <div className="text-slate text-body">
             Nothing here yet.{" "}
             <Link href="/quote" className="text-violet font-semibold">
               Make your first quote

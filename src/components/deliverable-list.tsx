@@ -10,8 +10,8 @@ import { splitDeliverable } from "@/lib/rich-text";
 export function DeliverableList({
   deliverables,
   marker,
-  leadClass = "font-body font-semibold text-[15px] text-ink leading-snug",
-  detailClass = "text-[13.5px] text-slate leading-relaxed mt-1.5",
+  leadClass = "font-body font-semibold text-lead text-ink leading-snug",
+  detailClass = "text-body text-slate leading-relaxed mt-1.5",
   gap = "gap-4",
 }: {
   deliverables: string[];

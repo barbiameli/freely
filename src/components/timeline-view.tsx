@@ -39,7 +39,7 @@ export function TimelineView({
           {stages.map((stage, i) => (
             <div key={i} className="flex-1 flex flex-col items-center px-1 text-center">
               <div className="w-2 h-2 rounded-full mb-1.5" style={{ background: dot }} />
-              <span className="text-[10px] leading-tight" style={{ color: subtle }}>
+              <span className="text-caption leading-tight" style={{ color: subtle }}>
                 {stageTick(stage)}
               </span>
             </div>
@@ -49,7 +49,7 @@ export function TimelineView({
 
       <div className="flex flex-col gap-2.5">
         {stages.map((stage, i) => (
-          <div key={i} className="text-[13.5px] leading-relaxed">
+          <div key={i} className="text-body leading-relaxed">
             <span className="font-bold">
               {stage.period ? `${stage.period}: ` : ""}
               {stage.label}

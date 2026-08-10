@@ -119,7 +119,7 @@ export function MemoryView({
         <h1 className="font-display italic text-[32px] text-coral m-0">
           What it knows about your studio.
         </h1>
-        <p className="text-slate text-[13px] mt-2">
+        <p className="text-slate text-small mt-2">
           This context shapes quote generation. Working as: <span className="font-semibold text-slate">{industryLabel(industry)}</span>.
         </p>
       </div>
@@ -231,7 +231,7 @@ function PersonaCard({ initial, updatedAt }: { initial: string | null; updatedAt
           {updatedAt ? `Updated ${new Date(updatedAt).toLocaleDateString()}` : "Not generated yet"}
         </span>
       </div>
-      <p className="text-[11px] text-text-muted mb-3">
+      <p className="text-caption text-text-muted mb-3">
         Built from your Story, Tone, Context, saved files, and past projects. Correct it any time.
       </p>
       {editing ? (
@@ -309,7 +309,7 @@ function AutosaveNotes({
       </div>
       {presets && presets.length > 0 && (
         <div className="mb-3">
-          <div className="text-[11px] text-text-muted mb-1.5">
+          <div className="text-caption text-text-muted mb-1.5">
             Start from a preset, one click sets the text below, then edit as you like.
           </div>
           <div className="flex flex-wrap gap-2">
@@ -435,21 +435,21 @@ function ReferencesCard({
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mt-3">
         <div>
-          <div className="text-[11px] font-semibold text-slate mb-2 uppercase tracking-wide">Files</div>
+          <div className="text-caption font-semibold text-slate mb-2 uppercase tracking-wide">Files</div>
           <DropZone
             onFile={handleFileUpload}
             accept=".txt,.md,.pdf,.docx"
             disabled={uploading === "file"}
             className="flex flex-col gap-2 cursor-pointer mb-3 -m-1 p-1"
           >
-            <span className="font-body font-bold text-[12.5px] text-violet">
+            <span className="font-body font-bold text-small text-violet">
               {uploading === "file" ? "Reading..." : "+ Upload or drag a file"}
             </span>
           </DropZone>
           <div className="flex flex-col gap-2">
             {fileItems.map((f) => (
               <div key={f.id} className="flex justify-between items-center bg-paper rounded-lg px-3 py-2">
-                <span className="text-[12.5px] text-ink truncate">{f.name}</span>
+                <span className="text-small text-ink truncate">{f.name}</span>
                 <button onClick={() => handleDelete(f.id, "file")} className="text-text-muted hover:text-overdue flex-shrink-0">
                   <Trash2 size={13} />
                 </button>
@@ -460,14 +460,14 @@ function ReferencesCard({
         </div>
 
         <div>
-          <div className="text-[11px] font-semibold text-slate mb-2 uppercase tracking-wide">Images</div>
+          <div className="text-caption font-semibold text-slate mb-2 uppercase tracking-wide">Images</div>
           <DropZone
             onFile={handleImageUpload}
             accept="image/*"
             disabled={uploading === "image"}
             className="flex flex-col gap-2 cursor-pointer mb-3 -m-1 p-1"
           >
-            <span className="font-body font-bold text-[12.5px] text-violet">
+            <span className="font-body font-bold text-small text-violet">
               {uploading === "image" ? "Uploading..." : "+ Upload or drag an image"}
             </span>
           </DropZone>
@@ -493,7 +493,7 @@ function ReferencesCard({
         </div>
 
         <div>
-          <div className="text-[11px] font-semibold text-slate mb-2 uppercase tracking-wide">Links</div>
+          <div className="text-caption font-semibold text-slate mb-2 uppercase tracking-wide">Links</div>
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -516,7 +516,7 @@ function ReferencesCard({
             <button
               type="submit"
               disabled={!canAddLink}
-              className="font-body font-bold text-[12.5px] text-violet text-left disabled:opacity-40 disabled:cursor-default"
+              className="font-body font-bold text-small text-violet text-left disabled:opacity-40 disabled:cursor-default"
             >
               {uploading === "link" ? "Saving..." : "Save link"}
             </button>
@@ -524,7 +524,7 @@ function ReferencesCard({
           <div className="flex flex-col gap-2">
             {linkItems.map((l) => (
               <div key={l.id} className="flex justify-between items-center bg-paper rounded-lg px-3 py-2">
-                <a href={l.url} target="_blank" rel="noreferrer" className="text-[12.5px] text-violet truncate">
+                <a href={l.url} target="_blank" rel="noreferrer" className="text-small text-violet truncate">
                   {l.name}
                 </a>
                 <button onClick={() => handleDelete(l.id, "link")} className="text-text-muted hover:text-overdue flex-shrink-0">
@@ -646,16 +646,16 @@ function BrandingCard({
   return (
     <Card>
       <Label>Branding</Label>
-      <p className="text-[11px] text-text-muted mb-3">
+      <p className="text-caption text-text-muted mb-3">
         Applied to your public client site, public quote pages, and PDF exports, so clients see
         your studio&apos;s look, not Freely&apos;s default.
       </p>
 
       <div className="bg-paper rounded-lg p-3.5 mb-4">
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate mb-1.5 uppercase tracking-wide">
+        <div className="flex items-center gap-1.5 text-caption font-semibold text-slate mb-1.5 uppercase tracking-wide">
           <FileText size={12} /> Brand guidelines
         </div>
-        <p className="text-[11.5px] text-text-muted mb-2">
+        <p className="text-meta text-text-muted mb-2">
           The AI pulls out colors and typeface names. Colors apply immediately; fonts are shown for reference.
         </p>
         <DropZone
@@ -665,13 +665,13 @@ function BrandingCard({
           className="flex items-center gap-1.5 cursor-pointer mb-1 -m-1 p-1"
         >
           <Upload size={12} className="text-violet" />
-          <span className="font-body font-bold text-[12.5px] text-violet">
+          <span className="font-body font-bold text-small text-violet">
             {guideUploading ? "Reading & analyzing..." : "Upload or drag brand guidelines"}
           </span>
         </DropZone>
         {guideError && <div className="text-overdue text-xs mt-1.5">{guideError}</div>}
         {guideResult && (
-          <div className="flex items-start gap-1.5 bg-mint rounded-lg px-3 py-2.5 mt-2 text-[12px] text-ink">
+          <div className="flex items-start gap-1.5 bg-mint rounded-lg px-3 py-2.5 mt-2 text-meta text-ink">
             <CheckCircle2 size={13} className="text-success shrink-0 mt-0.5" />
             <div>
               Found: {[
@@ -690,7 +690,7 @@ function BrandingCard({
 
       <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 items-start">
         <div>
-          <div className="text-[11px] font-semibold text-slate mb-2 uppercase tracking-wide">Logo</div>
+          <div className="text-caption font-semibold text-slate mb-2 uppercase tracking-wide">Logo</div>
           {logo ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={logo} alt="Logo" className="h-10 mb-2" />
@@ -703,16 +703,16 @@ function BrandingCard({
             className="flex items-center gap-1.5 cursor-pointer -m-1 p-1"
           >
             <Upload size={12} className="text-violet" />
-            <span className="font-body font-bold text-[12.5px] text-violet">Upload or drag logo</span>
+            <span className="font-body font-bold text-small text-violet">Upload or drag logo</span>
           </DropZone>
-          <div className="text-[10.5px] text-text-muted mt-1 max-w-[160px]">
+          <div className="text-caption text-text-muted mt-1 max-w-[160px]">
             PNG with a transparent background, at least 200×200px.
           </div>
-          {logoError && <div className="text-overdue text-[11px] mt-1 max-w-[180px]">{logoError}</div>}
+          {logoError && <div className="text-overdue text-caption mt-1 max-w-[180px]">{logoError}</div>}
         </div>
         <div className="flex flex-wrap gap-6">
           <div>
-            <div className="text-[11px] font-semibold text-slate mb-2 uppercase tracking-wide">Primary color</div>
+            <div className="text-caption font-semibold text-slate mb-2 uppercase tracking-wide">Primary color</div>
             <input
               type="color"
               value={primary}
@@ -724,7 +724,7 @@ function BrandingCard({
             />
           </div>
           <div>
-            <div className="text-[11px] font-semibold text-slate mb-2 uppercase tracking-wide">Accent color</div>
+            <div className="text-caption font-semibold text-slate mb-2 uppercase tracking-wide">Accent color</div>
             <input
               type="color"
               value={accent}
@@ -736,7 +736,7 @@ function BrandingCard({
             />
           </div>
           <div>
-            <div className="text-[11px] font-semibold text-slate mb-2 uppercase tracking-wide">Currency</div>
+            <div className="text-caption font-semibold text-slate mb-2 uppercase tracking-wide">Currency</div>
             <select
               value={curr}
               onChange={(e) => {
@@ -758,7 +758,7 @@ function BrandingCard({
         <div className="flex gap-6 mt-4 pt-4 border-t border-line">
           {heading && (
             <div>
-              <div className="text-[11px] font-semibold text-slate mb-1 uppercase tracking-wide">
+              <div className="text-caption font-semibold text-slate mb-1 uppercase tracking-wide">
                 Heading font
               </div>
               <div className="text-sm text-ink">{heading}</div>
@@ -766,7 +766,7 @@ function BrandingCard({
           )}
           {body && (
             <div>
-              <div className="text-[11px] font-semibold text-slate mb-1 uppercase tracking-wide">
+              <div className="text-caption font-semibold text-slate mb-1 uppercase tracking-wide">
                 Body font
               </div>
               <div className="text-sm text-ink">{body}</div>
@@ -774,7 +774,7 @@ function BrandingCard({
           )}
         </div>
       )}
-      <p className="text-[11px] text-text-muted mt-2.5">
+      <p className="text-caption text-text-muted mt-2.5">
         Default currency for new quotes, each quote can still be changed individually in the
         wizard.
       </p>
@@ -825,7 +825,7 @@ function ConnectorRow({
           <div className="flex items-center gap-1.5">
             <span className="font-body font-semibold text-sm text-ink">{PROVIDER_LABEL[provider]}</span>
             {!info && (
-              <span className="font-body font-semibold text-[10px] uppercase tracking-wide text-text-muted bg-white border border-line rounded-full px-2 py-0.5">
+              <span className="font-body font-semibold text-caption uppercase tracking-wide text-text-muted bg-white border border-line rounded-full px-2 py-0.5">
                 Coming soon
               </span>
             )}

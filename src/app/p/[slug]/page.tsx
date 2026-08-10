@@ -64,8 +64,8 @@ export default async function PublicProjectPage({ params }: { params: { slug: st
             {latest ? (
               <div className="bg-paper rounded-lg p-4">
                 <div className="font-body font-bold text-sm text-ink mb-1">{latest.title}</div>
-                <p className="text-[13.5px] text-slate m-0 leading-relaxed">{latest.body}</p>
-                <div className="text-[11px] text-text-muted mt-2">
+                <p className="text-body text-slate m-0 leading-relaxed">{latest.body}</p>
+                <div className="text-caption text-text-muted mt-2">
                   {new Date(latest.date).toLocaleDateString("en-US", {
                     month: "long",
                     day: "numeric",
@@ -74,7 +74,7 @@ export default async function PublicProjectPage({ params }: { params: { slug: st
                 </div>
               </div>
             ) : (
-              <p className="text-[13.5px] text-slate">No updates yet.</p>
+              <p className="text-body text-slate">No updates yet.</p>
             )}
           </div>
 

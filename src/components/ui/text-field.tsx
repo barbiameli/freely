@@ -20,7 +20,7 @@ export function TextField({
   rows = 5,
 }: SharedProps & { multiline?: boolean; rows?: number }) {
   const shared =
-    "w-full font-body text-[13.5px] text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border";
+    "w-full font-body text-body text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border";
   if (multiline) {
     return (
       <textarea

@@ -84,7 +84,7 @@ export function EditableBlock({
       placeholder,
       "aria-label": ariaLabel,
       className:
-        "w-full font-body text-[13.5px] text-ink leading-relaxed bg-white border border-violet rounded-lg px-3 py-2.5 outline-none",
+        "w-full font-body text-body text-ink leading-relaxed bg-white border border-violet rounded-lg px-3 py-2.5 outline-none",
     };
     return (
       <div>
@@ -106,13 +106,13 @@ export function EditableBlock({
             }}
           />
         )}
-        {hint && <div className="text-[11px] text-text-muted mt-1">{hint}</div>}
+        {hint && <div className="text-caption text-text-muted mt-1">{hint}</div>}
         <div className="flex items-center gap-3 mt-2">
           <button
             type="button"
             onClick={commit}
             disabled={saving}
-            className="font-body font-bold text-[12px] text-white bg-violet rounded-lg px-3.5 py-1.5 border-none cursor-pointer disabled:opacity-50"
+            className="font-body font-bold text-meta text-white bg-violet rounded-lg px-3.5 py-1.5 border-none cursor-pointer disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save"}
           </button>
@@ -120,7 +120,7 @@ export function EditableBlock({
             type="button"
             onClick={cancel}
             disabled={saving}
-            className="text-[12px] text-text-muted bg-none border-none cursor-pointer p-0"
+            className="text-meta text-text-muted bg-none border-none cursor-pointer p-0"
           >
             Cancel
           </button>
@@ -135,7 +135,7 @@ export function EditableBlock({
       <button
         type="button"
         onClick={() => setEditing(true)}
-        className={`flex items-center gap-1 text-[11.5px] font-bold bg-none border-none cursor-pointer p-0 mt-2 ${
+        className={`flex items-center gap-1 text-meta font-bold bg-none border-none cursor-pointer p-0 mt-2 ${
           tone === "dark" ? "text-white/70 hover:text-white" : "text-violet"
         }`}
       >
@@ -210,7 +210,7 @@ export function EditableSection({
         <button
           type="button"
           onClick={open}
-          className={`flex items-center gap-1 text-[11.5px] font-bold bg-none border-none cursor-pointer p-0 mt-3 ${
+          className={`flex items-center gap-1 text-meta font-bold bg-none border-none cursor-pointer p-0 mt-3 ${
             tone === "dark" ? "text-white/75 hover:text-white" : "text-violet"
           }`}
         >
@@ -221,14 +221,14 @@ export function EditableSection({
   }
 
   const inputClass =
-    "w-full font-body text-[13.5px] text-ink leading-relaxed bg-white border border-violet rounded-lg px-3 py-2.5 outline-none";
+    "w-full font-body text-body text-ink leading-relaxed bg-white border border-violet rounded-lg px-3 py-2.5 outline-none";
 
   return (
     <div className="flex flex-col gap-3">
       {fields.map((field) => (
         <label key={field.key} className="block">
           <span
-            className={`block text-[10.5px] font-bold uppercase tracking-wide mb-1 ${
+            className={`block text-caption font-bold uppercase tracking-wide mb-1 ${
               tone === "dark" ? "text-white/60" : "text-slate"
             }`}
           >
@@ -249,16 +249,16 @@ export function EditableSection({
               className={inputClass}
             />
           )}
-          {field.hint && <span className="block text-[11px] text-text-muted mt-1">{field.hint}</span>}
+          {field.hint && <span className="block text-caption text-text-muted mt-1">{field.hint}</span>}
         </label>
       ))}
-      {error && <div className="text-overdue text-[12px]">{error}</div>}
+      {error && <div className="text-overdue text-meta">{error}</div>}
       <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={commit}
           disabled={saving}
-          className="font-body font-bold text-[12px] text-white bg-violet rounded-lg px-3.5 py-1.5 border-none cursor-pointer disabled:opacity-50"
+          className="font-body font-bold text-meta text-white bg-violet rounded-lg px-3.5 py-1.5 border-none cursor-pointer disabled:opacity-50"
         >
           {saving ? "Saving..." : "Save"}
         </button>
@@ -266,7 +266,7 @@ export function EditableSection({
           type="button"
           onClick={() => setEditing(false)}
           disabled={saving}
-          className={`text-[12px] bg-none border-none cursor-pointer p-0 ${
+          className={`text-meta bg-none border-none cursor-pointer p-0 ${
             tone === "dark" ? "text-white/60" : "text-text-muted"
           }`}
         >

@@ -50,28 +50,28 @@ export function SignUpForm() {
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Your name"
-        className="w-full font-body text-[13.5px] text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
+        className="w-full font-body text-body text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
       />
       <input
         value={studioName}
         onChange={(e) => setStudioName(e.target.value)}
         placeholder="Studio or business name (optional)"
-        className="w-full font-body text-[13.5px] text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
+        className="w-full font-body text-body text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
       />
       <input
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="you@studio.com"
-        className="w-full font-body text-[13.5px] text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
+        className="w-full font-body text-body text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
       />
       <input
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         placeholder="Password (min 8 characters)"
-        className="w-full font-body text-[13.5px] text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
+        className="w-full font-body text-body text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
       />
-      <p className="text-[11px] text-text-muted -mt-1">
+      <p className="text-caption text-text-muted -mt-1">
         That&apos;s all we ask for now, just enough to get you in.
       </p>
       {error && <div className="text-overdue text-xs">{error}</div>}

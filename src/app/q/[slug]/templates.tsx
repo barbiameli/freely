@@ -108,8 +108,8 @@ function ExampleGallery({ examples, tint }: { examples: Example[]; tint?: string
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={ex.dataUrl} alt={ex.name} className="w-full h-[140px] object-cover" />
           <div className="p-3">
-            <div className="text-[12px] font-bold text-ink">{ex.name}</div>
-            <p className="text-[12px] text-slate mt-1 leading-relaxed m-0">{ex.caption}</p>
+            <div className="text-meta font-bold text-ink">{ex.name}</div>
+            <p className="text-meta text-slate mt-1 leading-relaxed m-0">{ex.caption}</p>
           </div>
         </div>
       ))}
@@ -145,11 +145,11 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
           {brief.strategy && (
             <div className="rounded-lg p-4" style={{ background: "rgba(99,32,238,0.07)" }}>
               <div className="font-label text-xs text-slate uppercase mb-2">Strategy</div>
-              <p className="text-[13.5px] text-ink m-0 leading-relaxed font-medium">{brief.strategy.goal}</p>
+              <p className="text-body text-ink m-0 leading-relaxed font-medium">{brief.strategy.goal}</p>
               {brief.strategy.findings.length > 0 && (
                 <ul className="list-none p-0 m-0 mt-2 flex flex-col gap-1">
                   {brief.strategy.findings.map((f, i) => (
-                    <li key={i} className="text-[13px] text-ink leading-relaxed">
+                    <li key={i} className="text-small text-ink leading-relaxed">
                       · {f}
                     </li>
                   ))}
@@ -160,7 +160,7 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
 
           <div className="rounded-lg p-4 bg-paper">
             <div className="font-label text-xs text-slate uppercase mb-2">Scope</div>
-            <Prose text={brief.scope} className="text-[15px] text-ink leading-[1.7]" />
+            <Prose text={brief.scope} className="text-lead text-ink leading-[1.7]" />
           </div>
 
           <div className="rounded-lg p-4" style={{ background: "rgba(244,91,105,0.08)" }}>
@@ -170,13 +170,13 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
                 const { lead, detail } = splitDeliverable(d);
                 return (
                   <div key={i} className="flex items-start gap-2">
-                    <span className="text-[15px] shrink-0" style={{ color: brand.accent }}>
+                    <span className="text-lead shrink-0" style={{ color: brand.accent }}>
                       ✓
                     </span>
                     <div className="min-w-0">
-                      <div className="text-[15px] text-ink font-medium leading-snug">{lead}</div>
+                      <div className="text-lead text-ink font-medium leading-snug">{lead}</div>
                       {detail && (
-                        <div className="text-[13.5px] text-slate leading-relaxed mt-1.5">
+                        <div className="text-body text-slate leading-relaxed mt-1.5">
                           {detail}
                         </div>
                       )}
@@ -202,12 +202,12 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
           {extraBlocks(brief.extras).map(([label, text]) => (
             <div key={label} className="rounded-lg p-4 bg-paper">
               <div className="font-label text-xs text-slate uppercase mb-2">{label}</div>
-              <p className="text-[13.5px] text-ink m-0 leading-relaxed whitespace-pre-line">{text}</p>
+              <p className="text-body text-ink m-0 leading-relaxed whitespace-pre-line">{text}</p>
             </div>
           ))}
 
           <div className="rounded-lg p-4 bg-ink flex justify-between items-center">
-            <span className="text-[13.5px] text-white/70">
+            <span className="text-body text-white/70">
               {describeEffort(brief.hours, parseRateUnit(brief.rateUnit))}
               {brief.hourlyRate ? ` · ~${currencySymbol(brief.currency)}${brief.hourlyRate}/hr` : ""}
             </span>
@@ -244,10 +244,10 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
               Freely
             </span>
           )}
-          <span className="text-[10px] tracking-[0.15em] uppercase text-slate">Quotation</span>
+          <span className="text-caption tracking-[0.15em] uppercase text-slate">Quotation</span>
         </div>
 
-        <span className="text-[11px] tracking-[0.15em] uppercase" style={{ color: brand.primary }}>
+        <span className="text-caption tracking-[0.15em] uppercase" style={{ color: brand.primary }}>
           For {brief.client}
         </span>
         <h1 className="font-display italic text-[30px] sm:text-[44px] leading-[1.15] sm:leading-[1.1] m-0 mt-3 text-ink">
@@ -257,21 +257,21 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
         <div className="flex flex-wrap gap-6 sm:gap-10 mt-10 pb-10 border-b" style={{ borderColor: brand.accent }}>
           <div>
             <div className="font-body font-bold text-[26px] text-ink">{currencySymbol(brief.currency)}{brief.price.toLocaleString()}</div>
-            <div className="text-[10px] uppercase tracking-[0.08em] text-slate mt-1">Total</div>
+            <div className="text-caption uppercase tracking-[0.08em] text-slate mt-1">Total</div>
           </div>
           <div>
             <div className="font-body font-bold text-[26px] text-ink">
               {unitsFromHours(brief.hours, parseRateUnit(brief.rateUnit))}
               {parseRateUnit(brief.rateUnit) === "DAY" ? "d" : "h"}
             </div>
-            <div className="text-[10px] uppercase tracking-[0.08em] text-slate mt-1">
+            <div className="text-caption uppercase tracking-[0.08em] text-slate mt-1">
               {parseRateUnit(brief.rateUnit) === "DAY" ? "Estimated days" : "Estimated hours"}
             </div>
           </div>
           {brief.hourlyRate && (
             <div>
               <div className="font-body font-bold text-[26px] text-ink">{currencySymbol(brief.currency)}{brief.hourlyRate}</div>
-              <div className="text-[10px] uppercase tracking-[0.08em] text-slate mt-1">Per hour</div>
+              <div className="text-caption uppercase tracking-[0.08em] text-slate mt-1">Per hour</div>
             </div>
           )}
         </div>
@@ -281,13 +281,13 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
             <h2 className="font-display italic text-2xl m-0 mb-4" style={{ color: brand.primary }}>
               Strategy
             </h2>
-            <p className="text-[15px] leading-relaxed text-ink">{brief.strategy.goal}</p>
+            <p className="text-lead leading-relaxed text-ink">{brief.strategy.goal}</p>
             {brief.strategy.findings.length > 0 && (
               <div className="mt-5">
-                <div className="text-[10px] uppercase tracking-[0.1em] text-slate mb-2">Findings</div>
+                <div className="text-caption uppercase tracking-[0.1em] text-slate mb-2">Findings</div>
                 <ul className="list-none p-0 m-0 flex flex-col gap-2">
                   {brief.strategy.findings.map((f, i) => (
-                    <li key={i} className="text-[14px] text-ink leading-relaxed pl-4 relative">
+                    <li key={i} className="text-body text-ink leading-relaxed pl-4 relative">
                       <span className="absolute left-0" style={{ color: brand.primary }}>-</span>
                       {f}
                     </li>
@@ -302,7 +302,7 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
           <h2 className="font-display italic text-2xl m-0 mb-4" style={{ color: brand.primary }}>
             Scope
           </h2>
-          <Prose text={brief.scope} className="text-[16px] leading-[1.7] text-ink" />
+          <Prose text={brief.scope} className="text-lead leading-[1.7] text-ink" />
         </div>
 
         <div className="py-10 border-b" style={{ borderColor: "#E8EAEF" }}>
@@ -314,13 +314,13 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
               const { lead, detail } = splitDeliverable(d);
               return (
                 <div key={i} className="flex items-baseline gap-3">
-                  <span className="text-[11px] tabular-nums text-slate w-5 shrink-0">
+                  <span className="text-caption tabular-nums text-slate w-5 shrink-0">
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   <div className="min-w-0">
-                    <div className="text-[16px] text-ink leading-snug">{lead}</div>
+                    <div className="text-lead text-ink leading-snug">{lead}</div>
                     {detail && (
-                      <div className="text-[14px] text-slate leading-relaxed mt-2">{detail}</div>
+                      <div className="text-body text-slate leading-relaxed mt-2">{detail}</div>
                     )}
                   </div>
                 </div>
@@ -350,7 +350,7 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
             <h2 className="font-display italic text-2xl m-0 mb-4" style={{ color: brand.primary }}>
               {label}
             </h2>
-            <p className="text-[15px] leading-relaxed text-ink whitespace-pre-line">{text}</p>
+            <p className="text-lead leading-relaxed text-ink whitespace-pre-line">{text}</p>
           </div>
         ))}
 
@@ -382,14 +382,14 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
       <div className="max-w-xl mx-auto px-5 sm:px-8 py-10 sm:py-14">
         <div className="flex items-center justify-between pb-6" style={{ borderBottom: `1.5px solid ${ink}` }}>
           <span className="text-sm font-bold tracking-[0.08em] uppercase">Quote</span>
-          <span className="text-[10px] tracking-[0.15em] uppercase" style={{ color: muted }}>
+          <span className="text-caption tracking-[0.15em] uppercase" style={{ color: muted }}>
             {brief.client}
           </span>
         </div>
 
         <h1 className="text-[24px] font-bold m-0 mt-8">{brief.title}</h1>
 
-        <div className="flex flex-wrap gap-4 sm:gap-8 mt-6 pb-6 text-[13px]" style={{ borderBottom: `1px solid ${line}` }}>
+        <div className="flex flex-wrap gap-4 sm:gap-8 mt-6 pb-6 text-small" style={{ borderBottom: `1px solid ${line}` }}>
           <span>
             <strong>{currencySymbol(brief.currency)}{brief.price.toLocaleString()}</strong> total
           </span>
@@ -405,12 +405,12 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
 
         {brief.strategy && (
           <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
-            <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">Strategy</div>
-            <p className="text-[13.5px] leading-relaxed m-0">{brief.strategy.goal}</p>
+            <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">Strategy</div>
+            <p className="text-body leading-relaxed m-0">{brief.strategy.goal}</p>
             {brief.strategy.findings.map((f, i) => (
               <p
                 key={i}
-                className="text-[13px] leading-relaxed m-0 mt-2 pl-4"
+                className="text-small leading-relaxed m-0 mt-2 pl-4"
                 style={{ borderLeft: `1px solid ${line}` }}
               >
                 {f}
@@ -420,22 +420,22 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
         )}
 
         <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
-          <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">Scope</div>
-          <Prose text={brief.scope} className="text-[14.5px] leading-[1.7]" />
+          <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">Scope</div>
+          <Prose text={brief.scope} className="text-lead leading-[1.7]" />
         </div>
 
         <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
-          <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">Deliverables</div>
+          <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">Deliverables</div>
           <div className="flex flex-col gap-1">
             {brief.deliverables.map((d, i) => {
               const { lead, detail } = splitDeliverable(d);
               return (
                 <div key={i} className="flex items-start gap-2">
-                  <span className="text-[14.5px] shrink-0">-</span>
+                  <span className="text-lead shrink-0">-</span>
                   <div className="min-w-0">
-                    <div className="text-[14.5px] leading-snug">{lead}</div>
+                    <div className="text-lead leading-snug">{lead}</div>
                     {detail && (
-                      <div className="text-[13.5px] leading-relaxed mt-1.5" style={{ color: muted }}>
+                      <div className="text-body leading-relaxed mt-1.5" style={{ color: muted }}>
                         {detail}
                       </div>
                     )}
@@ -447,26 +447,26 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
         </div>
 
         <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
-          <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">Timeline</div>
+          <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">Timeline</div>
           <TimelineView timeline={brief.timeline} accent={ink} muted={muted} />
         </div>
 
         {brief.examples.length > 0 && (
           <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
-            <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">Examples</div>
+            <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">Examples</div>
             <ExampleGallery examples={brief.examples} />
           </div>
         )}
 
         {extraBlocks(brief.extras).map(([label, text]) => (
           <div key={label} className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
-            <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">{label}</div>
-            <p className="text-[13.5px] leading-relaxed m-0 whitespace-pre-line">{text}</p>
+            <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{label}</div>
+            <p className="text-body leading-relaxed m-0 whitespace-pre-line">{text}</p>
           </div>
         ))}
 
         <div className="flex justify-between items-center pt-6">
-          <span className="text-[13px]" style={{ color: muted }}>
+          <span className="text-small" style={{ color: muted }}>
             Total
           </span>
           <span className="text-[22px] font-bold">
@@ -501,13 +501,13 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
           ) : (
             <span className="text-sm font-bold tracking-[0.08em] uppercase">Freely</span>
           )}
-          <span className="text-[10px] tracking-[0.15em] uppercase text-slate">Quote</span>
+          <span className="text-caption tracking-[0.15em] uppercase text-slate">Quote</span>
         </div>
 
         <h1 className="text-[24px] font-bold m-0 mt-8">{brief.title}</h1>
-        <p className="text-[13px] text-slate mt-1">{brief.client}</p>
+        <p className="text-small text-slate mt-1">{brief.client}</p>
 
-        <div className="flex flex-wrap gap-4 sm:gap-8 mt-6 pb-6 border-b border-line text-[13px]">
+        <div className="flex flex-wrap gap-4 sm:gap-8 mt-6 pb-6 border-b border-line text-small">
           <span>
             <strong>{currencySymbol(brief.currency)}{brief.price.toLocaleString()}</strong> total
           </span>
@@ -523,10 +523,10 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
 
         {brief.strategy && (
           <div className="py-6 border-b border-line">
-            <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">Strategy</div>
-            <p className="text-[13.5px] leading-relaxed m-0">{brief.strategy.goal}</p>
+            <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">Strategy</div>
+            <p className="text-body leading-relaxed m-0">{brief.strategy.goal}</p>
             {brief.strategy.findings.map((f, i) => (
-              <p key={i} className="text-[13px] leading-relaxed m-0 mt-2 pl-4 border-l border-line">
+              <p key={i} className="text-small leading-relaxed m-0 mt-2 pl-4 border-l border-line">
                 {f}
               </p>
             ))}
@@ -534,22 +534,22 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
         )}
 
         <div className="py-6 border-b border-line">
-          <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">Scope</div>
-          <Prose text={brief.scope} className="text-[14.5px] leading-[1.7]" />
+          <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">Scope</div>
+          <Prose text={brief.scope} className="text-lead leading-[1.7]" />
         </div>
 
         <div className="py-6 border-b border-line">
-          <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">Deliverables</div>
+          <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">Deliverables</div>
           <div className="flex flex-col gap-1">
             {brief.deliverables.map((d, i) => {
               const { lead, detail } = splitDeliverable(d);
               return (
                 <div key={i} className="flex items-start gap-2">
-                  <span className="text-[14.5px] shrink-0">-</span>
+                  <span className="text-lead shrink-0">-</span>
                   <div className="min-w-0">
-                    <div className="text-[14.5px] leading-snug">{lead}</div>
+                    <div className="text-lead leading-snug">{lead}</div>
                     {detail && (
-                      <div className="text-[13.5px] leading-relaxed mt-1.5 text-slate">{detail}</div>
+                      <div className="text-body leading-relaxed mt-1.5 text-slate">{detail}</div>
                     )}
                   </div>
                 </div>
@@ -559,26 +559,26 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
         </div>
 
         <div className="py-6 border-b border-line">
-          <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">Timeline</div>
+          <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">Timeline</div>
           <TimelineView timeline={brief.timeline} accent="#181722" />
         </div>
 
         {brief.examples.length > 0 && (
           <div className="py-6 border-b border-line">
-            <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">Examples</div>
+            <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">Examples</div>
             <ExampleGallery examples={brief.examples} />
           </div>
         )}
 
         {extraBlocks(brief.extras).map(([label, text]) => (
           <div key={label} className="py-6 border-b border-line">
-            <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">{label}</div>
-            <p className="text-[13.5px] leading-relaxed m-0 whitespace-pre-line">{text}</p>
+            <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{label}</div>
+            <p className="text-body leading-relaxed m-0 whitespace-pre-line">{text}</p>
           </div>
         ))}
 
         <div className="flex justify-between items-center pt-6">
-          <span className="text-[13px] text-slate">Total</span>
+          <span className="text-small text-slate">Total</span>
           <span className="text-[22px] font-bold">{currencySymbol(brief.currency)}{brief.price.toLocaleString()}</span>
         </div>
 

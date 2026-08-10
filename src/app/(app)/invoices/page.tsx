@@ -27,7 +27,7 @@ export default async function InvoicesPage() {
       <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
         <div>
           <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">Invoices</h1>
-          <p className="text-slate text-[15px] mt-2">
+          <p className="text-slate text-lead mt-2">
             Built from a tracked project, in the same branding as its quote.
           </p>
         </div>
@@ -36,7 +36,7 @@ export default async function InvoicesPage() {
 
       {invoices.length === 0 ? (
         <Card>
-          <div className="text-slate text-[13.5px]">
+          <div className="text-slate text-body">
             No invoices yet. Start one from a tracked project, or from scratch.
           </div>
         </Card>
@@ -50,25 +50,25 @@ export default async function InvoicesPage() {
                 <Card className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 cursor-pointer">
                   <div>
                     <div className="flex items-center gap-2.5">
-                      <span className="font-body font-bold text-[15px] text-ink">
+                      <span className="font-body font-bold text-lead text-ink">
                         #{String(inv.number).padStart(4, "0")}
                       </span>
-                      <span className="text-[13.5px] text-slate">
+                      <span className="text-body text-slate">
                         {inv.clientName || "No client yet"}
                       </span>
                     </div>
-                    <div className="text-[12px] text-text-muted mt-1">
+                    <div className="text-meta text-text-muted mt-1">
                       Issued {inv.issuedAt.toLocaleDateString("en-GB")} · due{" "}
                       {inv.dueAt.toLocaleDateString("en-GB")}
                     </div>
                   </div>
                   <div className="flex items-center gap-4 shrink-0">
-                    <span className="font-body font-bold text-[15px] text-ink">
+                    <span className="font-body font-bold text-lead text-ink">
                       {currencySymbol(inv.currency)}
                       {total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </span>
                     <span
-                      className={`font-body font-semibold text-[10px] uppercase tracking-wide rounded-full px-2.5 py-1 ${
+                      className={`font-body font-semibold text-caption uppercase tracking-wide rounded-full px-2.5 py-1 ${
                         inv.paid
                           ? "text-success bg-mint-solid"
                           : overdue
@@ -88,7 +88,7 @@ export default async function InvoicesPage() {
 
       <Card>
         <Label>Payment details</Label>
-        <p className="text-[12px] text-text-muted mt-1 mb-0">
+        <p className="text-meta text-text-muted mt-1 mb-0">
           Freely does not store your bank details. You add them when you download an invoice, and
           they go into the PDF only. See the{" "}
           <Link href="/terms" className="text-violet font-semibold">

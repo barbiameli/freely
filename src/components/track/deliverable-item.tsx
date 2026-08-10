@@ -96,14 +96,14 @@ function StepRow({ step }: { step: StepView }) {
               setEditing(false);
             }
           }}
-          className="flex-1 font-body text-[13px] text-ink bg-white border border-violet rounded-md px-2 py-1 outline-none"
+          className="flex-1 font-body text-small text-ink bg-white border border-violet rounded-md px-2 py-1 outline-none"
         />
       ) : (
         <button
           type="button"
           onClick={() => setEditing(true)}
           title="Edit this step"
-          className={`flex-1 text-left text-[13px] leading-snug bg-none border-none cursor-text p-0 ${
+          className={`flex-1 text-left text-small leading-snug bg-none border-none cursor-text p-0 ${
             step.done ? "text-text-muted line-through" : "text-ink"
           }`}
         >
@@ -111,7 +111,7 @@ function StepRow({ step }: { step: StepView }) {
         </button>
       )}
       {step.estimateHours > 0 && (
-        <span className="text-[11px] text-text-muted shrink-0 pt-0.5">{step.estimateHours}h</span>
+        <span className="text-caption text-text-muted shrink-0 pt-0.5">{step.estimateHours}h</span>
       )}
       <button
         type="button"
@@ -183,7 +183,7 @@ export function DeliverableItem({
             )}
             <span
               title={deliverable.name}
-              className={`font-body font-semibold text-[13.5px] ${
+              className={`font-body font-semibold text-body ${
                 deliverable.done ? "text-text-muted" : "text-ink"
               }`}
             >
@@ -193,7 +193,7 @@ export function DeliverableItem({
               {expanded ? deliverable.name : shortName(deliverable.name, 70)}
             </span>
           </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 ml-[19px] text-[11.5px] text-text-muted">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 ml-[19px] text-meta text-text-muted">
             {deliverable.steps.length > 0 && (
               <span>
                 {deliverable.steps.filter((s) => s.done).length} of {deliverable.steps.length} steps
@@ -220,14 +220,14 @@ export function DeliverableItem({
                 setEditingDate(false);
                 void run(() => setDeliverableDueAction(deliverable.id, value));
               }}
-              className="font-body text-[11.5px] text-ink bg-white border border-violet rounded-md px-1.5 py-1 outline-none"
+              className="font-body text-meta text-ink bg-white border border-violet rounded-md px-1.5 py-1 outline-none"
             />
           ) : (
             <button
               type="button"
               onClick={() => setEditingDate(true)}
               title="Change this date"
-              className={`text-[11.5px] bg-none border-none cursor-pointer p-0 ${
+              className={`text-meta bg-none border-none cursor-pointer p-0 ${
                 overdue ? "text-overdue font-semibold" : "text-text-muted"
               }`}
             >
@@ -240,21 +240,21 @@ export function DeliverableItem({
       {expanded && (
         <div className="pb-4 pl-[27px] pr-1">
           {deliverable.summary && (
-            <p className="text-[12.5px] text-slate leading-relaxed mt-0 mb-3">
+            <p className="text-small text-slate leading-relaxed mt-0 mb-3">
               {deliverable.summary}
             </p>
           )}
 
           {deliverable.steps.length === 0 ? (
             <div className="bg-paper rounded-lg px-3.5 py-3">
-              <p className="text-[12.5px] text-slate m-0">
+              <p className="text-small text-slate m-0">
                 No steps on this one yet.
               </p>
               <button
                 type="button"
                 onClick={runBreakdown}
                 disabled={breaking}
-                className="flex items-center gap-1.5 mt-2.5 text-[12px] font-bold text-white bg-violet rounded-lg px-3 py-1.5 border-none cursor-pointer disabled:opacity-50"
+                className="flex items-center gap-1.5 mt-2.5 text-meta font-bold text-white bg-violet rounded-lg px-3 py-1.5 border-none cursor-pointer disabled:opacity-50"
               >
                 <Sparkles size={12} />
                 {breaking ? "Working it out..." : "Break this down"}
@@ -280,7 +280,7 @@ export function DeliverableItem({
                     }
                   }}
                   placeholder="Add a step"
-                  className="flex-1 font-body text-[12.5px] text-ink bg-paper border-none rounded-lg px-2.5 py-1.5 outline-none"
+                  className="flex-1 font-body text-small text-ink bg-paper border-none rounded-lg px-2.5 py-1.5 outline-none"
                 />
                 <button
                   type="button"
@@ -301,12 +301,12 @@ export function DeliverableItem({
                 type="button"
                 onClick={runBreakdown}
                 disabled={breaking}
-                className="flex items-center gap-1.5 mt-3 text-[11.5px] font-semibold text-violet bg-none border-none cursor-pointer p-0 disabled:opacity-50"
+                className="flex items-center gap-1.5 mt-3 text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 disabled:opacity-50"
               >
                 <Sparkles size={11} />
                 {breaking ? "Working it out..." : "Redo the breakdown"}
               </button>
-              <p className="text-[11px] text-text-muted mt-1 mb-0">
+              <p className="text-caption text-text-muted mt-1 mb-0">
                 Ticked steps and their wording are kept.
               </p>
             </>

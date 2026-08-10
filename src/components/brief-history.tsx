@@ -24,7 +24,7 @@ function TrackLink({ brief, className }: { brief: BriefSummary; className?: stri
   const [pending, startTransition] = useTransition();
 
   if (brief.status === "TRACKED") {
-    return <span className={`text-[12px] text-text-muted ${className ?? ""}`}>Tracked</span>;
+    return <span className={`text-meta text-text-muted ${className ?? ""}`}>Tracked</span>;
   }
 
   return (
@@ -41,7 +41,7 @@ function TrackLink({ brief, className }: { brief: BriefSummary; className?: stri
           }
         });
       }}
-      className={`text-[12px] font-semibold text-violet bg-none border-none cursor-pointer p-0 disabled:opacity-50 ${
+      className={`text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 disabled:opacity-50 ${
         className ?? ""
       }`}
     >
@@ -67,9 +67,9 @@ function Strip({ briefs }: { briefs: BriefSummary[] }) {
   return (
     <section>
       <div className="flex items-baseline justify-between gap-3 mb-2.5">
-        <span className="font-body font-semibold text-[13px] text-ink">Pick up where you left off</span>
+        <span className="font-body font-semibold text-small text-ink">Pick up where you left off</span>
         <div className="flex items-center gap-3">
-          <Link href="/quote/all" className="text-[12px] font-semibold text-violet">
+          <Link href="/quote/all" className="text-meta font-semibold text-violet">
             See all {briefs.length}
           </Link>
           <div className="hidden sm:flex items-center gap-1">
@@ -103,12 +103,12 @@ function Strip({ briefs }: { briefs: BriefSummary[] }) {
           >
             <Link href={`/quote/${brief.id}`} className="block no-underline">
               <DocumentPreview brief={brief} height={64} />
-              <div className="font-body font-semibold text-[12.5px] text-ink mt-2 truncate">
+              <div className="font-body font-semibold text-small text-ink mt-2 truncate">
                 {brief.title}
               </div>
             </Link>
             <div className="flex items-baseline justify-between gap-2 mt-1">
-              <span className="text-[12px] text-text-muted">{money(brief)}</span>
+              <span className="text-meta text-text-muted">{money(brief)}</span>
               <div className="flex items-center gap-2.5">
                 <TrackLink brief={brief} />
                 <DeleteBriefButton brief={brief} />

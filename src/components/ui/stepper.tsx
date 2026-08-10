@@ -45,7 +45,7 @@ export function Stepper({
               <Check size={12} className="text-coral" />
             ) : (
               <span
-                className={`font-body font-bold text-[11px] ${
+                className={`font-body font-bold text-caption ${
                   active ? "text-white" : "text-text-muted"
                 }`}
               >
@@ -53,7 +53,7 @@ export function Stepper({
               </span>
             )}
             <span
-              className={`font-body font-semibold text-[12.5px] ${
+              className={`font-body font-semibold text-small ${
                 active ? "text-white" : done ? "text-coral" : "text-slate"
               }`}
             >

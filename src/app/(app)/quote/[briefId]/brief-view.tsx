@@ -97,7 +97,7 @@ function Section({
   const accentClass = accent === "coral" ? "border-coral" : "border-violet";
   return (
     <div className={`${tintClass} rounded-card border-l-[3px] ${accentClass} px-5 py-4`}>
-      <span className="font-body font-bold text-[10px] tracking-[0.08em] uppercase text-slate">
+      <span className="font-body font-bold text-caption tracking-[0.08em] uppercase text-slate">
         {eyebrow}
       </span>
       <div className="mt-2">{children}</div>
@@ -109,7 +109,7 @@ function Bullets({ items, dense }: { items: string[]; dense?: boolean }) {
   return (
     <ul className={`list-none p-0 m-0 flex flex-col ${dense ? "gap-1.5" : "gap-2"}`}>
       {items.map((item, i) => (
-        <li key={i} className="flex gap-2 text-[13.5px] leading-relaxed text-ink">
+        <li key={i} className="flex gap-2 text-body leading-relaxed text-ink">
           <span className="text-coral font-bold shrink-0">·</span>
           <span>{item}</span>
         </li>
@@ -240,7 +240,7 @@ export function BriefView({
       {brief.accepted && (
         <div className="flex items-start gap-2.5 bg-mint-solid rounded-card px-4 py-3">
           <Check size={15} className="text-success shrink-0 mt-0.5" />
-          <div className="text-[12.5px] text-ink">
+          <div className="text-small text-ink">
             <span className="font-semibold">Accepted by {brief.accepted.name}</span> on{" "}
             {new Date(brief.accepted.at).toLocaleDateString("en-GB", {
               day: "numeric",
@@ -256,7 +256,7 @@ export function BriefView({
       {!published && !brief.accepted && (
         <div className="flex items-start gap-2.5 bg-coral-tint rounded-card px-4 py-3">
           <Eye size={15} className="text-coral shrink-0 mt-0.5" />
-          <div className="text-[12.5px] text-ink">
+          <div className="text-small text-ink">
             <span className="font-semibold">This is your working draft.</span> Nobody else can see
             it yet, and your branding isn&apos;t applied here. Publish it as a page or download the
             PDF to see how the client will actually receive it.
@@ -267,7 +267,7 @@ export function BriefView({
       {/* Hero, mirrors a real quotation cover: dark block, big number stats */}
       <div className="bg-ink rounded-card px-5 py-5 md:px-7 md:py-6 flex justify-between items-start gap-4">
         <div>
-          <span className="font-body font-bold text-[10px] tracking-[0.08em] uppercase text-coral">
+          <span className="font-body font-bold text-caption tracking-[0.08em] uppercase text-coral">
             {published ? "Quotation, published" : "Quotation, draft"}
           </span>
           <EditableSection
@@ -307,8 +307,8 @@ export function BriefView({
             }}
           >
             <h1 className="font-display italic text-[28px] text-white m-0 mt-1">{content.title}</h1>
-            <p className="text-[13px] text-white/60 mt-1.5">{content.client}</p>
-            <p className="text-[12px] text-white/40 mt-1">
+            <p className="text-small text-white/60 mt-1.5">{content.client}</p>
+            <p className="text-meta text-white/40 mt-1">
               Generated {new Date(brief.createdAt).toLocaleString()}
             </p>
             <div className="flex flex-wrap gap-5 md:gap-7 mt-4">
@@ -317,11 +317,11 @@ export function BriefView({
                   {currencySymbol(brief.currency)}
                   {content.price.toLocaleString()}
                 </div>
-                <div className="text-[10px] uppercase tracking-[0.06em] text-white/50">Total</div>
+                <div className="text-caption uppercase tracking-[0.06em] text-white/50">Total</div>
               </div>
               <div>
                 <div className="font-body font-bold text-[20px] text-white">{content.hours}h</div>
-                <div className="text-[10px] uppercase tracking-[0.06em] text-white/50">
+                <div className="text-caption uppercase tracking-[0.06em] text-white/50">
                   Estimated hours
                 </div>
               </div>
@@ -331,7 +331,7 @@ export function BriefView({
                     {currencySymbol(brief.currency)}
                     {brief.hourlyRate}
                   </div>
-                  <div className="text-[10px] uppercase tracking-[0.06em] text-white/50">
+                  <div className="text-caption uppercase tracking-[0.06em] text-white/50">
                     Per hour
                   </div>
                 </div>
@@ -339,7 +339,7 @@ export function BriefView({
             </div>
           </EditableSection>
         </div>
-        <span className="font-body font-semibold text-[11px] uppercase tracking-wide text-white/60 shrink-0">
+        <span className="font-body font-semibold text-caption uppercase tracking-wide text-white/60 shrink-0">
           {brief.accepted ? "Accepted" : published ? "Published" : "Draft"}
         </span>
       </div>
@@ -348,7 +348,7 @@ export function BriefView({
         <div className="flex-[2] flex flex-col gap-4 overflow-y-auto pr-1">
           {content.strategy && (
             <Section eyebrow="Strategy" tint="violet" accent="violet">
-              <p className="text-[11.5px] text-slate mb-3">
+              <p className="text-meta text-slate mb-3">
                 What the AI understood the project to be about, drawn from the brief you gave it.
                 Edit anything that misses the mark.
               </p>
@@ -382,7 +382,7 @@ export function BriefView({
                 </p>
                 {content.strategy.findings.length > 0 && (
                   <div className="mt-3">
-                    <span className="text-[11px] font-bold text-slate uppercase tracking-[0.04em]">
+                    <span className="text-caption font-bold text-slate uppercase tracking-[0.04em]">
                       Findings
                     </span>
                     <div className="mt-1.5">
@@ -402,7 +402,7 @@ export function BriefView({
             >
               <div className="flex flex-col gap-3">
                 {paragraphs(content.scope).map((p, i) => (
-                  <p key={i} className="text-[15px] leading-[1.7] text-ink m-0">
+                  <p key={i} className="text-lead leading-[1.7] text-ink m-0">
                     {p}
                   </p>
                 ))}
@@ -518,7 +518,7 @@ export function BriefView({
               >
                 <div className="flex flex-col gap-3">
                   <div>
-                    <span className="text-[11px] font-bold text-slate uppercase tracking-[0.04em]">
+                    <span className="text-caption font-bold text-slate uppercase tracking-[0.04em]">
                       Where AI is used
                     </span>
                     <div className="mt-1.5">
@@ -526,7 +526,7 @@ export function BriefView({
                     </div>
                   </div>
                   <div>
-                    <span className="text-[11px] font-bold text-slate uppercase tracking-[0.04em]">
+                    <span className="text-caption font-bold text-slate uppercase tracking-[0.04em]">
                       Where it is not
                     </span>
                     <div className="mt-1.5">
@@ -549,7 +549,7 @@ export function BriefView({
                   ] as const
                 ).map(([label, field]) => (
                   <div key={field}>
-                    <span className="text-[11px] font-bold text-slate uppercase tracking-[0.04em]">
+                    <span className="text-caption font-bold text-slate uppercase tracking-[0.04em]">
                       {label}
                     </span>
                     <div className="mt-0.5">
@@ -564,7 +564,7 @@ export function BriefView({
                           })
                         }
                         ariaLabel={label}
-                        className="text-[13.5px] text-ink leading-relaxed"
+                        className="text-body text-ink leading-relaxed"
                       />
                     </div>
                   </div>
@@ -575,7 +575,7 @@ export function BriefView({
 
           <div className="bg-ink rounded-card px-5 py-4 flex justify-between items-start gap-6">
             <div className="min-w-0">
-              <span className="font-body font-bold text-[10px] tracking-[0.08em] uppercase text-white/50">
+              <span className="font-body font-bold text-caption tracking-[0.08em] uppercase text-white/50">
                 Investment
               </span>
               <div className="mt-1 max-w-[160px]">
@@ -616,7 +616,7 @@ export function BriefView({
                       : undefined
                   }
                   ariaLabel="Estimated hours"
-                  className="text-[13px] text-white/80"
+                  className="text-small text-white/80"
                   singleLine
                 >
                   <span>
@@ -672,7 +672,7 @@ export function BriefView({
                     <img src={ex.dataUrl} alt={ex.name} className="w-full h-[110px] object-cover" />
                     <div className="p-2.5">
                       <div className="flex justify-between items-start gap-2">
-                        <span className="text-[11px] font-bold text-ink">{ex.name}</span>
+                        <span className="text-caption font-bold text-ink">{ex.name}</span>
                         <button
                           onClick={() => handleDeleteExample(ex.id)}
                           className="bg-none border-none cursor-pointer p-0 text-slate hover:text-overdue"
@@ -681,7 +681,7 @@ export function BriefView({
                           <Trash2 size={12} />
                         </button>
                       </div>
-                      <p className="text-[12px] leading-snug text-slate mt-1.5 m-0">{ex.caption}</p>
+                      <p className="text-meta leading-snug text-slate mt-1.5 m-0">{ex.caption}</p>
                     </div>
                   </div>
                 ))}
@@ -696,11 +696,11 @@ export function BriefView({
             <div className="rounded-card border border-dashed border-violet/40 bg-white px-5 py-4">
               <div className="flex items-center gap-1.5">
                 <Lightbulb size={14} className="text-violet" />
-                <span className="font-body font-bold text-[10px] tracking-[0.08em] uppercase text-violet">
+                <span className="font-body font-bold text-caption tracking-[0.08em] uppercase text-violet">
                   Worth thinking about
                 </span>
               </div>
-              <p className="text-[11.5px] text-slate mt-1.5 mb-3">
+              <p className="text-meta text-slate mt-1.5 mb-3">
                 Notes for you, not for the client. These do not appear on the quote you send.
               </p>
               <EditableBlock
@@ -763,7 +763,7 @@ export function BriefView({
                 />
               </button>
               {showSource && (
-                <p className="text-[12.5px] leading-relaxed text-slate mt-2.5 max-h-[220px] overflow-y-auto whitespace-pre-line">
+                <p className="text-small leading-relaxed text-slate mt-2.5 max-h-[220px] overflow-y-auto whitespace-pre-line">
                   {brief.sourceText}
                 </p>
               )}
@@ -785,7 +785,7 @@ export function BriefView({
                   >
                     {b.title}
                   </span>
-                  <span className="font-body font-semibold text-[10px] text-violet">
+                  <span className="font-body font-semibold text-caption text-violet">
                     {b.status}
                   </span>
                 </button>
@@ -820,7 +820,7 @@ export function BriefView({
                 href={shareUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="text-[13px] text-success font-semibold truncate hover:underline"
+                className="text-small text-success font-semibold truncate hover:underline"
               >
                 {shareUrl.replace(/^https?:\/\//, "")}
               </a>
@@ -846,7 +846,7 @@ export function BriefView({
               type="button"
               disabled={publishing}
               onClick={handleTogglePublish}
-              className="text-[11.5px] text-text-muted hover:text-overdue underline bg-none border-none cursor-pointer p-0"
+              className="text-meta text-text-muted hover:text-overdue underline bg-none border-none cursor-pointer p-0"
             >
               {publishing ? "Working..." : "Unpublish"}
             </button>

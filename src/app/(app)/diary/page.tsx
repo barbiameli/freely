@@ -22,7 +22,7 @@ export default async function DiaryIndexPage() {
         <h1 className="font-display italic text-[32px] text-coral m-0">
           Client updates, written for you.
         </h1>
-        <p className="text-slate text-[13px] mt-2">
+        <p className="text-slate text-small mt-2">
           Auto-generated from your project tracker, edit anything before it goes out.
         </p>
       </div>

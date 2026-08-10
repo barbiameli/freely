@@ -46,14 +46,14 @@ export function InviteForm({ token, presetEmail }: { token: string; presetEmail:
         onChange={(e) => setEmail(e.target.value)}
         placeholder="you@studio.com"
         readOnly={Boolean(presetEmail)}
-        className="w-full font-body text-[13.5px] text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
+        className="w-full font-body text-body text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
       />
       <input
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         placeholder="Password (min 8 characters)"
-        className="w-full font-body text-[13.5px] text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
+        className="w-full font-body text-body text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
       />
       {error && <div className="text-overdue text-xs">{error}</div>}
       <Button

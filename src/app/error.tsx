@@ -20,7 +20,7 @@ export default function RootError({
       <h1 className="font-display italic text-[30px] text-coral m-0">
         Something went wrong.
       </h1>
-      <p className="text-slate text-[14px] mt-2 max-w-[400px]">
+      <p className="text-slate text-body mt-2 max-w-[400px]">
         This one is on us. Try again in a moment.
       </p>
       <button

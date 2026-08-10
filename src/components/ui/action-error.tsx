@@ -12,7 +12,7 @@ export function ActionError({ error, className }: { error?: string; className?: 
   return (
     <div
       role="alert"
-      className={`flex items-start gap-1.5 text-overdue text-[12.5px] leading-snug ${
+      className={`flex items-start gap-1.5 text-overdue text-small leading-snug ${
         className ?? ""
       }`}
     >

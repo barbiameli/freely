@@ -54,7 +54,7 @@ export function Sidebar() {
                 }`}
               >
                 <span
-                  className={`font-body font-bold text-[13px] ${
+                  className={`font-body font-bold text-small ${
                     active ? "text-violet" : "text-text-muted"
                   }`}
                 >
@@ -62,7 +62,7 @@ export function Sidebar() {
                 </span>
               </div>
               <span
-                className={`font-body text-[10.5px] ${
+                className={`font-body text-caption ${
                   active ? "font-bold text-violet" : "font-medium text-text-muted"
                 }`}
               >

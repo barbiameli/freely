@@ -26,7 +26,7 @@ export function AccountView({
       <Topbar eyebrow="Account settings" />
       <div>
         <h1 className="font-display italic text-[32px] text-coral m-0">Your account.</h1>
-        <p className="text-slate text-[13px] mt-2">
+        <p className="text-slate text-small mt-2">
           Basic info only, nothing here is shared with clients. Branding and quoting preferences
           live in Memory.
         </p>
@@ -74,15 +74,15 @@ function BasicInfoCard({
       <Label>Basic info</Label>
       <div className="flex flex-col gap-2.5 mt-2.5">
         <div>
-          <div className="text-[11px] text-text-muted mb-1">Name</div>
+          <div className="text-caption text-text-muted mb-1">Name</div>
           <TextField value={nameValue} onChange={setNameValue} placeholder="Your name" />
         </div>
         <div>
-          <div className="text-[11px] text-text-muted mb-1">Studio or business name</div>
+          <div className="text-caption text-text-muted mb-1">Studio or business name</div>
           <TextField value={studioValue} onChange={setStudioValue} placeholder="Optional" />
         </div>
         <div>
-          <div className="text-[11px] text-text-muted mb-1">Email</div>
+          <div className="text-caption text-text-muted mb-1">Email</div>
           <div className="text-sm text-ink bg-paper rounded-lg px-3.5 py-3">{email}</div>
         </div>
       </div>
@@ -134,7 +134,7 @@ function PasswordCard({ hasPassword }: { hasPassword: boolean }) {
     <Card>
       <Label>Password</Label>
       {!hasPassword && (
-        <p className="text-[11px] text-text-muted mt-1 mb-1">
+        <p className="text-caption text-text-muted mt-1 mb-1">
           You signed in with Google and don&apos;t have a password yet, set one below if you&apos;d
           like to be able to sign in with email too.
         </p>
@@ -142,32 +142,32 @@ function PasswordCard({ hasPassword }: { hasPassword: boolean }) {
       <div className="flex flex-col gap-2.5 mt-2.5">
         {hasPassword && (
           <div>
-            <div className="text-[11px] text-text-muted mb-1">Current password</div>
+            <div className="text-caption text-text-muted mb-1">Current password</div>
             <input
               type="password"
               value={current}
               onChange={(e) => setCurrent(e.target.value)}
-              className="w-full font-body text-[13.5px] text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
+              className="w-full font-body text-body text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
             />
           </div>
         )}
         <div>
-          <div className="text-[11px] text-text-muted mb-1">New password</div>
+          <div className="text-caption text-text-muted mb-1">New password</div>
           <input
             type="password"
             value={next}
             onChange={(e) => setNext(e.target.value)}
             placeholder="Min 8 characters"
-            className="w-full font-body text-[13.5px] text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
+            className="w-full font-body text-body text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
           />
         </div>
         <div>
-          <div className="text-[11px] text-text-muted mb-1">Confirm new password</div>
+          <div className="text-caption text-text-muted mb-1">Confirm new password</div>
           <input
             type="password"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
-            className="w-full font-body text-[13.5px] text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
+            className="w-full font-body text-body text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
           />
         </div>
       </div>
@@ -217,7 +217,7 @@ function DangerZoneCard() {
   return (
     <Card className="border-overdue/30">
       <Label>Danger zone</Label>
-      <p className="text-[11px] text-text-muted mt-1 mb-2.5">
+      <p className="text-caption text-text-muted mt-1 mb-2.5">
         Permanently deletes your account, quotes, projects, and everything saved to Memory.
       </p>
       {error && <div className="text-overdue text-xs mb-2.5">{error}</div>}

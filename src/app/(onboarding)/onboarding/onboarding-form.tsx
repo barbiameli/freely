@@ -319,7 +319,7 @@ function ReferencesStep({
     <div className="flex flex-col gap-4">
       <div>
         <h2 className="font-display italic text-2xl text-coral m-0">Show us what you&apos;ve got</h2>
-        <p className="text-slate text-[13px] mt-1.5">
+        <p className="text-slate text-small mt-1.5">
           The biggest thing that makes a quote sound like <em>you</em>, not a template. Add a CV,
           portfolio link, past quote, or anything showing your experience.
         </p>
@@ -327,7 +327,7 @@ function ReferencesStep({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-paper rounded-lg p-3.5 border border-dashed border-line">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate uppercase tracking-wide mb-2.5">
+          <div className="flex items-center gap-1.5 text-caption font-bold text-slate uppercase tracking-wide mb-2.5">
             <FileText size={12} /> Files
           </div>
           <DropZone
@@ -336,7 +336,7 @@ function ReferencesStep({
             disabled={uploading === "file"}
             className="flex flex-col gap-2 cursor-pointer mb-2.5 -m-1 p-1"
           >
-            <span className="flex items-center gap-1.5 font-body font-bold text-[12.5px] text-violet">
+            <span className="flex items-center gap-1.5 font-body font-bold text-small text-violet">
               <Upload size={12} />
               {uploading === "file" ? "Reading..." : "Drag a file, or click to upload"}
             </span>
@@ -344,7 +344,7 @@ function ReferencesStep({
           <div className="flex flex-col gap-1.5">
             {files.map((f) => (
               <div key={f.id} className="flex justify-between items-center bg-white rounded-lg px-2.5 py-1.5">
-                <span className="text-[12px] text-ink truncate">{f.name}</span>
+                <span className="text-meta text-ink truncate">{f.name}</span>
                 <button
                   type="button"
                   onClick={() => handleDelete(f.id, "file")}
@@ -358,7 +358,7 @@ function ReferencesStep({
         </div>
 
         <div className="bg-paper rounded-lg p-3.5 border border-dashed border-line">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate uppercase tracking-wide mb-2.5">
+          <div className="flex items-center gap-1.5 text-caption font-bold text-slate uppercase tracking-wide mb-2.5">
             <Link2 size={12} /> Links
           </div>
           <form
@@ -383,7 +383,7 @@ function ReferencesStep({
             <button
               type="submit"
               disabled={!canAddLink}
-              className="font-body font-bold text-[12.5px] text-violet text-left disabled:opacity-40 disabled:cursor-default bg-none border-none cursor-pointer p-0"
+              className="font-body font-bold text-small text-violet text-left disabled:opacity-40 disabled:cursor-default bg-none border-none cursor-pointer p-0"
             >
               {uploading === "link" ? "Saving..." : "Save link"}
             </button>
@@ -391,7 +391,7 @@ function ReferencesStep({
           <div className="flex flex-col gap-1.5">
             {links.map((l) => (
               <div key={l.id} className="flex justify-between items-center bg-white rounded-lg px-2.5 py-1.5">
-                <span className="text-[12px] text-violet truncate">{l.name}</span>
+                <span className="text-meta text-violet truncate">{l.name}</span>
                 <button
                   type="button"
                   onClick={() => handleDelete(l.id, "link")}
@@ -408,7 +408,7 @@ function ReferencesStep({
       {error && <div className="text-overdue text-xs">{error}</div>}
 
       {showSkipWarning && !hasContent && (
-        <div className="flex items-start gap-2 bg-coral-tint rounded-lg px-3.5 py-3 text-[12.5px] text-overdue">
+        <div className="flex items-start gap-2 bg-coral-tint rounded-lg px-3.5 py-3 text-small text-overdue">
           <TriangleAlert size={15} className="shrink-0 mt-0.5" />
           <span>
             Quotes will read more generic until you add some of this. You can always do it later
@@ -423,7 +423,7 @@ function ReferencesStep({
         </Button>
         <div className="flex items-center gap-4">
           {hasContent ? (
-            <span className="text-[12.5px] text-success font-semibold">
+            <span className="text-small text-success font-semibold">
               {files.length + links.length} added, add more, or continue.
             </span>
           ) : (
@@ -436,7 +436,7 @@ function ReferencesStep({
                 }
                 onContinue();
               }}
-              className="font-body font-semibold text-[13px] text-slate bg-none border-none cursor-pointer p-0"
+              className="font-body font-semibold text-small text-slate bg-none border-none cursor-pointer p-0"
             >
               {showSkipWarning ? "Skip anyway" : "Skip this step"}
             </button>
@@ -540,14 +540,14 @@ function BrandingStep({
     <div className="flex flex-col gap-4">
       <div>
         <h2 className="font-display italic text-2xl text-coral m-0">Got brand guidelines?</h2>
-        <p className="text-slate text-[13px] mt-1.5">
+        <p className="text-slate text-small mt-1.5">
           Upload a brand guide and/or logo so your quotes look like your studio. Both optional.
         </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-paper rounded-lg p-3.5 border border-dashed border-line">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate uppercase tracking-wide mb-2.5">
+          <div className="flex items-center gap-1.5 text-caption font-bold text-slate uppercase tracking-wide mb-2.5">
             <FileText size={12} /> Brand guidelines
           </div>
           <DropZone
@@ -556,14 +556,14 @@ function BrandingStep({
             disabled={guideUploading}
             className="flex flex-col gap-2 cursor-pointer mb-2.5 -m-1 p-1"
           >
-            <span className="flex items-center gap-1.5 font-body font-bold text-[12.5px] text-violet">
+            <span className="flex items-center gap-1.5 font-body font-bold text-small text-violet">
               <Upload size={12} />
               {guideUploading ? "Reading & analyzing..." : "Drag a file, or click to upload"}
             </span>
           </DropZone>
           {guideError && <div className="text-overdue text-xs">{guideError}</div>}
           {guideResult && (
-            <div className="flex items-start gap-1.5 bg-mint rounded-lg px-2.5 py-2 text-[11.5px] text-ink">
+            <div className="flex items-start gap-1.5 bg-mint rounded-lg px-2.5 py-2 text-meta text-ink">
               <CheckCircle2 size={13} className="text-success shrink-0 mt-0.5" />
               <span>
                 Found:{" "}
@@ -581,7 +581,7 @@ function BrandingStep({
         </div>
 
         <div className="bg-paper rounded-lg p-3.5 border border-dashed border-line">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate uppercase tracking-wide mb-2.5">
+          <div className="flex items-center gap-1.5 text-caption font-bold text-slate uppercase tracking-wide mb-2.5">
             <Upload size={12} /> Logo
           </div>
           {logo ? (
@@ -593,21 +593,21 @@ function BrandingStep({
               accept="image/png"
               className="flex flex-col gap-2 cursor-pointer mb-2.5 -m-1 p-1"
             >
-              <span className="flex items-center gap-1.5 font-body font-bold text-[12.5px] text-violet">
+              <span className="flex items-center gap-1.5 font-body font-bold text-small text-violet">
                 <Upload size={12} />
                 Drag a logo, or click to upload
               </span>
             </DropZone>
           )}
-          <div className="text-[10.5px] text-text-muted">
+          <div className="text-caption text-text-muted">
             PNG with a transparent background, at least 200×200px.
           </div>
-          {logoError && <div className="text-overdue text-[11px] mt-1">{logoError}</div>}
+          {logoError && <div className="text-overdue text-caption mt-1">{logoError}</div>}
         </div>
       </div>
 
       {showSkipWarning && !hasContent && (
-        <div className="flex items-start gap-2 bg-coral-tint rounded-lg px-3.5 py-3 text-[12.5px] text-overdue">
+        <div className="flex items-start gap-2 bg-coral-tint rounded-lg px-3.5 py-3 text-small text-overdue">
           <TriangleAlert size={15} className="shrink-0 mt-0.5" />
           <span>
             Client-facing pages will use Freely&apos;s default look until you add this. You can
@@ -622,7 +622,7 @@ function BrandingStep({
         </Button>
         <div className="flex items-center gap-4">
           {hasContent ? (
-            <span className="text-[12.5px] text-success font-semibold">Saved, continue whenever.</span>
+            <span className="text-small text-success font-semibold">Saved, continue whenever.</span>
           ) : (
             <button
               type="button"
@@ -633,7 +633,7 @@ function BrandingStep({
                 }
                 onContinue();
               }}
-              className="font-body font-semibold text-[13px] text-slate bg-none border-none cursor-pointer p-0"
+              className="font-body font-semibold text-small text-slate bg-none border-none cursor-pointer p-0"
             >
               {showSkipWarning ? "Skip anyway" : "Skip this step"}
             </button>
@@ -678,7 +678,7 @@ function MemoryStep({
     <div className="flex flex-col gap-4">
       <div>
         <h2 className="font-display italic text-2xl text-coral m-0">{title}</h2>
-        <p className="text-slate text-[13px] mt-1.5">{subtitle}</p>
+        <p className="text-slate text-small mt-1.5">{subtitle}</p>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -694,7 +694,7 @@ function MemoryStep({
       {error && <div className="text-overdue text-xs">{error}</div>}
 
       {showSkipWarning && !value.trim() && (
-        <div className="flex items-start gap-2 bg-coral-tint rounded-lg px-3.5 py-3 text-[12.5px] text-overdue">
+        <div className="flex items-start gap-2 bg-coral-tint rounded-lg px-3.5 py-3 text-small text-overdue">
           <TriangleAlert size={15} className="shrink-0 mt-0.5" />
           <span>
             Quotes may be less accurate until you fill this in. You can always add it later in
@@ -718,7 +718,7 @@ function MemoryStep({
               onContinue();
             }}
             disabled={pending}
-            className="font-body font-semibold text-[13px] text-slate bg-none border-none cursor-pointer p-0"
+            className="font-body font-semibold text-small text-slate bg-none border-none cursor-pointer p-0"
           >
             {value.trim() ? "Skip" : showSkipWarning ? "Skip anyway" : "Skip this step"}
           </button>

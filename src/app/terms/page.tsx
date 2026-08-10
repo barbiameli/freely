@@ -17,8 +17,8 @@ export const metadata = {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="border-t border-line pt-6 mt-6">
-      <h2 className="font-body font-bold text-[15px] text-ink m-0 mb-2">{title}</h2>
-      <div className="text-[13.5px] leading-relaxed text-slate flex flex-col gap-2.5">
+      <h2 className="font-body font-bold text-lead text-ink m-0 mb-2">{title}</h2>
+      <div className="text-body leading-relaxed text-slate flex flex-col gap-2.5">
         {children}
       </div>
     </section>
@@ -32,14 +32,14 @@ export default function TermsPage() {
         <Link href="/" aria-label="Home">
           <FreelyLogo size="sm" />
         </Link>
-        <Link href="/quote" className="text-[13px] font-semibold text-violet">
+        <Link href="/quote" className="text-small font-semibold text-violet">
           Back to Freely
         </Link>
       </header>
 
       <main className="max-w-2xl mx-auto px-5 sm:px-6 pb-20">
         <h1 className="font-display italic text-[32px] text-coral m-0">Terms and data</h1>
-        <p className="text-slate text-[13.5px] mt-2">
+        <p className="text-slate text-body mt-2">
           What Freely stores, what it does not, and the terms of using it.
         </p>
 

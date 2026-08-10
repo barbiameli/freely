@@ -63,7 +63,7 @@ export function TeamView({
         <h1 className="font-display italic text-[32px] text-coral m-0">
           {teamName ?? "Your studio"}
         </h1>
-        <p className="text-slate text-[13px] mt-2">
+        <p className="text-slate text-small mt-2">
           Everyone on your team sees the same Quotes, Projects, and Diary, invite a teammate to
           share the work.
         </p>
@@ -106,7 +106,7 @@ export function TeamView({
         <div className="flex flex-col gap-2">
           {members.map((m) => (
             <div key={m.id} className="flex justify-between items-center py-1.5">
-              <span className="text-[13.5px] text-ink">
+              <span className="text-body text-ink">
                 {m.email} {m.id === currentUserId && <span className="text-text-muted">(you)</span>}
               </span>
               {isOwner && m.id !== currentUserId && (
@@ -122,7 +122,7 @@ export function TeamView({
             </div>
           ))}
           {members.length === 0 && (
-            <div className="text-text-muted text-[13px]">
+            <div className="text-text-muted text-small">
               Just you for now, invite a teammate above.
             </div>
           )}
@@ -135,7 +135,7 @@ export function TeamView({
           <div className="flex flex-col gap-2">
             {pendingInvites.map((inv) => (
               <div key={inv.id} className="flex justify-between items-center py-1.5">
-                <span className="text-[13.5px] text-slate">
+                <span className="text-body text-slate">
                   {inv.email ?? "Shareable link"}
                 </span>
                 <div className="flex items-center gap-3">

@@ -75,10 +75,10 @@ export function AutoBreakdown({
       <div className="flex items-center justify-between gap-3 mb-2">
         <div className="flex items-center gap-2 min-w-0">
           <Sparkles size={13} className="text-violet shrink-0 animate-spin-slow" />
-          <span className="font-body font-semibold text-[13px] text-ink">
+          <span className="font-body font-semibold text-small text-ink">
             {remaining === 0 ? "All broken down" : "Working out the steps"}
           </span>
-          <span className="text-[12px] text-text-muted shrink-0">
+          <span className="text-meta text-text-muted shrink-0">
             {done} of {total}
           </span>
         </div>
@@ -89,7 +89,7 @@ export function AutoBreakdown({
               setStopped(true);
               router.refresh();
             }}
-            className="flex items-center gap-1 text-[11.5px] text-text-muted hover:text-ink bg-none border-none cursor-pointer p-0 shrink-0"
+            className="flex items-center gap-1 text-meta text-text-muted hover:text-ink bg-none border-none cursor-pointer p-0 shrink-0"
           >
             <X size={11} /> Stop
           </button>
@@ -104,9 +104,9 @@ export function AutoBreakdown({
       </div>
 
       {current && (
-        <div className="text-[11.5px] text-text-muted mt-2 truncate">Last done: {current}</div>
+        <div className="text-meta text-text-muted mt-2 truncate">Last done: {current}</div>
       )}
-      {error && <div className="text-overdue text-[12px] mt-2">{error}</div>}
+      {error && <div className="text-overdue text-meta mt-2">{error}</div>}
     </div>
   );
 }

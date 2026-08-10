@@ -10,7 +10,7 @@ import { ReactNode } from "react";
  */
 export function Label({ children }: { children: ReactNode }) {
   return (
-    <div className="font-label text-[13px] font-semibold tracking-wide text-ink mb-2.5 uppercase">
+    <div className="font-label text-small font-semibold tracking-wide text-ink mb-2.5 uppercase">
       {children}
     </div>
   );

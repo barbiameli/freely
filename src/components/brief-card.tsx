@@ -84,20 +84,20 @@ export function BriefCard({ brief }: { brief: BriefSummary }) {
       >
         <DocumentPreview brief={brief} />
         <div className="mt-2.5">
-          <div className="font-body font-semibold text-[13.5px] text-ink leading-snug line-clamp-2">
+          <div className="font-body font-semibold text-body text-ink leading-snug line-clamp-2">
             {brief.title}
           </div>
-          <div className="text-[11.5px] text-text-muted mt-0.5 truncate">{brief.client}</div>
+          <div className="text-meta text-text-muted mt-0.5 truncate">{brief.client}</div>
         </div>
       </button>
 
       <div className="flex items-baseline justify-between gap-2 mt-auto">
-        <span className="font-body font-bold text-[14px] text-ink">
+        <span className="font-body font-bold text-body text-ink">
           {currencySymbol(brief.currency)}
           {brief.price.toLocaleString()}
         </span>
         <div className="flex items-center gap-2.5">
-          <span className="text-[10.5px] uppercase tracking-wide text-text-muted">
+          <span className="text-caption uppercase tracking-wide text-text-muted">
             {tracked ? "Tracked" : brief.published ? "Published" : "Draft"}
           </span>
           <DeleteBriefButton brief={brief} />
@@ -108,7 +108,7 @@ export function BriefCard({ brief }: { brief: BriefSummary }) {
         <button
           type="button"
           onClick={() => router.push(`/quote/${brief.id}`)}
-          className="flex items-center justify-center gap-1.5 w-full text-[12px] font-bold text-slate bg-paper rounded-lg py-2 border-none cursor-pointer"
+          className="flex items-center justify-center gap-1.5 w-full text-meta font-bold text-slate bg-paper rounded-lg py-2 border-none cursor-pointer"
         >
           <Check size={12} /> In Track
         </button>
@@ -130,13 +130,13 @@ export function BriefCard({ brief }: { brief: BriefSummary }) {
               }
             });
           }}
-          className="flex items-center justify-center gap-1.5 w-full text-[12px] font-bold text-white bg-violet rounded-lg py-2 border-none cursor-pointer disabled:opacity-50"
+          className="flex items-center justify-center gap-1.5 w-full text-meta font-bold text-white bg-violet rounded-lg py-2 border-none cursor-pointer disabled:opacity-50"
         >
           {pending ? "Sending..." : "Send to Track"}
           {!pending && <ArrowRight size={12} />}
         </button>
       )}
-      {error && <div className="text-overdue text-[11px]">{error}</div>}
+      {error && <div className="text-overdue text-caption">{error}</div>}
     </div>
   );
 }

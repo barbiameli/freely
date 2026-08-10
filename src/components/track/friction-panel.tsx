@@ -55,7 +55,7 @@ export function FrictionPanel({ friction }: { friction: Friction[] }) {
         className="flex items-center gap-2.5 w-full text-left bg-none border-none cursor-pointer px-4 py-3"
       >
         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${DOT[friction[0].severity]}`} />
-        <span className="font-body font-semibold text-[13px] text-ink flex-1">
+        <span className="font-body font-semibold text-small text-ink flex-1">
           {summarise(friction)}
         </span>
         <ChevronDown
@@ -68,22 +68,22 @@ export function FrictionPanel({ friction }: { friction: Friction[] }) {
         <div className="px-4 pb-4 flex flex-col gap-3.5">
           {friction.map((f) => (
             <div key={f.title} className="border-t border-line pt-3 first:border-t-0 first:pt-0">
-              <div className={`text-[12.5px] font-semibold ${TITLE[f.severity]}`}>{f.title}</div>
+              <div className={`text-small font-semibold ${TITLE[f.severity]}`}>{f.title}</div>
               {f.detail && (
-                <div className="text-[12px] text-text-muted leading-snug mt-0.5">{f.detail}</div>
+                <div className="text-meta text-text-muted leading-snug mt-0.5">{f.detail}</div>
               )}
               {f.items && f.items.length > 0 && (
                 <ul className="list-none p-0 m-0 mt-2 flex flex-col gap-1">
                   {f.items.slice(0, 6).map((item, i) => (
                     <li key={i} className="flex items-start gap-2">
                       <span className="w-1 h-1 rounded-full bg-text-muted shrink-0 mt-[7px]" />
-                      <span className="text-[12.5px] text-slate leading-snug" title={item}>
+                      <span className="text-small text-slate leading-snug" title={item}>
                         {shortName(item)}
                       </span>
                     </li>
                   ))}
                   {f.items.length > 6 && (
-                    <li className="text-[11.5px] text-text-muted ml-3">
+                    <li className="text-meta text-text-muted ml-3">
                       and {f.items.length - 6} more
                     </li>
                   )}

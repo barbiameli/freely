@@ -115,7 +115,7 @@ export function TrackDashboard({ projects }: { projects: ProjectCard[] }) {
           <h1 className="font-display italic text-[32px] text-coral m-0">
             Everything you&apos;re running right now.
           </h1>
-          <p className="text-slate text-[13px] mt-2">
+          <p className="text-slate text-small mt-2">
             {visibleProjects.length} project{visibleProjects.length === 1 ? "" : "s"} · from accepted
             quotes or added directly.
           </p>
@@ -135,7 +135,7 @@ export function TrackDashboard({ projects }: { projects: ProjectCard[] }) {
       </div>
       {showUpload && (
         <Card className="flex flex-col gap-2.5">
-          <div className="text-[13px] text-slate">
+          <div className="text-small text-slate">
             Drop a brief, SOW, or contract, Freely reads it and creates the project with
             deliverables and timeline already filled in.
           </div>
@@ -149,11 +149,11 @@ export function TrackDashboard({ projects }: { projects: ProjectCard[] }) {
                 if (file) handleUploadFile(file);
               }}
             />
-            <span className="font-body font-bold text-[13px] text-violet">
+            <span className="font-body font-bold text-small text-violet">
               {uploadReading ? "Reading file..." : working ? "Creating project..." : "+ Choose file"}
             </span>
           </label>
-          {uploadError && <div className="text-overdue text-[13px]">{uploadError}</div>}
+          {uploadError && <div className="text-overdue text-small">{uploadError}</div>}
         </Card>
       )}
       {visibleProjects.length > 0 && (
@@ -165,7 +165,7 @@ export function TrackDashboard({ projects }: { projects: ProjectCard[] }) {
             ["Deliverables done", `${doneDeliverables}/${totalDeliverables}`],
           ].map(([label, value]) => (
             <Card key={label} className="flex-1 px-5 py-3.5">
-              <div className="font-label text-[11px] text-slate uppercase tracking-wide">{label}</div>
+              <div className="font-label text-caption text-slate uppercase tracking-wide">{label}</div>
               <div className="font-body font-bold text-lg text-ink mt-0.5">{value}</div>
             </Card>
           ))}
@@ -183,7 +183,7 @@ export function TrackDashboard({ projects }: { projects: ProjectCard[] }) {
           </Button>
         </Card>
       )}
-      {error && <div className="text-overdue text-[13px]">{error}</div>}
+      {error && <div className="text-overdue text-small">{error}</div>}
       {visibleProjects.length === 0 ? (
         <Card className="text-center text-slate p-10">
           Nothing tracked yet. Generate a quote and add it to Track, or add a project directly.
@@ -209,9 +209,9 @@ export function TrackDashboard({ projects }: { projects: ProjectCard[] }) {
                   <Trash2 size={14} />
                 </button>
                 <Stamp status={p.status} size={52} />
-                <div className="font-body font-bold text-[15px] text-ink pr-5">{p.title}</div>
-                <div className="text-slate text-[12.5px]">{p.client}</div>
-                <div className="font-body text-[11.5px] text-text-muted">
+                <div className="font-body font-bold text-lead text-ink pr-5">{p.title}</div>
+                <div className="text-slate text-small">{p.client}</div>
+                <div className="font-body text-meta text-text-muted">
                   {currencySymbol(p.currency)}
                   {p.price.toLocaleString()} · {p.hours}h · {doneCount}/{p.deliverables.length} done
                 </div>

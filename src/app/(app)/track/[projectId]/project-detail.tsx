@@ -97,7 +97,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: str
   return (
     <Card className="flex-1 min-w-[130px] px-4 py-3.5">
       <Label>{label}</Label>
-      <div className={`font-body font-bold text-[15px] ${tone ?? "text-ink"}`}>{value}</div>
+      <div className={`font-body font-bold text-lead ${tone ?? "text-ink"}`}>{value}</div>
     </Card>
   );
 }
@@ -125,7 +125,7 @@ function ScheduleControls({
           value={start}
           onChange={(e) => setStart(e.target.value)}
           aria-label="Project start date"
-          className="font-body text-[13px] text-ink bg-paper border border-line rounded-lg px-2.5 py-2 outline-none"
+          className="font-body text-small text-ink bg-paper border border-line rounded-lg px-2.5 py-2 outline-none"
         />
         <Button
           disabled={pending}
@@ -144,7 +144,7 @@ function ScheduleControls({
           {pending ? "Scheduling..." : "Set the schedule"}
         </Button>
       </div>
-      {error && <div className="text-overdue text-[12.5px] mt-2">{error}</div>}
+      {error && <div className="text-overdue text-small mt-2">{error}</div>}
     </div>
   );
 }
@@ -157,7 +157,7 @@ function SchedulePrompt({ projectId }: { projectId: string }) {
         <CalendarDays size={14} className="text-violet" />
         <Label>When does this start?</Label>
       </div>
-      <p className="text-[12.5px] text-text-muted mt-1 mb-3">
+      <p className="text-small text-text-muted mt-1 mb-3">
         The quote says how long each stage takes. A start date turns that into real dates on every
         deliverable, which you can then move individually.
       </p>
@@ -239,7 +239,7 @@ export function ProjectDetail({
             >
               <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_DOT[p.status]}`} />
               <span
-                className={`text-[12.5px] truncate ${
+                className={`text-small truncate ${
                   p.id === project.id ? "font-bold text-violet" : "font-medium text-slate"
                 }`}
               >
@@ -258,7 +258,7 @@ export function ProjectDetail({
             <h1 className="font-display italic text-[28px] md:text-[30px] text-coral m-0">
               {project.title}
             </h1>
-            <p className="text-slate text-[13px] mt-1.5">{project.client}</p>
+            <p className="text-slate text-small mt-1.5">{project.client}</p>
           </div>
           <div className="flex flex-wrap gap-2.5">
             <Button
@@ -303,13 +303,13 @@ export function ProjectDetail({
             <div className="flex items-baseline justify-between gap-3 mb-3">
               <Label>Timeline</Label>
               <div className="flex items-baseline gap-3">
-                <span className="text-[11.5px] text-text-muted">
+                <span className="text-meta text-text-muted">
                   {formatDay(health.startDate as Date)} to {formatDay(health.dueDate as Date)}
                 </span>
                 <button
                   type="button"
                   onClick={() => setRescheduling((r) => !r)}
-                  className="text-[11.5px] font-semibold text-violet bg-none border-none cursor-pointer p-0"
+                  className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0"
                 >
                   {rescheduling ? "Cancel" : "Reschedule"}
                 </button>
@@ -322,7 +322,7 @@ export function ProjectDetail({
                   initial={(project.startDate as string).slice(0, 10)}
                   onDone={() => setRescheduling(false)}
                 />
-                <p className="text-[11px] text-text-muted mt-2 mb-0">
+                <p className="text-caption text-text-muted mt-2 mb-0">
                   This resets every deliverable date. Dates you moved by hand go back to the
                   derived ones.
                 </p>
@@ -364,11 +364,11 @@ export function ProjectDetail({
                   onClick={() => setOpenId(d.deliverableId)}
                   className="flex items-baseline justify-between gap-3 text-left bg-none border-none cursor-pointer p-0"
                 >
-                  <span className="text-[13px] text-ink truncate" title={d.name}>
+                  <span className="text-small text-ink truncate" title={d.name}>
                     {shortName(d.name)}
                   </span>
                   <span
-                    className={`text-[11.5px] shrink-0 ${
+                    className={`text-meta shrink-0 ${
                       d.overdue ? "text-overdue font-semibold" : "text-text-muted"
                     }`}
                   >
@@ -384,7 +384,7 @@ export function ProjectDetail({
           <Card className="flex-1 min-w-0">
             <Label>Deliverables</Label>
             {project.deliverables.length === 0 ? (
-              <div className="text-text-muted text-[13px] mt-1">No deliverables listed.</div>
+              <div className="text-text-muted text-small mt-1">No deliverables listed.</div>
             ) : (
               <div className="mt-1">
                 {project.deliverables.map((d) => (
@@ -429,7 +429,7 @@ export function ProjectDetail({
             className="flex items-baseline justify-between w-full bg-none border-none cursor-pointer p-0"
           >
             <Label>Project details</Label>
-            <span className="text-[12px] font-semibold text-violet">
+            <span className="text-meta font-semibold text-violet">
               {showDetails ? "Hide" : "Edit"}
             </span>
           </button>
@@ -451,7 +451,7 @@ export function ProjectDetail({
                 </Field>
               </div>
               <div>
-                <div className="text-[11px] text-text-muted mb-1">Status</div>
+                <div className="text-caption text-text-muted mb-1">Status</div>
                 <div className="flex gap-1.5 flex-wrap">
                   {STATUSES.map((s) => (
                     <Chip
@@ -500,7 +500,7 @@ export function ProjectDetail({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="text-[11px] text-text-muted mb-1">{label}</div>
+      <div className="text-caption text-text-muted mb-1">{label}</div>
       {children}
     </div>
   );

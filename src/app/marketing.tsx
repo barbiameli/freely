@@ -50,7 +50,7 @@ function Hero() {
       <h1 className="font-display italic text-[32px] sm:text-[44px] leading-[1.15] sm:leading-[1.1] text-ink m-0">
         Quote, track, and report on client work, <span className="text-coral">without the busywork.</span>
       </h1>
-      <p className="text-slate text-[16px] mt-6 max-w-lg mx-auto">
+      <p className="text-slate text-lead mt-6 max-w-lg mx-auto">
         Freely is one place for a freelancer to turn a client brief into a priced quote, track the
         project once it&apos;s won, and keep a running diary the client can see, with AI drafting
         the first pass of each quote from your own rates and past work.
@@ -102,7 +102,7 @@ function HowAIIsUsed() {
   return (
     <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-14 border-t border-line">
       <div className="text-center mb-10">
-        <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-violet uppercase tracking-wide mb-3">
+        <div className="inline-flex items-center gap-1.5 text-caption font-bold text-violet uppercase tracking-wide mb-3">
           <Sparkles size={13} /> How AI is actually used
         </div>
         <h2 className="font-display italic text-3xl text-ink m-0">AI drafts. You decide.</h2>
@@ -110,8 +110,8 @@ function HowAIIsUsed() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {points.map((p) => (
           <div key={p.title}>
-            <div className="font-body font-bold text-[14.5px] text-ink mb-1.5">{p.title}</div>
-            <div className="text-slate text-[13.5px] leading-relaxed">{p.body}</div>
+            <div className="font-body font-bold text-lead text-ink mb-1.5">{p.title}</div>
+            <div className="text-slate text-body leading-relaxed">{p.body}</div>
           </div>
         ))}
       </div>
@@ -146,8 +146,8 @@ function Features() {
             <div className="w-9 h-9 rounded-lg bg-violet-tint flex items-center justify-center text-violet mb-3">
               <Icon size={17} />
             </div>
-            <div className="font-body font-bold text-[15px] text-ink mb-1.5">{title}</div>
-            <div className="text-slate text-[13px] leading-relaxed">{body}</div>
+            <div className="font-body font-bold text-lead text-ink mb-1.5">{title}</div>
+            <div className="text-slate text-small leading-relaxed">{body}</div>
           </div>
         ))}
       </div>
@@ -170,8 +170,8 @@ function HowItWorks() {
             <div className="w-8 h-8 rounded-full bg-coral text-white font-body font-bold text-sm flex items-center justify-center mx-auto mb-3">
               {s.n}
             </div>
-            <div className="font-body font-bold text-[14.5px] text-ink mb-1">{s.title}</div>
-            <div className="text-slate text-[13px] leading-relaxed">{s.body}</div>
+            <div className="font-body font-bold text-lead text-ink mb-1">{s.title}</div>
+            <div className="text-slate text-small leading-relaxed">{s.body}</div>
           </div>
         ))}
       </div>
@@ -182,7 +182,7 @@ function HowItWorks() {
 function ClosingCTA() {
   return (
     <section className="max-w-2xl mx-auto text-center px-5 sm:px-6 py-12 sm:py-16 border-t border-line">
-      <div className="flex items-center justify-center gap-2 text-text-muted text-[12px] mb-4">
+      <div className="flex items-center justify-center gap-2 text-text-muted text-meta mb-4">
         <ShieldCheck size={14} /> Free to start, no card required.
       </div>
       <h2 className="font-display italic text-3xl text-ink m-0">Try it on your next quote.</h2>

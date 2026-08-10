@@ -32,14 +32,14 @@ export function AcceptBlock({
 
   const subtle = muted || "#565656";
   const fieldClass = dark
-    ? "w-full bg-white/10 border border-white/25 rounded-lg px-3 py-2.5 text-[13px] outline-none"
-    : "w-full bg-white border rounded-lg px-3 py-2.5 text-[13px] outline-none";
+    ? "w-full bg-white/10 border border-white/25 rounded-lg px-3 py-2.5 text-small outline-none"
+    : "w-full bg-white border rounded-lg px-3 py-2.5 text-small outline-none";
 
   if (done) {
     return (
       <div className="py-8" style={{ borderTop: `1px solid ${subtle}33` }}>
-        <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">Accepted</div>
-        <p className="text-[13.5px] m-0">
+        <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">Accepted</div>
+        <p className="text-body m-0">
           Accepted by <strong>{done.name}</strong> on{" "}
           {new Date(done.at).toLocaleDateString("en-GB", {
             day: "numeric",
@@ -48,7 +48,7 @@ export function AcceptBlock({
           })}
           .
         </p>
-        <p className="text-[12px] mt-1.5 m-0" style={{ color: subtle }}>
+        <p className="text-meta mt-1.5 m-0" style={{ color: subtle }}>
           A copy of this page is the record of that agreement.
         </p>
       </div>
@@ -73,8 +73,8 @@ export function AcceptBlock({
 
   return (
     <div className="py-8" style={{ borderTop: `1px solid ${subtle}33` }}>
-      <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-1">Accept this quote</div>
-      <p className="text-[13px] m-0 mb-4" style={{ color: subtle }}>
+      <div className="text-caption font-bold tracking-[0.1em] uppercase mb-1">Accept this quote</div>
+      <p className="text-small m-0 mb-4" style={{ color: subtle }}>
         Typing your name below and ticking the box records your acceptance of the scope, timeline
         and price set out on this page.
       </p>
@@ -103,7 +103,7 @@ export function AcceptBlock({
           className={fieldClass}
           style={dark ? undefined : { borderColor: `${subtle}44` }}
         />
-        <label className="flex items-start gap-2.5 text-[12.5px] cursor-pointer mt-1">
+        <label className="flex items-start gap-2.5 text-small cursor-pointer mt-1">
           <input
             type="checkbox"
             checked={agreed}
@@ -113,14 +113,14 @@ export function AcceptBlock({
           <span>I accept this quote and agree to the scope, timeline and price above.</span>
         </label>
         {error && (
-          <div className="text-[12.5px]" style={{ color: "#D7263D" }}>
+          <div className="text-small" style={{ color: "#D7263D" }}>
             {error}
           </div>
         )}
         <button
           type="submit"
           disabled={saving}
-          className="self-start font-body font-bold text-[13px] text-white rounded-lg px-5 py-3 mt-1 border-none cursor-pointer disabled:opacity-50"
+          className="self-start font-body font-bold text-small text-white rounded-lg px-5 py-3 mt-1 border-none cursor-pointer disabled:opacity-50"
           style={{ background: accent }}
         >
           {saving ? "Recording..." : "Accept quote"}

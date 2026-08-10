@@ -32,7 +32,7 @@ export function TimelineBar({
 
   return (
     <div>
-      <div className="flex justify-between text-[11px] text-text-muted mb-2">
+      <div className="flex justify-between text-caption text-text-muted mb-2">
         <span>{formatDay(startDate)}</span>
         <span className={past ? "text-overdue font-semibold" : ""}>
           {formatDay(dueDate)} · {relativeDay(dueDate, now)}
@@ -66,7 +66,7 @@ export function TimelineBar({
         })}
       </div>
 
-      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-[11px] text-text-muted">
+      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-caption text-text-muted">
         <span className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-coral" /> Due
         </span>

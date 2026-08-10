@@ -59,7 +59,7 @@ function SectionHeading({
   return (
     <div className="flex items-baseline gap-2 flex-wrap">
       <Label>{children}</Label>
-      <span className="text-[11px] text-text-muted">{required ? "Required" : "Optional"}</span>
+      <span className="text-caption text-text-muted">{required ? "Required" : "Optional"}</span>
     </div>
   );
 }
@@ -80,10 +80,10 @@ function Field({
   multiline?: boolean;
 }) {
   const shared =
-    "w-full font-body text-[13px] text-ink bg-paper border border-line rounded-lg px-2.5 py-2 outline-none";
+    "w-full font-body text-small text-ink bg-paper border border-line rounded-lg px-2.5 py-2 outline-none";
   return (
     <label className="block">
-      <span className="block text-[10.5px] font-bold text-slate uppercase tracking-wide mb-1">
+      <span className="block text-caption font-bold text-slate uppercase tracking-wide mb-1">
         {label}
       </span>
       {multiline ? (
@@ -239,7 +239,7 @@ export function InvoiceEditor({
           <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">
             Invoice #{String(invoice.number).padStart(4, "0")}
           </h1>
-          <p className="text-slate text-[15px] mt-2">
+          <p className="text-slate text-lead mt-2">
             {form.paid ? "Marked as paid." : "Not paid yet."}{" "}
             <Link href="/invoices" className="text-violet font-semibold">
               All invoices
@@ -321,13 +321,13 @@ export function InvoiceEditor({
             <Field label="Due" type="date" value={form.dueAt} onChange={(v) => set("dueAt", v)} />
           </div>
           <label className="block flex-1">
-            <span className="block text-[10.5px] font-bold text-slate uppercase tracking-wide mb-1">
+            <span className="block text-caption font-bold text-slate uppercase tracking-wide mb-1">
               Currency
             </span>
             <select
               value={form.currency}
               onChange={(e) => set("currency", e.target.value)}
-              className="w-full bg-paper rounded-lg border border-line px-2.5 py-2 text-[13px] text-ink outline-none cursor-pointer"
+              className="w-full bg-paper rounded-lg border border-line px-2.5 py-2 text-small text-ink outline-none cursor-pointer"
             >
               {CURRENCIES.map((c) => (
                 <option key={c.code} value={c.code}>
@@ -365,7 +365,7 @@ export function InvoiceEditor({
                       )
                     }
                     placeholder="What this covers"
-                    className="w-full font-body font-semibold text-[13px] text-ink bg-white border border-line rounded-lg px-2.5 py-2 outline-none"
+                    className="w-full font-body font-semibold text-small text-ink bg-white border border-line rounded-lg px-2.5 py-2 outline-none"
                   />
                   <textarea
                     value={item.description || ""}
@@ -379,7 +379,7 @@ export function InvoiceEditor({
                     }
                     placeholder="A sentence of detail, optional"
                     rows={2}
-                    className="w-full font-body text-[12.5px] text-slate bg-white border border-line rounded-lg px-2.5 py-2 outline-none"
+                    className="w-full font-body text-small text-slate bg-white border border-line rounded-lg px-2.5 py-2 outline-none"
                   />
                 </div>
                 <div className="flex flex-row md:flex-col gap-2 md:w-[92px]">
@@ -395,7 +395,7 @@ export function InvoiceEditor({
                     }
                     placeholder="Rate"
                     type="number"
-                    className="w-full font-body text-[12.5px] text-ink bg-white border border-line rounded-lg px-2 py-2 outline-none"
+                    className="w-full font-body text-small text-ink bg-white border border-line rounded-lg px-2 py-2 outline-none"
                   />
                   <input
                     value={item.hours ?? ""}
@@ -409,7 +409,7 @@ export function InvoiceEditor({
                     }
                     placeholder="Hours"
                     type="number"
-                    className="w-full font-body text-[12.5px] text-ink bg-white border border-line rounded-lg px-2 py-2 outline-none"
+                    className="w-full font-body text-small text-ink bg-white border border-line rounded-lg px-2 py-2 outline-none"
                   />
                 </div>
                 <div className="md:w-[110px]">
@@ -425,7 +425,7 @@ export function InvoiceEditor({
                     }
                     placeholder="Amount"
                     type="number"
-                    className="w-full font-body font-bold text-[13px] text-ink bg-white border border-line rounded-lg px-2 py-2 outline-none"
+                    className="w-full font-body font-bold text-small text-ink bg-white border border-line rounded-lg px-2 py-2 outline-none"
                   />
                   {item.rate && item.hours ? (
                     <button
@@ -438,7 +438,7 @@ export function InvoiceEditor({
                           )
                         )
                       }
-                      className="text-[11px] text-violet font-bold bg-none border-none cursor-pointer p-0 mt-1"
+                      className="text-caption text-violet font-bold bg-none border-none cursor-pointer p-0 mt-1"
                     >
                       = {symbol}
                       {((item.rate || 0) * (item.hours || 0)).toLocaleString()}
@@ -468,18 +468,18 @@ export function InvoiceEditor({
                 { title: "", description: "", rate: null, hours: null, amount: 0 },
               ])
             }
-            className="flex items-center gap-1.5 font-body font-bold text-[12.5px] text-violet bg-none border-none cursor-pointer p-0 self-start"
+            className="flex items-center gap-1.5 font-body font-bold text-small text-violet bg-none border-none cursor-pointer p-0 self-start"
           >
             <Plus size={13} /> Add a line
           </button>
         </div>
 
         <div className="flex flex-wrap justify-start md:justify-end gap-4 md:gap-8 mt-4 pt-4 border-t border-line">
-          <span className="text-[13px] text-slate">
+          <span className="text-small text-slate">
             Subtotal {symbol}
             {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </span>
-          <span className="font-body font-bold text-[15px] text-ink">
+          <span className="font-body font-bold text-lead text-ink">
             Total due {symbol}
             {total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </span>
@@ -488,7 +488,7 @@ export function InvoiceEditor({
 
       <Card>
         <SectionHeading>Branding</SectionHeading>
-        <p className="text-[12px] text-text-muted mb-3">
+        <p className="text-meta text-text-muted mb-3">
           Defaults to whatever the matching quote used.
         </p>
         <div className="flex gap-2.5 flex-wrap">
@@ -526,7 +526,7 @@ export function InvoiceEditor({
           <ShieldOff size={15} className="text-violet shrink-0 mt-0.5" />
           <div>
             <SectionHeading required>Payment details</SectionHeading>
-            <p className="text-[12px] text-text-muted mt-1 mb-0">
+            <p className="text-meta text-text-muted mt-1 mb-0">
               These go into the PDF and are not saved to your Freely account.
             </p>
           </div>
@@ -542,7 +542,7 @@ export function InvoiceEditor({
           {/* Free text, not structured fields: what a client needs to pay you
               differs by country, so any fixed set of inputs would be wrong for
               most people. */}
-          <p className="text-[11.5px] text-text-muted m-0 -mt-1">
+          <p className="text-meta text-text-muted m-0 -mt-1">
             Whatever your bank actually needs, typed exactly as it should print. IBAN and BIC or
             SWIFT across the EU, sort code and account number in the UK, routing and account number
             in the US, CLABE in Mexico, and so on. Include the account name, since some banks
@@ -554,7 +554,7 @@ export function InvoiceEditor({
             onChange={setPaymentNote}
             placeholder="e.g. full details on request, or a payment link"
           />
-          <label className="flex items-start gap-2.5 text-[12.5px] text-slate cursor-pointer">
+          <label className="flex items-start gap-2.5 text-small text-slate cursor-pointer">
             <input
               type="checkbox"
               checked={remember}
@@ -566,7 +566,7 @@ export function InvoiceEditor({
         </div>
       </Card>
 
-      {error && <div className="text-overdue text-[13px]">{error}</div>}
+      {error && <div className="text-overdue text-small">{error}</div>}
 
       <div className="flex flex-col-reverse md:flex-row md:justify-between md:items-center gap-4">
         <button
@@ -576,7 +576,7 @@ export function InvoiceEditor({
             if (result.ok) router.push("/invoices");
             else setError(result.error);
           }}
-          className="text-[12.5px] text-text-muted hover:text-overdue underline bg-none border-none cursor-pointer p-0"
+          className="text-small text-text-muted hover:text-overdue underline bg-none border-none cursor-pointer p-0"
         >
           Delete this invoice
         </button>

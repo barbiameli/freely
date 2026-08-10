@@ -26,7 +26,7 @@ export default async function InvoicePage({ params }: { params: { projectId: str
       <Topbar eyebrow={`Track - ${project.title} - Invoice`} />
       <div>
         <h1 className="font-display italic text-[30px] text-coral m-0">Invoice summary</h1>
-        <p className="text-slate text-[13px] mt-1.5">
+        <p className="text-slate text-small mt-1.5">
           {isStripeConfigured()
             ? "Send this for real payment via Stripe's hosted checkout, Freely never touches card details."
             : "A computed summary, connect Stripe (STRIPE_SECRET_KEY in .env) to accept real payment."}{" "}
@@ -39,7 +39,7 @@ export default async function InvoicePage({ params }: { params: { projectId: str
         <div className="flex justify-between items-baseline pb-4 border-b border-line">
           <div>
             <div className="font-body font-bold text-lg text-ink">{project.title}</div>
-            <div className="text-slate text-[13px]">{project.client}</div>
+            <div className="text-slate text-small">{project.client}</div>
           </div>
           <div className="text-xs text-text-muted">
             {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
@@ -77,7 +77,7 @@ export default async function InvoicePage({ params }: { params: { projectId: str
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between text-[13.5px]">
+    <div className="flex justify-between text-body">
       <span className="text-slate">{label}</span>
       <span className="text-ink font-medium">{value}</span>
     </div>

@@ -8,7 +8,7 @@ export default function NotFound() {
       <h1 className="font-display italic text-[32px] text-coral m-0">
         There&apos;s nothing here.
       </h1>
-      <p className="text-slate text-[14px] mt-2 max-w-[380px]">
+      <p className="text-slate text-body mt-2 max-w-[380px]">
         This page may have been deleted, or the link may be wrong.
       </p>
       <Link
