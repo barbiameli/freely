@@ -1,11 +1,19 @@
 /**
- * The project's numbers, on ink.
+ * The project's numbers, one card each.
  *
- * These were four white cards among a page of white cards, so the figures that
- * summarise the whole project carried no more weight than a form field. One
- * dark band instead: it reads as the header of the page rather than another
- * item on it, and the numbers can be large without shouting because they are
- * the only thing on that surface.
+ * Two revisions in. They started as four white cards among a page of white
+ * cards, which gave the figures summarising the whole project no more weight
+ * than a form field. Making them one dark band fixed the weight and introduced
+ * two new problems: the labels sat at white/45 on #343434, which measures
+ * about 4:1 and fails the 4.5:1 minimum for small text, and one continuous bar
+ * read as a single object rather than four separate readings.
+ *
+ * Now: separate cards with real gaps between them, and labels at white/70,
+ * which measures 6.99:1.
+ *
+ * One thing to know before reusing these colours: coral on ink is 3.88:1,
+ * which clears the 3:1 bar for large text and only because these values are
+ * 19px bold. It would fail on anything smaller.
  */
 export interface Stat {
   label: string;
@@ -18,23 +26,24 @@ export interface Stat {
 
 export function StatRow({ stats }: { stats: Stat[] }) {
   return (
-    <div className="bg-ink rounded-card px-5 py-4 md:px-6 md:py-5">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-y-4 gap-x-4">
-        {stats.map((stat) => (
-          <div key={stat.label} className="min-w-0">
-            <div className="font-label text-caption uppercase tracking-[0.09em] text-white/45">
-              {stat.label}
-            </div>
-            <div
-              className={`font-body font-bold text-[19px] leading-tight mt-1 truncate ${
-                stat.alert ? "text-coral" : stat.good ? "text-mint-solid" : "text-white"
-              }`}
-            >
-              {stat.value}
-            </div>
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+      {stats.map((stat) => (
+        <div
+          key={stat.label}
+          className="bg-ink rounded-card px-4 py-3.5 min-w-0 flex flex-col justify-between gap-2"
+        >
+          <div className="font-label text-caption uppercase tracking-[0.09em] text-white/70">
+            {stat.label}
           </div>
-        ))}
-      </div>
+          <div
+            className={`font-body font-bold text-[19px] leading-tight truncate ${
+              stat.alert ? "text-coral" : stat.good ? "text-mint-solid" : "text-white"
+            }`}
+          >
+            {stat.value}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
