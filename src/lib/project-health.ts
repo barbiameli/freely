@@ -184,10 +184,13 @@ export function frictionPoints(
     });
   }
 
+  // Deliverables are broken down automatically when a project lands in Track,
+  // so this only fires for ones that failed or were added by hand afterwards.
+  // Below half the project it is not worth a line.
   const unbroken = project.deliverables.filter((d) => !d.done && d.steps.length === 0);
-  if (unbroken.length > 0 && project.deliverables.length > 0) {
+  if (unbroken.length > 0 && unbroken.length >= project.deliverables.length / 2) {
     out.push({
-      title: `${unbroken.length} deliverable${unbroken.length === 1 ? "" : "s"} not broken down yet`,
+      title: `${unbroken.length} deliverable${unbroken.length === 1 ? "" : "s"} without steps`,
       detail: "Open one and use Break this down to turn it into steps.",
       items: unbroken.map((d) => d.name),
       severity: "low",

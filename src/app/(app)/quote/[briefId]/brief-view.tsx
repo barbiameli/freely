@@ -32,6 +32,7 @@ import {
 import { currencySymbol } from "@/lib/currencies";
 import { repriceForHours, effectiveRate } from "@/lib/repricing";
 import { paragraphs } from "@/lib/rich-text";
+import { rateSuffix, describeEffort, parseRateUnit } from "@/lib/rate-unit";
 import { DeliverableList } from "@/components/deliverable-list";
 import { TimelineView } from "@/components/timeline-view";
 import type { BriefExtras } from "@/lib/anthropic";
@@ -65,6 +66,7 @@ interface Brief {
   price: number;
   hours: number;
   hourlyRate?: number | null;
+  rateUnit?: string | null;
   status: StampStatus;
   createdAt: string;
   published: boolean;
@@ -254,7 +256,16 @@ export function BriefView({
               { key: "title", label: "Title", value: content.title },
               { key: "client", label: "Client", value: content.client },
               { key: "price", label: "Total price", value: String(content.price), numeric: true },
-              { key: "hours", label: "Estimated hours", value: String(content.hours), numeric: true },
+              {
+                key: "hours",
+                label: "Estimated hours",
+                value: String(content.hours),
+                numeric: true,
+                hint:
+                  parseRateUnit(brief.rateUnit) === "DAY"
+                    ? "In hours. The quote shows days, worked out from these."
+                    : undefined,
+              },
             ]}
             onSave={(values) => {
               const hours = Number(values.hours);
@@ -559,17 +570,28 @@ export function BriefView({
                       hours,
                       content.price,
                       content.hours,
-                      brief.hourlyRate
+                      brief.hourlyRate,
+                      parseRateUnit(brief.rateUnit)
                     );
                     saveContent(repriced ? { hours, price: repriced.price } : { hours });
                   }}
                   hint={
-                    effectiveRate(content.price, content.hours, brief.hourlyRate) > 0
+                    effectiveRate(
+                      content.price,
+                      content.hours,
+                      brief.hourlyRate,
+                      parseRateUnit(brief.rateUnit)
+                    ) > 0
                       ? `The total updates to match, at ${currencySymbol(
                           brief.currency
                         )}${Math.round(
-                          effectiveRate(content.price, content.hours, brief.hourlyRate)
-                        )}/hr.`
+                          effectiveRate(
+                            content.price,
+                            content.hours,
+                            brief.hourlyRate,
+                            parseRateUnit(brief.rateUnit)
+                          )
+                        )}${rateSuffix(parseRateUnit(brief.rateUnit))}.`
                       : undefined
                   }
                   ariaLabel="Estimated hours"
@@ -577,11 +599,21 @@ export function BriefView({
                   singleLine
                 >
                   <span>
-                    {content.hours} hours
-                    {effectiveRate(content.price, content.hours, brief.hourlyRate) > 0
+                    {describeEffort(content.hours, parseRateUnit(brief.rateUnit))}
+                    {effectiveRate(
+                      content.price,
+                      content.hours,
+                      brief.hourlyRate,
+                      parseRateUnit(brief.rateUnit)
+                    ) > 0
                       ? ` · ${currencySymbol(brief.currency)}${Math.round(
-                          effectiveRate(content.price, content.hours, brief.hourlyRate)
-                        )}/hr`
+                          effectiveRate(
+                            content.price,
+                            content.hours,
+                            brief.hourlyRate,
+                            parseRateUnit(brief.rateUnit)
+                          )
+                        )}${rateSuffix(parseRateUnit(brief.rateUnit))}`
                       : ""}
                   </span>
                 </EditableBlock>

@@ -11,6 +11,7 @@ import {
 import type { Style } from "@react-pdf/types";
 import { currencySymbol } from "@/lib/currencies";
 import { paragraphs, splitDeliverable } from "@/lib/rich-text";
+import { describeEffort, rateSuffix, parseRateUnit, unitsFromHours } from "@/lib/rate-unit";
 import { parseTimelineStages, isRoadmapWorthy, stageTick } from "@/lib/timeline";
 import type { BriefExtras } from "@/lib/anthropic";
 
@@ -34,6 +35,8 @@ export interface BriefPdfData {
   title: string;
   client: string;
   scope: string;
+  /** "HOUR" or "DAY", so the quote reads in whatever it was priced in. */
+  rateUnit?: string | null;
   deliverables: string[];
   timeline: string;
   strategy?: StrategyPdfData | null;
@@ -429,8 +432,13 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
               <Text style={styles.coverStatLabel}>Total</Text>
             </View>
             <View style={styles.coverStat}>
-              <Text style={styles.coverStatValue}>{brief.hours}h</Text>
-              <Text style={styles.coverStatLabel}>Estimated hours</Text>
+              <Text style={styles.coverStatValue}>
+                {unitsFromHours(brief.hours, parseRateUnit(brief.rateUnit))}
+                {parseRateUnit(brief.rateUnit) === "DAY" ? "d" : "h"}
+              </Text>
+              <Text style={styles.coverStatLabel}>
+                {parseRateUnit(brief.rateUnit) === "DAY" ? "Estimated days" : "Estimated hours"}
+              </Text>
             </View>
             {brief.hourlyRate && (
               <View style={styles.coverStat}>
@@ -480,7 +488,10 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
             <View>
               <Text style={styles.investmentLabel}>Investment</Text>
               <Text style={styles.investmentMeta}>
-                {brief.hours} hours{brief.hourlyRate ? ` · ~${symbol}${brief.hourlyRate}/hr` : ""}
+                {describeEffort(brief.hours, parseRateUnit(brief.rateUnit))}
+                {brief.hourlyRate
+                  ? ` · ${symbol}${brief.hourlyRate}${rateSuffix(parseRateUnit(brief.rateUnit))}`
+                  : ""}
               </Text>
             </View>
             <Text style={[styles.price, { color: accent === FREELY_VIOLET ? "#fff" : accent }]}>
@@ -553,8 +564,13 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
               <Text style={styles.edStatLabel}>Total</Text>
             </View>
             <View style={styles.edStat}>
-              <Text style={styles.edStatValue}>{brief.hours}h</Text>
-              <Text style={styles.edStatLabel}>Estimated hours</Text>
+              <Text style={styles.edStatValue}>
+                {unitsFromHours(brief.hours, parseRateUnit(brief.rateUnit))}
+                {parseRateUnit(brief.rateUnit) === "DAY" ? "d" : "h"}
+              </Text>
+              <Text style={styles.edStatLabel}>
+                {parseRateUnit(brief.rateUnit) === "DAY" ? "Estimated days" : "Estimated hours"}
+              </Text>
             </View>
             {brief.hourlyRate && (
               <View style={styles.edStat}>
@@ -660,7 +676,9 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
               {symbol}
               {brief.price.toLocaleString()} total
             </Text>
-            <Text style={styles.minStat}>{brief.hours}h estimated</Text>
+            <Text style={styles.minStat}>
+              {describeEffort(brief.hours, parseRateUnit(brief.rateUnit))} estimated
+            </Text>
             {brief.hourlyRate && (
               <Text style={styles.minStat}>
                 {symbol}
@@ -773,7 +791,7 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
               {brief.price.toLocaleString()} total
             </Text>
             <Text style={{ fontSize: 10.5, marginRight: 22, fontFamily: "Helvetica-Bold", color: ink }}>
-              {brief.hours}h estimated
+              {describeEffort(brief.hours, parseRateUnit(brief.rateUnit))} estimated
             </Text>
             {brief.hourlyRate && (
               <Text style={{ fontSize: 10.5, fontFamily: "Helvetica-Bold", color: ink }}>

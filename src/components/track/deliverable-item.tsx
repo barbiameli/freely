@@ -269,8 +269,7 @@ export function DeliverableItem({
           {deliverable.steps.length === 0 ? (
             <div className="bg-paper rounded-lg px-3.5 py-3">
               <p className="text-[12.5px] text-slate m-0">
-                No steps yet. A deliverable is what the client bought; steps are what you sit down
-                and do.
+                No steps on this one yet.
               </p>
               <button
                 type="button"

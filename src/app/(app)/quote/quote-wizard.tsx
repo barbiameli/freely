@@ -28,6 +28,7 @@ import {
 } from "@/actions/briefs";
 import { industryQuoteExample } from "@/lib/industries";
 import { CURRENCIES, currencySymbol } from "@/lib/currencies";
+import { rateSuffix, type RateUnit } from "@/lib/rate-unit";
 import { MAX_DOCUMENT_UPLOAD_BYTES, documentTooLargeError } from "@/lib/upload-limits";
 import { BRANDING_OPTIONS } from "@/lib/branding";
 import {
@@ -175,6 +176,7 @@ export function QuoteWizard({
     includeStrategy: false,
     includeTimeline: false,
     hourlyRate: 0,
+    rateUnit: "HOUR" as RateUnit,
     currency: userCurrency || "USD",
     expertiseLevel: "Senior",
     template: "classic",
@@ -465,7 +467,7 @@ export function QuoteWizard({
       !draft.pricing?.clientLocation?.trim()
     ) {
       setError(
-        "Add your hourly rate, or say where you or the client are based so a rate can be researched."
+        "Add your rate, or say where you or the client are based so a rate can be researched."
       );
       return;
     }
@@ -659,7 +661,25 @@ export function QuoteWizard({
 
           <div className="flex flex-col md:flex-row gap-4 md:gap-5">
             <Card className="flex-1">
-              <FieldHeading>Your hourly rate</FieldHeading>
+              <FieldHeading>Your rate</FieldHeading>
+              {/* Plenty of freelancers price in days, and converting to an
+                  hourly figure to fit the form means inventing a day length. */}
+              <div className="flex gap-1.5 mb-2.5">
+                {(
+                  [
+                    ["HOUR", "Per hour"],
+                    ["DAY", "Per day"],
+                  ] as const
+                ).map(([unit, label]) => (
+                  <Chip
+                    key={unit}
+                    active={(draft.rateUnit ?? "HOUR") === unit}
+                    onClick={() => setDraft((d) => ({ ...d, rateUnit: unit }))}
+                  >
+                    {label}
+                  </Chip>
+                ))}
+              </div>
               <div className="flex items-center gap-2">
                 <select
                   value={draft.currency}
@@ -679,14 +699,18 @@ export function QuoteWizard({
                   step={5}
                   value={draft.hourlyRate || ""}
                   onChange={(e) => setDraft((d) => ({ ...d, hourlyRate: Number(e.target.value) }))}
-                  placeholder="e.g. 65"
+                  placeholder={(draft.rateUnit ?? "HOUR") === "DAY" ? "e.g. 520" : "e.g. 65"}
                   className="w-full bg-paper rounded-lg border-none px-3 py-2.5 text-sm text-ink outline-none"
                 />
-                <span className="text-slate text-sm">/hr</span>
+                <span className="text-slate text-sm">
+                  {rateSuffix((draft.rateUnit ?? "HOUR") as RateUnit)}
+                </span>
               </div>
               <div className="text-[12px] text-text-muted mt-2.5">
                 {draft.hourlyRate > 0
-                  ? "The price is your rate times the hours. Your rate is used exactly as typed."
+                  ? `The price is your rate times the ${
+                      (draft.rateUnit ?? "HOUR") === "DAY" ? "days" : "hours"
+                    }. Your rate is used exactly as typed.`
                   : "Leave it blank and a rate gets researched for your market."}
               </div>
             </Card>

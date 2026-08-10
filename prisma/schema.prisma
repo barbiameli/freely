@@ -156,6 +156,10 @@ model Brief {
   price          Float
   hours          Float
   hourlyRate     Float?
+  // "HOUR" or "DAY". Plenty of freelancers price in days and translating to
+  // an hourly figure to fit the form means inventing a day length. The stored
+  // rate is always per this unit, and hours stays the underlying estimate.
+  rateUnit       String      @default("HOUR")
   // ISO 4217 code (e.g. "USD", "EUR") — defaults from the user's saved
   // preference at generation time, but can differ per quote.
   currency       String      @default("USD")

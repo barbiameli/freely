@@ -12,6 +12,8 @@
  * sendable is a normal thing to do, and silently rewriting the hours
  * underneath would be worse than the drift.
  */
+import { priceFor, unitsFromHours, type RateUnit } from "@/lib/rate-unit";
+
 export interface Repriced {
   hours: number;
   price: number;
@@ -29,10 +31,12 @@ export interface Repriced {
 export function effectiveRate(
   previousPrice: number,
   previousHours: number,
-  storedRate?: number | null
+  storedRate?: number | null,
+  unit: RateUnit = "HOUR"
 ): number {
   if (storedRate && storedRate > 0) return storedRate;
-  if (previousHours > 0 && previousPrice > 0) return previousPrice / previousHours;
+  const units = unitsFromHours(previousHours, unit);
+  if (units > 0 && previousPrice > 0) return previousPrice / units;
   return 0;
 }
 
@@ -46,11 +50,12 @@ export function repriceForHours(
   nextHours: number,
   previousPrice: number,
   previousHours: number,
-  storedRate?: number | null
+  storedRate?: number | null,
+  unit: RateUnit = "HOUR"
 ): Repriced | null {
   if (!Number.isFinite(nextHours) || nextHours < 0) return null;
-  const rate = effectiveRate(previousPrice, previousHours, storedRate);
+  const rate = effectiveRate(previousPrice, previousHours, storedRate, unit);
   if (rate <= 0) return null;
   if (nextHours === previousHours) return null;
-  return { hours: nextHours, price: Math.round(nextHours * rate), rate };
+  return { hours: nextHours, price: priceFor(nextHours, rate, unit), rate };
 }

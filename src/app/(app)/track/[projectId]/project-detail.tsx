@@ -13,6 +13,7 @@ import { TimelineBar } from "@/components/track/timeline-bar";
 import { DeliverableItem, type DeliverableView } from "@/components/track/deliverable-item";
 import { FlagsPanel } from "@/components/track/flags-panel";
 import { FrictionPanel } from "@/components/track/friction-panel";
+import { AutoBreakdown } from "@/components/track/auto-breakdown";
 import {
   updateProjectAction,
   addDeliverableAction,
@@ -341,6 +342,12 @@ export function ProjectDetail({
             />
           </Card>
         )}
+
+        <AutoBreakdown
+          projectId={project.id}
+          pending={project.deliverables.filter((d) => !d.brokenDown).length}
+          total={project.deliverables.length}
+        />
 
         <FrictionPanel friction={friction} />
 

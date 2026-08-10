@@ -43,6 +43,7 @@ export default async function BriefPage({ params }: { params: { briefId: string 
         currency: brief.currency,
         price: brief.price,
         hours: brief.hours,
+        rateUnit: (brief as unknown as { rateUnit?: string }).rateUnit ?? "HOUR",
         hourlyRate: brief.hourlyRate,
         status: brief.status,
         createdAt: brief.createdAt.toISOString(),

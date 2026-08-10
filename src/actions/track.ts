@@ -297,3 +297,43 @@ export async function resolveFlagAction(
   revalidatePath(`/track/${owned.projectId}`);
   return { ok: true, data: undefined };
 }
+
+
+/**
+ * Breaks down the next deliverable that has not been done yet.
+ *
+ * One per call on purpose. Doing all of them inside send-to-track would mean
+ * a redirect that hangs for a minute and risks the function timeout, and a
+ * single call that breaks down six deliverables at once gives six shallow
+ * answers. The tracker calls this in a loop on arrival, so the work appears a
+ * piece at a time with something to watch.
+ */
+export async function breakDownNextAction(
+  projectId: string
+): Promise<ActionResult<{ remaining: number; name: string | null }>> {
+  const { project } = await ownedProject(projectId);
+  if (!project) return { ok: false, error: "That project no longer exists." };
+
+  const pending = await deliverableDb.findMany({
+    where: { projectId, brokenDownAt: null },
+    orderBy: { order: "asc" },
+  });
+  if (pending.length === 0) return { ok: true, data: { remaining: 0, name: null } };
+
+  const next = pending[0];
+  const result = await breakDownDeliverableAction(next.id);
+  if (!result.ok) return { ok: false, error: result.error };
+
+  return { ok: true, data: { remaining: pending.length - 1, name: next.name } };
+}
+
+/** How many deliverables still need breaking down, so the tracker knows
+ * whether to start. */
+export async function pendingBreakdownCountAction(
+  projectId: string
+): Promise<ActionResult<number>> {
+  const { project } = await ownedProject(projectId);
+  if (!project) return { ok: false, error: "That project no longer exists." };
+  const count = await deliverableDb.count({ where: { projectId, brokenDownAt: null } });
+  return { ok: true, data: count };
+}

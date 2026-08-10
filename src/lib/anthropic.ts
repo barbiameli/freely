@@ -1,6 +1,13 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { currencySymbol } from "@/lib/currencies";
+import {
+  priceFor,
+  rateSuffix,
+  unitNoun,
+  HOURS_PER_DAY,
+  type RateUnit,
+} from "@/lib/rate-unit";
 
 const MODEL = "claude-sonnet-4-6";
 
@@ -116,8 +123,10 @@ export interface QuoteDraftInput {
   /** This freelancer's rate for this kind of work. Optional: 0 means they
    * did not give one, in which case a location is required instead and the
    * rate comes from market research. When it is given it is authoritative,
-   * and the generated price is forced to hours x rate. */
+   * and the generated price is forced to match it. */
   hourlyRate: number;
+  /** Whether the rate above is per hour or per day. */
+  rateUnit?: RateUnit;
   /** Self-reported seniority, only really load-bearing when there's no
    * pricing history to anchor to and Claude has to research market rates. */
   expertiseLevel: "Junior" | "Mid-level" | "Senior" | "Expert";
@@ -258,18 +267,26 @@ export function buildGenerateUserPrompt(
   // code after parsing (see applyHourlyRate) because a model asked to
   // multiply will sometimes quietly price to what it thinks the market bears.
   const hasRate = draft.hourlyRate > 0;
-  const rateLine = `${symbol}${draft.hourlyRate}/hr (currency: ${currencyCode})`;
+  const unit: RateUnit = draft.rateUnit ?? "HOUR";
+  const rateLine = `${symbol}${draft.hourlyRate}${rateSuffix(unit)} (currency: ${currencyCode})`;
+  // "hours" stays the field the model fills in either case, since that is what
+  // past quotes are compared on. Days are a pricing unit, not a second
+  // estimate to keep in step.
+  const priceRule =
+    unit === "DAY"
+      ? `set price = (hours / ${HOURS_PER_DAY}) x ${symbol}${draft.hourlyRate}, since the rate is per day and a working day is ${HOURS_PER_DAY} hours`
+      : `set price = hours x ${symbol}${draft.hourlyRate}`;
 
   let pricingInstruction: string;
   if (hasRate && hasHistory) {
-    pricingInstruction = `Pricing approach: this freelancer charges ${rateLine}. That rate is fixed and must be used exactly as given. Look at the pricing history below for comparable past work, estimate the hours this new project will realistically take, and set price = hours x ${symbol}${draft.hourlyRate}. Your only real decision here is the hours. Do not substitute a market rate, a rounder number, or a rate you consider more appropriate.`;
+    pricingInstruction = `Pricing approach: this freelancer charges ${rateLine}. That rate is fixed and must be used exactly as given. Look at the pricing history below for comparable past work, estimate the hours this new project will realistically take, and ${priceRule}. Your only real decision here is the hours. Do not substitute a market rate, a rounder number, or a rate you consider more appropriate.`;
   } else if (hasRate) {
-    pricingInstruction = `Pricing approach: this freelancer charges ${rateLine}. That rate is fixed and must be used exactly as given. Estimate the hours this project realistically needs for a "${draft.expertiseLevel}"-level freelancer, then set price = hours x ${symbol}${draft.hourlyRate}. Your only real decision here is the hours. Do not substitute a market rate, a rounder number, or a rate you consider more appropriate. If the stated rate looks well below or well above the going rate, say so in the open questions and leave the numbers alone.`;
+    pricingInstruction = `Pricing approach: this freelancer charges ${rateLine}. That rate is fixed and must be used exactly as given. Estimate the hours this project realistically needs for a "${draft.expertiseLevel}"-level freelancer, then ${priceRule}. Your only real decision here is the hours. Do not substitute a market rate, a rounder number, or a rate you consider more appropriate. If the stated rate looks well below or well above the going rate, say so in the open questions and leave the numbers alone.`;
   } else {
     pricingInstruction = `Pricing approach: this freelancer has not given an hourly rate, so you set one from market research.${formatPricingContext(
       draft.pricing
     )}
-Use web search to find the going hourly rate, and the typical hours, for this kind of project for a "${draft.expertiseLevel}"-level freelancer. Price against the client's market where one is given, since that is what sets what can be charged, and use the freelancer's own location as a cross-check. Then set hours, and price = hours x the rate you landed on. State the rate you used, and where it came from, in the open questions so they can check it.`;
+Use web search to find the going ${unitNoun(unit)} rate, and the typical hours, for this kind of project for a "${draft.expertiseLevel}"-level freelancer. Price against the client's market where one is given, since that is what sets what can be charged, and use the freelancer's own location as a cross-check. Then set hours, and price = hours x the rate you landed on. State the rate you used, and where it came from, in the open questions so they can check it.`;
   }
 
   const strategyInstruction = draft.includeStrategy
@@ -480,7 +497,7 @@ export async function generateBriefFromDraft(
     // it was being truncated mid-object.
     maxTokens: 8000,
   });
-  return applyHourlyRate(parseBriefResponse(text), draft.hourlyRate);
+  return applyHourlyRate(parseBriefResponse(text), draft.hourlyRate, draft.rateUnit ?? "HOUR");
 }
 
 /**
@@ -492,9 +509,13 @@ export async function generateBriefFromDraft(
  * than asked for. Hours stay as generated, since that is the part that
  * genuinely calls for judgment.
  */
-export function applyHourlyRate(brief: GeneratedBrief, hourlyRate: number): GeneratedBrief {
+export function applyHourlyRate(
+  brief: GeneratedBrief,
+  hourlyRate: number,
+  unit: RateUnit = "HOUR"
+): GeneratedBrief {
   if (hourlyRate <= 0 || brief.hours <= 0) return brief;
-  const price = Math.round(brief.hours * hourlyRate);
+  const price = priceFor(brief.hours, hourlyRate, unit);
   if (price === brief.price) return brief;
   return { ...brief, price };
 }

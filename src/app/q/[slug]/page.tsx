@@ -40,6 +40,7 @@ export default async function PublicQuotePage({ params }: { params: { slug: stri
     extras: (brief.extras as BriefExtras | null) ?? null,
     price: brief.price,
     hours: brief.hours,
+    rateUnit: (brief as unknown as { rateUnit?: string }).rateUnit ?? "HOUR",
     hourlyRate: brief.hourlyRate,
     currency: brief.currency,
     examples: brief.examples.map((e) => ({ name: e.name, dataUrl: e.dataUrl, caption: e.caption })),

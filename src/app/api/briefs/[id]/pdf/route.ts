@@ -44,6 +44,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     extras: brief.extras as BriefExtras | null,
     price: brief.price,
     hours: brief.hours,
+    rateUnit: (brief as unknown as { rateUnit?: string }).rateUnit ?? "HOUR",
     hourlyRate: brief.hourlyRate,
     currency: brief.currency,
     createdAt: brief.createdAt.toISOString(),

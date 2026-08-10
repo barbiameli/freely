@@ -149,7 +149,7 @@ export async function generateBriefAction(
   if (!hasRate && !hasMarket) {
     return {
       ok: false,
-      error: "Add your hourly rate, or say where you or the client are based.",
+      error: "Add your rate, or say where you or the client are based.",
     };
   }
 
@@ -206,6 +206,9 @@ export async function generateBriefAction(
         price: generated.price,
         hours: generated.hours,
         hourlyRate: draft.hourlyRate,
+        // The generated client here predates this column; see lib/track-db for
+        // the same situation.
+        ...({ rateUnit: draft.rateUnit ?? "HOUR" } as Record<string, string>),
         currency: draft.currency || "USD",
         expertiseLevel: draft.expertiseLevel,
         sourceText: sanitizeText(draft.sourceText),

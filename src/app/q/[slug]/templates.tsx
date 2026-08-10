@@ -1,5 +1,6 @@
 import { currencySymbol } from "@/lib/currencies";
 import { paragraphs, splitDeliverable } from "@/lib/rich-text";
+import { describeEffort, parseRateUnit, unitsFromHours } from "@/lib/rate-unit";
 import { TimelineView } from "@/components/timeline-view";
 import type { BriefExtras } from "@/lib/anthropic";
 import { AcceptBlock } from "./accept-block";
@@ -28,6 +29,8 @@ export interface PublicBrief {
   price: number;
   hours: number;
   hourlyRate?: number | null;
+  /** "HOUR" or "DAY": some freelancers quote in days. */
+  rateUnit?: string | null;
   currency?: string | null;
   examples: Example[];
   extras?: BriefExtras | null;
@@ -205,7 +208,7 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
 
           <div className="rounded-lg p-4 bg-ink flex justify-between items-center">
             <span className="text-[13.5px] text-white/70">
-              {brief.hours} hours
+              {describeEffort(brief.hours, parseRateUnit(brief.rateUnit))}
               {brief.hourlyRate ? ` · ~${currencySymbol(brief.currency)}${brief.hourlyRate}/hr` : ""}
             </span>
             <span className="font-body font-bold text-[22px] text-white">
@@ -257,8 +260,13 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
             <div className="text-[10px] uppercase tracking-[0.08em] text-slate mt-1">Total</div>
           </div>
           <div>
-            <div className="font-body font-bold text-[26px] text-ink">{brief.hours}h</div>
-            <div className="text-[10px] uppercase tracking-[0.08em] text-slate mt-1">Estimated hours</div>
+            <div className="font-body font-bold text-[26px] text-ink">
+              {unitsFromHours(brief.hours, parseRateUnit(brief.rateUnit))}
+              {parseRateUnit(brief.rateUnit) === "DAY" ? "d" : "h"}
+            </div>
+            <div className="text-[10px] uppercase tracking-[0.08em] text-slate mt-1">
+              {parseRateUnit(brief.rateUnit) === "DAY" ? "Estimated days" : "Estimated hours"}
+            </div>
           </div>
           {brief.hourlyRate && (
             <div>
