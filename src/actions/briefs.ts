@@ -208,7 +208,10 @@ export async function generateBriefAction(
         hourlyRate: draft.hourlyRate,
         // The generated client here predates this column; see lib/track-db for
         // the same situation.
-        ...({ rateUnit: draft.rateUnit ?? "HOUR" } as Record<string, string>),
+        ...({
+          rateUnit: draft.rateUnit ?? "HOUR",
+          language: draft.language ?? "en",
+        } as Record<string, string>),
         currency: draft.currency || "USD",
         expertiseLevel: draft.expertiseLevel,
         sourceText: sanitizeText(draft.sourceText),

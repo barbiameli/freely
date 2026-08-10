@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser, requireFullUser } from "@/lib/session";
+import { parseLocale } from "@/lib/i18n";
 import type { ActionResult } from "@/actions/briefs";
 
 /** Updates the basic-info fields collected at signup — kept to just these
@@ -68,5 +69,20 @@ export async function deleteAccountAction(): Promise<ActionResult<undefined>> {
     await tx.user.delete({ where: { id: user.id } });
   });
 
+  return { ok: true, data: undefined };
+}
+
+/** Saves the interface language. Stored on the account rather than a cookie,
+ * so it follows someone between devices. */
+export async function updateLocaleAction(locale: string): Promise<ActionResult<undefined>> {
+  const user = await requireUser();
+  await prisma.user.update({
+    where: { id: user.id },
+    // The generated client here predates the column; see lib/track-db.
+    data: { locale: parseLocale(locale) } as unknown as Parameters<
+      typeof prisma.user.update
+    >[0]["data"],
+  });
+  revalidatePath("/", "layout");
   return { ok: true, data: undefined };
 }

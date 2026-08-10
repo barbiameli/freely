@@ -28,6 +28,8 @@ import {
 } from "@/actions/briefs";
 import { CURRENCIES, currencySymbol } from "@/lib/currencies";
 import { rateSuffix, parseRateUnit, type RateUnit } from "@/lib/rate-unit";
+import { useT, useLocale } from "@/lib/i18n/context";
+import { LOCALES, LOCALE_NAMES, type Locale } from "@/lib/i18n";
 import { MAX_DOCUMENT_UPLOAD_BYTES, documentTooLargeError } from "@/lib/upload-limits";
 import { BRANDING_OPTIONS } from "@/lib/branding";
 import {
@@ -171,6 +173,8 @@ export function QuoteWizard({
   savedRateUnit?: string;
 }) {
   const router = useRouter();
+  const t = useT();
+  const locale = useLocale();
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<QuoteDraftPayload>({
     sourceText: "",
@@ -191,6 +195,10 @@ export function QuoteWizard({
     // a quote under it, so that's the default whenever it's available.
     branding: hasBrand ? "own" : "freely",
     pricing: { yourLocation: savedLocation || "" },
+    // Defaults to the interface language, since most quotes go out in the
+    // language the freelancer works in, and is changed per quote when they do
+    // not match.
+    language: locale,
   });
   const [availabilityNote, setAvailabilityNote] = useState("");
   // One optional question per section that rests on a decision only the
@@ -844,6 +852,24 @@ export function QuoteWizard({
             <p className="text-meta text-text-muted mb-3">
               What the client receives, and how it looks.
             </p>
+
+            {/* Separate from the interface language: a Spanish freelancer
+                often has English clients, and the reverse. */}
+            <div className="text-caption font-bold text-slate uppercase tracking-wide mb-2">
+              {t.quote.quoteLanguage}
+            </div>
+            <div className="flex gap-1.5 mb-1.5">
+              {LOCALES.map((code) => (
+                <Chip
+                  key={code}
+                  active={(draft.language ?? locale) === code}
+                  onClick={() => setDraft((d) => ({ ...d, language: code as Locale }))}
+                >
+                  {LOCALE_NAMES[code]}
+                </Chip>
+              ))}
+            </div>
+            <p className="text-caption text-text-muted mb-5">{t.quote.quoteLanguageHint}</p>
 
             <div className="text-caption font-bold text-slate uppercase tracking-wide mb-2">
               Page format

@@ -82,6 +82,9 @@ model User {
   // The rate this freelancer usually charges, and whether it is per hour or
   // per day. Prefilled into every quote so it is not retyped, and still
   // editable per quote, since one job is not always priced like the last.
+  // "en" or "es". Guessed from the browser on first sign-in, then whatever
+  // they choose, saved on the account so it follows them between devices.
+  locale             String   @default("en")
   defaultRate        Float?
   defaultRateUnit    String   @default("HOUR")
 
@@ -165,6 +168,9 @@ model Brief {
   // an hourly figure to fit the form means inventing a day length. The stored
   // rate is always per this unit, and hours stays the underlying estimate.
   rateUnit       String      @default("HOUR")
+  // The language this quote is written in, which is not always the language
+  // the freelancer works in: a Spanish designer often has English clients.
+  language       String      @default("en")
   // ISO 4217 code (e.g. "USD", "EUR") — defaults from the user's saved
   // preference at generation time, but can differ per quote.
   currency       String      @default("USD")

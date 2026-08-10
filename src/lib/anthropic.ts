@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { currencySymbol } from "@/lib/currencies";
 import type { SectionNotes } from "@/lib/quote-prompts";
+import type { Locale } from "@/lib/i18n/types";
 import {
   priceFor,
   rateSuffix,
@@ -128,6 +129,9 @@ export interface QuoteDraftInput {
   hourlyRate: number;
   /** Whether the rate above is per hour or per day. */
   rateUnit?: RateUnit;
+  /** The language the quote is written in. Not necessarily the language the
+   * freelancer works in: a Spanish designer often has English clients. */
+  language?: Locale;
   /** What the freelancer said about the optional sections that rest on a
    * decision only they can make. Blank means it is written from the brief
    * instead. */
@@ -259,6 +263,18 @@ function truncateSourceText(text: string): string {
   return `${text.slice(0, MAX_SOURCE_TEXT_CHARS)}\n\n[...source material truncated for length — ${text.length.toLocaleString()} characters total, only the first ${MAX_SOURCE_TEXT_CHARS.toLocaleString()} were used.]`;
 }
 
+/**
+ * Tells the model which language to write in.
+ *
+ * Placed first in the prompt so it governs everything after it, and stated as
+ * the language of the finished document rather than of the conversation: the
+ * source brief is often in one language and the quote wanted in another.
+ */
+function languageInstruction(language?: Locale): string {
+  if (!language || language === "en") return "";
+  return "Write the entire quote in Spanish, in neutral Latin American and European Spanish that reads naturally to both. Address the client as \"usted\" throughout, since this is a business document. Keep industry terms that are normally used in English in English (brief, UX, PDF, Figma, sprint) rather than translating them into something less clear. This applies to every field you return, including titles, section text and open questions. The source material may be in another language; translate the meaning, do not copy its wording.";
+}
+
 export function buildGenerateUserPrompt(
   draft: QuoteDraftInput,
   pricingHistory: PricingHistoryEntry[] = []
@@ -369,6 +385,7 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
     : "";
 
   return [
+    languageInstruction(draft.language),
     `Client brief / source material:\n${
       draft.sourceText ? truncateSourceText(draft.sourceText) : "(no source text provided)"
     }`,

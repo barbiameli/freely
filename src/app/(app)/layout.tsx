@@ -2,14 +2,18 @@ import { redirect } from "next/navigation";
 import { requireFullUser } from "@/lib/session";
 import { Sidebar } from "@/components/sidebar";
 import { Providers } from "@/components/providers";
+import { LocaleProvider } from "@/lib/i18n/context";
+import { parseLocale } from "@/lib/i18n";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireFullUser();
   // First run after signup/first Google sign-in — send them to pick an
   // industry before they can use anything else.
   if (!user.industry) redirect("/onboarding");
+  const locale = parseLocale((user as unknown as { locale?: string }).locale);
   return (
     <Providers>
+      <LocaleProvider locale={locale}>
       {/* Column on mobile with the nav pinned to the bottom, row with a rail
           on the left from md up. Bottom nav rather than a hamburger: five
           destinations that are all one tap away is better than five hidden
@@ -20,6 +24,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           {children}
         </div>
       </div>
+      </LocaleProvider>
     </Providers>
   );
 }
