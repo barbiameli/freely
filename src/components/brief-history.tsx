@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DocumentPreview, type BriefSummary } from "@/components/brief-card";
 import { currencySymbol } from "@/lib/currencies";
 import { addBriefToTrackAction } from "@/actions/briefs";
+import { useT } from "@/lib/i18n/context";
 import { DeleteBriefButton } from "@/components/delete-brief-button";
 
 /**
@@ -21,10 +22,11 @@ import { DeleteBriefButton } from "@/components/delete-brief-button";
 /** The send-to-Track action, as a text link rather than a button, so
  * it does not compete with Continue further down the page. */
 function TrackLink({ brief, className }: { brief: BriefSummary; className?: string }) {
+  const t = useT();
   const [pending, startTransition] = useTransition();
 
   if (brief.status === "TRACKED") {
-    return <span className={`text-meta text-text-muted ${className ?? ""}`}>Tracked</span>;
+    return <span className={`text-meta text-text-muted ${className ?? ""}`}>{t.quote.tracked}</span>;
   }
 
   return (
@@ -45,7 +47,7 @@ function TrackLink({ brief, className }: { brief: BriefSummary; className?: stri
         className ?? ""
       }`}
     >
-      {pending ? "Sending..." : "Send to Track"}
+      {pending ? t.quote.sending : t.quote.sendToTrack}
     </button>
   );
 }
@@ -55,6 +57,7 @@ function money(brief: BriefSummary) {
 }
 
 function Strip({ briefs }: { briefs: BriefSummary[] }) {
+  const t = useT();
   const trackRef = useRef<HTMLDivElement>(null);
 
   function scrollBy(direction: -1 | 1) {
@@ -67,10 +70,10 @@ function Strip({ briefs }: { briefs: BriefSummary[] }) {
   return (
     <section>
       <div className="flex items-baseline justify-between gap-3 mb-2.5">
-        <span className="font-body font-semibold text-small text-ink">Pick up where you left off</span>
+        <span className="font-body font-semibold text-small text-ink">{t.quote.pickUpWhereYouLeftOff}</span>
         <div className="flex items-center gap-3">
           <Link href="/quote/all" className="text-meta font-semibold text-violet">
-            See all {briefs.length}
+            {t.common.seeAll} {briefs.length}
           </Link>
           <div className="hidden sm:flex items-center gap-1">
             <button

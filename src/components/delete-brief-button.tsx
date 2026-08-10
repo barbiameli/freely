@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { deleteBriefAction } from "@/actions/briefs";
+import { useT } from "@/lib/i18n/context";
 import type { BriefSummary } from "@/components/brief-card";
 
 /**
@@ -22,6 +23,7 @@ export function DeleteBriefButton({
   /** Shows the word "Delete" alongside the icon, for roomier layouts. */
   label?: boolean;
 }) {
+  const t = useT();
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -48,14 +50,14 @@ export function DeleteBriefButton({
           }
           className="font-semibold text-overdue bg-none border-none cursor-pointer p-0 disabled:opacity-50"
         >
-          {pending ? "Deleting..." : "Delete"}
+          {pending ? t.common.deleting : t.common.delete}
         </button>
         <button
           type="button"
           onClick={() => setConfirming(false)}
           className="text-text-muted bg-none border-none cursor-pointer p-0"
         >
-          Keep
+          {t.common.keep}
         </button>
       </span>
     );
@@ -69,8 +71,8 @@ export function DeleteBriefButton({
           setError("");
           setConfirming(true);
         }}
-        aria-label={`Delete ${brief.title}`}
-        title="Delete this draft"
+        aria-label={`${t.common.delete} ${brief.title}`}
+        title={t.quote.deleteThisDraft}
         className="flex items-center gap-1 text-meta text-text-muted hover:text-overdue bg-white/90 border border-line rounded-md px-1.5 py-1 cursor-pointer backdrop-blur-sm"
       >
         <Trash2 size={12} />

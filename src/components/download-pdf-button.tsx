@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ActionError } from "@/components/ui/action-error";
+import { useT } from "@/lib/i18n/context";
 
 /**
  * Downloads a generated PDF, with something to watch while it builds.
@@ -17,12 +18,13 @@ import { ActionError } from "@/components/ui/action-error";
 export function DownloadPdfButton({
   href,
   fileName,
-  label = "Download PDF",
+  label,
 }: {
   href: string;
   fileName: string;
   label?: string;
 }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -32,7 +34,7 @@ export function DownloadPdfButton({
     try {
       const res = await fetch(href);
       if (!res.ok) {
-        setError("Couldn't build the PDF. Try again in a moment.");
+        setError(t.brief.pdfFailed);
         return;
       }
       const blob = await res.blob();
@@ -43,7 +45,7 @@ export function DownloadPdfButton({
       link.click();
       URL.revokeObjectURL(url);
     } catch {
-      setError("Couldn't reach the server. Check your connection and try again.");
+      setError(t.common.noConnection);
     } finally {
       setBusy(false);
     }
@@ -52,7 +54,7 @@ export function DownloadPdfButton({
   return (
     <div className="flex flex-col gap-1.5">
       <Button variant="outline" icon={Download} spinIcon={busy} disabled={busy} onClick={download}>
-        {busy ? "Building PDF..." : label}
+        {busy ? t.brief.buildingPdf : label ?? t.brief.downloadPdf}
       </Button>
       <ActionError error={error} />
     </div>

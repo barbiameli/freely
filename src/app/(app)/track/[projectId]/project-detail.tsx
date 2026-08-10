@@ -32,6 +32,7 @@ import {
 import { formatDay, relativeDay } from "@/lib/schedule";
 import { currencySymbol } from "@/lib/currencies";
 import { useAction } from "@/lib/use-action";
+import { useT } from "@/lib/i18n/context";
 import { ActionError } from "@/components/ui/action-error";
 
 interface Project {
@@ -95,6 +96,7 @@ function ScheduleControls({
   initial?: string;
   onDone?: () => void;
 }) {
+  const t = useT();
   const router = useRouter();
   const [start, setStart] = useState(initial ?? new Date().toISOString().slice(0, 10));
   const [pending, startTransition] = useTransition();
@@ -124,7 +126,7 @@ function ScheduleControls({
             })
           }
         >
-          {pending ? "Scheduling..." : "Set the schedule"}
+          {pending ? t.track.scheduling : t.track.setTheSchedule}
         </Button>
       </div>
       {error && <div className="text-overdue text-small mt-2">{error}</div>}
@@ -134,19 +136,33 @@ function ScheduleControls({
 
 /** Asks for the one date everything else follows from. */
 function SchedulePrompt({ projectId }: { projectId: string }) {
+  const t = useT();
   return (
     <Card>
       <div className="flex items-center gap-2">
         <CalendarDays size={14} className="text-violet" />
-        <Label>When does this start?</Label>
+        <Label>{t.track.whenDoesThisStart}</Label>
       </div>
       <p className="text-small text-text-muted mt-1 mb-3">
-        The quote says how long each stage takes. A start date turns that into real dates on every
-        deliverable, which you can then move individually.
+        {t.track.whenDoesThisStartHint}
       </p>
       <ScheduleControls projectId={projectId} />
     </Card>
   );
+}
+
+/** The rules return a pace in English; the label is looked up here so a
+ * translated interface does not show an untranslated verdict. */
+function usePaceLabel() {
+  const t = useT();
+  return (value: string) =>
+    ({
+      ahead: t.track.paceAhead,
+      "on track": t.track.paceOnTrack,
+      slipping: t.track.paceSlipping,
+      behind: t.track.paceBehind,
+      unscheduled: t.track.notScheduled,
+    })[value] ?? value;
 }
 
 export function ProjectDetail({
@@ -157,6 +173,8 @@ export function ProjectDetail({
   projectList: ProjectSummary[];
 }) {
   const router = useRouter();
+  const t = useT();
+  const paceLabel = usePaceLabel();
   const { run, pending: isPending, error: actionError } = useAction();
   const [price, setPrice] = useState(String(project.price));
   const [hours, setHours] = useState(String(project.hours));
@@ -205,7 +223,7 @@ export function ProjectDetail({
   return (
     <div className="flex flex-col lg:flex-row gap-5 lg:gap-6 flex-1 min-h-0">
       <Card className="w-full lg:w-[200px] lg:shrink-0 lg:overflow-y-auto">
-        <Label>All projects</Label>
+        <Label>{t.track.allProjects}</Label>
         <div className="flex flex-col gap-1 mt-1">
           {projectList.map((p) => (
             <button
@@ -250,10 +268,10 @@ export function ProjectDetail({
                 })
               }
             >
-              Send to Diary
+              {t.track.sendToDiary}
             </Button>
             <Button onClick={() => router.push(`/track/${project.id}/invoice`)}>
-              Generate invoice, {currencySymbol(project.currency)}
+              {t.track.generateInvoice}, {currencySymbol(project.currency)}
               {project.price.toLocaleString()}
             </Button>
           </div>
@@ -261,19 +279,19 @@ export function ProjectDetail({
 
         <StatRow
           stats={[
-            { label: "Done", value: `${Math.round(completion * 100)}%` },
+            { label: t.track.done, value: `${Math.round(completion * 100)}%` },
             {
-              label: "Pace",
-              value: currentPace === "unscheduled" ? "Not scheduled" : currentPace,
+              label: t.track.pace,
+              value: paceLabel(currentPace),
               alert: currentPace === "behind" || currentPace === "slipping",
               good: currentPace === "ahead",
             },
             {
-              label: "Next up",
-              value: next ? relativeDay(next.dueAt) : "Nothing dated",
+              label: t.track.nextUp,
+              value: next ? relativeDay(next.dueAt) : t.track.nothingDated,
               alert: next?.overdue,
             },
-            { label: "Hours", value: `${project.hoursLogged} of ${project.hours}` },
+            { label: t.track.hours, value: `${project.hoursLogged} / ${project.hours}` },
           ]}
         />
 
@@ -282,7 +300,7 @@ export function ProjectDetail({
         ) : (
           <Card>
             <div className="flex items-baseline justify-between gap-3 mb-3">
-              <Label>Timeline</Label>
+              <Label>{t.brief.timeline}</Label>
               <div className="flex items-baseline gap-3">
                 <span className="text-meta text-text-muted">
                   {formatDay(health.startDate as Date)} to {formatDay(health.dueDate as Date)}
@@ -292,7 +310,7 @@ export function ProjectDetail({
                   onClick={() => setRescheduling((r) => !r)}
                   className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0"
                 >
-                  {rescheduling ? "Cancel" : "Reschedule"}
+                  {rescheduling ? t.common.cancel : t.track.reschedule}
                 </button>
               </div>
             </div>
@@ -304,8 +322,7 @@ export function ProjectDetail({
                   onDone={() => setRescheduling(false)}
                 />
                 <p className="text-caption text-text-muted mt-2 mb-0">
-                  This resets every deliverable date. Dates you moved by hand go back to the
-                  derived ones.
+                  {t.track.rescheduleWarning}
                 </p>
               </div>
             )}
@@ -334,9 +351,9 @@ export function ProjectDetail({
 
         <div className="flex flex-col lg:flex-row gap-5">
           <Card className="flex-1 min-w-0">
-            <Label>Deliverables</Label>
+            <Label>{t.track.deliverables}</Label>
             {project.deliverables.length === 0 ? (
-              <div className="text-text-muted text-small mt-1">No deliverables listed.</div>
+              <div className="text-text-muted text-small mt-1">{t.track.noDeliverables}</div>
             ) : (
               <div className="mt-1">
                 {project.deliverables.map((d) => (
@@ -354,7 +371,7 @@ export function ProjectDetail({
               <TextField
                 value={newDeliverable}
                 onChange={setNewDeliverable}
-                placeholder="Add a deliverable"
+                placeholder={t.track.addDeliverable}
               />
               <Button
                 disabled={!newDeliverable.trim() || isPending}
@@ -364,7 +381,7 @@ export function ProjectDetail({
                   void run(() => addDeliverableAction(project.id, value));
                 }}
               >
-                Add
+                {t.common.add}
               </Button>
             </div>
           </Card>
@@ -381,9 +398,9 @@ export function ProjectDetail({
             onClick={() => setShowDetails((s) => !s)}
             className="flex items-baseline justify-between w-full bg-none border-none cursor-pointer p-0"
           >
-            <Label>Project details</Label>
+            <Label>{t.track.projectDetails}</Label>
             <span className="text-meta font-semibold text-violet">
-              {showDetails ? "Hide" : "Edit"}
+              {showDetails ? t.track.hide : t.common.edit}
             </span>
           </button>
 
@@ -393,18 +410,18 @@ export function ProjectDetail({
                 <Field label={`Price (${currencySymbol(project.currency)})`}>
                   <TextField value={price} onChange={setPrice} />
                 </Field>
-                <Field label="Hours budgeted">
+                <Field label={t.track.hoursBudgeted}>
                   <TextField value={hours} onChange={setHours} />
                 </Field>
-                <Field label="Hours logged">
+                <Field label={t.track.hoursLogged}>
                   <TextField value={hoursLogged} onChange={setHoursLogged} />
                 </Field>
-                <Field label="Timeline">
+                <Field label={t.brief.timeline}>
                   <TextField value={timeline} onChange={setTimeline} />
                 </Field>
               </div>
               <div>
-                <div className="text-caption text-text-muted mb-1">Status</div>
+                <div className="text-caption text-text-muted mb-1">{t.track.status}</div>
                 <div className="flex gap-1.5 flex-wrap">
                   {STATUSES.map((s) => (
                     <Chip
@@ -430,7 +447,7 @@ export function ProjectDetail({
                     })
                   }
                 >
-                  Save changes
+                  {t.common.saveChanges}
                 </Button>
                 <Button
                   variant="ghost"
@@ -439,7 +456,7 @@ export function ProjectDetail({
                   onClick={handleDeleteProject}
                   className="text-overdue border-overdue/30 hover:text-overdue"
                 >
-                  {deleting ? "Deleting..." : "Delete project"}
+                  {deleting ? t.common.deleting : t.track.deleteProject}
                 </Button>
               </div>
             </div>

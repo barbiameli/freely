@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Check } from "lucide-react";
 import { currencySymbol } from "@/lib/currencies";
 import { addBriefToTrackAction } from "@/actions/briefs";
+import { useT } from "@/lib/i18n/context";
 import { DeleteBriefButton } from "@/components/delete-brief-button";
 
 export interface BriefSummary {
@@ -69,6 +70,7 @@ export function DocumentPreview({
 }
 
 export function BriefCard({ brief }: { brief: BriefSummary }) {
+  const t = useT();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
@@ -102,7 +104,7 @@ export function BriefCard({ brief }: { brief: BriefSummary }) {
           {brief.price.toLocaleString()}
         </span>
         <span className="text-caption uppercase tracking-wide text-text-muted">
-          {tracked ? "Tracked" : brief.published ? "Published" : "Draft"}
+          {tracked ? t.quote.tracked : brief.published ? t.quote.published : t.quote.draft}
         </span>
       </div>
 
@@ -112,7 +114,7 @@ export function BriefCard({ brief }: { brief: BriefSummary }) {
           onClick={() => router.push(`/quote/${brief.id}`)}
           className="flex items-center justify-center gap-1.5 w-full text-meta font-bold text-slate bg-paper rounded-lg py-2 border-none cursor-pointer"
         >
-          <Check size={12} /> In Track
+          <Check size={12} /> {t.quote.inTrack}
         </button>
       ) : (
         <button
@@ -128,13 +130,13 @@ export function BriefCard({ brief }: { brief: BriefSummary }) {
               } catch (err) {
                 const message = err instanceof Error ? err.message : String(err);
                 // Next signals a redirect by throwing, so that one is expected.
-                if (!message.includes("NEXT_REDIRECT")) setError("Couldn't send that to Track.");
+                if (!message.includes("NEXT_REDIRECT")) setError(t.brief.addToTrackFailed);
               }
             });
           }}
           className="flex items-center justify-center gap-1.5 w-full text-meta font-bold text-white bg-violet rounded-lg py-2 border-none cursor-pointer disabled:opacity-50"
         >
-          {pending ? "Sending..." : "Send to Track"}
+          {pending ? t.quote.sending : t.quote.sendToTrack}
           {!pending && <ArrowRight size={12} />}
         </button>
       )}

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, X } from "lucide-react";
 import { breakDownNextAction } from "@/actions/track";
+import { useT } from "@/lib/i18n/context";
 
 /**
  * Breaks the project's deliverables into steps as soon as it lands in Track.
@@ -27,6 +28,7 @@ export function AutoBreakdown({
   pending: number;
   total: number;
 }) {
+  const t = useT();
   const router = useRouter();
   const [remaining, setRemaining] = useState(pending);
   const [current, setCurrent] = useState<string | null>(null);
@@ -76,7 +78,7 @@ export function AutoBreakdown({
         <div className="flex items-center gap-2 min-w-0">
           <Sparkles size={13} className="text-violet shrink-0 animate-spin-slow" />
           <span className="font-body font-semibold text-small text-ink">
-            {remaining === 0 ? "All broken down" : "Working out the steps"}
+            {remaining === 0 ? t.track.allBrokenDown : t.track.workingOutSteps}
           </span>
           <span className="text-meta text-text-muted shrink-0">
             {done} of {total}
@@ -91,7 +93,7 @@ export function AutoBreakdown({
             }}
             className="flex items-center gap-1 text-meta text-text-muted hover:text-ink bg-none border-none cursor-pointer p-0 shrink-0"
           >
-            <X size={11} /> Stop
+            <X size={11} /> {t.quote.stop}
           </button>
         )}
       </div>
@@ -104,7 +106,7 @@ export function AutoBreakdown({
       </div>
 
       {current && (
-        <div className="text-meta text-text-muted mt-2 truncate">Last done: {current}</div>
+        <div className="text-meta text-text-muted mt-2 truncate">{t.track.lastDone}: {current}</div>
       )}
       {error && <div className="text-overdue text-meta mt-2">{error}</div>}
     </div>

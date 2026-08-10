@@ -13,6 +13,7 @@ import { deliverableCompletion, shortName } from "@/lib/project-health";
 import { formatDay } from "@/lib/schedule";
 import { useAction } from "@/lib/use-action";
 import { ActionError } from "@/components/ui/action-error";
+import { useT } from "@/lib/i18n/context";
 
 export interface StepView {
   id: string;
@@ -88,6 +89,7 @@ export function DeliverableItem({
   expanded: boolean;
   onToggleExpanded: () => void;
 }) {
+  const t = useT();
   const { run, pending, error } = useAction();
   const [breaking, setBreaking] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -191,12 +193,12 @@ export function DeliverableItem({
             <button
               type="button"
               onClick={() => setEditingDate(true)}
-              title="Change this date"
+              title={t.track.changeThisDate}
               className={`text-caption tabular-nums bg-none border-none cursor-pointer p-0 ${
                 overdue ? "text-overdue font-semibold" : "text-text-muted hover:text-slate"
               }`}
             >
-              {dueAt ? formatDay(dueAt) : "Set date"}
+              {dueAt ? formatDay(dueAt) : t.track.setDate}
             </button>
           )}
         </div>
@@ -223,7 +225,7 @@ export function DeliverableItem({
                 className="w-full font-body text-small text-ink leading-relaxed bg-white border border-violet rounded-lg px-3 py-2.5 outline-none"
               />
               <p className="text-caption text-text-muted mt-1.5 mb-0">
-                One step per line. Delete a line to remove it, add a line to add one.
+                {t.track.oneStepPerLine}
               </p>
               <div className="flex items-center gap-3 mt-2.5">
                 <button
@@ -232,14 +234,14 @@ export function DeliverableItem({
                   disabled={pending}
                   className="font-body font-bold text-meta text-white bg-violet rounded-lg px-3.5 py-1.5 border-none cursor-pointer disabled:opacity-50"
                 >
-                  {pending ? "Saving..." : "Save steps"}
+                  {pending ? t.common.saving : t.track.saveSteps}
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditing(false)}
                   className="text-meta text-text-muted bg-none border-none cursor-pointer p-0"
                 >
-                  Cancel
+                  {t.common.cancel}
                 </button>
               </div>
             </div>
@@ -251,7 +253,7 @@ export function DeliverableItem({
               className="flex items-center gap-1.5 text-meta font-bold text-white bg-violet rounded-lg px-3 py-1.5 border-none cursor-pointer disabled:opacity-50"
             >
               <Sparkles size={12} />
-              {breaking ? "Working it out..." : "Break this down"}
+              {breaking ? t.track.workingItOut : t.track.breakThisDown}
             </button>
           ) : (
             <>
@@ -286,7 +288,7 @@ export function DeliverableItem({
                   onClick={openEditor}
                   className="flex items-center gap-1.5 text-caption font-semibold text-violet bg-none border-none cursor-pointer p-0"
                 >
-                  <Pencil size={11} /> Edit steps
+                  <Pencil size={11} /> {t.track.editSteps}
                 </button>
                 <button
                   type="button"
@@ -295,7 +297,7 @@ export function DeliverableItem({
                   className="flex items-center gap-1.5 text-caption text-text-muted hover:text-slate bg-none border-none cursor-pointer p-0 disabled:opacity-50"
                 >
                   <Sparkles size={11} />
-                  {breaking ? "Working it out..." : "Redo"}
+                  {breaking ? t.track.workingItOut : t.track.redo}
                 </button>
               </div>
             </>

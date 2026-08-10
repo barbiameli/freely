@@ -1,12 +1,12 @@
+"use client";
+
 import { Check } from "lucide-react";
+import { useT } from "@/lib/i18n/context";
 
 /** Two steps, not three: what you give it, then what comes out. The middle
  * "Instructions" step was mostly optional fields, which made the flow feel
  * longer than the work it was actually asking for. */
-const STEPS: [string, string][] = [
-  ["01", "The brief"],
-  ["02", "The quote"],
-];
+
 
 /**
  * Progress through the wizard, and a way back.
@@ -25,9 +25,14 @@ export function Stepper({
    * purely decorative. */
   onStepClick?: (index: number) => void;
 }) {
+  const t = useT();
+  const steps: [string, string][] = [
+    ["01", t.quote.stepBrief],
+    ["02", t.quote.stepQuote],
+  ];
   return (
     <div className="flex gap-3 items-center">
-      {STEPS.map(([n, label], i) => {
+      {steps.map(([n, label], i) => {
         const active = i === activeIndex;
         const done = i < activeIndex;
         const clickable = done && Boolean(onStepClick);
@@ -68,7 +73,7 @@ export function Stepper({
               <button
                 type="button"
                 onClick={() => onStepClick?.(i)}
-                title={`Back to ${label.toLowerCase()}`}
+                title={label}
                 className={`${base} ${look} cursor-pointer hover:bg-coral-tint/70`}
               >
                 {content}
@@ -78,7 +83,7 @@ export function Stepper({
                 {content}
               </div>
             )}
-            {i < STEPS.length - 1 && <div className="w-6 h-px bg-line" />}
+            {i < steps.length - 1 && <div className="w-6 h-px bg-line" />}
           </div>
         );
       })}

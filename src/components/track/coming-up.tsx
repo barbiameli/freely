@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { CalendarClock, X } from "lucide-react";
 import { formatDay, relativeDay } from "@/lib/schedule";
 import { shortName, type Deadline } from "@/lib/project-health";
+import { useT } from "@/lib/i18n/context";
 
 /**
  * What is due soon, as a note rather than a section.
@@ -24,6 +25,7 @@ export function ComingUp({
   deadlines: Deadline[];
   onSelect: (deliverableId: string) => void;
 }) {
+  const t = useT();
   const [shown, setShown] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
@@ -47,13 +49,13 @@ export function ComingUp({
         <div className="flex items-center gap-2 min-w-0">
           <CalendarClock size={13} className={urgent ? "text-coral" : "text-slate"} />
           <span className="font-label text-caption uppercase tracking-[0.09em] text-slate">
-            Coming up
+            {t.track.comingUp}
           </span>
         </div>
         <button
           type="button"
           onClick={() => setDismissed(true)}
-          aria-label="Hide what's coming up"
+          aria-label={t.track.hideComingUp}
           className="text-text-muted hover:text-ink bg-none border-none cursor-pointer p-0 shrink-0"
         >
           <X size={12} />
