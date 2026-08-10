@@ -76,7 +76,12 @@ export function BriefCard({ brief }: { brief: BriefSummary }) {
   const tracked = brief.status === "TRACKED";
 
   return (
-    <div className="bg-white border border-line rounded-card p-3.5 flex flex-col gap-3 h-full">
+    <div className="group relative bg-white border border-line rounded-card p-3.5 flex flex-col gap-3 h-full">
+      {/* Top right, out of the reading order, so a destructive action never
+          sits beside the one you came to press. */}
+      <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+        <DeleteBriefButton brief={brief} />
+      </div>
       <button
         type="button"
         onClick={() => router.push(`/quote/${brief.id}`)}
@@ -96,12 +101,9 @@ export function BriefCard({ brief }: { brief: BriefSummary }) {
           {currencySymbol(brief.currency)}
           {brief.price.toLocaleString()}
         </span>
-        <div className="flex items-center gap-2.5">
-          <span className="text-caption uppercase tracking-wide text-text-muted">
-            {tracked ? "Tracked" : brief.published ? "Published" : "Draft"}
-          </span>
-          <DeleteBriefButton brief={brief} />
-        </div>
+        <span className="text-caption uppercase tracking-wide text-text-muted">
+          {tracked ? "Tracked" : brief.published ? "Published" : "Draft"}
+        </span>
       </div>
 
       {tracked ? (
