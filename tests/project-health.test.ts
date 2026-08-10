@@ -6,6 +6,7 @@ import {
   upcomingDeadlines,
   frictionPoints,
   prioritize,
+  shortName,
   type HealthProject,
 } from "@/lib/project-health";
 import {
@@ -189,5 +190,47 @@ describe("schedule", () => {
     expect(relativeDay(addDays(START, 3), START)).toBe("in 3 days");
     expect(relativeDay(addDays(START, -3), START)).toBe("3 days ago");
     expect(relativeDay(addDays(START, 21), START)).toBe("in 3 weeks");
+  });
+});
+
+describe("shortName", () => {
+  const real =
+    "Token foundations, colour, spacing, radius, shadow, and motion values set up as Variables in Figma, named to match React conventions so there is no translation step for the dev team";
+
+  it("takes the leading clause of a client-facing deliverable", () => {
+    expect(shortName(real)).toBe("Token foundations");
+  });
+
+  it("leaves a name that is already short alone", () => {
+    expect(shortName("Developer handoff package")).toBe("Developer handoff package");
+  });
+
+  it("ignores a leading clause too short to be a name", () => {
+    expect(shortName("Phase 1, the core component set")).toBe("Phase 1, the core component set");
+  });
+
+  it("caps anything still too long", () => {
+    const long = "A very long deliverable name with no punctuation at all to break it up anywhere";
+    expect(shortName(long, 30).length).toBeLessThanOrEqual(30);
+    expect(shortName(long, 30).endsWith("...")).toBe(true);
+  });
+
+  it("handles a dash separator too", () => {
+    expect(shortName("MCP connection - the Figma file wired up via Model Context Protocol")).toBe(
+      "MCP connection"
+    );
+  });
+});
+
+describe("friction formatting", () => {
+  it("keeps affected deliverables as separate items, not one joined sentence", () => {
+    const p = project({
+      deliverables: [deliverable(false, [], addDays(START, 5)), deliverable(false)],
+    });
+    const notBrokenDown = frictionPoints(p, 0, START).find((f) =>
+      f.title.includes("not broken down")
+    );
+    expect(notBrokenDown?.items).toHaveLength(2);
+    expect(notBrokenDown?.detail).not.toContain("Foundations in Figma");
   });
 });

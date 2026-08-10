@@ -12,7 +12,7 @@ import {
   setDeliverableDueAction,
 } from "@/actions/track";
 import { toggleDeliverableAction } from "@/actions/projects";
-import { deliverableCompletion } from "@/lib/project-health";
+import { deliverableCompletion, shortName } from "@/lib/project-health";
 import { formatDay, relativeDay } from "@/lib/schedule";
 
 export interface StepView {
@@ -201,11 +201,15 @@ export function DeliverableItem({
               <ChevronRight size={13} className="text-text-muted shrink-0" />
             )}
             <span
+              title={deliverable.name}
               className={`font-body font-semibold text-[13.5px] ${
                 deliverable.done ? "text-text-muted" : "text-ink"
               }`}
             >
-              {deliverable.name}
+              {/* Quote deliverables are written for a client, so the name is
+                  often a full sentence. The heading takes the leading clause
+                  and the rest shows when it is opened. */}
+              {expanded ? deliverable.name : shortName(deliverable.name, 70)}
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 ml-[19px] text-[11.5px] text-text-muted">

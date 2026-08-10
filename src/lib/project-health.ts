@@ -132,7 +132,13 @@ export function upcomingDeadlines(
 export interface Friction {
   /** Short enough to read in a list. */
   title: string;
-  detail: string;
+  /** One line of explanation. Kept short: this is a summary, and the detail
+   * lives in the deliverables below it. */
+  detail?: string;
+  /** The deliverables involved, as separate items. Joining these into one
+   * sentence produced a wall of text, because a quote's deliverables are
+   * often written as whole descriptive sentences rather than short names. */
+  items?: string[];
   severity: "high" | "medium" | "low";
 }
 
@@ -154,7 +160,7 @@ export function frictionPoints(
   if (overdue.length > 0) {
     out.push({
       title: `${overdue.length} deliverable${overdue.length === 1 ? "" : "s"} past the date`,
-      detail: overdue.map((d) => d.name).join(", "),
+      items: overdue.map((d) => d.name),
       severity: "high",
     });
   }
@@ -181,8 +187,9 @@ export function frictionPoints(
   const unbroken = project.deliverables.filter((d) => !d.done && d.steps.length === 0);
   if (unbroken.length > 0 && project.deliverables.length > 0) {
     out.push({
-      title: `${unbroken.length} deliverable${unbroken.length === 1 ? "" : "s"} with no steps yet`,
-      detail: unbroken.map((d) => d.name).join(", "),
+      title: `${unbroken.length} deliverable${unbroken.length === 1 ? "" : "s"} not broken down yet`,
+      detail: "Open one and use Break this down to turn it into steps.",
+      items: unbroken.map((d) => d.name),
       severity: "low",
     });
   }
@@ -257,4 +264,19 @@ export function prioritize(
       return { projectId: project.id, score, reason, pace: current, completion, nextDeadline: next };
     })
     .sort((a, b) => b.score - a.score);
+}
+
+/**
+ * Shortens a deliverable name for a list.
+ *
+ * Quote deliverables are written for a client to read, so they often arrive
+ * as a full sentence: a name, a comma, then everything it includes. The
+ * leading clause before the first comma is nearly always the actual name, so
+ * that is what gets shown, with a length cap for the ones that aren't.
+ */
+export function shortName(name: string, max = 60): string {
+  const lead = name.split(/,|—|\s-\s/)[0].trim();
+  const candidate = lead.length >= 8 ? lead : name.trim();
+  // Trimmed to max including the ellipsis, so the cap means what it says.
+  return candidate.length > max ? `${candidate.slice(0, max - 3).trimEnd()}...` : candidate;
 }

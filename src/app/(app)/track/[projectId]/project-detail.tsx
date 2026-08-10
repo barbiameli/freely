@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CalendarDays, Send, Trash2 } from "lucide-react";
+import { CalendarDays, Send, Trash2 } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ import { Chip } from "@/components/ui/chip";
 import { TimelineBar } from "@/components/track/timeline-bar";
 import { DeliverableItem, type DeliverableView } from "@/components/track/deliverable-item";
 import { FlagsPanel } from "@/components/track/flags-panel";
+import { FrictionPanel } from "@/components/track/friction-panel";
 import {
   updateProjectAction,
   addDeliverableAction,
@@ -25,6 +26,7 @@ import {
   pace,
   upcomingDeadlines,
   frictionPoints,
+  shortName,
   type HealthProject,
 } from "@/lib/project-health";
 import { formatDay, relativeDay } from "@/lib/schedule";
@@ -66,12 +68,6 @@ const PACE_STYLE: Record<string, string> = {
   slipping: "text-coral",
   behind: "text-overdue",
   unscheduled: "text-text-muted",
-};
-
-const SEVERITY_STYLE: Record<string, string> = {
-  high: "text-overdue",
-  medium: "text-coral",
-  low: "text-text-muted",
 };
 
 /** Turns the serialized project into the shape the health rules want. Dates
@@ -346,24 +342,7 @@ export function ProjectDetail({
           </Card>
         )}
 
-        {friction.length > 0 && (
-          <Card>
-            <div className="flex items-center gap-2 mb-2.5">
-              <AlertTriangle size={14} className="text-coral" />
-              <Label>Worth your attention</Label>
-            </div>
-            <div className="flex flex-col gap-2.5">
-              {friction.map((f) => (
-                <div key={f.title}>
-                  <div className={`text-[13px] font-semibold ${SEVERITY_STYLE[f.severity]}`}>
-                    {f.title}
-                  </div>
-                  <div className="text-[12px] text-text-muted leading-snug">{f.detail}</div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        )}
+        <FrictionPanel friction={friction} />
 
         {deadlines.length > 0 && (
           <Card>
@@ -376,7 +355,9 @@ export function ProjectDetail({
                   onClick={() => setOpenId(d.deliverableId)}
                   className="flex items-baseline justify-between gap-3 text-left bg-none border-none cursor-pointer p-0"
                 >
-                  <span className="text-[13px] text-ink truncate">{d.name}</span>
+                  <span className="text-[13px] text-ink truncate" title={d.name}>
+                    {shortName(d.name)}
+                  </span>
                   <span
                     className={`text-[11.5px] shrink-0 ${
                       d.overdue ? "text-overdue font-semibold" : "text-text-muted"
