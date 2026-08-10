@@ -46,7 +46,7 @@ export function InviteForm({ token, presetEmail }: { token: string; presetEmail:
       <input
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        placeholder="you@studio.com"
+        placeholder={t.auth.emailPlaceholder}
         readOnly={Boolean(presetEmail)}
         className="w-full font-body text-body text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
       />
@@ -63,7 +63,7 @@ export function InviteForm({ token, presetEmail }: { token: string; presetEmail:
         disabled={loading || !email || password.length < 8}
         className="justify-center mt-1"
       >
-        {loading ? "Joining..." : "Join the team"}
+        {loading ? t.auth.joining : t.auth.joinTheTeam}
       </Button>
     </form>
   );

@@ -397,6 +397,23 @@ export const en = {
     yourFullName: "Your full name",
     studioOptional: "Studio or business name (optional)",
     setUpStudio: "Set up your studio account.",
+
+    emailPlaceholder: "you@studio.com",
+    signInAction: "Sign in",
+    signingIn: "Signing in...",
+    or: "or",
+    continueWithGoogle: "Continue with Google",
+    firstTimeHere: "First time here?",
+    createYourAccount: "Create your account",
+    createAccount: "Create account",
+    creatingAccount: "Creating account...",
+    justEnough: "That's all we ask for now, just enough to get you in.",
+    accountCreated: "Account created, sign in below.",
+    joinTheTeam: "Join the team",
+    joining: "Joining...",
+    inviteInvalid:
+      "This invite link is invalid or has already been used, ask whoever sent it for a new one.",
+    invitedToJoin: "You've been invited to join {team}. Set a password to join.",
   },
 
   onboarding: {
@@ -409,6 +426,33 @@ export const en = {
     storyPlaceholder: "How the studio started, what you're known for, values that should come through in quotes...",
     nameItOptional: "Name it (optional)",
     pasteLink: "Paste a link, then press enter",
+
+    intro:
+      "A few quick questions so Freely has real context before your first quote. Everything here can be changed later in Memory.",
+
+    referencesBody:
+      "The biggest thing that makes a quote sound like you. Add a CV, portfolio link, past quote, or anything showing your experience.",
+    files: "Files",
+    links: "Links",
+    saveLink: "Save link",
+    referencesSkipWarning:
+      "Quotes will read more generic until you add some of this. You can always do it later in Memory.",
+
+    brandingBody:
+      "Upload a brand guide and/or logo so your quotes look like your studio. Both optional.",
+    brandGuidelines: "Brand guidelines",
+    logo: "Logo",
+    dragLogo: "Drag a logo, or click to upload",
+    logoRequirements: "PNG with a transparent background, at least 200×200px.",
+    brandingSkipWarning:
+      "Client-facing pages will use Freely's default look until you add this. You can always do it later in Memory.",
+
+    memorySkipWarning:
+      "Quotes may be less accurate until you fill this in. You can always add it later in Memory.",
+
+    skipThisStep: "Skip this step",
+    skipAnyway: "Skip anyway",
+    finishSetup: "Finish setup",
   },
 
   marketing: {

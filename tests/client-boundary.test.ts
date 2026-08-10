@@ -70,34 +70,64 @@ describe("client-only hooks stay inside client components", () => {
   });
 });
 
-describe("the marketing page reads every string from the dictionary", () => {
+describe("the pages outside the app shell read every string from the dictionary", () => {
   /**
-   * The page at "/" is the one screen a Spanish speaker sees before they have
-   * an account, and it spent a while half translated: two strings came from
-   * the dictionary and the rest were English literals in the JSX. Nothing
-   * failed, because a hardcoded string is valid TypeScript.
+   * Marketing, sign in, sign up and onboarding are the screens someone meets
+   * before they have chosen a language, and they were the last to be
+   * translated. Each was half done: the headings came from the dictionary and
+   * the buttons and helper text underneath were English literals, so a Spanish
+   * visitor got a Spanish title above an English form. Nothing failed, because
+   * a hardcoded string is valid TypeScript.
    *
-   * This reads the rendered text out of the JSX and fails on any of it that is
-   * a literal. Text belongs in en.ts and es.ts.
+   * Checking only marketing.tsx is what let the onboarding ones through, so
+   * this covers all four areas. It reads the text out of the JSX and fails on
+   * any of it that is a literal.
+   *
+   * The rest of the app is not covered yet: those screens sit behind the
+   * language switcher and are translated, but they have not been swept, so
+   * turning this on for src/ wholesale would fail on a backlog rather than on
+   * a regression.
    */
-  it("has no hardcoded text between JSX tags", () => {
-    const source = stripComments(readFileSync("src/app/marketing.tsx", "utf8"));
+  const areas = [
+    "src/app/marketing.tsx",
+    "src/app/(auth)",
+    "src/app/(onboarding)",
+  ];
 
-    // Text sitting directly between tags: >Log in<. Braces are excluded, so
-    // >{t.marketing.logIn}< does not match, and neither does nesting.
-    // exec in a loop rather than matchAll, whose iterator needs a newer
-    // compile target than this project uses.
-    const pattern = />([^<>{}]*[A-Za-z]{3,}[^<>{}]*)</g;
-    const literals: string[] = [];
-    let match: RegExpExecArray | null;
-    while ((match = pattern.exec(source)) !== null) {
-      const text = match[1].trim();
-      if (text) literals.push(text);
-    }
+  const files = areas.flatMap((area) =>
+    area.endsWith(".tsx") ? [area] : sourceFiles(area).filter((f) => f.endsWith(".tsx")),
+  );
 
-    expect(
-      literals,
-      `Hardcoded text on the marketing page. Move it into en.ts and es.ts:\n${literals.join("\n")}`,
-    ).toEqual([]);
+  it("finds the files to check", () => {
+    expect(files.length).toBeGreaterThanOrEqual(6);
   });
+
+  for (const path of files) {
+    it(`${path} has no hardcoded text between JSX tags`, () => {
+      const source = stripComments(readFileSync(path, "utf8"));
+
+      // Text sitting directly between tags: >Log in<. Braces are excluded, so
+      // >{t.marketing.logIn}< does not match, and neither does nesting.
+      // exec in a loop rather than matchAll, whose iterator needs a newer
+      // compile target than this project uses.
+      const pattern = />([^<>{}]*[A-Za-z]{3,}[^<>{}]*)</g;
+      const literals: string[] = [];
+      let match: RegExpExecArray | null;
+      while ((match = pattern.exec(source)) !== null) {
+        const text = match[1].trim();
+        // A generic spanning a line break looks like text between tags:
+        // `Dispatch<SetStateAction<string | null>>` leaves `;` and fragments
+        // behind. Filtering on code punctuation rather than on length, so a
+        // one-word label like "Files" is still caught.
+        const looksLikeCode =
+          /[;{}|]/.test(text) || text.startsWith(")") || text.endsWith("(");
+        if (text && !looksLikeCode) literals.push(text);
+      }
+
+      expect(
+        literals,
+        `Hardcoded text. Move it into en.ts and es.ts:\n${literals.join("\n")}`,
+      ).toEqual([]);
+    });
+  }
 });

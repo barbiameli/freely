@@ -48,20 +48,20 @@ export default function SignInPage() {
             name="email"
             value={email}
             onChange={setEmail}
-            placeholder="you@studio.com"
+            placeholder={t.auth.emailPlaceholder}
           />
           <input type="hidden" />
           <TextFieldPassword value={password} onChange={setPassword} />
           {error && <div className="text-overdue text-xs">{error}</div>}
           <Button type="submit" disabled={loading || !email || !password} className="justify-center mt-1">
-            {loading ? "Signing in..." : "Sign in"}
+            {loading ? t.auth.signingIn : t.auth.signInAction}
           </Button>
         </form>
         {process.env.NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED === "true" && (
           <>
             <div className="flex items-center gap-3 my-4">
               <div className="flex-1 h-px bg-line" />
-              <span className="text-xs text-text-muted">or</span>
+              <span className="text-xs text-text-muted">{t.auth.or}</span>
               <div className="flex-1 h-px bg-line" />
             </div>
             <Button
@@ -70,14 +70,14 @@ export default function SignInPage() {
               className="w-full justify-center"
               onClick={() => signIn("google", { callbackUrl: "/quote" })}
             >
-              Continue with Google
+              {t.auth.continueWithGoogle}
             </Button>
           </>
         )}
         <p className="text-xs text-text-muted mt-5">
-          First time here?{" "}
+          {t.auth.firstTimeHere}{" "}
           <Link href="/signup" className="text-violet font-semibold">
-            Create your account
+            {t.auth.createYourAccount}
           </Link>
         </p>
       </Card>

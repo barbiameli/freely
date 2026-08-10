@@ -38,7 +38,7 @@ export function SignUpForm() {
     const signInResult = await signIn("credentials", { email, password, redirect: false });
     setLoading(false);
     if (signInResult?.error) {
-      setError("Account created, sign in below.");
+      setError(t.auth.accountCreated);
       router.push("/signin");
       return;
     }
@@ -63,7 +63,7 @@ export function SignUpForm() {
       <input
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        placeholder="you@studio.com"
+        placeholder={t.auth.emailPlaceholder}
         className="w-full font-body text-body text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
       />
       <input
@@ -74,7 +74,7 @@ export function SignUpForm() {
         className="w-full font-body text-body text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
       />
       <p className="text-caption text-text-muted -mt-1">
-        That&apos;s all we ask for now, just enough to get you in.
+        {t.auth.justEnough}
       </p>
       {error && <div className="text-overdue text-xs">{error}</div>}
       <Button
@@ -82,7 +82,7 @@ export function SignUpForm() {
         disabled={loading || !name.trim() || !email || password.length < 8}
         className="justify-center mt-1"
       >
-        {loading ? "Creating account..." : "Create account"}
+        {loading ? t.auth.creatingAccount : t.auth.createAccount}
       </Button>
     </form>
   );

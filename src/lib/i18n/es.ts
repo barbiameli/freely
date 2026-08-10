@@ -398,6 +398,23 @@ export const es: Dictionary = {
     yourFullName: "Tu nombre completo",
     studioOptional: "Nombre del estudio o negocio (opcional)",
     setUpStudio: "Crea la cuenta de tu estudio.",
+
+    emailPlaceholder: "tu@estudio.com",
+    signInAction: "Entrar",
+    signingIn: "Entrando...",
+    or: "o",
+    continueWithGoogle: "Continuar con Google",
+    firstTimeHere: "¿Primera vez por aquí?",
+    createYourAccount: "Crea tu cuenta",
+    createAccount: "Crear cuenta",
+    creatingAccount: "Creando la cuenta...",
+    justEnough: "Con esto basta para empezar.",
+    accountCreated: "Cuenta creada, entra aquí abajo.",
+    joinTheTeam: "Unirte al equipo",
+    joining: "Uniéndote...",
+    inviteInvalid:
+      "Este enlace de invitación no vale o ya se ha usado. Pídele otro a quien te lo mandó.",
+    invitedToJoin: "Te han invitado a unirte a {team}. Pon una contraseña para entrar.",
   },
 
   onboarding: {
@@ -410,6 +427,33 @@ export const es: Dictionary = {
     storyPlaceholder: "Cómo empezaste, por qué te conocen, qué valores deberían notarse en tus presupuestos...",
     nameItOptional: "Ponle nombre (opcional)",
     pasteLink: "Pega un enlace y pulsa enter",
+
+    intro:
+      "Unas preguntas rápidas para que Freely tenga contexto real antes de tu primer presupuesto. Todo esto se puede cambiar luego en Memoria.",
+
+    referencesBody:
+      "Es lo que más hace que un presupuesto suene a ti. Añade un CV, un enlace a tu portfolio, un presupuesto anterior o cualquier cosa que enseñe tu experiencia.",
+    files: "Archivos",
+    links: "Enlaces",
+    saveLink: "Guardar enlace",
+    referencesSkipWarning:
+      "Los presupuestos van a salir más genéricos hasta que añadas algo de esto. Puedes hacerlo más tarde en Memoria.",
+
+    brandingBody:
+      "Sube tu manual de marca y tu logo para que los presupuestos tengan la cara de tu estudio. Las dos cosas son opcionales.",
+    brandGuidelines: "Manual de marca",
+    logo: "Logo",
+    dragLogo: "Arrastra un logo, o haz clic para subirlo",
+    logoRequirements: "PNG con fondo transparente, mínimo 200×200px.",
+    brandingSkipWarning:
+      "Las páginas que ve el cliente van a salir con el aspecto por defecto de Freely hasta que subas esto. Puedes hacerlo más tarde en Memoria.",
+
+    memorySkipWarning:
+      "Los presupuestos pueden salir menos afinados hasta que rellenes esto. Puedes añadirlo más tarde en Memoria.",
+
+    skipThisStep: "Saltar este paso",
+    skipAnyway: "Saltar igualmente",
+    finishSetup: "Terminar",
   },
 
   marketing: {

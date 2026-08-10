@@ -174,7 +174,7 @@ export function OnboardingForm() {
             onClick={goNext}
             className="justify-center"
           >
-            Continue
+            {t.common.continue}
           </Button>
         </>
       ) : onReferencesStep ? (
@@ -323,15 +323,14 @@ function ReferencesStep({
       <div>
         <h2 className="font-display italic text-2xl text-coral m-0">{t.onboarding.showUs}</h2>
         <p className="text-slate text-small mt-1.5">
-          The biggest thing that makes a quote sound like <em>you</em>, not a template. Add a CV,
-          portfolio link, past quote, or anything showing your experience.
+          {t.onboarding.referencesBody}
         </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-paper rounded-lg p-3.5 border border-dashed border-line">
           <div className="flex items-center gap-1.5 text-caption font-bold text-slate uppercase tracking-wide mb-2.5">
-            <FileText size={12} /> Files
+            <FileText size={12} /> {t.onboarding.files}
           </div>
           <DropZone
             onFile={handleFileUpload}
@@ -362,7 +361,7 @@ function ReferencesStep({
 
         <div className="bg-paper rounded-lg p-3.5 border border-dashed border-line">
           <div className="flex items-center gap-1.5 text-caption font-bold text-slate uppercase tracking-wide mb-2.5">
-            <Link2 size={12} /> Links
+            <Link2 size={12} /> {t.onboarding.links}
           </div>
           <form
             onSubmit={(e) => {
@@ -388,7 +387,7 @@ function ReferencesStep({
               disabled={!canAddLink}
               className="font-body font-bold text-small text-violet text-left disabled:opacity-40 disabled:cursor-default bg-none border-none cursor-pointer p-0"
             >
-              {uploading === "link" ? "Saving..." : "Save link"}
+              {uploading === "link" ? t.common.saving : t.onboarding.saveLink}
             </button>
           </form>
           <div className="flex flex-col gap-1.5">
@@ -414,15 +413,14 @@ function ReferencesStep({
         <div className="flex items-start gap-2 bg-coral-tint rounded-lg px-3.5 py-3 text-small text-overdue">
           <TriangleAlert size={15} className="shrink-0 mt-0.5" />
           <span>
-            Quotes will read more generic until you add some of this. You can always do it later
-            in Memory.
+            {t.onboarding.referencesSkipWarning}
           </span>
         </div>
       )}
 
       <div className="flex justify-between items-center">
         <Button variant="ghost" icon={ChevronLeft} onClick={onBack}>
-          Back
+          {t.common.back}
         </Button>
         <div className="flex items-center gap-4">
           {hasContent ? (
@@ -441,11 +439,11 @@ function ReferencesStep({
               }}
               className="font-body font-semibold text-small text-slate bg-none border-none cursor-pointer p-0"
             >
-              {showSkipWarning ? "Skip anyway" : "Skip this step"}
+              {showSkipWarning ? t.onboarding.skipAnyway : t.onboarding.skipThisStep}
             </button>
           )}
           <Button icon={ArrowRight} onClick={onContinue}>
-            {isLast ? "Finish setup" : "Continue"}
+            {isLast ? t.onboarding.finishSetup : t.common.continue}
           </Button>
         </div>
       </div>
@@ -545,14 +543,14 @@ function BrandingStep({
       <div>
         <h2 className="font-display italic text-2xl text-coral m-0">{t.onboarding.gotGuidelines}</h2>
         <p className="text-slate text-small mt-1.5">
-          Upload a brand guide and/or logo so your quotes look like your studio. Both optional.
+          {t.onboarding.brandingBody}
         </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-paper rounded-lg p-3.5 border border-dashed border-line">
           <div className="flex items-center gap-1.5 text-caption font-bold text-slate uppercase tracking-wide mb-2.5">
-            <FileText size={12} /> Brand guidelines
+            <FileText size={12} /> {t.onboarding.brandGuidelines}
           </div>
           <DropZone
             onFile={handleGuideUpload}
@@ -586,11 +584,11 @@ function BrandingStep({
 
         <div className="bg-paper rounded-lg p-3.5 border border-dashed border-line">
           <div className="flex items-center gap-1.5 text-caption font-bold text-slate uppercase tracking-wide mb-2.5">
-            <Upload size={12} /> Logo
+            <Upload size={12} /> {t.onboarding.logo}
           </div>
           {logo ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logo} alt="Logo" className="h-9 mb-2" />
+            <img src={logo} alt={t.onboarding.logo} className="h-9 mb-2" />
           ) : (
             <DropZone
               onFile={handleLogoUpload}
@@ -599,12 +597,12 @@ function BrandingStep({
             >
               <span className="flex items-center gap-1.5 font-body font-bold text-small text-violet">
                 <Upload size={12} />
-                Drag a logo, or click to upload
+                {t.onboarding.dragLogo}
               </span>
             </DropZone>
           )}
           <div className="text-caption text-text-muted">
-            PNG with a transparent background, at least 200×200px.
+            {t.onboarding.logoRequirements}
           </div>
           {logoError && <div className="text-overdue text-caption mt-1">{logoError}</div>}
         </div>
@@ -614,15 +612,14 @@ function BrandingStep({
         <div className="flex items-start gap-2 bg-coral-tint rounded-lg px-3.5 py-3 text-small text-overdue">
           <TriangleAlert size={15} className="shrink-0 mt-0.5" />
           <span>
-            Client-facing pages will use Freely&apos;s default look until you add this. You can
-            always do it later in Memory.
+            {t.onboarding.brandingSkipWarning}
           </span>
         </div>
       )}
 
       <div className="flex justify-between items-center">
         <Button variant="ghost" icon={ChevronLeft} onClick={onBack}>
-          Back
+          {t.common.back}
         </Button>
         <div className="flex items-center gap-4">
           {hasContent ? (
@@ -639,11 +636,11 @@ function BrandingStep({
               }}
               className="font-body font-semibold text-small text-slate bg-none border-none cursor-pointer p-0"
             >
-              {showSkipWarning ? "Skip anyway" : "Skip this step"}
+              {showSkipWarning ? t.onboarding.skipAnyway : t.onboarding.skipThisStep}
             </button>
           )}
           <Button icon={ArrowRight} onClick={onContinue}>
-            {isLast ? "Finish setup" : "Continue"}
+            {isLast ? t.onboarding.finishSetup : t.common.continue}
           </Button>
         </div>
       </div>
@@ -677,6 +674,7 @@ function MemoryStep({
   error: string;
 }) {
   const [showSkipWarning, setShowSkipWarning] = useState(false);
+  const t = useT();
 
   return (
     <div className="flex flex-col gap-4">
@@ -701,15 +699,14 @@ function MemoryStep({
         <div className="flex items-start gap-2 bg-coral-tint rounded-lg px-3.5 py-3 text-small text-overdue">
           <TriangleAlert size={15} className="shrink-0 mt-0.5" />
           <span>
-            Quotes may be less accurate until you fill this in. You can always add it later in
-            Memory.
+            {t.onboarding.memorySkipWarning}
           </span>
         </div>
       )}
 
       <div className="flex justify-between items-center">
         <Button variant="ghost" icon={ChevronLeft} disabled={pending} onClick={onBack}>
-          Back
+          {t.common.back}
         </Button>
         <div className="flex items-center gap-4">
           <button
