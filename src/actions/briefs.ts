@@ -521,3 +521,30 @@ function sanitizeExtrasInput(extras: BriefExtras): BriefExtras {
       : {}),
   };
 }
+
+/**
+ * Deletes a quote.
+ *
+ * Only ever a draft: once a quote is in Track there is a project hanging off
+ * it, and deleting the quote would take the tracked work with it. Those are
+ * deleted from Track instead.
+ */
+export async function deleteBriefAction(briefId: string): Promise<ActionResult<undefined>> {
+  const user = await requireFullUser();
+  const brief = await prisma.brief.findFirst({
+    where: { id: briefId, ...teamScopeWhere(user) },
+    select: { id: true, status: true, project: { select: { id: true } } },
+  });
+  if (!brief) return { ok: false, error: "That quote no longer exists." };
+  if (brief.status === "TRACKED" || brief.project) {
+    return {
+      ok: false,
+      error: "That quote is being tracked as a project. Delete it from Track instead.",
+    };
+  }
+
+  await prisma.brief.delete({ where: { id: brief.id } });
+  revalidatePath("/quote");
+  revalidatePath("/quote/all");
+  return { ok: true, data: undefined };
+}

@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DocumentPreview, type BriefSummary } from "@/components/brief-card";
 import { currencySymbol } from "@/lib/currencies";
 import { addBriefToTrackAction } from "@/actions/briefs";
+import { DeleteBriefButton } from "@/components/delete-brief-button";
 
 /**
  * Past quotes, above the wizard.
@@ -108,7 +109,10 @@ function Strip({ briefs }: { briefs: BriefSummary[] }) {
             </Link>
             <div className="flex items-baseline justify-between gap-2 mt-1">
               <span className="text-[12px] text-text-muted">{money(brief)}</span>
-              <TrackLink brief={brief} />
+              <div className="flex items-center gap-2.5">
+                <TrackLink brief={brief} />
+                <DeleteBriefButton brief={brief} />
+              </div>
             </div>
           </div>
         ))}

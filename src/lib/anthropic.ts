@@ -410,8 +410,6 @@ export async function generateBriefFromDraft(
 ): Promise<GeneratedBrief> {
   const system = buildSystemPrompt(memory);
   const user = buildGenerateUserPrompt(draft, pricingHistory);
-  // No pricing history to anchor to → let Claude research market rates
-  // online before it commits to a number.
   // Research the market when there is nothing of their own to anchor to,
   // either because there is no history or because no rate was given.
   const text = await callClaude(system, user, {
@@ -627,4 +625,114 @@ export async function refineBrief(
   const user = buildRefineUserPrompt(current, refinePrompt);
   const text = await callClaude(system, user);
   return parseBriefResponse(text);
+}
+
+
+/* ------------------------------------------------------------------ */
+/* Track: breaking a deliverable into work                             */
+/* ------------------------------------------------------------------ */
+
+export const stepSchema = z.object({
+  name: z.string().min(1),
+  /** Rough hours. The model is asked for something defensible rather than a
+   * round number, and 0 is allowed when it genuinely cannot say. */
+  estimateHours: z.number().min(0).max(200),
+});
+
+export const flagSchema = z.object({
+  question: z.string().min(1),
+  reason: z.string().min(1),
+  kind: z.enum(["BLOCKER", "ASSUMPTION", "WORTH_ASKING"]),
+});
+
+export const breakdownSchema = z.object({
+  /** One line on what this deliverable actually means here. */
+  summary: z.string().min(1),
+  steps: z.array(stepSchema).min(1).max(12),
+  flags: z.array(flagSchema).max(5),
+});
+
+export type DeliverableBreakdown = z.infer<typeof breakdownSchema>;
+
+export interface BreakdownInput {
+  projectTitle: string;
+  client: string;
+  /** The deliverable being broken down. */
+  deliverable: string;
+  /** The other deliverables, so steps do not duplicate work that belongs
+   * elsewhere in the project. */
+  siblingDeliverables: string[];
+  /** The quote's scope and timeline, which is the only description of the
+   * project the model has. */
+  scope?: string;
+  timeline?: string;
+  /** Hours budgeted for the whole project, so estimates stay in proportion
+   * to what was actually sold. */
+  projectHours?: number;
+}
+
+export function buildBreakdownPrompt(input: BreakdownInput): string {
+  const parts = [
+    `Project: ${input.projectTitle}`,
+    `Client: ${input.client}`,
+    input.scope ? `Scope of the project:\n${input.scope}` : "",
+    input.timeline ? `Timeline:\n${input.timeline}` : "",
+    input.siblingDeliverables.length
+      ? `All deliverables on this project:\n${input.siblingDeliverables.map((d) => `- ${d}`).join("\n")}`
+      : "",
+    input.projectHours
+      ? `The whole project was quoted at ${input.projectHours} hours across ${
+          input.siblingDeliverables.length || 1
+        } deliverables, so keep your estimates in proportion to that.`
+      : "",
+    "",
+    `Break this one deliverable into the actual steps of doing it: "${input.deliverable}"`,
+    "",
+    'Rules for the steps. Each step is something a person can sit down and start, phrased as an action: "Audit the existing type styles and list every size in use", not "Typography". Anything that just renames the deliverable is useless, so no "Set up the foundations" or "Build the components". Put them in the order they would actually be done, including the unglamorous parts (naming, file setup, handover notes, a review round with the client) that get forgotten when a deliverable is written as one line in a quote. Between 4 and 10 steps. Give each an hours estimate that a freelancer would recognise as realistic, and use 0 only when the step genuinely cannot be estimated.',
+    "",
+    'Rules for the flags. These are things worth raising about THIS deliverable specifically, before or while doing it: a gap in the brief, an assumption being made, or a dependency that will stall the work. Do not include generic project-management advice, and do not repeat anything already answered by the scope. Between 0 and 4, and zero is a fine answer when the brief genuinely covers it. Mark each one BLOCKER if the work cannot be done properly until it is answered, ASSUMPTION if the work can proceed on a stated assumption, or WORTH_ASKING otherwise.',
+    "",
+    'Respond with ONLY valid JSON, no markdown fences, no commentary: {"summary": string, "steps": [{"name": string, "estimateHours": number}], "flags": [{"question": string, "reason": string, "kind": "BLOCKER" | "ASSUMPTION" | "WORTH_ASKING"}]}. "summary" is one sentence on what this deliverable means on this particular project, not a definition of the term.',
+  ];
+  return parts.filter(Boolean).join("\n");
+}
+
+/**
+ * Turns a deliverable into steps and flags.
+ *
+ * A quote's deliverables are written to be read by a client ("Foundations in
+ * Figma"), which makes them useless as a to-do list. This is the translation
+ * from what was sold to what has to be done, and it is deliberately per
+ * deliverable rather than for the whole project at once: a prompt asked to
+ * break down six things at once gives six shallow answers.
+ */
+export async function breakDownDeliverable(
+  memory: MemoryContext,
+  input: BreakdownInput
+): Promise<DeliverableBreakdown> {
+  const system = [
+    buildSystemPrompt(memory),
+    "You are now planning delivery, not selling. Write for the freelancer doing the work, not for the client: no pitch language, no reassurance, just what has to happen.",
+  ].join("\n\n");
+  const text = await callClaude(system, buildBreakdownPrompt(input));
+  return parseBreakdownResponse(text);
+}
+
+export function parseBreakdownResponse(text: string): DeliverableBreakdown {
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  const cleaned = (jsonMatch ? jsonMatch[0] : text)
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch {
+    throw new Error("The AI did not return valid JSON for the breakdown.");
+  }
+  const result = breakdownSchema.safeParse(parsed);
+  if (!result.success) {
+    throw new Error(`Breakdown failed validation: ${result.error.message}`);
+  }
+  return result.data;
 }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Check } from "lucide-react";
 import { currencySymbol } from "@/lib/currencies";
 import { addBriefToTrackAction } from "@/actions/briefs";
+import { DeleteBriefButton } from "@/components/delete-brief-button";
 
 export interface BriefSummary {
   id: string;
@@ -95,9 +96,12 @@ export function BriefCard({ brief }: { brief: BriefSummary }) {
           {currencySymbol(brief.currency)}
           {brief.price.toLocaleString()}
         </span>
-        <span className="text-[10.5px] uppercase tracking-wide text-text-muted">
-          {tracked ? "Tracked" : brief.published ? "Published" : "Draft"}
-        </span>
+        <div className="flex items-center gap-2.5">
+          <span className="text-[10.5px] uppercase tracking-wide text-text-muted">
+            {tracked ? "Tracked" : brief.published ? "Published" : "Draft"}
+          </span>
+          <DeleteBriefButton brief={brief} />
+        </div>
       </div>
 
       {tracked ? (
