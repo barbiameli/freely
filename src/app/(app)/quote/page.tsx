@@ -12,13 +12,18 @@ import { QuoteWizard } from "./quote-wizard";
 // functions), so it belongs on the page that invokes the action instead.
 export const maxDuration = 60;
 
-export default async function QuotePage() {
+export default async function QuotePage({
+  searchParams,
+}: {
+  searchParams?: { tab?: string };
+}) {
   const user = await requireFullUser();
   const scope = teamScopeWhere(user);
   const briefs = await prisma.brief.findMany({
     where: scope,
+    // No limit: the All quotes tab is the full list now, so the page that
+    // feeds it has to load the full list.
     orderBy: { createdAt: "desc" },
-    take: 12,
     select: {
       id: true,
       title: true,
@@ -35,6 +40,7 @@ export default async function QuotePage() {
 
   return (
     <QuoteWizard
+      initialTab={searchParams?.tab === "all" ? "all" : "new"}
       recentBriefs={briefs.map((b) => ({
         id: b.id,
         title: b.title,

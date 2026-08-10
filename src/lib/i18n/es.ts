@@ -67,9 +67,10 @@ export const es: Dictionary = {
     titleStep2: "¿Cómo se lo enviamos?",
     subtitleStep2: "Qué aspecto tiene el presupuesto y qué lleva dentro.",
 
-    pickUpWhereYouLeftOff: "Sigue donde lo dejaste",
-    everyQuote: "Todos tus presupuestos.",
     newQuote: "Nuevo presupuesto",
+    allQuotes: "Tus presupuestos",
+    count: "{count} presupuestos.",
+    countWithDrafts: "{count} presupuestos, {drafts} sin pasar a Seguimiento.",
     nothingHereYet: "Aquí todavía no hay nada.",
     makeYourFirst: "Crea tu primer presupuesto",
     sendToTrack: "Pasar a Seguimiento",

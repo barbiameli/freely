@@ -57,9 +57,12 @@ export const en = {
     titleStep2: "How should we package it?",
     subtitleStep2: "How the finished quote looks and what it includes.",
 
-    pickUpWhereYouLeftOff: "Pick up where you left off",
-    everyQuote: "Every quote you've made.",
     newQuote: "New quote",
+    allQuotes: "All quotes",
+    // Whole sentences rather than a stitched-together count, since the plural
+    // rule and the word order both change between languages.
+    count: "{count} quotes.",
+    countWithDrafts: "{count} quotes, {drafts} not yet in Track.",
     nothingHereYet: "Nothing here yet.",
     makeYourFirst: "Make your first quote",
     sendToTrack: "Send to Track",

@@ -43,7 +43,8 @@ import {
 } from "@/lib/quote-prompts";
 import { readPastedText } from "@/lib/paste-text";
 import { extractFileText } from "@/lib/extract-file";
-import { BriefHistory } from "@/components/brief-history";
+import { QuoteTabs, type QuoteTab } from "@/components/quote-tabs";
+import { QuoteList } from "@/components/quote-list";
 import {
   analyzeBrandGuideAction,
   analyzeBrandGuideImageAction,
@@ -101,8 +102,11 @@ const GENERATION_STATUS_MESSAGES = [
 /** Marks a field as required or optional, as plain text. A pill here reads as
  * a chip, and chips in this interface are things you click. */
 function FieldBadge({ required }: { required?: boolean }) {
+  const t = useT();
   return (
-    <span className="text-caption text-text-muted">{required ? "Required" : "Optional"}</span>
+    <span className="text-caption text-text-muted">
+      {required ? t.common.required : t.common.optional}
+    </span>
   );
 }
 
@@ -156,6 +160,7 @@ function TemplatePreview({ id }: { id: "classic" | "editorial" | "minimal" }) {
 
 export function QuoteWizard({
   recentBriefs,
+  initialTab = "new",
   userCurrency,
   hasBrand,
   savedLocation,
@@ -163,6 +168,8 @@ export function QuoteWizard({
   savedRateUnit,
 }: {
   recentBriefs: BriefSummary[];
+  /** Which tab to open on, so /quote?tab=all lands on the list. */
+  initialTab?: QuoteTab;
   userCurrency?: string | null;
   hasBrand?: boolean;
   savedLocation?: string;
@@ -174,6 +181,7 @@ export function QuoteWizard({
   const t = useT();
   const locale = useLocale();
   const [step, setStep] = useState(0);
+  const [tab, setTab] = useState<QuoteTab>(initialTab);
   const [draft, setDraft] = useState<QuoteDraftPayload>({
     sourceText: "",
     instructions: "",
@@ -463,10 +471,18 @@ export function QuoteWizard({
 
   return (
     <>
-      {step === 0 && (
+      {step === 0 && tab === "all" && (
         <>
           <Topbar eyebrow={t.quote.eyebrowStep1} />
-          <BriefHistory briefs={recentBriefs} />
+          <QuoteTabs value={tab} onChange={setTab} count={recentBriefs.length} />
+          <QuoteList briefs={recentBriefs} onStartNew={() => setTab("new")} />
+        </>
+      )}
+
+      {step === 0 && tab === "new" && (
+        <>
+          <Topbar eyebrow={t.quote.eyebrowStep1} />
+          <QuoteTabs value={tab} onChange={setTab} count={recentBriefs.length} />
           <div>
             <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">
               {t.quote.titleStep1}
