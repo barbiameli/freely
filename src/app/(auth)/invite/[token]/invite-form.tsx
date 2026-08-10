@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { redeemInviteAction } from "@/actions/team";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/lib/i18n/context";
 
 export function InviteForm({ token, presetEmail }: { token: string; presetEmail: string | null }) {
+  const t = useT();
   const router = useRouter();
   const [email, setEmail] = useState(presetEmail ?? "");
   const [password, setPassword] = useState("");
@@ -52,7 +54,7 @@ export function InviteForm({ token, presetEmail }: { token: string; presetEmail:
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        placeholder="Password (min 8 characters)"
+        placeholder={t.auth.passwordMin}
         className="w-full font-body text-body text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
       />
       {error && <div className="text-overdue text-xs">{error}</div>}

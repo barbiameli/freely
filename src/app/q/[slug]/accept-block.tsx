@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { acceptQuoteAction } from "@/actions/acceptance";
+import { useT } from "@/lib/i18n/context";
 
 /**
  * The client-facing accept form on a published quote.
@@ -23,6 +24,7 @@ export function AcceptBlock({
   muted?: string;
   dark?: boolean;
 }) {
+  const t = useT();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [agreed, setAgreed] = useState(false);
@@ -38,7 +40,7 @@ export function AcceptBlock({
   if (done) {
     return (
       <div className="py-8" style={{ borderTop: `1px solid ${subtle}33` }}>
-        <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">Accepted</div>
+        <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{t.publicQuote.accepted}</div>
         <p className="text-body m-0">
           Accepted by <strong>{done.name}</strong> on{" "}
           {new Date(done.at).toLocaleDateString("en-GB", {
@@ -73,7 +75,7 @@ export function AcceptBlock({
 
   return (
     <div className="py-8" style={{ borderTop: `1px solid ${subtle}33` }}>
-      <div className="text-caption font-bold tracking-[0.1em] uppercase mb-1">Accept this quote</div>
+      <div className="text-caption font-bold tracking-[0.1em] uppercase mb-1">{t.publicQuote.acceptThisQuote}</div>
       <p className="text-small m-0 mb-4" style={{ color: subtle }}>
         Typing your name below and ticking the box records your acceptance of the scope, timeline
         and price set out on this page.
@@ -89,7 +91,7 @@ export function AcceptBlock({
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Your full name"
+          placeholder={t.auth.yourFullName}
           autoComplete="name"
           className={fieldClass}
           style={dark ? undefined : { borderColor: `${subtle}44` }}
@@ -97,7 +99,7 @@ export function AcceptBlock({
         <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Your email"
+          placeholder={t.auth.yourEmail}
           type="email"
           autoComplete="email"
           className={fieldClass}

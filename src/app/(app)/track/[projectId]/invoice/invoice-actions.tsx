@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createCheckoutSessionAction } from "@/actions/invoice";
+import { useT } from "@/lib/i18n/context";
 
 export function InvoiceActions({
   projectId,
@@ -16,12 +17,13 @@ export function InvoiceActions({
   existingCheckoutUrl: string | null;
   stripeConfigured: boolean;
 }) {
+  const t = useT();
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
   const [checkoutUrl, setCheckoutUrl] = useState(existingCheckoutUrl);
 
   if (invoiceStatus === "PAID") {
-    return <div className="text-success font-body font-semibold text-sm">Paid, nothing else to do.</div>;
+    return <div className="text-success font-body font-semibold text-sm">{t.invoices.paidNothingElse}</div>;
   }
 
   async function handleSend() {

@@ -84,3 +84,25 @@ describe("fill", () => {
     expect(fill("Hola {name}", {})).toBe("Hola {name}");
   });
 });
+
+describe("relative dates", () => {
+  it("reads naturally in both languages", async () => {
+    const { relativeDay, addDays } = await import("@/lib/schedule");
+    const now = new Date("2026-01-10T00:00:00Z");
+    expect(relativeDay(now, now, "en")).toBe("today");
+    expect(relativeDay(now, now, "es")).toBe("hoy");
+    // Spanish puts the count in the middle, English at the front, which is
+    // why these are whole phrases rather than a shared template.
+    expect(relativeDay(addDays(now, 3), now, "en")).toBe("in 3 days");
+    expect(relativeDay(addDays(now, 3), now, "es")).toBe("dentro de 3 días");
+    expect(relativeDay(addDays(now, -3), now, "es")).toBe("hace 3 días");
+    expect(relativeDay(addDays(now, 21), now, "es")).toBe("dentro de 3 semanas");
+  });
+
+  it("formats a date in the reader's language", async () => {
+    const { formatDay } = await import("@/lib/schedule");
+    const date = new Date("2026-03-05T00:00:00Z");
+    expect(formatDay(date, "en")).toMatch(/Mar/);
+    expect(formatDay(date, "es")).toMatch(/mar/);
+  });
+});

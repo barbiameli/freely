@@ -162,7 +162,7 @@ export function MemoryView({
             field="storyNotes"
             initial={initialStory}
             label={t.memory.studioStory}
-            placeholder="How the studio started, what you're known for, values that should come through in quotes..."
+            placeholder={t.onboarding.storyPlaceholder}
             presets={STORY_PRESETS}
             rows={4}
           />
@@ -508,13 +508,13 @@ function ReferencesCard({
             <input
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
-              placeholder="Paste a link, then press enter"
+              placeholder={t.onboarding.pasteLink}
               className="w-full font-body text-xs text-ink bg-paper border border-line rounded-lg px-2.5 py-2 outline-none"
             />
             <input
               value={linkName}
               onChange={(e) => setLinkName(e.target.value)}
-              placeholder="Name it (optional)"
+              placeholder={t.onboarding.nameItOptional}
               className="w-full font-body text-xs text-ink bg-paper border border-line rounded-lg px-2.5 py-2 outline-none"
             />
             <button

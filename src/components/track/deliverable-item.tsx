@@ -13,7 +13,7 @@ import { deliverableCompletion, shortName } from "@/lib/project-health";
 import { formatDay } from "@/lib/schedule";
 import { useAction } from "@/lib/use-action";
 import { ActionError } from "@/components/ui/action-error";
-import { useT } from "@/lib/i18n/context";
+import { useT, useLocale } from "@/lib/i18n/context";
 
 export interface StepView {
   id: string;
@@ -90,6 +90,7 @@ export function DeliverableItem({
   onToggleExpanded: () => void;
 }) {
   const t = useT();
+  const locale = useLocale();
   const { run, pending, error } = useAction();
   const [breaking, setBreaking] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -198,7 +199,7 @@ export function DeliverableItem({
                 overdue ? "text-overdue font-semibold" : "text-text-muted hover:text-slate"
               }`}
             >
-              {dueAt ? formatDay(dueAt) : t.track.setDate}
+              {dueAt ? formatDay(dueAt, locale) : t.track.setDate}
             </button>
           )}
         </div>

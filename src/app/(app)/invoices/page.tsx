@@ -8,8 +8,10 @@ import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { NewInvoiceButton } from "./new-invoice-button";
+import { serverDict } from "@/lib/i18n/server";
 
 export default async function InvoicesPage() {
+  const t = await serverDict();
   const user = await requireFullUser();
 
   const [invoices, projects] = await Promise.all([
@@ -26,7 +28,7 @@ export default async function InvoicesPage() {
       <Topbar eyebrow="Invoices" />
       <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
         <div>
-          <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">Invoices</h1>
+          <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">{t.invoices.title}</h1>
           <p className="text-slate text-lead mt-2">
             Built from a tracked project, in the same branding as its quote.
           </p>
@@ -87,7 +89,7 @@ export default async function InvoicesPage() {
       )}
 
       <Card>
-        <Label>Payment details</Label>
+        <Label>{t.invoices.paymentDetails}</Label>
         <p className="text-meta text-text-muted mt-1 mb-0">
           Freely does not store your bank details. You add them when you download an invoice, and
           they go into the PDF only. See the{" "}

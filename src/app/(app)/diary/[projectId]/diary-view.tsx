@@ -205,7 +205,7 @@ export function DiaryView({
               <p className="text-small text-slate m-0">
                 {project.diaryEntries[0]?.body || "No updates yet."}
               </p>
-              <Label>Deliverables</Label>
+              <Label>{t.track.deliverables}</Label>
               {project.deliverables.map((d) => (
                 <div key={d.id} className={`text-small ${d.done ? "text-success" : "text-slate"}`}>
                   {d.done ? "✓" : "○"} {d.name}

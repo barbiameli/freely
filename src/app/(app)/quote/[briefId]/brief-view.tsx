@@ -783,7 +783,7 @@ export function BriefView({
             </Card>
           )}
           <Card className="flex-1 overflow-y-auto">
-            <Label>Brief history</Label>
+            <Label>{t.quote.briefHistory}</Label>
             <div className="flex flex-col gap-2.5">
               {history.map((b) => (
                 <button

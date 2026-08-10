@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FreelyLogo } from "@/components/freely-logo";
+import { serverDict } from "@/lib/i18n/server";
 
 export const metadata = {
   title: "Terms and data, Freely",
@@ -25,7 +26,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  const t = await serverDict();
   return (
     <div className="min-h-screen bg-white">
       <header className="max-w-2xl mx-auto flex items-center justify-between px-5 sm:px-6 py-6">
@@ -38,7 +40,7 @@ export default function TermsPage() {
       </header>
 
       <main className="max-w-2xl mx-auto px-5 sm:px-6 pb-20">
-        <h1 className="font-display italic text-[32px] text-coral m-0">Terms and data</h1>
+        <h1 className="font-display italic text-[32px] text-coral m-0">{t.errors.termsTitle}</h1>
         <p className="text-slate text-body mt-2">
           What Freely stores, what it does not, and the terms of using it.
         </p>

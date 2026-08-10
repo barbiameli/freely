@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { dict } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,20 @@ export default async function PublicProjectPage({ params }: { params: { slug: st
   });
 
   if (!project || !project.published) notFound();
+
+  // The language of the quote this project came from, since the audience here
+  // is the client. Fetched separately: the generated Prisma client in this
+  // environment predates the column, and putting it in the include above
+  // breaks the typing of everything else in the query.
+  const quoteLanguage = project.briefId
+    ? (
+        (await prisma.brief.findUnique({
+          where: { id: project.briefId },
+          select: { id: true },
+        })) as unknown as { language?: string } | null
+      )?.language
+    : undefined;
+  const q = dict(quoteLanguage).publicPage;
 
   const latest = project.diaryEntries[0];
   const doneCount = project.deliverables.filter((d) => d.done).length;
@@ -40,7 +55,7 @@ export default async function PublicProjectPage({ params }: { params: { slug: st
               Freely
             </span>
           )}
-          <span className="font-label text-xs text-slate uppercase">Project update</span>
+          <span className="font-label text-xs text-slate uppercase">{q.projectUpdate}</span>
         </div>
         <div className="p-8 flex flex-col gap-4">
           <div>
@@ -60,7 +75,7 @@ export default async function PublicProjectPage({ params }: { params: { slug: st
           )}
 
           <div>
-            <div className="font-label text-xs text-slate uppercase mb-2">Latest update</div>
+            <div className="font-label text-xs text-slate uppercase mb-2">{q.latestUpdate}</div>
             {latest ? (
               <div className="bg-paper rounded-lg p-4">
                 <div className="font-body font-bold text-sm text-ink mb-1">{latest.title}</div>
@@ -74,7 +89,7 @@ export default async function PublicProjectPage({ params }: { params: { slug: st
                 </div>
               </div>
             ) : (
-              <p className="text-body text-slate">No updates yet.</p>
+              <p className="text-body text-slate">{q.noUpdates}</p>
             )}
           </div>
 

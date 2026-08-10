@@ -78,11 +78,11 @@ function BasicInfoCard({
       <div className="flex flex-col gap-2.5 mt-2.5">
         <div>
           <div className="text-caption text-text-muted mb-1">Name</div>
-          <TextField value={nameValue} onChange={setNameValue} placeholder="Your name" />
+          <TextField value={nameValue} onChange={setNameValue} placeholder={t.onboarding.yourName} />
         </div>
         <div>
           <div className="text-caption text-text-muted mb-1">{t.account.studioOrBusiness}</div>
-          <TextField value={studioValue} onChange={setStudioValue} placeholder="Optional" />
+          <TextField value={studioValue} onChange={setStudioValue} placeholder={t.common.optional} />
         </div>
         <div>
           <div className="text-caption text-text-muted mb-1">{t.account.email}</div>
@@ -161,7 +161,7 @@ function PasswordCard({ hasPassword }: { hasPassword: boolean }) {
             type="password"
             value={next}
             onChange={(e) => setNext(e.target.value)}
-            placeholder="Min 8 characters"
+            placeholder={t.auth.min8}
             className="w-full font-body text-body text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
           />
         </div>

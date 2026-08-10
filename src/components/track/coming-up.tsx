@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { CalendarClock, X } from "lucide-react";
 import { formatDay, relativeDay } from "@/lib/schedule";
 import { shortName, type Deadline } from "@/lib/project-health";
-import { useT } from "@/lib/i18n/context";
+import { useT, useLocale } from "@/lib/i18n/context";
 
 /**
  * What is due soon, as a note rather than a section.
@@ -26,6 +26,7 @@ export function ComingUp({
   onSelect: (deliverableId: string) => void;
 }) {
   const t = useT();
+  const locale = useLocale();
   const [shown, setShown] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
@@ -78,7 +79,7 @@ export function ComingUp({
                 d.overdue ? "text-overdue font-semibold" : "text-text-muted"
               }`}
             >
-              {formatDay(d.dueAt)} · {relativeDay(d.dueAt)}
+              {formatDay(d.dueAt, locale)} · {relativeDay(d.dueAt, new Date(), locale)}
             </div>
           </button>
         ))}

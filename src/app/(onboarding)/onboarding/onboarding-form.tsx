@@ -35,6 +35,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { DropZone } from "@/components/ui/drop-zone";
+import { useT } from "@/lib/i18n/context";
 
 type StepId = "industry" | "instructions" | "toneNotes" | "storyNotes" | "contextNotes";
 
@@ -76,6 +77,7 @@ const MEMORY_STEPS: {
 ];
 
 export function OnboardingForm() {
+  const t = useT();
   const [step, setStep] = useState(0);
   const [industry, setIndustry] = useState<string | null>(null);
   const [customIndustry, setCustomIndustry] = useState("");
@@ -162,7 +164,7 @@ export function OnboardingForm() {
             <TextField
               value={customIndustry}
               onChange={setCustomIndustry}
-              placeholder="What kind of work do you do?"
+              placeholder={t.onboarding.whatWork}
             />
           )}
           {error && <div className="text-overdue text-xs">{error}</div>}
@@ -258,6 +260,7 @@ function ReferencesStep({
   links: RefLink[];
   setLinks: Dispatch<SetStateAction<RefLink[]>>;
 }) {
+  const t = useT();
   const [linkName, setLinkName] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
   const [uploading, setUploading] = useState<"file" | "link" | null>(null);
@@ -318,7 +321,7 @@ function ReferencesStep({
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h2 className="font-display italic text-2xl text-coral m-0">Show us what you&apos;ve got</h2>
+        <h2 className="font-display italic text-2xl text-coral m-0">{t.onboarding.showUs}</h2>
         <p className="text-slate text-small mt-1.5">
           The biggest thing that makes a quote sound like <em>you</em>, not a template. Add a CV,
           portfolio link, past quote, or anything showing your experience.
@@ -371,13 +374,13 @@ function ReferencesStep({
             <input
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
-              placeholder="Paste a link, then press enter"
+              placeholder={t.onboarding.pasteLink}
               className="w-full font-body text-xs text-ink bg-white border border-line rounded-lg px-2.5 py-2 outline-none"
             />
             <input
               value={linkName}
               onChange={(e) => setLinkName(e.target.value)}
-              placeholder="Name it (optional)"
+              placeholder={t.onboarding.nameItOptional}
               className="w-full font-body text-xs text-ink bg-white border border-line rounded-lg px-2.5 py-2 outline-none"
             />
             <button
@@ -472,6 +475,7 @@ function BrandingStep({
   guideResult: BrandGuideSummary | null;
   setGuideResult: Dispatch<SetStateAction<BrandGuideSummary | null>>;
 }) {
+  const t = useT();
   const [guideUploading, setGuideUploading] = useState(false);
   const [guideError, setGuideError] = useState("");
   const [logoError, setLogoError] = useState("");
@@ -539,7 +543,7 @@ function BrandingStep({
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h2 className="font-display italic text-2xl text-coral m-0">Got brand guidelines?</h2>
+        <h2 className="font-display italic text-2xl text-coral m-0">{t.onboarding.gotGuidelines}</h2>
         <p className="text-slate text-small mt-1.5">
           Upload a brand guide and/or logo so your quotes look like your studio. Both optional.
         </p>
@@ -622,7 +626,7 @@ function BrandingStep({
         </Button>
         <div className="flex items-center gap-4">
           {hasContent ? (
-            <span className="text-small text-success font-semibold">Saved, continue whenever.</span>
+            <span className="text-small text-success font-semibold">{t.onboarding.savedContinue}</span>
           ) : (
             <button
               type="button"

@@ -276,7 +276,7 @@ export function InvoiceEditor({
               label={t.invoices.disciplines}
               value={form.fromTagline}
               onChange={(v) => set("fromTagline", v)}
-              placeholder="UX design · Product design · CRO"
+              placeholder={t.invoices.disciplines}
             />
             <Field label={t.invoices.website} value={form.fromWebsite} onChange={(v) => set("fromWebsite", v)} />
             <Field label={t.invoices.email} value={form.fromEmail} onChange={(v) => set("fromEmail", v)} />
@@ -284,7 +284,7 @@ export function InvoiceEditor({
               label="Location"
               value={form.fromAddress}
               onChange={(v) => set("fromAddress", v)}
-              placeholder="Valencia, Spain"
+              placeholder={t.onboarding.locationPlaceholder}
             />
           </div>
         </Card>
@@ -308,7 +308,7 @@ export function InvoiceEditor({
               label={t.invoices.reference}
               value={form.reference}
               onChange={(v) => set("reference", v)}
-              placeholder="INV-0001 / Client"
+              placeholder={t.invoices.reference}
             />
           </div>
         </Card>
@@ -367,7 +367,7 @@ export function InvoiceEditor({
                         )
                       )
                     }
-                    placeholder="What this covers"
+                    placeholder={t.invoices.detailOptional}
                     className="w-full font-body font-semibold text-small text-ink bg-white border border-line rounded-lg px-2.5 py-2 outline-none"
                   />
                   <textarea
@@ -410,7 +410,7 @@ export function InvoiceEditor({
                         )
                       )
                     }
-                    placeholder="Hours"
+                    placeholder={t.track.hours}
                     type="number"
                     className="w-full font-body text-small text-ink bg-white border border-line rounded-lg px-2 py-2 outline-none"
                   />
@@ -490,7 +490,7 @@ export function InvoiceEditor({
       </Card>
 
       <Card>
-        <SectionHeading>Branding</SectionHeading>
+        <SectionHeading>{t.memory.branding}</SectionHeading>
         <p className="text-meta text-text-muted mb-3">
           Defaults to whatever the matching quote used.
         </p>

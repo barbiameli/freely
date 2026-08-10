@@ -319,6 +319,9 @@ export const en = {
     extraLine: "Extra line, optional",
     shownAtFoot: "Shown at the foot of the invoice",
     rememberOnDevice: "Remember these on this device, so I do not retype them next time.",
+    summary: "Invoice summary",
+    paidNothingElse: "Paid, nothing else to do.",
+    noTrackedProjects: "No tracked projects yet.",
   },
 
   diary: {
@@ -367,6 +370,58 @@ export const en = {
     invitePlaceholder: "teammate@studio.com (optional, leave blank for a shareable link)",
   },
 
+  publicQuote: {
+    quotation: "Quotation",
+    scope: "Scope",
+    deliverables: "Deliverables",
+    timeline: "Timeline",
+    strategy: "Strategy",
+    findings: "Findings",
+    examples: "Examples",
+    investment: "Investment",
+    total: "Total",
+    acceptThisQuote: "Accept this quote",
+    accepted: "Accepted",
+    estimatedHours: "Estimated hours",
+    estimatedDays: "Estimated days",
+    perHour: "Per hour",
+    perDay: "Per day",
+  },
+
+  auth: {
+    signIn: "Sign in to your studio.",
+    yourEmail: "Your email",
+    password: "Password",
+    passwordMin: "Password (min 8 characters)",
+    min8: "Min 8 characters",
+    yourFullName: "Your full name",
+    studioOptional: "Studio or business name (optional)",
+    setUpStudio: "Set up your studio account.",
+  },
+
+  onboarding: {
+    showUs: "Show us what you've got",
+    gotGuidelines: "Got brand guidelines?",
+    savedContinue: "Saved, continue whenever.",
+    whatWork: "What kind of work do you do?",
+    yourName: "Your name",
+    locationPlaceholder: "Valencia, Spain",
+    storyPlaceholder: "How the studio started, what you're known for, values that should come through in quotes...",
+    nameItOptional: "Name it (optional)",
+    pasteLink: "Paste a link, then press enter",
+  },
+
+  marketing: {
+    howItWorks: "How it works",
+    tryIt: "Try it on your next quote.",
+  },
+
+  publicPage: {
+    latestUpdate: "Latest update",
+    noUpdates: "No updates yet.",
+    projectUpdate: "Project update",
+  },
+
   errors: {
     pageTitle: "That page didn't load.",
     pageBody: "Something went wrong on our side rather than yours. Your work is saved.",
@@ -377,6 +432,7 @@ export const en = {
     notFoundTitle: "There's nothing here.",
     notFoundBody: "This page may have been deleted, or the link may be wrong.",
     backToFreely: "Back to Freely",
+    termsTitle: "Terms and data",
   },
 } as const;
 

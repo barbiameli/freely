@@ -9,8 +9,10 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { currencySymbol } from "@/lib/currencies";
 import { InvoiceActions } from "./invoice-actions";
+import { serverDict } from "@/lib/i18n/server";
 
 export default async function InvoicePage({ params }: { params: { projectId: string } }) {
+  const t = await serverDict();
   const user = await requireFullUser();
   const project = await prisma.project.findFirst({
     where: { id: params.projectId, ...teamScopeWhere(user) },
@@ -25,7 +27,7 @@ export default async function InvoicePage({ params }: { params: { projectId: str
     <>
       <Topbar eyebrow={`Track - ${project.title} - Invoice`} />
       <div>
-        <h1 className="font-display italic text-[30px] text-coral m-0">Invoice summary</h1>
+        <h1 className="font-display italic text-[30px] text-coral m-0">{t.invoices.summary}</h1>
         <p className="text-slate text-small mt-1.5">
           {isStripeConfigured()
             ? "Send this for real payment via Stripe's hosted checkout, Freely never touches card details."

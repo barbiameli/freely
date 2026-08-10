@@ -332,6 +332,9 @@ export const es: Dictionary = {
     extraLine: "Línea extra, opcional",
     shownAtFoot: "Aparece al pie de la factura",
     rememberOnDevice: "Recordarlos en este dispositivo, para no volver a escribirlos.",
+    summary: "Resumen de la factura",
+    paidNothingElse: "Pagada, no queda nada por hacer.",
+    noTrackedProjects: "Todavía no hay proyectos en seguimiento.",
   },
 
   diary: {
@@ -380,6 +383,58 @@ export const es: Dictionary = {
     invitePlaceholder: "companero@estudio.com (opcional, déjalo vacío para un enlace)",
   },
 
+  publicQuote: {
+    quotation: "Presupuesto",
+    scope: "Alcance",
+    deliverables: "Entregables",
+    timeline: "Calendario",
+    strategy: "Estrategia",
+    findings: "Hallazgos",
+    examples: "Referencias",
+    investment: "Inversión",
+    total: "Total",
+    acceptThisQuote: "Aceptar este presupuesto",
+    accepted: "Aceptado",
+    estimatedHours: "Horas estimadas",
+    estimatedDays: "Días estimados",
+    perHour: "Por hora",
+    perDay: "Por día",
+  },
+
+  auth: {
+    signIn: "Entra en tu estudio.",
+    yourEmail: "Tu email",
+    password: "Contraseña",
+    passwordMin: "Contraseña (mínimo 8 caracteres)",
+    min8: "Mínimo 8 caracteres",
+    yourFullName: "Tu nombre completo",
+    studioOptional: "Nombre del estudio o negocio (opcional)",
+    setUpStudio: "Crea la cuenta de tu estudio.",
+  },
+
+  onboarding: {
+    showUs: "Enséñanos lo que tienes",
+    gotGuidelines: "¿Tienes manual de marca?",
+    savedContinue: "Guardado, sigue cuando quieras.",
+    whatWork: "¿A qué te dedicas?",
+    yourName: "Tu nombre",
+    locationPlaceholder: "Valencia, España",
+    storyPlaceholder: "Cómo empezó el estudio, por qué te conocen, valores que deberían notarse en los presupuestos...",
+    nameItOptional: "Ponle nombre (opcional)",
+    pasteLink: "Pega un enlace y pulsa enter",
+  },
+
+  marketing: {
+    howItWorks: "Cómo funciona",
+    tryIt: "Pruébalo en tu próximo presupuesto.",
+  },
+
+  publicPage: {
+    latestUpdate: "Última actualización",
+    noUpdates: "Todavía no hay novedades.",
+    projectUpdate: "Novedades del proyecto",
+  },
+
   errors: {
     pageTitle: "Esta página no ha cargado.",
     pageBody: "Ha fallado algo por nuestra parte, no por la tuya. Tu trabajo está guardado.",
@@ -390,5 +445,6 @@ export const es: Dictionary = {
     notFoundTitle: "Aquí no hay nada.",
     notFoundBody: "Puede que se haya eliminado esta página o que el enlace esté mal.",
     backToFreely: "Volver a Freely",
+    termsTitle: "Condiciones y datos",
   },
 };

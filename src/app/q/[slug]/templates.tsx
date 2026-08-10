@@ -4,12 +4,12 @@ import {
   describeEffort,
   parseRateUnit,
   unitsFromHours,
-  rateLabel,
   rateSuffix,
 } from "@/lib/rate-unit";
 import { TimelineView } from "@/components/timeline-view";
 import type { BriefExtras } from "@/lib/anthropic";
 import { AcceptBlock } from "./accept-block";
+import { dict } from "@/lib/i18n";
 
 interface Strategy {
   goal: string;
@@ -37,6 +37,8 @@ export interface PublicBrief {
   hourlyRate?: number | null;
   /** "HOUR" or "DAY": some freelancers quote in days. */
   rateUnit?: string | null;
+  /** The language this quote was written in, which drives the page too. */
+  language?: string | null;
   currency?: string | null;
   examples: Example[];
   extras?: BriefExtras | null;
@@ -126,6 +128,7 @@ function ExampleGallery({ examples, tint }: { examples: Example[]; tint?: string
 /** Classic — the default card look, cleaned up with real section backgrounds
  * and bullets instead of a flat scroll of text. */
 export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: BrandProps }) {
+  const q = dict(brief.language).publicQuote;
   return (
     <div className="min-h-screen bg-paper flex items-center justify-center p-3 sm:p-6">
       <div className="w-full max-w-2xl bg-white border border-line rounded-card shadow-panel overflow-hidden">
@@ -150,7 +153,7 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
 
           {brief.strategy && (
             <div className="rounded-lg p-4" style={{ background: "rgba(99,32,238,0.07)" }}>
-              <div className="font-label text-xs text-slate uppercase mb-2">Strategy</div>
+              <div className="font-label text-xs text-slate uppercase mb-2">{q.strategy}</div>
               <p className="text-body text-ink m-0 leading-relaxed font-medium">{brief.strategy.goal}</p>
               {brief.strategy.findings.length > 0 && (
                 <ul className="list-none p-0 m-0 mt-2 flex flex-col gap-1">
@@ -165,12 +168,12 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
           )}
 
           <div className="rounded-lg p-4 bg-paper">
-            <div className="font-label text-xs text-slate uppercase mb-2">Scope</div>
+            <div className="font-label text-xs text-slate uppercase mb-2">{q.scope}</div>
             <Prose text={brief.scope} className="text-lead text-ink leading-[1.7]" />
           </div>
 
           <div className="rounded-lg p-4" style={{ background: "rgba(244,91,105,0.08)" }}>
-            <div className="font-label text-xs text-slate uppercase mb-2">Deliverables</div>
+            <div className="font-label text-xs text-slate uppercase mb-2">{q.deliverables}</div>
             <div className="flex flex-col gap-1.5">
               {brief.deliverables.map((d, i) => {
                 const { lead, detail } = splitDeliverable(d);
@@ -194,13 +197,13 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
           </div>
 
           <div className="rounded-lg p-4 bg-paper">
-            <div className="font-label text-xs text-slate uppercase mb-2">Timeline</div>
+            <div className="font-label text-xs text-slate uppercase mb-2">{q.timeline}</div>
             <TimelineView timeline={brief.timeline} accent={brand.accent} className="text-ink" />
           </div>
 
           {brief.examples.length > 0 && (
             <div>
-              <div className="font-label text-xs text-slate uppercase mb-2">Examples</div>
+              <div className="font-label text-xs text-slate uppercase mb-2">{q.examples}</div>
               <ExampleGallery examples={brief.examples} />
             </div>
           )}
@@ -242,6 +245,7 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
 /** Editorial — magazine-style: large serif headline, generous whitespace,
  * full-bleed sections divided by thin colored rules instead of cards. */
 export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand: BrandProps }) {
+  const q = dict(brief.language).publicQuote;
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-3xl mx-auto px-5 sm:px-10 py-10 sm:py-16">
@@ -254,7 +258,7 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
               Freely
             </span>
           )}
-          <span className="text-caption tracking-[0.15em] uppercase text-slate">Quotation</span>
+          <span className="text-caption tracking-[0.15em] uppercase text-slate">{q.quotation}</span>
         </div>
 
         <span className="text-caption tracking-[0.15em] uppercase" style={{ color: brand.primary }}>
@@ -267,7 +271,7 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
         <div className="flex flex-wrap gap-6 sm:gap-10 mt-10 pb-10 border-b" style={{ borderColor: brand.accent }}>
           <div>
             <div className="font-body font-bold text-[26px] text-ink">{currencySymbol(brief.currency)}{brief.price.toLocaleString()}</div>
-            <div className="text-caption uppercase tracking-[0.08em] text-slate mt-1">Total</div>
+            <div className="text-caption uppercase tracking-[0.08em] text-slate mt-1">{q.total}</div>
           </div>
           <div>
             <div className="font-body font-bold text-[26px] text-ink">
@@ -275,14 +279,14 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
               {parseRateUnit(brief.rateUnit) === "DAY" ? "d" : "h"}
             </div>
             <div className="text-caption uppercase tracking-[0.08em] text-slate mt-1">
-              {parseRateUnit(brief.rateUnit) === "DAY" ? "Estimated days" : "Estimated hours"}
+              {parseRateUnit(brief.rateUnit) === "DAY" ? q.estimatedDays : q.estimatedHours}
             </div>
           </div>
           {brief.hourlyRate && (
             <div>
               <div className="font-body font-bold text-[26px] text-ink">{currencySymbol(brief.currency)}{brief.hourlyRate}</div>
               <div className="text-caption uppercase tracking-[0.08em] text-slate mt-1">
-              {rateLabel(parseRateUnit(brief.rateUnit))}
+              {parseRateUnit(brief.rateUnit) === "DAY" ? q.perDay : q.perHour}
             </div>
             </div>
           )}
@@ -296,7 +300,7 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
             <p className="text-lead leading-relaxed text-ink">{brief.strategy.goal}</p>
             {brief.strategy.findings.length > 0 && (
               <div className="mt-5">
-                <div className="text-caption uppercase tracking-[0.1em] text-slate mb-2">Findings</div>
+                <div className="text-caption uppercase tracking-[0.1em] text-slate mb-2">{q.findings}</div>
                 <ul className="list-none p-0 m-0 flex flex-col gap-2">
                   {brief.strategy.findings.map((f, i) => (
                     <li key={i} className="text-body text-ink leading-relaxed pl-4 relative">
@@ -385,6 +389,7 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
  * colors/logo (see lib/branding.ts). Light and dark are the same layout,
  * just inverted, so it's one component instead of two near-duplicates. */
 export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolean }) {
+  const q = dict(brief.language).publicQuote;
   const bg = dark ? "#0B0B0C" : "#FFFFFF";
   const ink = dark ? "#FFFFFF" : "#111111";
   const muted = dark ? "rgba(255,255,255,0.55)" : "rgba(17,17,17,0.55)";
@@ -417,7 +422,7 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
 
         {brief.strategy && (
           <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
-            <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">Strategy</div>
+            <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{q.strategy}</div>
             <p className="text-body leading-relaxed m-0">{brief.strategy.goal}</p>
             {brief.strategy.findings.map((f, i) => (
               <p
@@ -432,12 +437,12 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
         )}
 
         <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
-          <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">Scope</div>
+          <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{q.scope}</div>
           <Prose text={brief.scope} className="text-lead leading-[1.7]" />
         </div>
 
         <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
-          <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">Deliverables</div>
+          <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{q.deliverables}</div>
           <div className="flex flex-col gap-1">
             {brief.deliverables.map((d, i) => {
               const { lead, detail } = splitDeliverable(d);
@@ -459,13 +464,13 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
         </div>
 
         <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
-          <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">Timeline</div>
+          <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{q.timeline}</div>
           <TimelineView timeline={brief.timeline} accent={ink} muted={muted} />
         </div>
 
         {brief.examples.length > 0 && (
           <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
-            <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">Examples</div>
+            <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{q.examples}</div>
             <ExampleGallery examples={brief.examples} />
           </div>
         )}
@@ -503,6 +508,7 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
 /** Minimal — plain, high-contrast, no shadows or card chrome; letter-spaced
  * labels and hairline rules do the separating instead of color blocks. */
 export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: BrandProps }) {
+  const q = dict(brief.language).publicQuote;
   return (
     <div className="min-h-screen bg-white text-ink">
       <div className="max-w-xl mx-auto px-5 sm:px-8 py-10 sm:py-14">
@@ -535,7 +541,7 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
 
         {brief.strategy && (
           <div className="py-6 border-b border-line">
-            <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">Strategy</div>
+            <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{q.strategy}</div>
             <p className="text-body leading-relaxed m-0">{brief.strategy.goal}</p>
             {brief.strategy.findings.map((f, i) => (
               <p key={i} className="text-small leading-relaxed m-0 mt-2 pl-4 border-l border-line">
@@ -546,12 +552,12 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
         )}
 
         <div className="py-6 border-b border-line">
-          <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">Scope</div>
+          <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{q.scope}</div>
           <Prose text={brief.scope} className="text-lead leading-[1.7]" />
         </div>
 
         <div className="py-6 border-b border-line">
-          <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">Deliverables</div>
+          <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{q.deliverables}</div>
           <div className="flex flex-col gap-1">
             {brief.deliverables.map((d, i) => {
               const { lead, detail } = splitDeliverable(d);
@@ -571,13 +577,13 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
         </div>
 
         <div className="py-6 border-b border-line">
-          <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">Timeline</div>
+          <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{q.timeline}</div>
           <TimelineView timeline={brief.timeline} accent="#181722" />
         </div>
 
         {brief.examples.length > 0 && (
           <div className="py-6 border-b border-line">
-            <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">Examples</div>
+            <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{q.examples}</div>
             <ExampleGallery examples={brief.examples} />
           </div>
         )}
@@ -590,7 +596,7 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
         ))}
 
         <div className="flex justify-between items-center pt-6">
-          <span className="text-small text-slate">Total</span>
+          <span className="text-small text-slate">{q.total}</span>
           <span className="text-[22px] font-bold">{currencySymbol(brief.currency)}{brief.price.toLocaleString()}</span>
         </div>
 

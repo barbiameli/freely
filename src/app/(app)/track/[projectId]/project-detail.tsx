@@ -32,7 +32,7 @@ import {
 import { formatDay, relativeDay } from "@/lib/schedule";
 import { currencySymbol } from "@/lib/currencies";
 import { useAction } from "@/lib/use-action";
-import { useT } from "@/lib/i18n/context";
+import { useT, useLocale } from "@/lib/i18n/context";
 import { ActionError } from "@/components/ui/action-error";
 
 interface Project {
@@ -174,6 +174,7 @@ export function ProjectDetail({
 }) {
   const router = useRouter();
   const t = useT();
+  const locale = useLocale();
   const paceLabel = usePaceLabel();
   const { run, pending: isPending, error: actionError } = useAction();
   const [price, setPrice] = useState(String(project.price));
@@ -288,7 +289,7 @@ export function ProjectDetail({
             },
             {
               label: t.track.nextUp,
-              value: next ? relativeDay(next.dueAt) : t.track.nothingDated,
+              value: next ? relativeDay(next.dueAt, new Date(), locale) : t.track.nothingDated,
               alert: next?.overdue,
             },
             { label: t.track.hours, value: `${project.hoursLogged} / ${project.hours}` },
@@ -303,7 +304,7 @@ export function ProjectDetail({
               <Label>{t.brief.timeline}</Label>
               <div className="flex items-baseline gap-3">
                 <span className="text-meta text-text-muted">
-                  {formatDay(health.startDate as Date)} to {formatDay(health.dueDate as Date)}
+                  {formatDay(health.startDate as Date, locale)} to {formatDay(health.dueDate as Date, locale)}
                 </span>
                 <button
                   type="button"

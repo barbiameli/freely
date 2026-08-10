@@ -99,18 +99,44 @@ export function projectEndFromTimeline(timeline: string, startDate: Date): Date 
   return stages[stages.length - 1].dueAt;
 }
 
-/** "in 3 days", "today", "2 days ago". Deadlines are read at a glance, and a
- * formatted date makes you do the subtraction yourself. */
-export function relativeDay(target: Date, now: Date = new Date()): string {
+/**
+ * "in 3 days", "today", "2 days ago". Deadlines are read at a glance, and a
+ * formatted date makes you do the subtraction yourself.
+ *
+ * Whole phrases per language rather than a word glued to a number: Spanish
+ * puts the count in the middle ("dentro de 3 días") and English at the front,
+ * so a shared template would not survive.
+ */
+export function relativeDay(target: Date, now: Date = new Date(), locale = "en"): string {
   const days = daysBetween(now, target);
-  if (days === 0) return "today";
-  if (days === 1) return "tomorrow";
-  if (days === -1) return "yesterday";
-  if (days > 0) return days < 14 ? `in ${days} days` : `in ${Math.round(days / 7)} weeks`;
+  const es = locale === "es";
+
+  if (days === 0) return es ? "hoy" : "today";
+  if (days === 1) return es ? "mañana" : "tomorrow";
+  if (days === -1) return es ? "ayer" : "yesterday";
+
+  if (days > 0) {
+    if (days < 14) return es ? `dentro de ${days} días` : `in ${days} days`;
+    const weeks = Math.round(days / 7);
+    return es ? `dentro de ${weeks} semanas` : `in ${weeks} weeks`;
+  }
+
   const overdue = Math.abs(days);
-  return overdue < 14 ? `${overdue} days ago` : `${Math.round(overdue / 7)} weeks ago`;
+  if (overdue < 14) return es ? `hace ${overdue} días` : `${overdue} days ago`;
+  const weeks = Math.round(overdue / 7);
+  return es ? `hace ${weeks} semanas` : `${weeks} weeks ago`;
 }
 
-export function formatDay(date: Date): string {
-  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+/**
+ * A short date, in the reader's language.
+ *
+ * The locale was hardcoded to en-GB, which put English month names on a
+ * Spanish page. Passing it in keeps this a pure function, so it stays
+ * testable, and the caller already knows which language it is rendering.
+ */
+export function formatDay(date: Date, locale: string = "en-GB"): string {
+  return date.toLocaleDateString(locale === "es" ? "es-ES" : "en-GB", {
+    day: "numeric",
+    month: "short",
+  });
 }

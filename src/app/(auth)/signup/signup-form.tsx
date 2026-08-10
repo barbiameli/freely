@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { signUpAction } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/lib/i18n/context";
 
 export function SignUpForm() {
+  const t = useT();
   const router = useRouter();
   const [name, setName] = useState("");
   const [studioName, setStudioName] = useState("");
@@ -49,13 +51,13 @@ export function SignUpForm() {
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Your name"
+        placeholder={t.onboarding.yourName}
         className="w-full font-body text-body text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
       />
       <input
         value={studioName}
         onChange={(e) => setStudioName(e.target.value)}
-        placeholder="Studio or business name (optional)"
+        placeholder={t.auth.studioOptional}
         className="w-full font-body text-body text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
       />
       <input
@@ -68,7 +70,7 @@ export function SignUpForm() {
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        placeholder="Password (min 8 characters)"
+        placeholder={t.auth.passwordMin}
         className="w-full font-body text-body text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
       />
       <p className="text-caption text-text-muted -mt-1">

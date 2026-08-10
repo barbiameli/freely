@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { FileText, ListChecks, Users, ShieldCheck, Sparkles } from "lucide-react";
 import { FreelyLogo } from "@/components/freely-logo";
+import { useT } from "@/lib/i18n/context";
 
 /**
  * The public marketing page, shown at "/" to signed-out visitors only
@@ -156,6 +157,7 @@ function Features() {
 }
 
 function HowItWorks() {
+  const t = useT();
   const steps = [
     { n: "1", title: "Set up Memory", body: "Add your rates, tone, past work, and (optionally) your branding, takes a few minutes." },
     { n: "2", title: "Generate a quote", body: "Drop in a client brief and get a priced, structured draft back in seconds." },
@@ -163,7 +165,7 @@ function HowItWorks() {
   ];
   return (
     <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-14 border-t border-line">
-      <h2 className="font-display italic text-3xl text-ink text-center m-0 mb-10">How it works</h2>
+      <h2 className="font-display italic text-3xl text-ink text-center m-0 mb-10">{t.marketing.howItWorks}</h2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         {steps.map((s) => (
           <div key={s.n} className="text-center">
@@ -180,12 +182,13 @@ function HowItWorks() {
 }
 
 function ClosingCTA() {
+  const t = useT();
   return (
     <section className="max-w-2xl mx-auto text-center px-5 sm:px-6 py-12 sm:py-16 border-t border-line">
       <div className="flex items-center justify-center gap-2 text-text-muted text-meta mb-4">
         <ShieldCheck size={14} /> Free to start, no card required.
       </div>
-      <h2 className="font-display italic text-3xl text-ink m-0">Try it on your next quote.</h2>
+      <h2 className="font-display italic text-3xl text-ink m-0">{t.marketing.tryIt}</h2>
       <Link
         href="/signup"
         className="inline-block font-body font-bold text-sm text-white bg-violet px-6 py-3.5 rounded-lg mt-6"

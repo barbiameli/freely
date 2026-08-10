@@ -8,8 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { FreelyLogo } from "@/components/freely-logo";
 import Link from "next/link";
+import { useT } from "@/lib/i18n/context";
 
 export default function SignInPage() {
+  const t = useT();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -40,7 +42,7 @@ export default function SignInPage() {
         <div className="mb-1">
           <FreelyLogo />
         </div>
-        <p className="text-slate text-sm mb-6">Sign in to your studio.</p>
+        <p className="text-slate text-sm mb-6">{t.auth.signIn}</p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <TextField
             name="email"
@@ -90,12 +92,13 @@ function TextFieldPassword({
   value: string;
   onChange: (v: string) => void;
 }) {
+  const t = useT();
   return (
     <input
       type="password"
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      placeholder="Password"
+      placeholder={t.auth.password}
       className="w-full font-body text-body text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border"
     />
   );
