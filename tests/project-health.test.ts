@@ -4,7 +4,6 @@ import {
   projectCompletion,
   pace,
   upcomingDeadlines,
-  frictionPoints,
   prioritize,
   shortName,
   type HealthProject,
@@ -121,20 +120,6 @@ describe("deadlines", () => {
   });
 });
 
-describe("friction", () => {
-  it("reports overdue work and blocking questions", () => {
-    const p = project({ deliverables: [deliverable(false, [], addDays(START, -3))] });
-    const points = frictionPoints(p, 2, START);
-    expect(points.some((f) => f.title.includes("past the date"))).toBe(true);
-    expect(points.some((f) => f.title.includes("unanswered"))).toBe(true);
-  });
-
-  it("stays quiet on a healthy project", () => {
-    const p = project({ deliverables: [deliverable(true, [[true, 1]], addDays(START, 5))] });
-    expect(frictionPoints(p, 0, addDays(START, 2))).toEqual([]);
-  });
-});
-
 describe("prioritize", () => {
   it("puts overdue work above everything and sinks finished projects", () => {
     const late = project({
@@ -222,28 +207,3 @@ describe("shortName", () => {
   });
 });
 
-describe("friction formatting", () => {
-  it("stays quiet while only a few deliverables are still being broken down", () => {
-    // They are broken down automatically on arrival, so a warning that is
-    // always on during that would be ignored.
-    const p = project({
-      deliverables: [
-        deliverable(false, [[true, 1]], addDays(START, 5)),
-        deliverable(false, [[true, 1]], addDays(START, 6)),
-        deliverable(false, [], addDays(START, 7)),
-      ],
-    });
-    expect(frictionPoints(p, 0, START).some((f) => f.title.includes("without steps"))).toBe(false);
-  });
-
-  it("keeps affected deliverables as separate items, not one joined sentence", () => {
-    const p = project({
-      deliverables: [deliverable(false, [], addDays(START, 5)), deliverable(false)],
-    });
-    const notBrokenDown = frictionPoints(p, 0, START).find((f) =>
-      f.title.includes("without steps")
-    );
-    expect(notBrokenDown?.items).toHaveLength(2);
-    expect(notBrokenDown?.detail).not.toContain("Foundations in Figma");
-  });
-});

@@ -1,18 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronDown, ChevronRight, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Pencil, Sparkles } from "lucide-react";
 import {
   breakDownDeliverableAction,
   toggleStepAction,
-  updateStepAction,
-  addStepAction,
-  deleteStepAction,
+  replaceStepsAction,
   setDeliverableDueAction,
 } from "@/actions/track";
 import { toggleDeliverableAction } from "@/actions/projects";
 import { deliverableCompletion, shortName } from "@/lib/project-health";
-import { formatDay, relativeDay } from "@/lib/schedule";
+import { formatDay } from "@/lib/schedule";
 import { useAction } from "@/lib/use-action";
 import { ActionError } from "@/components/ui/action-error";
 
@@ -42,92 +40,43 @@ export interface DeliverableView {
   flags: FlagView[];
 }
 
-function Checkbox({ done, onClick, label }: { done: boolean; onClick: () => void; label: string }) {
+function Checkbox({
+  done,
+  onClick,
+  label,
+  size = 17,
+}: {
+  done: boolean;
+  onClick: () => void;
+  label: string;
+  size?: number;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={label}
       aria-pressed={done}
-      className={`w-[17px] h-[17px] rounded-[5px] flex items-center justify-center shrink-0 cursor-pointer p-0 ${
-        done ? "bg-violet border-none" : "bg-white border border-line"
+      style={{ width: size, height: size }}
+      className={`rounded-[5px] flex items-center justify-center shrink-0 cursor-pointer p-0 transition-colors ${
+        done ? "bg-violet border-none" : "bg-white border border-line hover:border-slate"
       }`}
     >
-      {done && <Check size={10} className="text-white" />}
+      {done && <Check size={size * 0.6} className="text-white" />}
     </button>
   );
 }
 
-/** One step, editable in place. Generated steps are a starting point, not an
- * instruction, so changing the wording has to be as easy as ticking it. */
-function StepRow({ step }: { step: StepView }) {
-  const { run, pending, error } = useAction();
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(step.name);
-
-  function save() {
-    const next = draft.trim();
-    setEditing(false);
-    if (!next || next === step.name) {
-      setDraft(step.name);
-      return;
-    }
-    void run(() => updateStepAction(step.id, next));
-  }
-
-  return (
-    <div className="group py-1.5">
-      <div className="flex items-start gap-2.5">
-      <Checkbox
-        done={step.done}
-        label={`Mark "${step.name}" ${step.done ? "not done" : "done"}`}
-        onClick={() => run(() => toggleStepAction(step.id, !step.done))}
-      />
-      {editing ? (
-        <input
-          autoFocus
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={save}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") save();
-            if (e.key === "Escape") {
-              setDraft(step.name);
-              setEditing(false);
-            }
-          }}
-          className="flex-1 font-body text-small text-ink bg-white border border-violet rounded-md px-2 py-1 outline-none"
-        />
-      ) : (
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          title="Edit this step"
-          className={`flex-1 text-left text-small leading-snug bg-none border-none cursor-text p-0 ${
-            step.done ? "text-text-muted line-through" : "text-ink"
-          }`}
-        >
-          {step.name}
-        </button>
-      )}
-      {step.estimateHours > 0 && (
-        <span className="text-caption text-text-muted shrink-0 pt-0.5">{step.estimateHours}h</span>
-      )}
-      <button
-        type="button"
-        disabled={pending}
-        aria-label={`Delete step "${step.name}"`}
-        onClick={() => run(() => deleteStepAction(step.id))}
-        className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-text-muted hover:text-overdue bg-none border-none cursor-pointer p-0 pt-0.5 shrink-0 disabled:opacity-30"
-      >
-        <Trash2 size={11} />
-      </button>
-      </div>
-      <ActionError error={error} className="ml-7 mt-1" />
-    </div>
-  );
-}
-
+/**
+ * One deliverable, with its steps.
+ *
+ * Editing used to be per step: click the text, change it, blur to save, with a
+ * delete on hover and a separate add field. That is four affordances per row on
+ * a list of eight rows. One Edit on the deliverable opens every step as plain
+ * text instead, one per line, which is also how you reorder, delete and add
+ * them: it is a list, so editing it as a list is less to learn than a set of
+ * per-row controls.
+ */
 export function DeliverableItem({
   deliverable,
   projectId,
@@ -141,7 +90,8 @@ export function DeliverableItem({
 }) {
   const { run, pending, error } = useAction();
   const [breaking, setBreaking] = useState(false);
-  const [newStep, setNewStep] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
   const [editingDate, setEditingDate] = useState(false);
 
   const dueAt = deliverable.dueAt ? new Date(deliverable.dueAt) : null;
@@ -153,7 +103,21 @@ export function DeliverableItem({
     dueAt,
     steps: deliverable.steps,
   });
-  const openBlockers = deliverable.flags.filter((f) => !f.resolved && f.kind === "BLOCKER").length;
+  const doneCount = deliverable.steps.filter((s) => s.done).length;
+
+  function openEditor() {
+    setDraft(deliverable.steps.map((s) => s.name).join("\n"));
+    setEditing(true);
+  }
+
+  async function saveSteps() {
+    const names = draft
+      .split("\n")
+      .map((line) => line.replace(/^[-*•]\s*/, "").trim())
+      .filter(Boolean);
+    setEditing(false);
+    await run(() => replaceStepsAction(deliverable.id, names));
+  }
 
   async function runBreakdown() {
     setBreaking(true);
@@ -163,10 +127,10 @@ export function DeliverableItem({
 
   return (
     <div className="border-b border-line last:border-b-0">
-      <div className="flex items-start gap-2.5 py-3">
+      <div className="flex items-start gap-3 py-3">
         <Checkbox
           done={deliverable.done}
-          label={`Mark "${deliverable.name}" ${deliverable.done ? "not done" : "done"}`}
+          label={`Mark ${shortName(deliverable.name, 40)} ${deliverable.done ? "not done" : "done"}`}
           onClick={() => run(() => toggleDeliverableAction(projectId, deliverable.id))}
         />
 
@@ -182,30 +146,26 @@ export function DeliverableItem({
               <ChevronRight size={13} className="text-text-muted shrink-0" />
             )}
             <span
-              title={deliverable.name}
-              className={`font-body font-semibold text-body ${
-                deliverable.done ? "text-text-muted" : "text-ink"
+              className={`font-body font-semibold text-body tracking-[-0.01em] ${
+                deliverable.done ? "text-text-muted line-through" : "text-ink"
               }`}
             >
-              {/* Quote deliverables are written for a client, so the name is
-                  often a full sentence. The heading takes the leading clause
-                  and the rest shows when it is opened. */}
-              {expanded ? deliverable.name : shortName(deliverable.name, 70)}
+              {shortName(deliverable.name, 48)}
             </span>
           </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 ml-[19px] text-meta text-text-muted">
-            {deliverable.steps.length > 0 && (
-              <span>
-                {deliverable.steps.filter((s) => s.done).length} of {deliverable.steps.length} steps
+          {deliverable.steps.length > 0 && (
+            <div className="flex items-center gap-2 mt-1.5 ml-[19px]">
+              <div className="w-16 h-[3px] rounded-full bg-line overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-violet"
+                  style={{ width: `${Math.round(completion * 100)}%` }}
+                />
+              </div>
+              <span className="text-caption text-text-muted tabular-nums">
+                {doneCount}/{deliverable.steps.length}
               </span>
-            )}
-            {deliverable.steps.length > 0 && <span>{Math.round(completion * 100)}%</span>}
-            {openBlockers > 0 && (
-              <span className="text-overdue font-semibold">
-                {openBlockers} blocking question{openBlockers === 1 ? "" : "s"}
-              </span>
-            )}
-          </div>
+            </div>
+          )}
         </button>
 
         <div className="shrink-0 pt-0.5">
@@ -220,95 +180,119 @@ export function DeliverableItem({
                 setEditingDate(false);
                 void run(() => setDeliverableDueAction(deliverable.id, value));
               }}
-              className="font-body text-meta text-ink bg-white border border-violet rounded-md px-1.5 py-1 outline-none"
+              className="font-body text-caption text-ink bg-white border border-violet rounded-md px-1.5 py-1 outline-none"
             />
           ) : (
             <button
               type="button"
               onClick={() => setEditingDate(true)}
               title="Change this date"
-              className={`text-meta bg-none border-none cursor-pointer p-0 ${
-                overdue ? "text-overdue font-semibold" : "text-text-muted"
+              className={`text-caption tabular-nums bg-none border-none cursor-pointer p-0 ${
+                overdue ? "text-overdue font-semibold" : "text-text-muted hover:text-slate"
               }`}
             >
-              {dueAt ? `${formatDay(dueAt)} · ${relativeDay(dueAt)}` : "Set a date"}
+              {dueAt ? formatDay(dueAt) : "Set date"}
             </button>
           )}
         </div>
       </div>
 
       {expanded && (
-        <div className="pb-4 pl-[27px] pr-1">
-          {deliverable.summary && (
-            <p className="text-small text-slate leading-relaxed mt-0 mb-3">
+        <div className="pb-4 pl-[32px] pr-1">
+          {deliverable.summary && !editing && (
+            <p className="text-small text-slate leading-relaxed mt-0 mb-3 max-w-[62ch]">
               {deliverable.summary}
             </p>
           )}
 
-          {deliverable.steps.length === 0 ? (
-            <div className="bg-paper rounded-lg px-3.5 py-3">
-              <p className="text-small text-slate m-0">
-                No steps on this one yet.
+          {editing ? (
+            <div>
+              <textarea
+                autoFocus
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") setEditing(false);
+                }}
+                rows={Math.min(16, Math.max(4, draft.split("\n").length + 1))}
+                className="w-full font-body text-small text-ink leading-relaxed bg-white border border-violet rounded-lg px-3 py-2.5 outline-none"
+              />
+              <p className="text-caption text-text-muted mt-1.5 mb-0">
+                One step per line. Delete a line to remove it, add a line to add one.
               </p>
-              <button
-                type="button"
-                onClick={runBreakdown}
-                disabled={breaking}
-                className="flex items-center gap-1.5 mt-2.5 text-meta font-bold text-white bg-violet rounded-lg px-3 py-1.5 border-none cursor-pointer disabled:opacity-50"
-              >
-                <Sparkles size={12} />
-                {breaking ? "Working it out..." : "Break this down"}
-              </button>
+              <div className="flex items-center gap-3 mt-2.5">
+                <button
+                  type="button"
+                  onClick={saveSteps}
+                  disabled={pending}
+                  className="font-body font-bold text-meta text-white bg-violet rounded-lg px-3.5 py-1.5 border-none cursor-pointer disabled:opacity-50"
+                >
+                  {pending ? "Saving..." : "Save steps"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditing(false)}
+                  className="text-meta text-text-muted bg-none border-none cursor-pointer p-0"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
+          ) : deliverable.steps.length === 0 ? (
+            <button
+              type="button"
+              onClick={runBreakdown}
+              disabled={breaking}
+              className="flex items-center gap-1.5 text-meta font-bold text-white bg-violet rounded-lg px-3 py-1.5 border-none cursor-pointer disabled:opacity-50"
+            >
+              <Sparkles size={12} />
+              {breaking ? "Working it out..." : "Break this down"}
+            </button>
           ) : (
             <>
-              <div className="flex flex-col">
+              <div className="flex flex-col gap-0.5">
                 {deliverable.steps.map((step) => (
-                  <StepRow key={step.id} step={step} />
+                  <div key={step.id} className="flex items-start gap-2.5 py-1">
+                    <Checkbox
+                      size={15}
+                      done={step.done}
+                      label={`Mark step ${step.done ? "not done" : "done"}`}
+                      onClick={() => run(() => toggleStepAction(step.id, !step.done))}
+                    />
+                    <span
+                      className={`flex-1 text-small leading-relaxed ${
+                        step.done ? "text-text-muted line-through" : "text-slate"
+                      }`}
+                    >
+                      {step.name}
+                    </span>
+                    {step.estimateHours > 0 && (
+                      <span className="text-caption text-text-muted tabular-nums shrink-0 pt-[3px]">
+                        {step.estimateHours}h
+                      </span>
+                    )}
+                  </div>
                 ))}
               </div>
 
-              <div className="flex items-center gap-2 mt-2.5">
-                <input
-                  value={newStep}
-                  onChange={(e) => setNewStep(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && newStep.trim()) {
-                      const value = newStep;
-                      setNewStep("");
-                      void run(() => addStepAction(deliverable.id, value));
-                    }
-                  }}
-                  placeholder="Add a step"
-                  className="flex-1 font-body text-small text-ink bg-paper border-none rounded-lg px-2.5 py-1.5 outline-none"
-                />
+              <div className="flex items-center gap-4 mt-3">
                 <button
                   type="button"
-                  disabled={!newStep.trim() || pending}
-                  onClick={() => {
-                    const value = newStep;
-                    setNewStep("");
-                    void run(() => addStepAction(deliverable.id, value));
-                  }}
-                  aria-label="Add step"
-                  className="w-7 h-7 rounded-lg bg-paper border-none flex items-center justify-center cursor-pointer text-slate disabled:opacity-40"
+                  onClick={openEditor}
+                  className="flex items-center gap-1.5 text-caption font-semibold text-violet bg-none border-none cursor-pointer p-0"
                 >
-                  <Plus size={13} />
+                  <Pencil size={11} /> Edit steps
+                </button>
+                <button
+                  type="button"
+                  onClick={runBreakdown}
+                  disabled={breaking}
+                  className="flex items-center gap-1.5 text-caption text-text-muted hover:text-slate bg-none border-none cursor-pointer p-0 disabled:opacity-50"
+                >
+                  <Sparkles size={11} />
+                  {breaking ? "Working it out..." : "Redo"}
                 </button>
               </div>
-
-              <button
-                type="button"
-                onClick={runBreakdown}
-                disabled={breaking}
-                className="flex items-center gap-1.5 mt-3 text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 disabled:opacity-50"
-              >
-                <Sparkles size={11} />
-                {breaking ? "Working it out..." : "Redo the breakdown"}
-              </button>
-              <p className="text-caption text-text-muted mt-1 mb-0">
-                Ticked steps and their wording are kept.
-              </p>
             </>
           )}
 

@@ -732,10 +732,13 @@ export const flagSchema = z.object({
 });
 
 export const breakdownSchema = z.object({
+  /** A short label. The generated deliverable name is a client-facing
+   * sentence, which is useless as a heading in a list of your own work. */
+  title: z.string().min(1).max(80).optional(),
   /** One line on what this deliverable actually means here. */
   summary: z.string().min(1),
   steps: z.array(stepSchema).min(1).max(12),
-  flags: z.array(flagSchema).max(5),
+  flags: z.array(flagSchema).max(4),
 });
 
 export type DeliverableBreakdown = z.infer<typeof breakdownSchema>;
@@ -776,9 +779,11 @@ export function buildBreakdownPrompt(input: BreakdownInput): string {
     "",
     'Rules for the steps. Each step is something a person can sit down and start, phrased as an action: "Audit the existing type styles and list every size in use", not "Typography". Anything that just renames the deliverable is useless, so no "Set up the foundations" or "Build the components". Put them in the order they would actually be done, including the unglamorous parts (naming, file setup, handover notes, a review round with the client) that get forgotten when a deliverable is written as one line in a quote. Between 4 and 10 steps. Give each an hours estimate that a freelancer would recognise as realistic, and use 0 only when the step genuinely cannot be estimated.',
     "",
-    'Rules for the flags. These are things worth raising about THIS deliverable specifically, before or while doing it: a gap in the brief, an assumption being made, or a dependency that will stall the work. Do not include generic project-management advice, and do not repeat anything already answered by the scope. Between 0 and 4, and zero is a fine answer when the brief genuinely covers it. Mark each one BLOCKER if the work cannot be done properly until it is answered, ASSUMPTION if the work can proceed on a stated assumption, or WORTH_ASKING otherwise.',
+    'Rules for the flags. Zero is the normal answer. Only include something if it would genuinely stall or redo the work: a decision that has not been made, a dependency outside their control, a gap in the brief that changes what gets built. Most deliverables have none, so return an empty array unless there is a real risk. At most two, and never more than one BLOCKER. This freelancer knows their craft, so nothing about how to do the work, no best practice, no reminders to communicate with the client, and nothing already answered by the scope. Write the question in one short sentence and the reason in one short clause, not a paragraph. Mark it BLOCKER only when the work cannot proceed correctly until it is answered.',
     "",
-    'Respond with ONLY valid JSON, no markdown fences, no commentary: {"summary": string, "steps": [{"name": string, "estimateHours": number}], "flags": [{"question": string, "reason": string, "kind": "BLOCKER" | "ASSUMPTION" | "WORTH_ASKING"}]}. "summary" is one sentence on what this deliverable means on this particular project, not a definition of the term.',
+    'Also return "title": a short label for this deliverable, two to five words, no description and no trailing punctuation. The name you were given is written for a client to read; this is what the freelancer sees at the top of a list of their own work. "Token foundations", "Core components", "Developer handoff".',
+    "",
+    'Respond with ONLY valid JSON, no markdown fences, no commentary: {"title": string, "summary": string, "steps": [{"name": string, "estimateHours": number}], "flags": [{"question": string, "reason": string, "kind": "BLOCKER" | "ASSUMPTION" | "WORTH_ASKING"}]}. "summary" is one sentence on what this deliverable means on this particular project, not a definition of the term.',
   ];
   return parts.filter(Boolean).join("\n");
 }

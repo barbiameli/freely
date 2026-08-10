@@ -31,7 +31,7 @@ export function DeleteBriefButton({
 
   if (confirming) {
     return (
-      <span className="flex items-center gap-2 text-meta">
+      <span className="flex items-center gap-2 text-meta bg-white/95 border border-line rounded-md px-1.5 py-1">
         <button
           type="button"
           disabled={pending}
@@ -71,7 +71,7 @@ export function DeleteBriefButton({
         }}
         aria-label={`Delete ${brief.title}`}
         title="Delete this draft"
-        className="flex items-center gap-1 text-meta text-text-muted hover:text-overdue bg-none border-none cursor-pointer p-0"
+        className="flex items-center gap-1 text-meta text-text-muted hover:text-overdue bg-white/90 border border-line rounded-md px-1.5 py-1 cursor-pointer backdrop-blur-sm"
       >
         <Trash2 size={12} />
         {label && "Delete"}

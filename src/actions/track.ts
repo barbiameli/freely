@@ -224,7 +224,13 @@ export async function breakDownDeliverableAction(
 
   await deliverableDb.update({
     where: { id: deliverableId },
-    data: { summary: clean(breakdown.summary), brokenDownAt: new Date() },
+    data: {
+      summary: clean(breakdown.summary),
+      // The client-facing sentence becomes a short title, since this list is
+      // the freelancer's own work rather than something a client reads.
+      ...(breakdown.title ? { name: clean(breakdown.title) } : {}),
+      brokenDownAt: new Date(),
+    },
   });
 
   revalidatePath(`/track/${project.id}`);
@@ -243,49 +249,60 @@ export async function toggleStepAction(
   return { ok: true, data: undefined };
 }
 
-export async function updateStepAction(
-  stepId: string,
-  name: string
-): Promise<ActionResult<undefined>> {
-  const trimmed = name.trim();
-  if (!trimmed) return { ok: false, error: "A step needs a name." };
-
-  const owned = await ownedVia(stepDb, stepId);
-  if (!owned) return { ok: false, error: "That step no longer exists." };
-
-  await stepDb.update({ where: { id: stepId }, data: { name: sanitizeText(trimmed) } });
-  revalidatePath(`/track/${owned.projectId}`);
-  return { ok: true, data: undefined };
-}
-
-export async function addStepAction(
+/**
+ * Replaces a deliverable's steps with a new list.
+ *
+ * Steps are edited as text, one per line, so a save is a whole new list rather
+ * than a set of individual edits. Ticked steps that survive the edit keep
+ * their ticks: matching on the text misses a reworded line, but losing an
+ * afternoon of ticked boxes to a typo fix is worse than occasionally
+ * resetting one.
+ */
+export async function replaceStepsAction(
   deliverableId: string,
-  name: string
+  names: string[]
 ): Promise<ActionResult<undefined>> {
   const { deliverable } = await ownedDeliverable(deliverableId);
   if (!deliverable) return { ok: false, error: "That deliverable no longer exists." };
-  const trimmed = name.trim();
-  if (!trimmed) return { ok: false, error: "A step needs a name." };
 
-  const count = await stepDb.count({ where: { deliverableId } });
-  await stepDb.create({
-    data: { deliverableId, name: sanitizeText(trimmed), order: count },
-  });
+  const cleaned = names
+    .map((n) => sanitizeText(n.trim()))
+    .filter(Boolean)
+    .slice(0, 30);
+
+  const existing = await stepDb.findMany({ where: { deliverableId } });
+  const wasDone = new Set(
+    existing.filter((st) => st.done).map((st) => st.name.trim().toLowerCase())
+  );
+  const estimates = new Map(
+    existing.map((st) => [st.name.trim().toLowerCase(), st.estimateHours])
+  );
+
+  await stepDb.deleteMany({ where: { deliverableId } });
+  if (cleaned.length) {
+    await stepDb.createMany({
+      data: cleaned.map((name, i) => ({
+        deliverableId,
+        name,
+        order: i,
+        estimateHours: estimates.get(name.toLowerCase()) ?? 0,
+      })),
+    });
+    // createMany can't set a different `done` per row, so the ticks are
+    // reapplied in one pass afterwards.
+    const keep = cleaned.filter((n) => wasDone.has(n.toLowerCase()));
+    if (keep.length) {
+      await stepDb.updateMany({
+        where: { deliverableId, name: { in: keep } },
+        data: { done: true },
+      });
+    }
+  }
+
   revalidatePath(`/track/${deliverable.projectId}`);
   return { ok: true, data: undefined };
 }
 
-export async function deleteStepAction(stepId: string): Promise<ActionResult<undefined>> {
-  const owned = await ownedVia(stepDb, stepId);
-  if (!owned) return { ok: false, error: "That step no longer exists." };
-
-  await stepDb.delete({ where: { id: stepId } });
-  revalidatePath(`/track/${owned.projectId}`);
-  return { ok: true, data: undefined };
-}
-
-/** Marks a flag answered. Kept rather than deleted, so the record of what was
- * asked survives. */
 export async function resolveFlagAction(
   flagId: string,
   resolved: boolean

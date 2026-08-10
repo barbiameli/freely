@@ -12,7 +12,8 @@ import { Chip } from "@/components/ui/chip";
 import { TimelineBar } from "@/components/track/timeline-bar";
 import { DeliverableItem, type DeliverableView } from "@/components/track/deliverable-item";
 import { FlagsPanel } from "@/components/track/flags-panel";
-import { FrictionPanel } from "@/components/track/friction-panel";
+import { StatRow } from "@/components/track/stat-row";
+import { ComingUp } from "@/components/track/coming-up";
 import { AutoBreakdown } from "@/components/track/auto-breakdown";
 import {
   updateProjectAction,
@@ -26,8 +27,6 @@ import {
   projectCompletion,
   pace,
   upcomingDeadlines,
-  frictionPoints,
-  shortName,
   type HealthProject,
 } from "@/lib/project-health";
 import { formatDay, relativeDay } from "@/lib/schedule";
@@ -65,13 +64,6 @@ const STATUS_DOT: Record<ProjectStatusValue, string> = {
   DONE: "bg-success",
 };
 
-const PACE_STYLE: Record<string, string> = {
-  ahead: "text-success",
-  "on track": "text-slate",
-  slipping: "text-coral",
-  behind: "text-overdue",
-  unscheduled: "text-text-muted",
-};
 
 /** Turns the serialized project into the shape the health rules want. Dates
  * cross the server boundary as strings, and the rules work in Dates. */
@@ -91,15 +83,6 @@ function toHealth(project: Project): HealthProject {
       steps: d.steps,
     })),
   };
-}
-
-function Stat({ label, value, tone }: { label: string; value: string; tone?: string }) {
-  return (
-    <Card className="flex-1 min-w-[130px] px-4 py-3.5">
-      <Label>{label}</Label>
-      <div className={`font-body font-bold text-lead ${tone ?? "text-ink"}`}>{value}</div>
-    </Card>
-  );
 }
 
 /** The date field and its button, shared by the empty state and rescheduling. */
@@ -193,11 +176,6 @@ export function ProjectDetail({
   const completion = projectCompletion(health);
   const currentPace = pace(health);
   const deadlines = upcomingDeadlines(health);
-  const openBlockers = project.deliverables.reduce(
-    (sum, d) => sum + d.flags.filter((f) => !f.resolved && f.kind === "BLOCKER").length,
-    0
-  );
-  const friction = frictionPoints(health, openBlockers);
   const focused = project.deliverables.find((d) => d.id === openId) ?? null;
   const scheduled = Boolean(health.startDate && health.dueDate);
   const next = deadlines[0] ?? null;
@@ -281,20 +259,23 @@ export function ProjectDetail({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          <Stat label="Done" value={`${Math.round(completion * 100)}%`} />
-          <Stat
-            label="Pace"
-            value={currentPace === "unscheduled" ? "Not scheduled" : currentPace}
-            tone={PACE_STYLE[currentPace]}
-          />
-          <Stat
-            label="Next up"
-            value={next ? relativeDay(next.dueAt) : "Nothing dated"}
-            tone={next?.overdue ? "text-overdue" : undefined}
-          />
-          <Stat label="Hours" value={`${project.hoursLogged} of ${project.hours}`} />
-        </div>
+        <StatRow
+          stats={[
+            { label: "Done", value: `${Math.round(completion * 100)}%` },
+            {
+              label: "Pace",
+              value: currentPace === "unscheduled" ? "Not scheduled" : currentPace,
+              alert: currentPace === "behind" || currentPace === "slipping",
+              good: currentPace === "ahead",
+            },
+            {
+              label: "Next up",
+              value: next ? relativeDay(next.dueAt) : "Nothing dated",
+              alert: next?.overdue,
+            },
+            { label: "Hours", value: `${project.hoursLogged} of ${project.hours}` },
+          ]}
+        />
 
         {!scheduled ? (
           <SchedulePrompt projectId={project.id} />
@@ -351,35 +332,6 @@ export function ProjectDetail({
 
         <ActionError error={actionError} />
 
-        <FrictionPanel friction={friction} />
-
-        {deadlines.length > 0 && (
-          <Card>
-            <Label>Coming up</Label>
-            <div className="flex flex-col gap-1.5 mt-1.5">
-              {deadlines.slice(0, 5).map((d) => (
-                <button
-                  key={d.deliverableId}
-                  type="button"
-                  onClick={() => setOpenId(d.deliverableId)}
-                  className="flex items-baseline justify-between gap-3 text-left bg-none border-none cursor-pointer p-0"
-                >
-                  <span className="text-small text-ink truncate" title={d.name}>
-                    {shortName(d.name)}
-                  </span>
-                  <span
-                    className={`text-meta shrink-0 ${
-                      d.overdue ? "text-overdue font-semibold" : "text-text-muted"
-                    }`}
-                  >
-                    {formatDay(d.dueAt)} · {relativeDay(d.dueAt)}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </Card>
-        )}
-
         <div className="flex flex-col lg:flex-row gap-5">
           <Card className="flex-1 min-w-0">
             <Label>Deliverables</Label>
@@ -417,9 +369,10 @@ export function ProjectDetail({
             </div>
           </Card>
 
-          <Card className="w-full lg:w-[280px] lg:shrink-0 self-start">
+          <div className="w-full lg:w-[270px] lg:shrink-0 self-start flex flex-col gap-4">
+            <ComingUp deadlines={deadlines} onSelect={setOpenId} />
             <FlagsPanel deliverable={focused} />
-          </Card>
+          </div>
         </div>
 
         <Card>

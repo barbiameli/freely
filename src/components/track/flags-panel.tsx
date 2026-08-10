@@ -3,102 +3,103 @@
 import { resolveFlagAction } from "@/actions/track";
 import { useAction } from "@/lib/use-action";
 import { ActionError } from "@/components/ui/action-error";
+import { shortName } from "@/lib/project-health";
 import type { DeliverableView, FlagView } from "@/components/track/deliverable-item";
 
+/**
+ * Things worth raising about the deliverable in hand.
+ *
+ * The first version put a card on every deliverable with a question, a
+ * paragraph of reasoning and an action, which turned a sidebar into an essay
+ * and taught you to ignore it. The model is now told zero is the normal answer
+ * and only real risks count, and this shows them plainly: the question, one
+ * clause of why, nothing else. No panel at all when there is nothing, since an
+ * empty section still costs attention.
+ */
 const KIND_LABEL: Record<FlagView["kind"], string> = {
-  BLOCKER: "Blocking",
-  ASSUMPTION: "Assumption",
+  BLOCKER: "Needs an answer",
+  ASSUMPTION: "Assuming",
   WORTH_ASKING: "Worth asking",
 };
 
-const KIND_STYLE: Record<FlagView["kind"], string> = {
-  BLOCKER: "text-overdue",
-  ASSUMPTION: "text-coral",
-  WORTH_ASKING: "text-text-muted",
-};
-
-/**
- * Questions worth raising about the deliverable in hand.
- *
- * Scoped to one deliverable rather than the whole project on purpose: a
- * project-wide list of twenty questions is a document nobody opens, while
- * three questions about the thing you are working on this week is something
- * you actually send. The panel follows whichever deliverable is open.
- */
 export function FlagsPanel({ deliverable }: { deliverable: DeliverableView | null }) {
   const { run, pending, error } = useAction();
 
-  if (!deliverable) {
-    return (
-      <div>
-        <div className="font-body font-semibold text-small text-ink mb-1.5">Worth flagging</div>
-        <p className="text-small text-text-muted m-0">
-          Open a deliverable to see what is worth raising with the client about it.
-        </p>
-      </div>
-    );
-  }
+  const open = deliverable?.flags.filter((f) => !f.resolved) ?? [];
+  const answered = deliverable?.flags.filter((f) => f.resolved) ?? [];
 
-  const open = deliverable.flags.filter((f) => !f.resolved);
-  const answered = deliverable.flags.filter((f) => f.resolved);
+  // Nothing to raise is the common case and needs no space.
+  if (!deliverable || (open.length === 0 && answered.length === 0)) return null;
 
   return (
-    <div>
-      <div className="font-body font-semibold text-small text-ink">Worth flagging</div>
-      <p className="text-meta text-text-muted mt-0.5 mb-3 truncate">{deliverable.name}</p>
+    <div className="bg-white border border-line rounded-card p-4">
+      <div className="flex items-baseline justify-between gap-2 mb-3">
+        <span className="font-body font-semibold text-small text-ink">Worth raising</span>
+        <span className="text-caption text-text-muted truncate max-w-[45%]">
+          {shortName(deliverable.name, 24)}
+        </span>
+      </div>
 
-      {deliverable.flags.length === 0 ? (
-        <p className="text-small text-text-muted m-0">
-          {deliverable.brokenDown
-            ? "Nothing to raise on this one."
-            : "Break this deliverable down and anything worth asking will show up here."}
-        </p>
+      {open.length === 0 ? (
+        <p className="text-small text-text-muted m-0">All answered.</p>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3.5">
           {open.map((flag) => (
-            <div key={flag.id} className="bg-paper rounded-lg px-3 py-2.5">
-              <div className={`text-caption font-bold uppercase tracking-wide ${KIND_STYLE[flag.kind]}`}>
+            <div
+              key={flag.id}
+              className={`pl-3 border-l-2 ${
+                flag.kind === "BLOCKER" ? "border-overdue" : "border-line"
+              }`}
+            >
+              <div
+                className={`text-caption font-bold uppercase tracking-wide ${
+                  flag.kind === "BLOCKER" ? "text-overdue" : "text-text-muted"
+                }`}
+              >
                 {KIND_LABEL[flag.kind]}
               </div>
               <div className="text-small text-ink leading-snug mt-1">{flag.question}</div>
               {flag.reason && (
-                <div className="text-meta text-text-muted leading-snug mt-1">{flag.reason}</div>
+                <div className="text-caption text-text-muted leading-snug mt-1">{flag.reason}</div>
               )}
               <button
                 type="button"
                 disabled={pending}
                 onClick={() => run(() => resolveFlagAction(flag.id, true))}
-                className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 mt-2 disabled:opacity-50"
+                className="text-caption font-semibold text-violet bg-none border-none cursor-pointer p-0 mt-1.5 disabled:opacity-50"
               >
-                Mark answered
+                Answered
               </button>
             </div>
           ))}
-
-          {answered.length > 0 && (
-            <div>
-              <div className="text-caption text-text-muted mb-1.5">
-                Answered ({answered.length})
-              </div>
-              {answered.map((flag) => (
-                <div key={flag.id} className="flex items-start gap-2 py-1">
-                  <span className="text-meta text-text-muted line-through flex-1 leading-snug">
-                    {flag.question}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={pending}
-                    onClick={() => run(() => resolveFlagAction(flag.id, false))}
-                    className="text-caption text-violet bg-none border-none cursor-pointer p-0 shrink-0 disabled:opacity-50"
-                  >
-                    Reopen
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       )}
+
+      {answered.length > 0 && (
+        <details className="mt-3">
+          <summary className="text-caption text-text-muted cursor-pointer">
+            {answered.length} answered
+          </summary>
+          <div className="mt-2 flex flex-col gap-1.5">
+            {answered.map((flag) => (
+              <div key={flag.id} className="flex items-start gap-2">
+                <span className="text-caption text-text-muted line-through flex-1 leading-snug">
+                  {flag.question}
+                </span>
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => run(() => resolveFlagAction(flag.id, false))}
+                  className="text-caption text-violet bg-none border-none cursor-pointer p-0 shrink-0"
+                >
+                  Reopen
+                </button>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+
       <ActionError error={error} className="mt-2" />
     </div>
   );
