@@ -472,89 +472,92 @@ export function QuoteWizard({
             </p>
           </div>
           <Stepper activeIndex={0} />
-          {/* Each choice owns its input, so the card and the field it reveals
-              read as one thing. Previously the picker sat above a separate
-              field, which looked like two unrelated controls. */}
-          <div className="flex flex-col gap-4">
-            {(
-              [
-                {
-                  mode: "upload" as const,
-                  icon: Upload,
-                  title: "Upload a brief",
-                  blurb: "Drop a PDF, DOCX, or text file and we'll read the scope out of it.",
-                },
-                {
-                  mode: "paste" as const,
-                  icon: FileText,
-                  title: "Paste text",
-                  blurb: "Notes, a call transcript, or a scope you've already typed up.",
-                },
-              ]
-            ).map(({ mode, icon: Icon, title, blurb }) => {
-              const selected = sourceMode === mode;
-              return (
-                <Card
-                  key={mode}
-                  onClick={selected ? undefined : () => setSourceMode(mode)}
-                  className={`transition-colors ${selected ? "border-violet border-[1.5px]" : "cursor-pointer"}`}
-                >
-                  <div className="flex items-start gap-3.5">
+          {/* One bordered container: the two choices sit side by side as a
+              toggle at the top, and the input for whichever is selected
+              expands underneath, inside the same box. */}
+          <div className="bg-white border border-line rounded-card overflow-hidden">
+            <div className="flex flex-col sm:flex-row">
+              {(
+                [
+                  {
+                    mode: "upload" as const,
+                    icon: Upload,
+                    title: "Upload a brief",
+                    blurb: "PDF, DOCX, or a text file.",
+                  },
+                  {
+                    mode: "paste" as const,
+                    icon: FileText,
+                    title: "Paste text",
+                    blurb: "Notes, a transcript, or a scope you've typed up.",
+                  },
+                ]
+              ).map(({ mode, icon: Icon, title, blurb }, i) => {
+                const selected = sourceMode === mode;
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setSourceMode(mode)}
+                    aria-pressed={selected}
+                    className={`flex-1 text-left flex items-start gap-3 px-5 py-4 border-none cursor-pointer transition-colors ${
+                      selected ? "bg-violet-tint" : "bg-white hover:bg-paper"
+                    } ${i === 0 ? "sm:border-r border-line" : ""}`}
+                  >
                     <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                        selected ? "bg-violet-tint" : "bg-paper"
+                      className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+                        selected ? "bg-white" : "bg-paper"
                       }`}
                     >
-                      <Icon size={17} className={selected ? "text-violet" : "text-text-muted"} />
+                      <Icon size={16} className={selected ? "text-violet" : "text-text-muted"} />
                     </div>
-                    <div className="min-w-0">
-                      <div className="font-body font-semibold text-[15px] text-ink">{title}</div>
-                      <div className="text-slate text-[13px] mt-0.5">{blurb}</div>
-                    </div>
-                  </div>
+                    <span className="min-w-0">
+                      <span
+                        className={`block font-body font-semibold text-[14px] ${
+                          selected ? "text-violet" : "text-ink"
+                        }`}
+                      >
+                        {title}
+                      </span>
+                      <span className="block text-slate text-[12.5px] mt-0.5">{blurb}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
 
-                  {/* Grid-rows trick: animates from 0 to auto height, which a
-                      plain max-height transition can't do without guessing a
-                      value that clips longer content. */}
-                  <div
-                    className={`grid transition-all duration-300 ease-out ${
-                      selected ? "grid-rows-[1fr] opacity-100 mt-4" : "grid-rows-[0fr] opacity-0"
-                    }`}
+            {/* Grid-rows animates from 0 to auto, which a max-height
+                transition can't do without guessing a value that clips. */}
+            <div className="grid grid-rows-[1fr] transition-all duration-300 ease-out border-t border-line">
+              <div className="overflow-hidden p-5">
+                {sourceMode === "paste" ? (
+                  <textarea
+                    value={draft.sourceText}
+                    onChange={(e) => setDraft((d) => ({ ...d, sourceText: e.target.value }))}
+                    onPaste={handlePasteSource}
+                    placeholder="Paste the client's brief, email, or notes here..."
+                    rows={9}
+                    className="w-full font-body text-[13.5px] leading-relaxed text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border resize-y whitespace-pre-wrap"
+                  />
+                ) : (
+                  <DropZone
+                    onFile={handleFile}
+                    accept=".txt,.md,.pdf,.docx"
+                    disabled={uploading}
+                    className="flex flex-col gap-2 cursor-pointer bg-paper border border-dashed border-line rounded-lg px-4 py-6"
                   >
-                    <div className="overflow-hidden">
-                      {mode === "paste" ? (
-                        <textarea
-                          value={draft.sourceText}
-                          onChange={(e) => setDraft((d) => ({ ...d, sourceText: e.target.value }))}
-                          onPaste={handlePasteSource}
-                          placeholder="Paste the client's brief, email, or notes here..."
-                          rows={9}
-                          className="w-full font-body text-[13.5px] leading-relaxed text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border resize-y whitespace-pre-wrap"
-                        />
-                      ) : (
-                        <DropZone
-                          onFile={handleFile}
-                          accept=".txt,.md,.pdf,.docx"
-                          disabled={uploading}
-                          className="flex flex-col gap-2 cursor-pointer bg-paper border border-dashed border-line rounded-lg px-4 py-5"
-                        >
-                          <span className="text-[13px] text-text-muted">
-                            {uploading
-                              ? "Reading file..."
-                              : fileName
-                              ? `Loaded: ${fileName}`
-                              : "Drag a file here, or click to choose one (.txt, .md, .pdf, .docx)."}
-                          </span>
-                          <span className="font-body font-bold text-[13px] text-violet">
-                            Choose file
-                          </span>
-                        </DropZone>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
+                    <span className="text-[13px] text-text-muted">
+                      {uploading
+                        ? "Reading file..."
+                        : fileName
+                        ? `Loaded: ${fileName}`
+                        : "Drag a file here, or click to choose one (.txt, .md, .pdf, .docx)."}
+                    </span>
+                    <span className="font-body font-bold text-[13px] text-violet">Choose file</span>
+                  </DropZone>
+                )}
+              </div>
+            </div>
           </div>
 
           <Card>
