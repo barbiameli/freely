@@ -99,8 +99,13 @@ function Strip({ briefs }: { briefs: BriefSummary[] }) {
         {briefs.map((brief) => (
           <div
             key={brief.id}
-            className="w-[196px] shrink-0 snap-start bg-white border border-line rounded-card p-2.5"
+            className="group relative w-[196px] shrink-0 snap-start bg-white border border-line rounded-card p-2.5"
           >
+            {/* Top right, out of the reading order, so a destructive action
+                never sits beside the one you came to press. */}
+            <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+              <DeleteBriefButton brief={brief} />
+            </div>
             <Link href={`/quote/${brief.id}`} className="block no-underline">
               <DocumentPreview brief={brief} height={64} />
               <div className="font-body font-semibold text-small text-ink mt-2 truncate">
@@ -109,10 +114,7 @@ function Strip({ briefs }: { briefs: BriefSummary[] }) {
             </Link>
             <div className="flex items-baseline justify-between gap-2 mt-1">
               <span className="text-meta text-text-muted">{money(brief)}</span>
-              <div className="flex items-center gap-2.5">
-                <TrackLink brief={brief} />
-                <DeleteBriefButton brief={brief} />
-              </div>
+              <TrackLink brief={brief} />
             </div>
           </div>
         ))}
