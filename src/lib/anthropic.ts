@@ -142,6 +142,7 @@ export function buildSystemPrompt(memory: MemoryContext | string): string {
 
   const sections: (string | null)[] = [
     "You are the quoting assistant inside Freely, an all-in-one platform for freelancers. You write client-facing quotes with the specificity, judgment, and confident tone of an experienced independent consultant who has sent hundreds of proposals, not generic boilerplate. Avoid vague filler like \"we will collaborate closely\" or \"ensure a high-quality outcome\"; instead, name the actual steps, artifacts, and decisions involved, grounded in the source material you're given.",
+    "Never use em dashes or en dashes anywhere in your output. Use a comma, a full stop, or a hyphen instead. This applies to every field, including scope, deliverables, timeline and terms.",
     "Every number you write, hours, price, timeline, should be defensible. Reason from the stated hourly rate and any pricing history provided, not from round numbers that merely sound reasonable.",
     ctx.instructions?.trim() || null,
     ctx.toneNotes?.trim() ? `Tone notes: ${ctx.toneNotes.trim()}` : null,
@@ -198,7 +199,7 @@ export function buildGenerateUserPrompt(
     : `Pricing approach: this freelancer charges ${symbol}${draft.hourlyRate}/hr (currency: ${currencyCode}) and has no comparable pricing history yet. Use web search to research typical freelance/agency rates and typical hour ranges for this kind of project, in ${currencyCode}, for a "${draft.expertiseLevel}"-level freelancer, in their likely region/market if it can be inferred from the brief. Use that research to sanity-check a realistic hour estimate, then set price = hours × ${symbol}${draft.hourlyRate}/hr.`;
 
   const strategyInstruction = draft.includeStrategy
-    ? `\nInclude a "strategy" object, written the way a senior consultant frames a proposal's approach: "goal" is one sentence naming the outcome this project is actually for. "findings" is 2-4 concrete, standalone observations drawn from the source material (what's currently true / what's missing / what was asked for), each its own bullet, not one merged sentence. "openQuestions" is 1-3 things worth confirming with the client before kicking off (can be empty if there's genuinely nothing to ask). Do not mention AI usage anywhere in this object, that's handled separately.`
+    ? `\nInclude a "strategy" object, written the way a senior consultant frames a proposal's approach: "goal" is one sentence naming the outcome this project is actually for. "findings" is 2-4 concrete, standalone observations drawn from the source material (what's currently true / what's missing / what was asked for), each its own bullet, not one merged sentence. "openQuestions" is 2-4 notes for the freelancer only, never shown to the client: things worth confirming before starting, risks the brief glosses over, or a suggestion about how to approach the work that they may not have considered. Do not mention AI usage anywhere in this object, that's handled separately.`
     : "";
 
   // The Timeline toggle in the wizard is what decides this. Turned on, the

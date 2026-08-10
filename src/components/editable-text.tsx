@@ -24,6 +24,7 @@ export function EditableBlock({
   className,
   placeholder,
   singleLine,
+  tone = "light",
 }: {
   value: string;
   onSave: (next: string) => void | Promise<void>;
@@ -34,6 +35,9 @@ export function EditableBlock({
   className?: string;
   placeholder?: string;
   singleLine?: boolean;
+  /** "dark" for placement on the ink hero, where violet on near-black fails
+   * contrast. */
+  tone?: "light" | "dark";
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -131,10 +135,144 @@ export function EditableBlock({
       <button
         type="button"
         onClick={() => setEditing(true)}
-        className="flex items-center gap-1 text-[11.5px] font-bold text-violet bg-none border-none cursor-pointer p-0 mt-2"
+        className={`flex items-center gap-1 text-[11.5px] font-bold bg-none border-none cursor-pointer p-0 mt-2 ${
+          tone === "dark" ? "text-white/70 hover:text-white" : "text-violet"
+        }`}
       >
         <Pencil size={11} /> Edit
       </button>
+    </div>
+  );
+}
+
+/**
+ * One Edit link for a section made of several fields.
+ *
+ * A quote section is usually a group: the overview is a title, a client, a
+ * price and hours; strategy is a goal plus findings. Giving each of those its
+ * own Edit link produced a page covered in them. This opens the whole group at
+ * once and saves it in one go.
+ */
+export interface EditableField {
+  key: string;
+  label: string;
+  value: string;
+  multiline?: boolean;
+  hint?: string;
+  /** Numeric fields get a number input and are validated before saving. */
+  numeric?: boolean;
+}
+
+export function EditableSection({
+  fields,
+  onSave,
+  children,
+  tone = "light",
+  editLabel = "Edit",
+}: {
+  fields: EditableField[];
+  onSave: (values: Record<string, string>) => void | Promise<void>;
+  children: ReactNode;
+  tone?: "light" | "dark";
+  editLabel?: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  function open() {
+    setDraft(Object.fromEntries(fields.map((f) => [f.key, f.value])));
+    setError("");
+    setEditing(true);
+  }
+
+  async function commit() {
+    for (const field of fields) {
+      if (field.numeric) {
+        const n = Number(draft[field.key]);
+        if (!Number.isFinite(n) || n < 0) {
+          setError(`${field.label} needs to be a number.`);
+          return;
+        }
+      }
+    }
+    setSaving(true);
+    await onSave(draft);
+    setSaving(false);
+    setEditing(false);
+  }
+
+  if (!editing) {
+    return (
+      <div>
+        {children}
+        <button
+          type="button"
+          onClick={open}
+          className={`flex items-center gap-1 text-[11.5px] font-bold bg-none border-none cursor-pointer p-0 mt-3 ${
+            tone === "dark" ? "text-white/75 hover:text-white" : "text-violet"
+          }`}
+        >
+          <Pencil size={11} /> {editLabel}
+        </button>
+      </div>
+    );
+  }
+
+  const inputClass =
+    "w-full font-body text-[13.5px] text-ink leading-relaxed bg-white border border-violet rounded-lg px-3 py-2.5 outline-none";
+
+  return (
+    <div className="flex flex-col gap-3">
+      {fields.map((field) => (
+        <label key={field.key} className="block">
+          <span
+            className={`block text-[10.5px] font-bold uppercase tracking-wide mb-1 ${
+              tone === "dark" ? "text-white/60" : "text-slate"
+            }`}
+          >
+            {field.label}
+          </span>
+          {field.multiline ? (
+            <textarea
+              value={draft[field.key] ?? ""}
+              onChange={(e) => setDraft((d) => ({ ...d, [field.key]: e.target.value }))}
+              rows={Math.min(14, Math.max(3, (draft[field.key] ?? "").split("\n").length + 1))}
+              className={inputClass}
+            />
+          ) : (
+            <input
+              value={draft[field.key] ?? ""}
+              onChange={(e) => setDraft((d) => ({ ...d, [field.key]: e.target.value }))}
+              type={field.numeric ? "number" : "text"}
+              className={inputClass}
+            />
+          )}
+          {field.hint && <span className="block text-[11px] text-text-muted mt-1">{field.hint}</span>}
+        </label>
+      ))}
+      {error && <div className="text-overdue text-[12px]">{error}</div>}
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={commit}
+          disabled={saving}
+          className="font-body font-bold text-[12px] text-white bg-violet rounded-lg px-3.5 py-1.5 border-none cursor-pointer disabled:opacity-50"
+        >
+          {saving ? "Saving..." : "Save"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setEditing(false)}
+          disabled={saving}
+          className={`text-[12px] bg-none border-none cursor-pointer p-0 ${
+            tone === "dark" ? "text-white/60" : "text-text-muted"
+          }`}
+        >
+          Cancel
+        </button>
+      </div>
     </div>
   );
 }

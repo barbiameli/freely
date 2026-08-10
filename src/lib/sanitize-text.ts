@@ -13,6 +13,26 @@
  * meaningful in extracted prose, and they render as garbage in a quote, so
  * they go too. Tab, newline and carriage return are deliberately kept.
  */
+/**
+ * Replaces em and en dashes with plain punctuation.
+ *
+ * Applied to generated copy, not to anything typed by hand: the model reaches
+ * for em dashes constantly and they are not house style. A dash used as a
+ * parenthetical becomes a comma, and one used as a range or a bullet marker
+ * becomes a hyphen.
+ */
+export function stripLongDashes(text: string): string {
+  return (
+    text
+      // " - " style parentheticals.
+      .replace(/\s+[\u2013\u2014]\s+/g, ", ")
+      // Ranges and closed-up uses: "Week 1-2", "design-led".
+      .replace(/[\u2013\u2014]/g, "-")
+      // A comma landing next to other punctuation reads as a typo.
+      .replace(/,\s*([,.;:])/g, "$1")
+  );
+}
+
 export function sanitizeText(text: string): string {
   // \x00-\x08, \x0B-\x0C, \x0E-\x1F: the C0 controls, minus tab (\x09),
   // newline (\x0A) and carriage return (\x0D).

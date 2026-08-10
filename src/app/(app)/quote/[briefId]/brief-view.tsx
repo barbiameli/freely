@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Sparkles,
@@ -8,35 +8,31 @@ import {
   Download,
   Link2,
   CheckCircle2,
-  HelpCircle,
-  Upload,
   Trash2,
-  ImagePlus,
   ChevronDown,
   FileText,
   Copy,
   ExternalLink,
   Eye,
+  Lightbulb,
 } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
-import { Stamp, type StampStatus } from "@/components/ui/stamp";
+import type { StampStatus } from "@/components/ui/stamp";
 import {
   refineBriefAction,
   addBriefToTrackAction,
   setBriefPublishedAction,
   updateBriefContentAction,
-  addBriefExampleAction,
-  updateBriefExampleAction,
   deleteBriefExampleAction,
 } from "@/actions/briefs";
 import { currencySymbol } from "@/lib/currencies";
 import { TimelineView } from "@/components/timeline-view";
 import type { BriefExtras } from "@/lib/anthropic";
-import { EditableBlock } from "@/components/editable-text";
+import { EditableBlock, EditableSection } from "@/components/editable-text";
 
 interface Strategy {
   goal: string;
@@ -163,11 +159,6 @@ export function BriefView({
 
   const [showSource, setShowSource] = useState(false);
   const [examples, setExamples] = useState(brief.examples);
-  const [exampleCaption, setExampleCaption] = useState("");
-  const [exampleName, setExampleName] = useState("");
-  const [exampleDataUrl, setExampleDataUrl] = useState("");
-  const [addingExample, setAddingExample] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleCopyLink() {
     try {
@@ -208,36 +199,9 @@ export function BriefView({
     await addBriefToTrackAction(brief.id);
   }
 
-  function handleFilePicked(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setExampleName(file.name);
-    const reader = new FileReader();
-    reader.onload = () => setExampleDataUrl(reader.result as string);
-    reader.readAsDataURL(file);
-  }
-
-  async function handleAddExample() {
-    if (!exampleDataUrl || !exampleCaption.trim()) return;
-    setAddingExample(true);
-    const result = await addBriefExampleAction(brief.id, exampleName || "Example", exampleDataUrl, exampleCaption);
-    setAddingExample(false);
-    if (result.ok) {
-      setExamples((prev) => [...prev, { id: result.data.id, name: exampleName || "Example", dataUrl: exampleDataUrl, caption: exampleCaption }]);
-      setExampleName("");
-      setExampleDataUrl("");
-      setExampleCaption("");
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  }
-
   async function handleDeleteExample(id: string) {
     setExamples((prev) => prev.filter((e) => e.id !== id));
     await deleteBriefExampleAction(id);
-  }
-
-  async function handleCaptionBlur(id: string, caption: string) {
-    await updateBriefExampleAction(id, { caption });
   }
 
   return (
@@ -280,123 +244,109 @@ export function BriefView({
           <span className="font-body font-bold text-[10px] tracking-[0.08em] uppercase text-coral">
             {published ? "Quotation, published" : "Quotation, draft"}
           </span>
-          <div className="mt-1 max-w-[520px]">
-            <EditableBlock
-              value={content.title}
-              onSave={(title) => saveContent({ title })}
-              ariaLabel="Quote title"
-              className="font-display italic text-[28px] text-white"
-              singleLine
-            />
-          </div>
-          <p className="text-[13px] text-white/60 mt-1.5">
-            <span className="inline-block max-w-[320px] align-middle">
-              <EditableBlock
-                value={content.client}
-                onSave={(client) => saveContent({ client })}
-                ariaLabel="Client name"
-                className="text-[13px] text-white/60"
-                singleLine
-              />
-            </span>
-          </p>
-          <p className="text-[12px] text-white/40 mt-1">
-            Generated {new Date(brief.createdAt).toLocaleString()}
-          </p>
-          <div className="flex flex-wrap gap-5 md:gap-7 mt-4">
-            <div>
-              <div className="font-body font-bold text-[20px] text-white">
-                {currencySymbol(brief.currency)}
-                {brief.price.toLocaleString()}
-              </div>
-              <div className="text-[10px] uppercase tracking-[0.06em] text-white/50">Total</div>
-            </div>
-            <div>
-              <div className="font-body font-bold text-[20px] text-white">{brief.hours}h</div>
-              <div className="text-[10px] uppercase tracking-[0.06em] text-white/50">Estimated hours</div>
-            </div>
-            {brief.hourlyRate && (
+          <EditableSection
+            tone="dark"
+            editLabel="Edit overview"
+            fields={[
+              { key: "title", label: "Title", value: content.title },
+              { key: "client", label: "Client", value: content.client },
+              { key: "price", label: "Total price", value: String(content.price), numeric: true },
+              { key: "hours", label: "Estimated hours", value: String(content.hours), numeric: true },
+            ]}
+            onSave={(values) =>
+              saveContent({
+                title: values.title,
+                client: values.client,
+                price: Number(values.price),
+                hours: Number(values.hours),
+              })
+            }
+          >
+            <h1 className="font-display italic text-[28px] text-white m-0 mt-1">{content.title}</h1>
+            <p className="text-[13px] text-white/60 mt-1.5">{content.client}</p>
+            <p className="text-[12px] text-white/40 mt-1">
+              Generated {new Date(brief.createdAt).toLocaleString()}
+            </p>
+            <div className="flex flex-wrap gap-5 md:gap-7 mt-4">
               <div>
                 <div className="font-body font-bold text-[20px] text-white">
                   {currencySymbol(brief.currency)}
-                  {brief.hourlyRate}
+                  {content.price.toLocaleString()}
                 </div>
-                <div className="text-[10px] uppercase tracking-[0.06em] text-white/50">Per hour</div>
+                <div className="text-[10px] uppercase tracking-[0.06em] text-white/50">Total</div>
               </div>
-            )}
-          </div>
+              <div>
+                <div className="font-body font-bold text-[20px] text-white">{content.hours}h</div>
+                <div className="text-[10px] uppercase tracking-[0.06em] text-white/50">
+                  Estimated hours
+                </div>
+              </div>
+              {brief.hourlyRate && (
+                <div>
+                  <div className="font-body font-bold text-[20px] text-white">
+                    {currencySymbol(brief.currency)}
+                    {brief.hourlyRate}
+                  </div>
+                  <div className="text-[10px] uppercase tracking-[0.06em] text-white/50">
+                    Per hour
+                  </div>
+                </div>
+              )}
+            </div>
+          </EditableSection>
         </div>
-        <Stamp status={brief.status} size={56} />
+        <span className="font-body font-semibold text-[11px] uppercase tracking-wide text-white/60 shrink-0">
+          {brief.accepted ? "Accepted" : published ? "Published" : "Draft"}
+        </span>
       </div>
 
       <div className="flex flex-col md:flex-row gap-5 flex-1 min-h-0 mt-5">
         <div className="flex-[2] flex flex-col gap-4 overflow-y-auto pr-1">
           {content.strategy && (
             <Section eyebrow="Strategy" tint="violet" accent="violet">
-              <EditableBlock
-                value={content.strategy.goal}
-                onSave={(goal) =>
-                  saveContent({ strategy: { ...content.strategy!, goal } })
+              <p className="text-[11.5px] text-slate mb-3">
+                What the AI understood the project to be about, drawn from the brief you gave it.
+                Edit anything that misses the mark.
+              </p>
+              <EditableSection
+                editLabel="Edit strategy"
+                fields={[
+                  { key: "goal", label: "Goal", value: content.strategy.goal, multiline: true },
+                  {
+                    key: "findings",
+                    label: "Findings",
+                    value: content.strategy.findings.join("\n"),
+                    multiline: true,
+                    hint: "One finding per line.",
+                  },
+                ]}
+                onSave={(values) =>
+                  saveContent({
+                    strategy: {
+                      ...content.strategy!,
+                      goal: values.goal,
+                      findings: values.findings
+                        .split("\n")
+                        .map((l) => l.replace(/^[-*\u2022\u00b7]\s*/, "").trim())
+                        .filter(Boolean),
+                    },
+                  })
                 }
-                ariaLabel="Strategy goal"
-                className="text-sm leading-relaxed text-ink font-medium"
-              />
-
-              <div className="mt-4">
-                <span className="text-[11px] font-bold text-slate uppercase tracking-[0.04em]">
-                  Findings
-                </span>
-                <div className="mt-1.5">
-                  <EditableBlock
-                    value={content.strategy.findings.join("\n")}
-                    onSave={(next) =>
-                      saveContent({
-                        strategy: {
-                          ...content.strategy!,
-                          findings: next
-                            .split("\n")
-                            .map((l) => l.replace(/^[-*\u2022\u00b7]\s*/, "").trim())
-                            .filter(Boolean),
-                        },
-                      })
-                    }
-                    ariaLabel="Findings"
-                    hint="One finding per line."
-                  >
-                    <Bullets items={content.strategy.findings} />
-                  </EditableBlock>
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate uppercase tracking-[0.04em]">
-                  <HelpCircle size={13} /> Open questions
-                </div>
-                <div className="mt-1.5">
-                  <EditableBlock
-                    value={content.strategy.openQuestions.join("\n")}
-                    onSave={(next) =>
-                      saveContent({
-                        strategy: {
-                          ...content.strategy!,
-                          openQuestions: next
-                            .split("\n")
-                            .map((l) => l.replace(/^[-*\u2022\u00b7]\s*/, "").trim())
-                            .filter(Boolean),
-                        },
-                      })
-                    }
-                    ariaLabel="Open questions"
-                    hint="One question per line. Leave empty if there are none."
-                  >
-                    {content.strategy.openQuestions.length ? (
-                      <Bullets items={content.strategy.openQuestions} dense />
-                    ) : (
-                      <span className="text-[13px] text-text-muted">None.</span>
-                    )}
-                  </EditableBlock>
-                </div>
-              </div>
+              >
+                <p className="text-sm leading-relaxed m-0 text-ink font-medium">
+                  {content.strategy.goal}
+                </p>
+                {content.strategy.findings.length > 0 && (
+                  <div className="mt-3">
+                    <span className="text-[11px] font-bold text-slate uppercase tracking-[0.04em]">
+                      Findings
+                    </span>
+                    <div className="mt-1.5">
+                      <Bullets items={content.strategy.findings} />
+                    </div>
+                  </div>
+                )}
+              </EditableSection>
             </Section>
           )}
 
@@ -456,7 +406,7 @@ export function BriefView({
                 className="text-sm leading-relaxed text-ink"
               />
               <p className="text-xs text-text-muted mt-2 m-0">
-                Bank details are never included here. They go on the invoice.
+                Bank details go on the invoice.
               </p>
             </Section>
           )}
@@ -574,12 +524,9 @@ export function BriefView({
             </div>
           </div>
 
-          {/* Examples, reference files with a note on how they apply, e.g.
-              "this is a landing page I built, I'd apply a similar structure
-              here" or "this moodboard is the visual direction I'd take it in." */}
-          <Section eyebrow="Examples" tint="paper" accent="coral">
-            {examples.length > 0 && (
-              <div className="grid grid-cols-2 gap-3 mb-3">
+          {examples.length > 0 && (
+            <Section eyebrow="Examples" tint="paper" accent="coral">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {examples.map((ex) => (
                   <div key={ex.id} className="bg-white rounded-lg overflow-hidden border border-line">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -595,46 +542,48 @@ export function BriefView({
                           <Trash2 size={12} />
                         </button>
                       </div>
-                      <textarea
-                        defaultValue={ex.caption}
-                        onBlur={(e) => handleCaptionBlur(ex.id, e.target.value)}
-                        placeholder="How does this apply? e.g. this is a landing page I built, I'd apply a similar structure here."
-                        className="w-full mt-1.5 text-[12px] leading-snug text-slate bg-paper rounded p-1.5 border border-line resize-none"
-                        rows={3}
-                      />
+                      <p className="text-[12px] leading-snug text-slate mt-1.5 m-0">{ex.caption}</p>
                     </div>
                   </div>
                 ))}
               </div>
-            )}
-            <div className="bg-white rounded-lg p-3 border border-dashed border-line">
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFilePicked} className="hidden" id="example-file" />
-              <label
-                htmlFor="example-file"
-                className="flex items-center gap-2 text-[12.5px] text-slate cursor-pointer"
-              >
-                <ImagePlus size={14} />
-                {exampleName ? exampleName : "Upload a screenshot, moodboard, or past work sample"}
-              </label>
-              <textarea
-                value={exampleCaption}
-                onChange={(e) => setExampleCaption(e.target.value)}
-                placeholder={`Explain how it applies, e.g. "This is a landing page I built for a past client. I'd apply a similar structure and layout here."`}
-                className="w-full mt-2 text-[12.5px] leading-snug bg-paper rounded p-2 border border-line resize-none"
-                rows={2}
-              />
-              <div className="mt-2">
-                <Button
-                  variant="outline"
-                  icon={Upload}
-                  disabled={addingExample || !exampleDataUrl || !exampleCaption.trim()}
-                  onClick={handleAddExample}
-                >
-                  {addingExample ? "Adding..." : "Add example"}
-                </Button>
+            </Section>
+          )}
+
+          {/* For the freelancer, not the client. Kept visually distinct from
+              the quote sections above and never rendered on the public page or
+              in the PDF. */}
+          {content.strategy && content.strategy.openQuestions.length > 0 && (
+            <div className="rounded-card border border-dashed border-violet/40 bg-white px-5 py-4">
+              <div className="flex items-center gap-1.5">
+                <Lightbulb size={14} className="text-violet" />
+                <span className="font-body font-bold text-[10px] tracking-[0.08em] uppercase text-violet">
+                  Worth thinking about
+                </span>
               </div>
+              <p className="text-[11.5px] text-slate mt-1.5 mb-3">
+                Notes for you, not for the client. These do not appear on the quote you send.
+              </p>
+              <EditableBlock
+                value={content.strategy.openQuestions.join("\n")}
+                onSave={(next) =>
+                  saveContent({
+                    strategy: {
+                      ...content.strategy!,
+                      openQuestions: next
+                        .split("\n")
+                        .map((l) => l.replace(/^[-*\u2022\u00b7]\s*/, "").trim())
+                        .filter(Boolean),
+                    },
+                  })
+                }
+                ariaLabel="Notes and questions"
+                hint="One per line."
+              >
+                <Bullets items={content.strategy.openQuestions} dense />
+              </EditableBlock>
             </div>
-          </Section>
+          )}
         </div>
 
         <div className="w-full md:w-[300px] flex flex-col gap-[18px]">

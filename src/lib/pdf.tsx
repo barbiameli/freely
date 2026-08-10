@@ -441,12 +441,7 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
                   <Bullets items={brief.strategy.findings} />
                 </>
               )}
-              {brief.strategy.openQuestions.length > 0 && (
-                <>
-                  <Text style={[styles.subLabel, { color: "#565656" }]}>Open questions</Text>
-                  <Bullets items={brief.strategy.openQuestions} />
-                </>
-              )}
+
             </View>
           )}
 

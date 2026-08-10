@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
   Upload,
   FileText,
@@ -32,6 +31,12 @@ import { CURRENCIES, currencySymbol } from "@/lib/currencies";
 import { MAX_DOCUMENT_UPLOAD_BYTES, documentTooLargeError } from "@/lib/upload-limits";
 import { BRANDING_OPTIONS } from "@/lib/branding";
 import { INTERPRETATION_PRESETS, QUOTE_INCLUSIONS } from "@/lib/quote-prompts";
+import { readPastedText } from "@/lib/paste-text";
+import {
+  analyzeBrandGuideAction,
+  analyzeBrandGuideImageAction,
+  uploadBrandLogoAction,
+} from "@/actions/memory";
 
 type BriefSummary = { id: string; title: string; status: "DRAFT" | "TRACKED" };
 
@@ -85,26 +90,18 @@ const GENERATION_STATUS_MESSAGES = [
   "Nearly there, promise...",
 ];
 
-/** Marks a field as required or optional. Worth the visual noise: without
- * it, every card looks equally load-bearing, and the only signal that
- * something was missing was a Continue button that silently refused to
- * work. */
+/** Marks a field as required or optional, as plain text. A pill here reads as
+ * a chip, and chips in this interface are things you click. */
 function FieldBadge({ required }: { required?: boolean }) {
   return (
-    <span
-      className={`font-body font-semibold text-[10px] uppercase tracking-wide rounded-full px-2 py-0.5 ${
-        required ? "text-violet bg-violet-tint" : "text-text-muted bg-paper border border-line"
-      }`}
-    >
-      {required ? "Required" : "Optional"}
-    </span>
+    <span className="text-[11px] text-text-muted">{required ? "Required" : "Optional"}</span>
   );
 }
 
 /** A Label with a required/optional badge alongside it. */
 function FieldHeading({ children, required }: { children: ReactNode; required?: boolean }) {
   return (
-    <div className="flex items-center gap-2 mb-1">
+    <div className="flex items-baseline gap-2 flex-wrap mb-1">
       <Label>{children}</Label>
       <FieldBadge required={required} />
     </div>
@@ -180,7 +177,7 @@ export function QuoteWizard({
     // a quote under it, so that's the default whenever it's available.
     branding: hasBrand ? "own" : "freely",
   });
-  const [sourceMode, setSourceMode] = useState<"paste" | "upload">("paste");
+  const [sourceMode, setSourceMode] = useState<"paste" | "upload">("upload");
   const [fileName, setFileName] = useState("");
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -192,6 +189,12 @@ export function QuoteWizard({
   // read as selected and clicking again takes them out rather than pasting a
   // second copy.
   const [appliedPresets, setAppliedPresets] = useState<string[]>([]);
+  // Branding can be added without leaving the wizard, so a half-filled brief
+  // isn't lost to a trip to Memory.
+  const [showBrandUpload, setShowBrandUpload] = useState(false);
+  const [brandBusy, setBrandBusy] = useState<"guide" | "logo" | null>(null);
+  const [brandError, setBrandError] = useState("");
+  const [brandSaved, setBrandSaved] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
 
   // A late-arriving response from a request the user already cancelled (or
@@ -293,9 +296,31 @@ export function QuoteWizard({
   }
 
   /** Presets toggle. Several can be combined, anything typed by hand survives,
-   * and clicking a selected one removes just that preset's text. */
+   * and clicking a selected one removes just that preset's text. Presets in
+   * the same group replace each other, since two contradictory instructions
+   * leave the result down to whichever the model happens to weight more. */
   function togglePreset(label: string, text: string) {
+    const preset = INTERPRETATION_PRESETS.find((pr) => pr.label === label);
     const on = appliedPresets.includes(label);
+
+    if (!on && preset?.group) {
+      const conflicting = INTERPRETATION_PRESETS.filter(
+        (pr) => pr.group === preset.group && pr.label !== label && appliedPresets.includes(pr.label)
+      );
+      for (const other of conflicting) {
+        setAppliedPresets((prev) => prev.filter((l) => l !== other.label));
+        setDraft((d) => ({
+          ...d,
+          instructions: d.instructions
+            .split("\n")
+            .filter((line) => line.trim() !== other.text)
+            .join("\n")
+            .replace(/\n{3,}/g, "\n\n")
+            .trim(),
+        }));
+      }
+    }
+
     setAppliedPresets((prev) => (on ? prev.filter((l) => l !== label) : [...prev, label]));
     setDraft((d) => {
       if (on) {
@@ -315,6 +340,77 @@ export function QuoteWizard({
         instructions: d.instructions.trim() ? `${d.instructions.trim()}\n${text}` : text,
       };
     });
+  }
+
+  /** Keeps headings, paragraphs and bullets when pasting from a doc or an
+   * email, which otherwise arrive as one unbroken block. */
+  function handlePasteSource(e: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const text = readPastedText(e.clipboardData);
+    if (!text) return;
+    e.preventDefault();
+    const target = e.currentTarget;
+    const { selectionStart, selectionEnd, value } = target;
+    const next = value.slice(0, selectionStart) + text + value.slice(selectionEnd);
+    setDraft((d) => ({ ...d, sourceText: next }));
+    // Put the caret after what was just pasted.
+    requestAnimationFrame(() => {
+      const caret = selectionStart + text.length;
+      target.setSelectionRange(caret, caret);
+    });
+  }
+
+  async function handleBrandGuide(file: File) {
+    setBrandError("");
+    if (file.size > MAX_DOCUMENT_UPLOAD_BYTES) {
+      setBrandError(documentTooLargeError(file));
+      return;
+    }
+    setBrandBusy("guide");
+    try {
+      if (/^image\/(png|jpeg)$/.test(file.type)) {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = () => reject(new Error("Couldn't read that image."));
+          reader.readAsDataURL(file);
+        });
+        const result = await analyzeBrandGuideImageAction(dataUrl);
+        if (!result.ok) throw new Error(result.error);
+      } else {
+        const formData = new FormData();
+        formData.set("file", file);
+        const res = await fetch("/api/extract-text", { method: "POST", body: formData });
+        const extracted = await res.json();
+        if (!res.ok) throw new Error(extracted.error || "Couldn't read that file.");
+        const result = await analyzeBrandGuideAction(extracted.text);
+        if (!result.ok) throw new Error(result.error);
+      }
+      setBrandSaved(true);
+      setDraft((d) => ({ ...d, branding: "own" }));
+      router.refresh();
+    } catch (err) {
+      setBrandError(err instanceof Error ? err.message : "Couldn't read that file.");
+    }
+    setBrandBusy(null);
+  }
+
+  async function handleBrandLogo(file: File) {
+    setBrandError("");
+    setBrandBusy("logo");
+    try {
+      // uploadBrandLogoAction reads the PNG header to check transparency and
+      // resolution, so it wants the file itself.
+      const formData = new FormData();
+      formData.set("file", file);
+      const result = await uploadBrandLogoAction(formData);
+      if (!result.ok) throw new Error(result.error);
+      setBrandSaved(true);
+      setDraft((d) => ({ ...d, branding: "own" }));
+      router.refresh();
+    } catch (err) {
+      setBrandError(err instanceof Error ? err.message : "Couldn't upload that logo.");
+    }
+    setBrandBusy(null);
   }
 
   function handleReferenceImage(file: File) {
@@ -372,81 +468,99 @@ export function QuoteWizard({
               What are we quoting?
             </h1>
             <p className="text-slate text-[15px] mt-2">
-              Everything the quote gets built from. Only the brief itself and your rate are
-              needed, the rest just sharpens the result.
+              Everything the quote gets built from. Only the brief and your rate are needed.
             </p>
           </div>
           <Stepper activeIndex={0} />
-          <div className="flex flex-col md:flex-row gap-4 md:gap-5">
-            <Card
-              onClick={() => setSourceMode("upload")}
-              className={`flex-1 cursor-pointer ${
-                sourceMode === "upload" ? "border-violet border-[1.5px]" : ""
-              }`}
-            >
-              <div
-                className={`w-11 h-11 rounded-full flex items-center justify-center mb-3.5 ${
-                  sourceMode === "upload" ? "bg-violet-tint" : "bg-paper"
-                }`}
-              >
-                <Upload size={18} className={sourceMode === "upload" ? "text-violet" : "text-text-muted"} />
-              </div>
-              <div className="font-body font-semibold text-base mb-1.5 text-ink">Upload a brief</div>
-              <div className="text-slate text-[13px]">
-                Drop a PDF, DOCX, or text file. We&apos;ll read it and pull out the scope.
-              </div>
-            </Card>
-            <Card
-              onClick={() => setSourceMode("paste")}
-              className={`flex-1 cursor-pointer ${
-                sourceMode === "paste" ? "border-violet border-[1.5px]" : ""
-              }`}
-            >
-              <div
-                className={`w-11 h-11 rounded-full flex items-center justify-center mb-3.5 ${
-                  sourceMode === "paste" ? "bg-violet-tint" : "bg-paper"
-                }`}
-              >
-                <FileText size={18} className={sourceMode === "paste" ? "text-violet" : "text-text-muted"} />
-              </div>
-              <div className="font-body font-semibold text-base mb-1.5 text-ink">Paste text</div>
-              <div className="text-slate text-[13px]">
-                Paste notes, a call transcript, or a scope you&apos;ve already typed up.
-              </div>
-            </Card>
+          {/* Each choice owns its input, so the card and the field it reveals
+              read as one thing. Previously the picker sat above a separate
+              field, which looked like two unrelated controls. */}
+          <div className="flex flex-col gap-4">
+            {(
+              [
+                {
+                  mode: "upload" as const,
+                  icon: Upload,
+                  title: "Upload a brief",
+                  blurb: "Drop a PDF, DOCX, or text file and we'll read the scope out of it.",
+                },
+                {
+                  mode: "paste" as const,
+                  icon: FileText,
+                  title: "Paste text",
+                  blurb: "Notes, a call transcript, or a scope you've already typed up.",
+                },
+              ]
+            ).map(({ mode, icon: Icon, title, blurb }) => {
+              const selected = sourceMode === mode;
+              return (
+                <Card
+                  key={mode}
+                  onClick={selected ? undefined : () => setSourceMode(mode)}
+                  className={`transition-colors ${selected ? "border-violet border-[1.5px]" : "cursor-pointer"}`}
+                >
+                  <div className="flex items-start gap-3.5">
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                        selected ? "bg-violet-tint" : "bg-paper"
+                      }`}
+                    >
+                      <Icon size={17} className={selected ? "text-violet" : "text-text-muted"} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-body font-semibold text-[15px] text-ink">{title}</div>
+                      <div className="text-slate text-[13px] mt-0.5">{blurb}</div>
+                    </div>
+                  </div>
+
+                  {/* Grid-rows trick: animates from 0 to auto height, which a
+                      plain max-height transition can't do without guessing a
+                      value that clips longer content. */}
+                  <div
+                    className={`grid transition-all duration-300 ease-out ${
+                      selected ? "grid-rows-[1fr] opacity-100 mt-4" : "grid-rows-[0fr] opacity-0"
+                    }`}
+                  >
+                    <div className="overflow-hidden">
+                      {mode === "paste" ? (
+                        <textarea
+                          value={draft.sourceText}
+                          onChange={(e) => setDraft((d) => ({ ...d, sourceText: e.target.value }))}
+                          onPaste={handlePasteSource}
+                          placeholder="Paste the client's brief, email, or notes here..."
+                          rows={9}
+                          className="w-full font-body text-[13.5px] leading-relaxed text-ink bg-paper border border-line rounded-lg px-3.5 py-3 outline-none box-border resize-y whitespace-pre-wrap"
+                        />
+                      ) : (
+                        <DropZone
+                          onFile={handleFile}
+                          accept=".txt,.md,.pdf,.docx"
+                          disabled={uploading}
+                          className="flex flex-col gap-2 cursor-pointer bg-paper border border-dashed border-line rounded-lg px-4 py-5"
+                        >
+                          <span className="text-[13px] text-text-muted">
+                            {uploading
+                              ? "Reading file..."
+                              : fileName
+                              ? `Loaded: ${fileName}`
+                              : "Drag a file here, or click to choose one (.txt, .md, .pdf, .docx)."}
+                          </span>
+                          <span className="font-body font-bold text-[13px] text-violet">
+                            Choose file
+                          </span>
+                        </DropZone>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
           </div>
-          {sourceMode === "paste" ? (
-            <TextField
-              value={draft.sourceText}
-              onChange={(v) => setDraft((d) => ({ ...d, sourceText: v }))}
-              placeholder="Paste the client's brief, email, or notes here..."
-              multiline
-              rows={8}
-            />
-          ) : (
-            <Card>
-              <DropZone
-                onFile={handleFile}
-                accept=".txt,.md,.pdf,.docx"
-                disabled={uploading}
-                className="flex flex-col gap-2 cursor-pointer -m-1 p-1"
-              >
-                <span className="text-[13px] text-text-muted">
-                  {uploading
-                    ? "Reading file..."
-                    : fileName
-                    ? `Loaded: ${fileName}`
-                    : "Drag a file here, or click to choose one (.txt, .md, .pdf, .docx)."}
-                </span>
-                <span className="font-body font-bold text-[13px] text-violet">Choose file</span>
-              </DropZone>
-            </Card>
-          )}
+
           <Card>
             <FieldHeading>Visual references</FieldHeading>
             <p className="text-xs text-text-muted mb-3">
-              Screenshots, moodboards, examples of the kind of thing you mean. Attached to the
-              quote so the client can see the direction, not just read about it.
+              Screenshots, moodboards, or examples of the kind of thing you mean. Attached to the quote so the client can see the direction.
             </p>
             <DropZone
               onFile={handleReferenceImage}
@@ -495,8 +609,7 @@ export function QuoteWizard({
           <Card>
             <FieldHeading>How should this be read?</FieldHeading>
             <p className="text-xs text-text-muted mb-3">
-              How you want the brief interpreted and the quote structured. Leave it empty and the
-              AI decides based on the brief and your past quotes. Tap any of these to start:
+              How you want the brief interpreted and the quote structured. Leave it empty and the AI decides from the brief and your past quotes.
             </p>
             <div className="flex flex-wrap gap-2 mb-3">
               {INTERPRETATION_PRESETS.map((preset) => (
@@ -546,8 +659,7 @@ export function QuoteWizard({
                 <span className="text-slate text-sm">/hr</span>
               </div>
               <div className="text-xs text-text-muted mt-2.5">
-                Price and hours are worked out from this, so estimates stay tied to what you
-                actually charge.
+                Price and hours are worked out from this.
               </div>
             </Card>
             <Card className="flex-1">
@@ -564,8 +676,7 @@ export function QuoteWizard({
                 ))}
               </div>
               <div className="text-xs text-text-muted mt-2.5">
-                Only used when there is no pricing history yet, to research a realistic baseline
-                instead of guessing.
+                Used when there is no pricing history yet, to research a realistic baseline.
               </div>
             </Card>
           </div>
@@ -585,8 +696,7 @@ export function QuoteWizard({
           <div>
             <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">How should we package it?</h1>
             <p className="text-slate text-[15px] mt-2">
-              How the finished quote looks and what it includes. The defaults are fine if you
-              just want to see it.
+              How the finished quote looks and what it includes.
             </p>
           </div>
           <Stepper activeIndex={1} />
@@ -654,18 +764,80 @@ export function QuoteWizard({
                         <div className="font-body font-semibold text-[13px] text-ink">{opt.name}</div>
                         <div className="text-slate text-[11px] mt-1">{opt.desc}</div>
                         {disabled && (
-                          <Link
-                            href="/memory#branding"
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-violet text-[11px] font-bold mt-1.5 inline-block"
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowBrandUpload(true);
+                            }}
+                            className="text-violet text-[11px] font-bold mt-1.5 bg-none border-none cursor-pointer p-0"
                           >
                             Add your branding
-                          </Link>
+                          </button>
                         )}
                       </Card>
                     );
                   })}
                 </div>
+
+                {showBrandUpload && (
+                  <div className="bg-paper border border-line rounded-lg p-4 mb-5">
+                    <div className="flex justify-between items-start gap-3">
+                      <div>
+                        <div className="font-body font-semibold text-[13px] text-ink">
+                          Add your branding
+                        </div>
+                        <div className="text-slate text-[11.5px] mt-0.5">
+                          A logo, a brand guide, or both. Saved to Memory and applied here.
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowBrandUpload(false)}
+                        className="text-[11.5px] text-text-muted bg-none border-none cursor-pointer p-0"
+                      >
+                        Close
+                      </button>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-4 mt-3">
+                      <DropZone
+                        onFile={handleBrandGuide}
+                        accept=".pdf,.docx,.txt,.md,image/png,image/jpeg"
+                        disabled={brandBusy !== null}
+                        className="flex-1 flex flex-col gap-1.5 cursor-pointer bg-white border border-dashed border-line rounded-lg px-3.5 py-3"
+                      >
+                        <span className="flex items-center gap-1.5 font-body font-bold text-[12.5px] text-violet">
+                          <FileText size={12} />
+                          {brandBusy === "guide" ? "Reading..." : "Brand guidelines"}
+                        </span>
+                        <span className="text-[11px] text-text-muted">
+                          PDF, DOCX, TXT, MD, PNG or JPG.
+                        </span>
+                      </DropZone>
+
+                      <DropZone
+                        onFile={handleBrandLogo}
+                        accept="image/png"
+                        disabled={brandBusy !== null}
+                        className="flex-1 flex flex-col gap-1.5 cursor-pointer bg-white border border-dashed border-line rounded-lg px-3.5 py-3"
+                      >
+                        <span className="flex items-center gap-1.5 font-body font-bold text-[12.5px] text-violet">
+                          <ImagePlus size={12} />
+                          {brandBusy === "logo" ? "Uploading..." : "Logo"}
+                        </span>
+                        <span className="text-[11px] text-text-muted">Transparent PNG.</span>
+                      </DropZone>
+                    </div>
+
+                    {brandError && <div className="text-overdue text-[12px] mt-2">{brandError}</div>}
+                    {brandSaved && (
+                      <div className="flex items-center gap-1.5 text-success text-[12px] mt-2">
+                        <Check size={12} /> Saved. &quot;Your brand&quot; is ready to pick.
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="text-[11px] font-bold text-slate uppercase tracking-wide mb-2">
                   Style
@@ -698,31 +870,9 @@ export function QuoteWizard({
           </Card>
 
           <Card>
-            <FieldHeading>Detail level</FieldHeading>
-            <div className="flex bg-paper rounded-full p-[3px] max-w-[280px]">
-              {(["Generic", "Detailed"] as const).map((lvl) => (
-                <button
-                  key={lvl}
-                  onClick={() => setDraft((d) => ({ ...d, detailLevel: lvl }))}
-                  className={`flex-1 py-2.5 rounded-full border-none cursor-pointer font-body font-semibold text-xs ${
-                    draft.detailLevel === lvl ? "bg-violet text-white" : "bg-transparent text-slate"
-                  }`}
-                >
-                  {lvl}
-                </button>
-              ))}
-            </div>
-            <div className="text-xs text-text-muted mt-2.5">
-              Detailed spells out every deliverable and assumption, which is usually right for a
-              new client.
-            </div>
-          </Card>
-
-          <Card>
             <FieldHeading>Add sections</FieldHeading>
             <p className="text-xs text-text-muted mb-3">
-              Every quote covers the scope, what you will deliver, and the price with the
-              reasoning behind it. Add anything else this particular quote needs.
+              Every quote covers the scope, deliverables, and the price with the reasoning behind it. Add anything else this one needs.
             </p>
             <div className="flex flex-col gap-2">
               {QUOTE_INCLUSIONS.map((inc) => {

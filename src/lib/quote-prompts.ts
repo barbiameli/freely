@@ -12,25 +12,49 @@ export interface QuotePromptPreset {
   /** Appended to the instructions field. Written as an instruction to the
    * model, not as a note to the reader. */
   text: string;
+  /**
+   * Presets sharing a group are mutually exclusive, so the model never gets
+   * two instructions that cancel each other out. "Keep it lean" and "Spell
+   * everything out" cannot both be true, and picking both previously left the
+   * result down to whichever the model weighted more heavily.
+   */
+  group?: "shape" | "depth";
 }
 
 export const INTERPRETATION_PRESETS: QuotePromptPreset[] = [
+  // How the engagement is shaped. One of these at most.
   {
     label: "Suggest the approach",
     text: "Decide the best way to structure this engagement yourself and say why. Consider whether it should be one phase or several, and whether anything needs scoping before the rest can be priced honestly.",
+    group: "shape",
   },
   {
     label: "Phase it",
     text: "Break this into distinct phases with their own deliverables, so the client can approve and pay for them one at a time.",
+    group: "shape",
   },
   {
     label: "Scope discovery first",
     text: "Treat this as discovery first: price a short paid scoping phase, then describe the likely shape and range of the main engagement without committing to a firm number for it yet.",
+    group: "shape",
   },
   {
     label: "One fixed price",
-    text: "Keep this as a single fixed-price engagement with one total, rather than splitting it into phases.",
+    text: "Keep this as a single fixed-price engagement with one total.",
+    group: "shape",
   },
+  // How much detail the client sees. One of these at most.
+  {
+    label: "Keep it lean",
+    text: "Keep the whole quote brief and skimmable. Short scope paragraph, tight deliverables list, no padding.",
+    group: "depth",
+  },
+  {
+    label: "Spell it all out",
+    text: "Spell out every deliverable, assumption and exclusion explicitly. Write it for someone who wants to know exactly what they are buying.",
+    group: "depth",
+  },
+  // Free-standing, combinable with anything above.
   {
     label: "Flag the risks",
     text: "Be explicit about what could push the timeline or cost, and what you are assuming. Do not paper over gaps in the brief.",
@@ -38,10 +62,6 @@ export const INTERPRETATION_PRESETS: QuotePromptPreset[] = [
   {
     label: "Trim the scope",
     text: "The brief asks for more than the budget implies. Recommend the smallest version that still achieves the goal, and list what you have deliberately left out.",
-  },
-  {
-    label: "Keep it short",
-    text: "Keep the whole quote brief and skimmable. Short scope paragraph, tight deliverables list, no padding.",
   },
   {
     label: "Formal tone",
@@ -69,17 +89,17 @@ export const QUOTE_INCLUSIONS: QuoteInclusion[] = [
   {
     key: "includeStrategy",
     label: "Strategy",
-    hint: "Your read on the goal, what you found in the brief, and what still needs confirming.",
+    hint: "The goal, what the brief tells you, and what still needs confirming.",
   },
   {
     key: "includeTimeline",
     label: "Timeline",
-    hint: "A week-by-week breakdown instead of a one-line duration.",
+    hint: "A week-by-week breakdown.",
   },
   {
     key: "includeSOW",
     label: "Statement of Work",
-    hint: "Turns the quote into something signable, with payment terms and what happens if scope changes.",
+    hint: "Makes the quote signable, with payment terms and what happens if scope changes.",
   },
   {
     key: "includeTerms",
@@ -89,7 +109,7 @@ export const QUOTE_INCLUSIONS: QuoteInclusion[] = [
   {
     key: "includeRevisions",
     label: "Revisions policy",
-    hint: "How many rounds are included, and what counts as a new request.",
+    hint: "How many rounds are included, and what counts as new work.",
   },
   {
     key: "includeAvailability",
@@ -99,6 +119,6 @@ export const QUOTE_INCLUSIONS: QuoteInclusion[] = [
   {
     key: "includeAI",
     label: "AI-use disclosure",
-    hint: "States that AI helped draft this and that you reviewed it.",
+    hint: "States that AI helped draft this and you reviewed it.",
   },
 ];

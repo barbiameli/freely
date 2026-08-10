@@ -28,8 +28,7 @@ export default async function InvoicesPage() {
         <div>
           <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">Invoices</h1>
           <p className="text-slate text-[15px] mt-2">
-            Built from a tracked project, in the same branding as its quote. Your payment details
-            are typed in at download and never saved.
+            Built from a tracked project, in the same branding as its quote.
           </p>
         </div>
         <NewInvoiceButton projects={projects} />
@@ -88,12 +87,14 @@ export default async function InvoicesPage() {
       )}
 
       <Card>
-        <Label>Why you retype payment details</Label>
+        <Label>Payment details</Label>
         <p className="text-[12.5px] text-slate mt-1 mb-0">
-          Freely never stores your bank details. They go straight into the PDF you download and are
-          not written to your account, so a breach here exposes no payment information. The
-          trade-off is retyping them, or ticking &quot;remember on this device&quot; on the invoice
-          itself, which keeps them in this browser only.
+          Freely does not store your bank details. You add them when you download an invoice, and
+          they go into the PDF only. See the{" "}
+          <Link href="/terms" className="text-violet font-semibold">
+            terms
+          </Link>{" "}
+          for what is stored.
         </p>
       </Card>
     </>

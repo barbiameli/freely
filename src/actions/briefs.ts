@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
-import { sanitizeText } from "@/lib/sanitize-text";
+import { sanitizeText, stripLongDashes } from "@/lib/sanitize-text";
 import {
   generateBriefFromDraft,
   refineBrief,
@@ -52,6 +52,13 @@ async function buildMemoryContext(user: {
 
 export type QuoteDraftPayload = QuoteDraftInput;
 
+/** Cleaning for generated copy: the usual control-character strip, plus
+ * flattening the em dashes the model reaches for despite being told not to.
+ * Only applied to model output, never to text the user typed. */
+function clean(text: string): string {
+  return stripLongDashes(sanitizeText(text));
+}
+
 /** Pulls the optional add-on sections off the generated brief into the shape
  * stored in Brief.extras, sanitized. */
 function sanitizeExtras(generated: GeneratedBrief): BriefExtras {
@@ -59,15 +66,15 @@ function sanitizeExtras(generated: GeneratedBrief): BriefExtras {
     ...(generated.terms
       ? {
           terms: {
-            cancellation: sanitizeText(generated.terms.cancellation),
-            ownership: sanitizeText(generated.terms.ownership),
-            confidentiality: sanitizeText(generated.terms.confidentiality),
+            cancellation: clean(generated.terms.cancellation),
+            ownership: clean(generated.terms.ownership),
+            confidentiality: clean(generated.terms.confidentiality),
           },
         }
       : {}),
-    ...(generated.revisions ? { revisions: sanitizeText(generated.revisions) } : {}),
-    ...(generated.availability ? { availability: sanitizeText(generated.availability) } : {}),
-    ...(generated.paymentTerms ? { paymentTerms: sanitizeText(generated.paymentTerms) } : {}),
+    ...(generated.revisions ? { revisions: clean(generated.revisions) } : {}),
+    ...(generated.availability ? { availability: clean(generated.availability) } : {}),
+    ...(generated.paymentTerms ? { paymentTerms: clean(generated.paymentTerms) } : {}),
   };
 }
 
@@ -82,11 +89,11 @@ function hasExtras(generated: GeneratedBrief): boolean {
  * before it's stored. */
 function sanitizeStrategy(strategy: Strategy): Strategy {
   return {
-    goal: sanitizeText(strategy.goal),
-    findings: strategy.findings.map(sanitizeText),
-    aiWill: strategy.aiWill.map(sanitizeText),
-    aiWillNot: strategy.aiWillNot.map(sanitizeText),
-    openQuestions: strategy.openQuestions.map(sanitizeText),
+    goal: clean(strategy.goal),
+    findings: strategy.findings.map(clean),
+    aiWill: strategy.aiWill.map(clean),
+    aiWillNot: strategy.aiWillNot.map(clean),
+    openQuestions: strategy.openQuestions.map(clean),
   };
 }
 
@@ -152,11 +159,11 @@ export async function generateBriefAction(
         // straight in, and the model echoes chunks of it back into these
         // fields, so a single missed NUL anywhere upstream would fail the
         // whole insert after the slow generation had already been paid for.
-        title: sanitizeText(generated.title),
-        client: sanitizeText(generated.client),
-        scope: sanitizeText(generated.scope),
-        deliverables: generated.deliverables.map(sanitizeText),
-        timeline: sanitizeText(generated.timeline),
+        title: clean(generated.title),
+        client: clean(generated.client),
+        scope: clean(generated.scope),
+        deliverables: generated.deliverables.map(clean),
+        timeline: clean(generated.timeline),
         // Prisma's Json? columns treat an explicit `null` specially (it wants
         // Prisma.JsonNull, not the JS literal) — so when there's no strategy
         // we just omit the field entirely (undefined) and let the column
@@ -244,11 +251,11 @@ export async function refineBriefAction(
   await prisma.brief.update({
     where: { id: brief.id },
     data: {
-      title: sanitizeText(updated.title),
-      client: sanitizeText(updated.client),
-      scope: sanitizeText(updated.scope),
-      deliverables: updated.deliverables.map(sanitizeText),
-      timeline: sanitizeText(updated.timeline),
+      title: clean(updated.title),
+      client: clean(updated.client),
+      scope: clean(updated.scope),
+      deliverables: updated.deliverables.map(clean),
+      timeline: clean(updated.timeline),
       ...(updated.strategy ? { strategy: sanitizeStrategy(updated.strategy) } : {}),
       price: updated.price,
       hours: updated.hours,

@@ -134,7 +134,7 @@ function Features() {
     {
       icon: Users,
       title: "Client diary & reporting",
-      body: "Keep a running log of project updates your client can follow, branded with your own colors and logo instead of Freely's default look.",
+      body: "Keep a running log of project updates your client can follow, branded with your own colors and logo.",
     },
   ];
 

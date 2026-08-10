@@ -119,8 +119,7 @@ export function MemoryView({
           What it knows about your studio.
         </h1>
         <p className="text-slate text-[13px] mt-2">
-          This context actually shapes quote generation, try changing it and generating a new
-          quote. Working as: <span className="font-semibold text-slate">{industryLabel(industry)}</span>.
+          This context shapes quote generation. Working as: <span className="font-semibold text-slate">{industryLabel(industry)}</span>.
         </p>
       </div>
       <div className="flex gap-2 flex-wrap">
@@ -232,8 +231,7 @@ function PersonaCard({ initial, updatedAt }: { initial: string | null; updatedAt
         </span>
       </div>
       <p className="text-[11px] text-text-muted mb-3">
-        Built from your Story, Tone, Context, saved files, and past projects, a starting picture
-        of how you work, not a locked-in fact. Correct it any time.
+        Built from your Story, Tone, Context, saved files, and past projects. Correct it any time.
       </p>
       {editing ? (
         <TextField value={value} onChange={setValue} multiline rows={4} />
@@ -663,8 +661,7 @@ function BrandingCard({
           <FileText size={12} /> Brand guidelines
         </div>
         <p className="text-[11.5px] text-text-muted mb-2">
-          The AI pulls out colors and typeface names. Colors apply immediately; fonts are shown
-          for reference only.
+          The AI pulls out colors and typeface names. Colors apply immediately; fonts are shown for reference.
         </p>
         <DropZone
           onFile={handleGuideUpload}

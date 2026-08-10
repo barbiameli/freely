@@ -47,6 +47,23 @@ interface EditorInvoice {
  */
 const PAYMENT_STORAGE_KEY = "freely.invoice.payment";
 
+/** A section heading that states whether the section is needed, as plain
+ * text. Badges here read as chips, which look tappable and are not. */
+function SectionHeading({
+  children,
+  required,
+}: {
+  children: React.ReactNode;
+  required?: boolean;
+}) {
+  return (
+    <div className="flex items-baseline gap-2 flex-wrap">
+      <Label>{children}</Label>
+      <span className="text-[11px] text-text-muted">{required ? "Required" : "Optional"}</span>
+    </div>
+  );
+}
+
 function Field({
   label,
   value,
@@ -249,7 +266,7 @@ export function InvoiceEditor({
 
       <div className="flex flex-col md:flex-row gap-4 md:gap-5">
         <Card className="flex-1">
-          <Label>From</Label>
+          <SectionHeading required>From</SectionHeading>
           <div className="flex flex-col gap-2.5 mt-1">
             <Field label="Name" value={form.fromName} onChange={(v) => set("fromName", v)} />
             <Field
@@ -270,7 +287,7 @@ export function InvoiceEditor({
         </Card>
 
         <Card className="flex-1">
-          <Label>Billed to</Label>
+          <SectionHeading required>Billed to</SectionHeading>
           <div className="flex flex-col gap-2.5 mt-1">
             <Field label="Name" value={form.clientName} onChange={(v) => set("clientName", v)} />
             <Field
@@ -295,7 +312,7 @@ export function InvoiceEditor({
       </div>
 
       <Card>
-        <Label>Dates and currency</Label>
+        <SectionHeading required>Dates and currency</SectionHeading>
         <div className="flex gap-4 mt-1">
           <div className="flex-1">
             <Field label="Issued" type="date" value={form.issuedAt} onChange={(v) => set("issuedAt", v)} />
@@ -331,7 +348,7 @@ export function InvoiceEditor({
       </Card>
 
       <Card>
-        <Label>Line items</Label>
+        <SectionHeading required>Line items</SectionHeading>
         <div className="flex flex-col gap-3 mt-1">
           {form.lineItems.map((item, i) => (
             <div key={i} className="bg-paper rounded-lg p-3">
@@ -470,10 +487,9 @@ export function InvoiceEditor({
       </Card>
 
       <Card>
-        <Label>Branding</Label>
+        <SectionHeading>Branding</SectionHeading>
         <p className="text-xs text-text-muted mb-3">
-          Defaults to whatever the matching quote used, so the invoice looks like it came from the
-          same place.
+          Defaults to whatever the matching quote used.
         </p>
         <div className="flex gap-2.5 flex-wrap">
           {BRANDING_OPTIONS.map((opt) => {
@@ -493,7 +509,7 @@ export function InvoiceEditor({
       </Card>
 
       <Card>
-        <Label>Closing note</Label>
+        <SectionHeading>Closing note</SectionHeading>
         <div className="mt-1">
           <Field
             label="Shown at the foot of the invoice"
@@ -509,10 +525,9 @@ export function InvoiceEditor({
         <div className="flex items-start gap-2 mb-1">
           <ShieldOff size={15} className="text-violet shrink-0 mt-0.5" />
           <div>
-            <Label>Payment details</Label>
+            <SectionHeading required>Payment details</SectionHeading>
             <p className="text-[12.5px] text-slate mt-1 mb-0">
-              These go straight into the PDF and are <strong>not saved to your Freely account</strong>.
-              We deliberately hold no bank details, so there is nothing here for a breach to expose.
+              These go into the PDF and are not saved to your Freely account.
             </p>
           </div>
         </div>
@@ -546,10 +561,7 @@ export function InvoiceEditor({
               onChange={(e) => setRemember(e.target.checked)}
               className="mt-0.5 shrink-0"
             />
-            <span>
-              Remember these in this browser only, so I don&apos;t retype them next time. Stored on
-              this device, never sent to Freely. Clearing your browser data removes them.
-            </span>
+            <span>Remember these on this device, so I do not retype them next time.</span>
           </label>
         </div>
       </Card>
