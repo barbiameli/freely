@@ -21,12 +21,21 @@ export default async function QuotePage() {
     select: { id: true, title: true, status: true },
   });
 
+  // With no priced history, the model has nothing of the freelancer's own to
+  // anchor to and has to research the market instead, which it can only do
+  // well if it knows which market. The wizard asks for that only in this case.
+  const pricedCount = await prisma.brief.count({
+    where: { ...scope, price: { gt: 0 }, hours: { gt: 0 } },
+  });
+
   return (
     <QuoteWizard
       recentBriefs={briefs}
       userIndustry={user.industry}
       userCurrency={user.currency}
       hasBrand={hasOwnBranding(user)}
+      hasPricingHistory={pricedCount > 0}
+      savedLocation={(user as unknown as { location: string | null }).location ?? ""}
     />
   );
 }

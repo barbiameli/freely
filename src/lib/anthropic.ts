@@ -136,6 +136,29 @@ export interface QuoteDraftInput {
    * preference. Purely a display choice; the underlying number is the same
    * regardless of currency. */
   currency?: string;
+  /**
+   * Extra context for pricing, asked for when there's no quote history to
+   * anchor to. Location does most of the work here: rates for the same job
+   * differ by multiples between markets, and previously the model was left
+   * to infer a market from the brief, which is a guess.
+   */
+  pricing?: PricingContext;
+}
+
+export interface PricingContext {
+  /** Where the freelancer is based, e.g. "Valencia, Spain". */
+  yourLocation?: string;
+  /** Where the client is. Often the stronger signal: a London client pays
+   * London rates whoever they hire. */
+  clientLocation?: string;
+  /** Startup, agency, enterprise, non-profit, individual. Moves budgets a lot. */
+  clientType?: string;
+  /** Anything the client said about budget, even a vague range. */
+  budgetHint?: string;
+  /** Whether this is a rush job, which usually carries a premium. */
+  urgency?: string;
+  /** Whether they have done this kind of work before, even unpaid. */
+  experienceNote?: string;
 }
 
 export interface MemoryContext {
@@ -171,6 +194,23 @@ export function buildSystemPrompt(memory: MemoryContext | string): string {
   ];
 
   return sections.filter(Boolean).join(" ");
+}
+
+/** Folds whatever pricing context was given into the prompt. Only the parts
+ * actually filled in are mentioned, so an empty answer never becomes a
+ * confident-looking blank. */
+function formatPricingContext(pricing?: PricingContext): string {
+  if (!pricing) return "";
+  const lines: string[] = [];
+  if (pricing.yourLocation?.trim()) lines.push(`- The freelancer is based in ${pricing.yourLocation.trim()}.`);
+  if (pricing.clientLocation?.trim()) lines.push(`- The client is in ${pricing.clientLocation.trim()}.`);
+  if (pricing.clientType?.trim()) lines.push(`- The client is a ${pricing.clientType.trim()}.`);
+  if (pricing.budgetHint?.trim()) lines.push(`- Budget signal from the client: ${pricing.budgetHint.trim()}.`);
+  if (pricing.urgency?.trim()) lines.push(`- Timing: ${pricing.urgency.trim()}.`);
+  if (pricing.experienceNote?.trim())
+    lines.push(`- Their experience with this kind of work: ${pricing.experienceNote.trim()}.`);
+  if (!lines.length) return "";
+  return `\nContext for the research:\n${lines.join("\n")}`;
 }
 
 function formatPricingHistory(history: PricingHistoryEntry[], symbol: string): string {
@@ -210,7 +250,11 @@ export function buildGenerateUserPrompt(
 
   const pricingInstruction = hasHistory
     ? `Pricing approach: this freelancer charges ${symbol}${draft.hourlyRate}/hr (currency: ${currencyCode}). Look at the pricing history below for comparable past work, estimate the hours this new project will realistically take (informed by how long similar past projects took), and set price = hours × hourly rate, adjusting for scope differences. Briefly sanity-check that the implied rate stays close to ${symbol}${draft.hourlyRate}/hr.`
-    : `Pricing approach: this freelancer charges ${symbol}${draft.hourlyRate}/hr (currency: ${currencyCode}) and has no comparable pricing history yet. Use web search to research typical freelance/agency rates and typical hour ranges for this kind of project, in ${currencyCode}, for a "${draft.expertiseLevel}"-level freelancer, in their likely region/market if it can be inferred from the brief. Use that research to sanity-check a realistic hour estimate, then set price = hours × ${symbol}${draft.hourlyRate}/hr.`;
+    : `Pricing approach: this freelancer charges ${symbol}${draft.hourlyRate}/hr (currency: ${currencyCode}) and has no comparable pricing history yet, so the numbers have to come from research rather than from their own past work.${formatPricingContext(
+        draft.pricing
+      )}
+Use web search to find what this kind of project actually costs, and how many hours it typically takes, for a "${draft.expertiseLevel}"-level freelancer. Search against the client's market where one is given, since that is what sets what can be charged, and note the freelancer's own market as a cross-check. Then estimate the hours this project realistically needs and set price = hours × ${symbol}${draft.hourlyRate}/hr.
+If the research suggests their stated rate is well below or well above the going rate for that market, say so plainly in the strategy findings or open questions. Do not silently change their rate.`;
 
   const strategyInstruction = draft.includeStrategy
     ? `\nInclude a "strategy" object, written the way a senior consultant frames a proposal's approach: "goal" is one sentence naming the outcome this project is actually for. "findings" is 2-4 concrete, standalone observations drawn from the source material (what's currently true / what's missing / what was asked for), each its own bullet, not one merged sentence. "openQuestions" is 2-4 notes for the freelancer only, never shown to the client: things worth confirming before starting, risks the brief glosses over, or a suggestion about how to approach the work that they may not have considered. Do not mention AI usage anywhere in this object, that's handled separately.`

@@ -151,11 +151,17 @@ export function QuoteWizard({
   userIndustry,
   userCurrency,
   hasBrand,
+  hasPricingHistory,
+  savedLocation,
 }: {
   recentBriefs: BriefSummary[];
   userIndustry?: string | null;
   userCurrency?: string | null;
   hasBrand?: boolean;
+  /** False on a first quote, when there is nothing of their own to price
+   * against and the model has to research the market. */
+  hasPricingHistory?: boolean;
+  savedLocation?: string;
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -176,6 +182,7 @@ export function QuoteWizard({
     // Someone who has set up their own branding almost always wants to send
     // a quote under it, so that's the default whenever it's available.
     branding: hasBrand ? "own" : "freely",
+    pricing: { yourLocation: savedLocation || "" },
   });
   const [sourceMode, setSourceMode] = useState<"paste" | "upload">("upload");
   const [fileName, setFileName] = useState("");
@@ -684,6 +691,73 @@ export function QuoteWizard({
             </Card>
           </div>
 
+          {!hasPricingHistory && (
+            <Card>
+              <FieldHeading>Help price this accurately</FieldHeading>
+              <p className="text-[12px] text-text-muted mb-3">
+                This is your first quote, so there is no past work to price against. Rates for the
+                same job differ a lot between markets, so these help the AI research the right one.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {(
+                  [
+                    {
+                      key: "yourLocation" as const,
+                      label: "Where you are based",
+                      placeholder: "e.g. Buenos Aires, Argentina",
+                    },
+                    {
+                      key: "clientLocation" as const,
+                      label: "Where the client is",
+                      placeholder: "e.g. London, UK",
+                    },
+                    {
+                      key: "clientType" as const,
+                      label: "What kind of client",
+                      placeholder: "e.g. seed-stage startup",
+                    },
+                    {
+                      key: "budgetHint" as const,
+                      label: "Anything they said about budget",
+                      placeholder: "e.g. mentioned around 5k",
+                    },
+                    {
+                      key: "urgency" as const,
+                      label: "Timing",
+                      placeholder: "e.g. needs it in three weeks",
+                    },
+                    {
+                      key: "experienceNote" as const,
+                      label: "Done this kind of work before?",
+                      placeholder: "e.g. twice, unpaid, for friends",
+                    },
+                  ]
+                ).map((field) => (
+                  <label key={field.key} className="block">
+                    <span className="block text-[10.5px] font-bold text-slate uppercase tracking-wide mb-1">
+                      {field.label}
+                    </span>
+                    <input
+                      value={draft.pricing?.[field.key] || ""}
+                      onChange={(e) =>
+                        setDraft((d) => ({
+                          ...d,
+                          pricing: { ...d.pricing, [field.key]: e.target.value },
+                        }))
+                      }
+                      placeholder={field.placeholder}
+                      className="w-full font-body text-[13px] text-ink bg-paper border border-line rounded-lg px-2.5 py-2 outline-none"
+                    />
+                  </label>
+                ))}
+              </div>
+              <p className="text-[11.5px] text-text-muted mt-3">
+                All optional. Where the client is usually matters most, since that is what sets
+                what you can charge.
+              </p>
+            </Card>
+          )}
+
           {error && <div className="text-overdue text-[13px]">{error}</div>}
           <div className="flex justify-end mt-auto pt-2">
             <Button icon={ArrowRight} onClick={goToOutputStep}>
@@ -702,7 +776,14 @@ export function QuoteWizard({
               How the finished quote looks and what it includes.
             </p>
           </div>
-          <Stepper activeIndex={1} />
+          <Stepper
+            activeIndex={1}
+            onStepClick={() => {
+              if (generating) handleStopGenerating();
+              setError("");
+              setStep(0);
+            }}
+          />
 
           <Card>
             <FieldHeading required>Output</FieldHeading>

@@ -52,6 +52,12 @@ model User {
   // presets across Quote/Memory. Null until the user completes /onboarding.
   industry           String?
 
+  // Where this freelancer is based, e.g. "Valencia, Spain". The single
+  // biggest determinant of a defensible rate when there's no pricing history
+  // to anchor to: what a designer can charge in London and in Buenos Aires
+  // differ by multiples. Asked once and reused.
+  location           String?
+
   // AI-synthesized persona — a short summary of who this freelancer is and
   // how they work, inferred from Story/Tone/Context/Files/industry/past
   // projects. Regenerated on demand; user can hand-edit to correct it.

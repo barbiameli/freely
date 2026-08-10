@@ -145,6 +145,17 @@ export async function generateBriefAction(
 
   const pricingHistory = await buildPricingHistory(user);
 
+  // Where they are based barely changes, so remember it and stop asking.
+  const yourLocation = draft.pricing?.yourLocation?.trim();
+  if (yourLocation && yourLocation !== (user as unknown as { location?: string }).location) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { location: sanitizeText(yourLocation) } as unknown as Parameters<
+        typeof prisma.user.update
+      >[0]["data"],
+    });
+  }
+
   let generated: GeneratedBrief;
   try {
     generated = await generateBriefFromDraft(await buildMemoryContext(user), draft, pricingHistory);
@@ -203,6 +214,13 @@ export async function generateBriefAction(
           includeRevisions: draft.includeRevisions ?? false,
           includeAvailability: draft.includeAvailability ?? false,
           usedPricingResearch: pricingHistory.length === 0,
+          // Kept so a quote can be explained later: which market the numbers
+          // were researched against.
+          pricing: draft.pricing
+            ? Object.fromEntries(
+                Object.entries(draft.pricing).map(([k, v]) => [k, sanitizeText(String(v ?? ""))])
+              )
+            : undefined,
         },
       },
     });
