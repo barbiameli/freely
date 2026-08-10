@@ -34,7 +34,14 @@ import { paragraphs } from "@/lib/rich-text";
 import { useAction } from "@/lib/use-action";
 import { ActionError } from "@/components/ui/action-error";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
-import { rateSuffix, describeEffort, parseRateUnit } from "@/lib/rate-unit";
+import {
+  rateSuffix,
+  describeEffort,
+  parseRateUnit,
+  effortLabel,
+  rateLabel,
+  effortShort,
+} from "@/lib/rate-unit";
 import { DeliverableList } from "@/components/deliverable-list";
 import { TimelineView } from "@/components/timeline-view";
 import type { BriefExtras } from "@/lib/anthropic";
@@ -280,6 +287,8 @@ export function BriefView({
               {
                 key: "hours",
                 label: "Estimated hours",
+                // Always hours here: days are derived from them, so editing
+                // the underlying number is what keeps the two in step.
                 value: String(content.hours),
                 numeric: true,
                 hint:
@@ -320,9 +329,11 @@ export function BriefView({
                 <div className="text-caption uppercase tracking-[0.06em] text-white/50">Total</div>
               </div>
               <div>
-                <div className="font-body font-bold text-[20px] text-white">{content.hours}h</div>
+                <div className="font-body font-bold text-[20px] text-white">
+                  {effortShort(content.hours, parseRateUnit(brief.rateUnit))}
+                </div>
                 <div className="text-caption uppercase tracking-[0.06em] text-white/50">
-                  Estimated hours
+                  {effortLabel(parseRateUnit(brief.rateUnit))}
                 </div>
               </div>
               {brief.hourlyRate && (
@@ -332,7 +343,7 @@ export function BriefView({
                     {brief.hourlyRate}
                   </div>
                   <div className="text-caption uppercase tracking-[0.06em] text-white/50">
-                    Per hour
+                    {rateLabel(parseRateUnit(brief.rateUnit))}
                   </div>
                 </div>
               )}

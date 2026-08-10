@@ -6,6 +6,9 @@ import {
   priceFor,
   describeEffort,
   rateSuffix,
+  effortLabel,
+  rateLabel,
+  effortShort,
   HOURS_PER_DAY,
 } from "@/lib/rate-unit";
 import { applyHourlyRate } from "@/lib/anthropic";
@@ -60,5 +63,29 @@ describe("day rates through the pricing rules", () => {
   it("implies a day rate from the numbers when none was stored", () => {
     // 2600 across 5 days is 520 a day, not 65.
     expect(effectiveRate(2600, 40, null, "DAY")).toBe(520);
+  });
+});
+
+describe("labels never disagree with the numbers", () => {
+  it("labels a day-rate quote in days", () => {
+    // The bug: a 400/day quote showed "40h" and "PER HOUR" beside a 2,000
+    // total, which only makes sense as days and reads as a mistake.
+    expect(effortLabel("DAY")).toBe("Estimated days");
+    expect(rateLabel("DAY")).toBe("Per day");
+    expect(effortShort(40, "DAY")).toBe("5d");
+  });
+
+  it("still labels an hourly quote in hours", () => {
+    expect(effortLabel("HOUR")).toBe("Estimated hours");
+    expect(rateLabel("HOUR")).toBe("Per hour");
+    expect(effortShort(40, "HOUR")).toBe("40h");
+  });
+
+  it("agrees with the total it is shown next to", () => {
+    // 40 hours at 400 a day is 5 days and 2,000, and the label has to say so.
+    const hours = 40;
+    const rate = 400;
+    expect(priceFor(hours, rate, "DAY")).toBe(2000);
+    expect(effortShort(hours, "DAY")).toBe("5d");
   });
 });

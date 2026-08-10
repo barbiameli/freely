@@ -11,7 +11,13 @@ import {
 import type { Style } from "@react-pdf/types";
 import { currencySymbol } from "@/lib/currencies";
 import { paragraphs, splitDeliverable } from "@/lib/rich-text";
-import { describeEffort, rateSuffix, parseRateUnit, unitsFromHours } from "@/lib/rate-unit";
+import {
+  describeEffort,
+  rateSuffix,
+  parseRateUnit,
+  unitsFromHours,
+  rateLabel,
+} from "@/lib/rate-unit";
 import { parseTimelineStages, isRoadmapWorthy, stageTick } from "@/lib/timeline";
 import type { BriefExtras } from "@/lib/anthropic";
 
@@ -74,6 +80,22 @@ const FREELY_INK = "#181722";
 // Spacing scale. Every margin and padding below is one of these, so
 // vertical rhythm stays consistent instead of drifting between 7, 12, 14,
 // 18 and 22 as it did when each block was tuned in isolation.
+// Space a section heading needs after it to be worth rendering here: roughly
+// one deliverable with a two-line description. Below that the heading moves to
+// the next page rather than sitting alone above a break.
+//
+// This belongs on the heading, never on the section around a long list.
+// minPresenceAhead on a View that has to split makes react-pdf move the whole
+// View to the next page rather than filling this one, which is how a section
+// ended up leaving half a page blank.
+const HEADING_ROOM = 78;
+
+// Space a section wants after it before committing to this page. Only has an
+// effect on sections that already fit: per the layout engine, a section too
+// tall for the space left will split whatever this says, unless it is also
+// marked wrap={false}. Short sections below use both.
+const SECTION_ROOM = 130;
+
 const S1 = 4;
 const S2 = 8;
 const S3 = 12;
@@ -280,9 +302,20 @@ function Bullets({ items }: { items: string[] }) {
   );
 }
 
+/**
+ * A section label that will not sit alone at the foot of a page.
+ *
+ * The requirement has to live on a View: react-pdf ignores minPresenceAhead
+ * on a Text, which is why headings kept stranding themselves even with the
+ * prop set.
+ */
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return <View minPresenceAhead={HEADING_ROOM}>{children}</View>;
+}
+
 function Pill({ text, tint, color }: { text: string; tint: string; color: string }) {
   return (
-    <View style={[styles.pill, { backgroundColor: tint }]}>
+    <View style={[styles.pill, { backgroundColor: tint }]} minPresenceAhead={HEADING_ROOM}>
       <Text style={[styles.pillText, { color }]}>{text}</Text>
     </View>
   );
@@ -381,7 +414,7 @@ function ExtraSections({
   return (
     <>
       {blocks.map(([label, text]) => (
-        <View key={label} style={wrapStyle} minPresenceAhead={64}>
+        <View key={label} style={wrapStyle} minPresenceAhead={SECTION_ROOM}>
           <Text style={labelStyle}>{label}</Text>
           <Text style={bodyStyle}>{text}</Text>
         </View>
@@ -446,7 +479,7 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
                   {symbol}
                   {brief.hourlyRate}
                 </Text>
-                <Text style={styles.coverStatLabel}>Per hour</Text>
+                <Text style={styles.coverStatLabel}>{rateLabel(parseRateUnit(brief.rateUnit))}</Text>
               </View>
             )}
           </View>
@@ -454,7 +487,7 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
 
         <View style={styles.content}>
           {brief.strategy && (
-            <View style={[styles.section, styles.sectionViolet]} minPresenceAhead={64}>
+            <View style={[styles.section, styles.sectionViolet]} minPresenceAhead={SECTION_ROOM}>
               <Pill text="Strategy" tint="rgba(99,32,238,0.12)" color={FREELY_VIOLET} />
               <Text style={[styles.body, styles.semibold]}>{brief.strategy.goal}</Text>
               {brief.strategy.findings.length > 0 && (
@@ -467,24 +500,24 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
             </View>
           )}
 
-          <View style={[styles.section, styles.sectionPaper]} minPresenceAhead={64}>
+          <View style={[styles.section, styles.sectionPaper]} minPresenceAhead={SECTION_ROOM}>
             <Pill text="Scope" tint="#EFEFEF" color="#565656" />
             <Prose text={brief.scope} />
           </View>
 
-          <View style={[styles.section, styles.sectionCoral]} minPresenceAhead={120}>
+          <View style={[styles.section, styles.sectionCoral]}>
             <Pill text="Deliverables" tint="rgba(244,91,105,0.14)" color={FREELY_CORAL} />
             {brief.deliverables.map((d, i) => (
               <DeliverableLine key={i} text={d} />
             ))}
           </View>
 
-          <View style={[styles.section, styles.sectionPaper]} minPresenceAhead={64}>
+          <View style={[styles.section, styles.sectionPaper]} wrap={false} minPresenceAhead={SECTION_ROOM}>
             <Pill text="Timeline" tint="#EFEFEF" color="#565656" />
             <TimelineVisual timeline={brief.timeline} dotColor={accent} />
           </View>
 
-          <View style={styles.investmentRow} minPresenceAhead={64}>
+          <View style={styles.investmentRow} wrap={false} minPresenceAhead={SECTION_ROOM}>
             <View>
               <Text style={styles.investmentLabel}>Investment</Text>
               <Text style={styles.investmentMeta}>
@@ -515,7 +548,7 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
           />
 
           {brief.includeSOW && (
-            <View style={[styles.section, styles.sectionPaper]} minPresenceAhead={64}>
+            <View style={[styles.section, styles.sectionPaper]} minPresenceAhead={SECTION_ROOM}>
               <Pill text="Statement of Work" tint="#EFEFEF" color="#565656" />
               <Text style={styles.body}>
                 This quote constitutes a Statement of Work for the deliverables listed above, to
@@ -525,7 +558,7 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
           )}
 
           {brief.includeAI && !brief.extras?.aiUsage && (
-            <View minPresenceAhead={80}>
+            <View minPresenceAhead={SECTION_ROOM}>
               <Text style={styles.disclosure}>
                 Portions of this quote were drafted with AI assistance and reviewed before sending.
               </Text>
@@ -578,7 +611,7 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
                   {symbol}
                   {brief.hourlyRate}
                 </Text>
-                <Text style={styles.edStatLabel}>Per hour</Text>
+                <Text style={styles.edStatLabel}>{rateLabel(parseRateUnit(brief.rateUnit))}</Text>
               </View>
             )}
           </View>
@@ -586,8 +619,10 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
 
         <View style={styles.content}>
           {brief.strategy && (
-            <View style={styles.edSection} minPresenceAhead={64}>
+            <View style={styles.edSection} minPresenceAhead={SECTION_ROOM}>
+              <SectionHeading>
               <Text style={[styles.edSectionTitle, { color: primary }]}>Strategy</Text>
+            </SectionHeading>
               <Text style={[styles.body, styles.semibold]}>{brief.strategy.goal}</Text>
               {brief.strategy.findings.length > 0 && (
                 <>
@@ -598,26 +633,36 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
             </View>
           )}
 
-          <View style={styles.edSection} minPresenceAhead={64}>
-            <Text style={[styles.edSectionTitle, { color: primary }]}>Scope</Text>
+          <View style={styles.edSection} minPresenceAhead={SECTION_ROOM}>
+            <SectionHeading>
+              <Text style={[styles.edSectionTitle, { color: primary }]}>Scope</Text>
+            </SectionHeading>
             <Prose text={brief.scope} />
           </View>
 
-          <View style={styles.edSection} minPresenceAhead={120}>
-            <Text style={[styles.edSectionTitle, { color: primary }]}>Deliverables</Text>
+          <View style={styles.edSection}>
+            <SectionHeading>
+                <SectionHeading>
+              <Text style={[styles.edSectionTitle, { color: primary }]}>Deliverables</Text>
+            </SectionHeading>
+              </SectionHeading>
             {brief.deliverables.map((d, i) => (
               <DeliverableLine key={i} text={d} markColor={primary} />
             ))}
           </View>
 
-          <View style={styles.edSection} minPresenceAhead={64}>
-            <Text style={[styles.edSectionTitle, { color: primary }]}>Timeline</Text>
+          <View style={styles.edSection} wrap={false} minPresenceAhead={SECTION_ROOM}>
+            <SectionHeading>
+              <Text style={[styles.edSectionTitle, { color: primary }]}>Timeline</Text>
+            </SectionHeading>
             <TimelineVisual timeline={brief.timeline} dotColor={primary} />
           </View>
 
           {brief.examples && brief.examples.length > 0 && (
             <View style={styles.edSection}>
+              <SectionHeading>
               <Text style={[styles.edSectionTitle, { color: primary }]}>Examples</Text>
+            </SectionHeading>
               <Examples examples={brief.examples} />
             </View>
           )}
@@ -630,8 +675,10 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
           />
 
           {brief.includeSOW && (
-            <View style={styles.edSection} minPresenceAhead={64}>
+            <View style={styles.edSection} minPresenceAhead={SECTION_ROOM}>
+              <SectionHeading>
               <Text style={[styles.edSectionTitle, { color: primary }]}>Statement of Work</Text>
+            </SectionHeading>
               <Text style={styles.body}>
                 This quote constitutes a Statement of Work for the deliverables listed above, to
                 be completed within the stated timeline for the stated price.
@@ -640,7 +687,7 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
           )}
 
           {brief.includeAI && !brief.extras?.aiUsage && (
-            <View minPresenceAhead={80}>
+            <View minPresenceAhead={SECTION_ROOM}>
               <Text style={styles.disclosure}>
                 Portions of this quote were drafted with AI assistance and reviewed before sending.
               </Text>
@@ -690,8 +737,10 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
 
         <View style={styles.content}>
           {brief.strategy && (
-            <View style={styles.minSection} minPresenceAhead={64}>
+            <View style={styles.minSection} minPresenceAhead={SECTION_ROOM}>
+              <SectionHeading>
               <Text style={styles.minLabel}>Strategy</Text>
+            </SectionHeading>
               <Text style={[styles.body, styles.semibold]}>{brief.strategy.goal}</Text>
               {brief.strategy.findings.length > 0 && (
                 <View style={{ marginTop: 8 }}>
@@ -701,26 +750,34 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
             </View>
           )}
 
-          <View style={styles.minSection} minPresenceAhead={64}>
-            <Text style={styles.minLabel}>Scope</Text>
+          <View style={styles.minSection} minPresenceAhead={SECTION_ROOM}>
+            <SectionHeading>
+              <Text style={styles.minLabel}>Scope</Text>
+            </SectionHeading>
             <Prose text={brief.scope} />
           </View>
 
-          <View style={styles.minSection} minPresenceAhead={64}>
-            <Text style={styles.minLabel}>Deliverables</Text>
+          <View style={styles.minSection}>
+            <SectionHeading>
+                <Text style={styles.minLabel}>Deliverables</Text>
+              </SectionHeading>
             {brief.deliverables.map((d, i) => (
               <DeliverableLine key={i} text={d} />
             ))}
           </View>
 
-          <View style={styles.minSection} minPresenceAhead={64}>
-            <Text style={styles.minLabel}>Timeline</Text>
+          <View style={styles.minSection} wrap={false} minPresenceAhead={SECTION_ROOM}>
+            <SectionHeading>
+              <Text style={styles.minLabel}>Timeline</Text>
+            </SectionHeading>
             <TimelineVisual timeline={brief.timeline} dotColor={FREELY_INK} />
           </View>
 
           {brief.examples && brief.examples.length > 0 && (
             <View style={styles.minSection}>
+              <SectionHeading>
               <Text style={styles.minLabel}>Examples</Text>
+            </SectionHeading>
               <Examples examples={brief.examples} />
             </View>
           )}
@@ -733,8 +790,10 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
           />
 
           {brief.includeSOW && (
-            <View style={styles.minSection} minPresenceAhead={64}>
+            <View style={styles.minSection} minPresenceAhead={SECTION_ROOM}>
+              <SectionHeading>
               <Text style={styles.minLabel}>Statement of Work</Text>
+            </SectionHeading>
               <Text style={styles.body}>
                 This quote constitutes a Statement of Work for the deliverables listed above, to
                 be completed within the stated timeline for the stated price.
@@ -743,7 +802,7 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
           )}
 
           {brief.includeAI && !brief.extras?.aiUsage && (
-            <View minPresenceAhead={80}>
+            <View minPresenceAhead={SECTION_ROOM}>
               <Text style={styles.disclosure}>
                 Portions of this quote were drafted with AI assistance and reviewed before sending.
               </Text>
@@ -804,10 +863,12 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
 
         <View style={styles.content}>
           {brief.strategy && (
-            <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }} minPresenceAhead={64}>
-              <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
-                Strategy
-              </Text>
+            <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }} minPresenceAhead={SECTION_ROOM}>
+              <SectionHeading>
+                  <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
+                    Strategy
+                  </Text>
+                </SectionHeading>
               <Text style={[body, styles.semibold]}>{brief.strategy.goal}</Text>
               {brief.strategy.findings.length > 0 && (
                 <View style={{ marginTop: 8 }}>
@@ -822,15 +883,20 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
             </View>
           )}
 
-          <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }} minPresenceAhead={64}>
-            <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
-              Scope
-            </Text>
+          <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }} minPresenceAhead={SECTION_ROOM}>
+            <SectionHeading>
+                <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
+                  Scope
+                </Text>
+              </SectionHeading>
             <Prose text={brief.scope} style={body} />
           </View>
 
-          <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }} minPresenceAhead={64}>
-            <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
+          <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }}>
+            <Text
+              minPresenceAhead={HEADING_ROOM}
+              style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}
+            >
               Deliverables
             </Text>
             {brief.deliverables.map((d, i) => (
@@ -838,10 +904,12 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
             ))}
           </View>
 
-          <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }} minPresenceAhead={64}>
-            <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
-              Timeline
-            </Text>
+          <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }} wrap={false} minPresenceAhead={SECTION_ROOM}>
+            <SectionHeading>
+                <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
+                  Timeline
+                </Text>
+              </SectionHeading>
             <TimelineVisual
               timeline={brief.timeline}
               dotColor={ink}
@@ -852,9 +920,11 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
 
           {brief.examples && brief.examples.length > 0 && (
             <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }}>
-              <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
-                Examples
-              </Text>
+              <SectionHeading>
+                  <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
+                    Examples
+                  </Text>
+                </SectionHeading>
               <Examples examples={brief.examples} />
             </View>
           )}
@@ -874,10 +944,12 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
           />
 
           {brief.includeSOW && (
-            <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }} minPresenceAhead={64}>
-              <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
-                Statement of Work
-              </Text>
+            <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }} minPresenceAhead={SECTION_ROOM}>
+              <SectionHeading>
+                  <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
+                    Statement of Work
+                  </Text>
+                </SectionHeading>
               <Text style={body}>
                 This quote constitutes a Statement of Work for the deliverables listed above, to
                 be completed within the stated timeline for the stated price.
@@ -886,7 +958,7 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
           )}
 
           {brief.includeAI && !brief.extras?.aiUsage && (
-            <View minPresenceAhead={80}>
+            <View minPresenceAhead={SECTION_ROOM}>
               <Text style={{ ...styles.disclosure, color: muted }}>
                 Portions of this quote were drafted with AI assistance and reviewed before sending.
               </Text>

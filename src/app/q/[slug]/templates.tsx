@@ -1,6 +1,12 @@
 import { currencySymbol } from "@/lib/currencies";
 import { paragraphs, splitDeliverable } from "@/lib/rich-text";
-import { describeEffort, parseRateUnit, unitsFromHours } from "@/lib/rate-unit";
+import {
+  describeEffort,
+  parseRateUnit,
+  unitsFromHours,
+  rateLabel,
+  rateSuffix,
+} from "@/lib/rate-unit";
 import { TimelineView } from "@/components/timeline-view";
 import type { BriefExtras } from "@/lib/anthropic";
 import { AcceptBlock } from "./accept-block";
@@ -209,7 +215,11 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
           <div className="rounded-lg p-4 bg-ink flex justify-between items-center">
             <span className="text-body text-white/70">
               {describeEffort(brief.hours, parseRateUnit(brief.rateUnit))}
-              {brief.hourlyRate ? ` · ~${currencySymbol(brief.currency)}${brief.hourlyRate}/hr` : ""}
+              {brief.hourlyRate
+                ? ` · ${currencySymbol(brief.currency)}${brief.hourlyRate}${rateSuffix(
+                    parseRateUnit(brief.rateUnit)
+                  )}`
+                : ""}
             </span>
             <span className="font-body font-bold text-[22px] text-white">
               {currencySymbol(brief.currency)}{brief.price.toLocaleString()}
@@ -271,7 +281,9 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
           {brief.hourlyRate && (
             <div>
               <div className="font-body font-bold text-[26px] text-ink">{currencySymbol(brief.currency)}{brief.hourlyRate}</div>
-              <div className="text-caption uppercase tracking-[0.08em] text-slate mt-1">Per hour</div>
+              <div className="text-caption uppercase tracking-[0.08em] text-slate mt-1">
+              {rateLabel(parseRateUnit(brief.rateUnit))}
+            </div>
             </div>
           )}
         </div>

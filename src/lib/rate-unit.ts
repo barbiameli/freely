@@ -52,3 +52,19 @@ export function describeEffort(hours: number, unit: RateUnit): string {
   const units = unitsFromHours(hours, unit);
   return `${units} ${unitNoun(unit, units !== 1)}`;
 }
+
+
+/** "Estimated days" or "Estimated hours". */
+export function effortLabel(unit: RateUnit): string {
+  return unit === "DAY" ? "Estimated days" : "Estimated hours";
+}
+
+/** "Per day" or "Per hour". */
+export function rateLabel(unit: RateUnit): string {
+  return unit === "DAY" ? "Per day" : "Per hour";
+}
+
+/** The effort as a short figure with its unit: "5d" or "40h". */
+export function effortShort(hours: number, unit: RateUnit): string {
+  return `${unitsFromHours(hours, unit)}${unit === "DAY" ? "d" : "h"}`;
+}
