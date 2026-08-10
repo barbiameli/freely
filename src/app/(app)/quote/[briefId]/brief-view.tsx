@@ -30,6 +30,7 @@ import {
   deleteBriefExampleAction,
 } from "@/actions/briefs";
 import { currencySymbol } from "@/lib/currencies";
+import { repriceForHours, effectiveRate } from "@/lib/repricing";
 import { TimelineView } from "@/components/timeline-view";
 import type { BriefExtras } from "@/lib/anthropic";
 import { EditableBlock, EditableSection } from "@/components/editable-text";
@@ -253,14 +254,23 @@ export function BriefView({
               { key: "price", label: "Total price", value: String(content.price), numeric: true },
               { key: "hours", label: "Estimated hours", value: String(content.hours), numeric: true },
             ]}
-            onSave={(values) =>
-              saveContent({
+            onSave={(values) => {
+              const hours = Number(values.hours);
+              const typedPrice = Number(values.price);
+              // If they changed the price themselves in the same edit, that
+              // is the number they want. Otherwise the price follows the
+              // hours at the rate this quote runs at.
+              const priceUntouched = typedPrice === content.price;
+              const repriced = priceUntouched
+                ? repriceForHours(hours, content.price, content.hours, brief.hourlyRate)
+                : null;
+              return saveContent({
                 title: values.title,
                 client: values.client,
-                price: Number(values.price),
-                hours: Number(values.hours),
-              })
-            }
+                price: repriced ? repriced.price : typedPrice,
+                hours,
+              });
+            }}
           >
             <h1 className="font-display italic text-[28px] text-white m-0 mt-1">{content.title}</h1>
             <p className="text-[13px] text-white/60 mt-1.5">{content.client}</p>
@@ -540,16 +550,33 @@ export function BriefView({
                       setError("Hours needs to be a number.");
                       return;
                     }
-                    saveContent({ hours });
+                    const repriced = repriceForHours(
+                      hours,
+                      content.price,
+                      content.hours,
+                      brief.hourlyRate
+                    );
+                    saveContent(repriced ? { hours, price: repriced.price } : { hours });
                   }}
+                  hint={
+                    effectiveRate(content.price, content.hours, brief.hourlyRate) > 0
+                      ? `The total updates to match, at ${currencySymbol(
+                          brief.currency
+                        )}${Math.round(
+                          effectiveRate(content.price, content.hours, brief.hourlyRate)
+                        )}/hr.`
+                      : undefined
+                  }
                   ariaLabel="Estimated hours"
                   className="text-[13px] text-white/80"
                   singleLine
                 >
                   <span>
                     {content.hours} hours
-                    {brief.hourlyRate
-                      ? ` · ~${currencySymbol(brief.currency)}${brief.hourlyRate}/hr`
+                    {effectiveRate(content.price, content.hours, brief.hourlyRate) > 0
+                      ? ` · ${currencySymbol(brief.currency)}${Math.round(
+                          effectiveRate(content.price, content.hours, brief.hourlyRate)
+                        )}/hr`
                       : ""}
                   </span>
                 </EditableBlock>
