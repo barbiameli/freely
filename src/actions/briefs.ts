@@ -75,12 +75,24 @@ function sanitizeExtras(generated: GeneratedBrief): BriefExtras {
     ...(generated.revisions ? { revisions: clean(generated.revisions) } : {}),
     ...(generated.availability ? { availability: clean(generated.availability) } : {}),
     ...(generated.paymentTerms ? { paymentTerms: clean(generated.paymentTerms) } : {}),
+    ...(generated.aiUsage
+      ? {
+          aiUsage: {
+            will: generated.aiUsage.will.map(clean),
+            willNot: generated.aiUsage.willNot.map(clean),
+          },
+        }
+      : {}),
   };
 }
 
 function hasExtras(generated: GeneratedBrief): boolean {
   return Boolean(
-    generated.terms || generated.revisions || generated.availability || generated.paymentTerms
+    generated.terms ||
+      generated.revisions ||
+      generated.availability ||
+      generated.paymentTerms ||
+      generated.aiUsage
   );
 }
 
@@ -470,6 +482,14 @@ function sanitizeExtrasInput(extras: BriefExtras): BriefExtras {
       : {}),
     ...(extras.paymentTerms !== undefined
       ? { paymentTerms: sanitizeText(extras.paymentTerms) }
+      : {}),
+    ...(extras.aiUsage
+      ? {
+          aiUsage: {
+            will: extras.aiUsage.will.map(sanitizeText),
+            willNot: extras.aiUsage.willNot.map(sanitizeText),
+          },
+        }
       : {}),
   };
 }

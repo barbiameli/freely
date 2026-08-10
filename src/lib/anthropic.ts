@@ -53,6 +53,19 @@ export const briefExtrasSchema = z.object({
   /** When money is due. Never contains bank details: those belong on an
    * invoice, not on a quote that may be published to a public URL. */
   paymentTerms: z.string().optional(),
+  /**
+   * How AI will and will not be used on this specific project.
+   *
+   * Not a generic "AI helped write this" line. A client wants to know which
+   * parts of the work a machine touches: the mechanical and repetitive parts
+   * it is good at, and the judgement calls it is kept away from.
+   */
+  aiUsage: z
+    .object({
+      will: z.array(z.string()),
+      willNot: z.array(z.string()),
+    })
+    .optional(),
 });
 export type BriefExtras = z.infer<typeof briefExtrasSchema>;
 
@@ -71,6 +84,7 @@ export const briefSchema = z.object({
   revisions: briefExtrasSchema.shape.revisions,
   availability: briefExtrasSchema.shape.availability,
   paymentTerms: briefExtrasSchema.shape.paymentTerms,
+  aiUsage: briefExtrasSchema.shape.aiUsage,
 });
 
 export type GeneratedBrief = z.infer<typeof briefSchema>;
@@ -153,7 +167,7 @@ export function buildSystemPrompt(memory: MemoryContext | string): string {
           .map((f) => `--- ${f.name} ---\n${f.text.slice(0, 4000)}`)
           .join("\n\n")}`
       : null,
-    'Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly this schema: {"title": string, "client": string, "scope": string, "deliverables": string[], "timeline": string, "strategy": {"goal": string, "findings": string[], "openQuestions": string[]} (optional object, omit entirely if Strategy wasn\'t requested), "price": number, "hours": number, "terms": {"cancellation": string, "ownership": string, "confidentiality": string} (optional), "revisions": string (optional), "availability": string (optional), "paymentTerms": string (optional)}. Omit any optional key entirely unless it was explicitly requested. Never put bank account numbers, sort codes, IBANs, card details or any other payment credentials anywhere in the response, not even as an example or placeholder: quotes can be published to a public web address, so payment details belong only on an invoice. Each findings/openQuestions entry should be one short, standalone bullet point, not a run-on sentence with several ideas mashed together, and never numbered manually (e.g. no "(1)" prefixes) since the UI renders them as a real bulleted list. If you used web search to research rates, do not include citations or URLs in the JSON, fold the conclusion into your reasoning about price only.',
+    'Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly this schema: {"title": string, "client": string, "scope": string, "deliverables": string[], "timeline": string, "strategy": {"goal": string, "findings": string[], "openQuestions": string[]} (optional object, omit entirely if Strategy wasn\'t requested), "price": number, "hours": number, "terms": {"cancellation": string, "ownership": string, "confidentiality": string} (optional), "revisions": string (optional), "availability": string (optional), "paymentTerms": string (optional), "aiUsage": {"will": string[], "willNot": string[]} (optional)}. Omit any optional key entirely unless it was explicitly requested. Never put bank account numbers, sort codes, IBANs, card details or any other payment credentials anywhere in the response, not even as an example or placeholder: quotes can be published to a public web address, so payment details belong only on an invoice. Each findings/openQuestions entry should be one short, standalone bullet point, not a run-on sentence with several ideas mashed together, and never numbered manually (e.g. no "(1)" prefixes) since the UI renders them as a real bulleted list. If you used web search to research rates, do not include citations or URLs in the JSON, fold the conclusion into your reasoning about price only.',
   ];
 
   return sections.filter(Boolean).join(" ");
@@ -236,6 +250,11 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
   if (draft.includeAvailability) {
     extraSections.push(
       'Include an "availability" string: when this work could start, roughly how much capacity per week it assumes, and expected response time. Keep it honest and non-committal about exact dates.'
+    );
+  }
+  if (draft.includeAI) {
+    extraSections.push(
+      'Include an "aiUsage" object: {"will": string[], "willNot": string[]}. This is a disclosure of how AI is used on THIS project, so both lists must name specific tasks from this brief, not general statements about AI. "will" is 2-4 mechanical or repetitive parts of the work where AI genuinely helps, for example scaffolding file structure, generating repetitive variants, first-pass copy, or converting formats. "willNot" is 2-4 parts that stay entirely human because they are judgement, taste or client-specific reasoning, for example deciding what to build, visual design decisions, or interpreting research. Write each entry as a short phrase naming the actual task.'
     );
   }
   if (draft.includeSOW) {

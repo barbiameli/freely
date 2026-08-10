@@ -359,6 +359,12 @@ function ExtraSections({
     blocks.push(["Ownership", extras.terms.ownership]);
     blocks.push(["Confidentiality", extras.terms.confidentiality]);
   }
+  if (extras.aiUsage?.will.length) {
+    blocks.push(["Where AI is used", extras.aiUsage.will.map((t) => `- ${t}`).join("\n")]);
+  }
+  if (extras.aiUsage?.willNot.length) {
+    blocks.push(["Where it is not", extras.aiUsage.willNot.map((t) => `- ${t}`).join("\n")]);
+  }
   if (!blocks.length) return null;
 
   return (
@@ -502,7 +508,7 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
             </View>
           )}
 
-          {brief.includeAI && (
+          {brief.includeAI && !brief.extras?.aiUsage && (
             <View minPresenceAhead={80}>
               <Text style={styles.disclosure}>
                 Portions of this quote were drafted with AI assistance and reviewed before sending.
@@ -615,7 +621,7 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
             </View>
           )}
 
-          {brief.includeAI && (
+          {brief.includeAI && !brief.extras?.aiUsage && (
             <View minPresenceAhead={80}>
               <Text style={styles.disclosure}>
                 Portions of this quote were drafted with AI assistance and reviewed before sending.
@@ -719,7 +725,7 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
             </View>
           )}
 
-          {brief.includeAI && (
+          {brief.includeAI && !brief.extras?.aiUsage && (
             <View minPresenceAhead={80}>
               <Text style={styles.disclosure}>
                 Portions of this quote were drafted with AI assistance and reviewed before sending.
@@ -865,7 +871,7 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
             </View>
           )}
 
-          {brief.includeAI && (
+          {brief.includeAI && !brief.extras?.aiUsage && (
             <View minPresenceAhead={80}>
               <Text style={{ ...styles.disclosure, color: muted }}>
                 Portions of this quote were drafted with AI assistance and reviewed before sending.

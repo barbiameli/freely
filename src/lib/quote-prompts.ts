@@ -119,6 +119,6 @@ export const QUOTE_INCLUSIONS: QuoteInclusion[] = [
   {
     key: "includeAI",
     label: "AI-use disclosure",
-    hint: "States that AI helped draft this and you reviewed it.",
+    hint: "Which parts of this project use AI, and which stay entirely human.",
   },
 ];

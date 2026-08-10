@@ -57,6 +57,19 @@ function extraBlocks(extras?: BriefExtras | null): [string, string][] {
     blocks.push(["Ownership", extras.terms.ownership]);
     blocks.push(["Confidentiality", extras.terms.confidentiality]);
   }
+  if (extras.aiUsage) {
+    // Two lists rather than a paragraph: a client scanning this wants to see
+    // the line between what a machine touches and what it does not.
+    if (extras.aiUsage.will.length) {
+      blocks.push(["Where AI is used", extras.aiUsage.will.map((t) => `- ${t}`).join("\n")]);
+    }
+    if (extras.aiUsage.willNot.length) {
+      blocks.push([
+        "Where it is not",
+        extras.aiUsage.willNot.map((t) => `- ${t}`).join("\n"),
+      ]);
+    }
+  }
   return blocks;
 }
 
@@ -150,7 +163,7 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
           {extraBlocks(brief.extras).map(([label, text]) => (
             <div key={label} className="rounded-lg p-4 bg-paper">
               <div className="font-label text-xs text-slate uppercase mb-2">{label}</div>
-              <p className="text-[13.5px] text-ink m-0 leading-relaxed">{text}</p>
+              <p className="text-[13.5px] text-ink m-0 leading-relaxed whitespace-pre-line">{text}</p>
             </div>
           ))}
 
@@ -283,7 +296,7 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
             <h2 className="font-display italic text-2xl m-0 mb-4" style={{ color: brand.primary }}>
               {label}
             </h2>
-            <p className="text-[15px] leading-relaxed text-ink">{text}</p>
+            <p className="text-[15px] leading-relaxed text-ink whitespace-pre-line">{text}</p>
           </div>
         ))}
 
@@ -383,7 +396,7 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
         {extraBlocks(brief.extras).map(([label, text]) => (
           <div key={label} className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
             <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">{label}</div>
-            <p className="text-[13.5px] leading-relaxed m-0">{text}</p>
+            <p className="text-[13.5px] leading-relaxed m-0 whitespace-pre-line">{text}</p>
           </div>
         ))}
 
@@ -486,7 +499,7 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
         {extraBlocks(brief.extras).map(([label, text]) => (
           <div key={label} className="py-6 border-b border-line">
             <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">{label}</div>
-            <p className="text-[13.5px] leading-relaxed m-0">{text}</p>
+            <p className="text-[13.5px] leading-relaxed m-0 whitespace-pre-line">{text}</p>
           </div>
         ))}
 

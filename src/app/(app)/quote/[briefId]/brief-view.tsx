@@ -437,6 +437,60 @@ export function BriefView({
             </Section>
           )}
 
+          {content.extras?.aiUsage && (
+            <Section eyebrow="How AI is used on this project" tint="paper" accent="violet">
+              <EditableSection
+                editLabel="Edit AI use"
+                fields={[
+                  {
+                    key: "will",
+                    label: "Where AI is used",
+                    value: content.extras.aiUsage.will.join("\n"),
+                    multiline: true,
+                    hint: "One per line.",
+                  },
+                  {
+                    key: "willNot",
+                    label: "Where it is not",
+                    value: content.extras.aiUsage.willNot.join("\n"),
+                    multiline: true,
+                    hint: "One per line.",
+                  },
+                ]}
+                onSave={(values) =>
+                  saveContent({
+                    extras: {
+                      ...content.extras,
+                      aiUsage: {
+                        will: values.will.split("\n").map((l) => l.trim()).filter(Boolean),
+                        willNot: values.willNot.split("\n").map((l) => l.trim()).filter(Boolean),
+                      },
+                    },
+                  })
+                }
+              >
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <span className="text-[11px] font-bold text-slate uppercase tracking-[0.04em]">
+                      Where AI is used
+                    </span>
+                    <div className="mt-1.5">
+                      <Bullets items={content.extras.aiUsage.will} dense />
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-bold text-slate uppercase tracking-[0.04em]">
+                      Where it is not
+                    </span>
+                    <div className="mt-1.5">
+                      <Bullets items={content.extras.aiUsage.willNot} dense />
+                    </div>
+                  </div>
+                </div>
+              </EditableSection>
+            </Section>
+          )}
+
           {content.extras?.terms && (
             <Section eyebrow="Terms" tint="paper" accent="violet">
               <div className="flex flex-col gap-2.5">

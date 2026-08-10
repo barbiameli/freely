@@ -612,7 +612,7 @@ export function QuoteWizard({
           <Card>
             <FieldHeading>How should this be read?</FieldHeading>
             <p className="text-[12px] text-text-muted mb-3">
-              How you want the brief interpreted and the quote structured. Leave it empty and the AI decides from the brief and your past quotes.
+              How you want the brief interpreted and the quote structured. Leave it empty and the AI decides from the brief and your past quotes. Pick as many as you like, contradictory ones cannot both be on.
             </p>
             <div className="flex flex-wrap gap-2 mb-3">
               {INTERPRETATION_PRESETS.map((preset) => (
