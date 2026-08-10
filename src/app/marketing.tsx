@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FileText, ListChecks, Users, ShieldCheck, Sparkles } from "lucide-react";
 import { FreelyLogo } from "@/components/freely-logo";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { ProductPreview } from "./product-preview";
 import { LocaleProvider } from "@/lib/i18n/context";
 import { fill, type Dictionary, type Locale } from "@/lib/i18n";
 
@@ -63,12 +64,9 @@ function Hero({ t }: { t: Dictionary }) {
         {t.marketing.heroTitle} <span className="text-coral">{t.marketing.heroTitleAccent}</span>
       </h1>
       <p className="text-slate text-lead mt-6 max-w-lg mx-auto">{t.marketing.heroBody}</p>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/marketing-hero.png"
-        alt={t.marketing.heroImageAlt}
-        className="w-full rounded-card border border-line shadow-panel mt-10"
-      />
+      <div className="mt-10">
+        <ProductPreview t={t} />
+      </div>
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 mt-8">
         <Link
           href="/signup"

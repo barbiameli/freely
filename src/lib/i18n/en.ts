@@ -472,8 +472,6 @@ export const en = {
     heroTitleAccent: "without the busywork.",
     heroBody:
       "Freely is one place for a freelancer to turn a client brief into a priced quote, track the project once it's won, and keep a running diary the client can see, with AI drafting the first pass of each quote from your own rates and past work.",
-    heroImageAlt:
-      "The Quote wizard in Freely, showing the first step where you paste or upload a client brief.",
 
     aiEyebrow: "How AI is actually used",
     aiTitle: "AI drafts. You decide.",

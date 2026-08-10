@@ -471,8 +471,6 @@ export const es: Dictionary = {
     heroTitleAccent: "sin el papeleo.",
     heroBody:
       "Convierte el proyecto de un cliente en un presupuesto con precio, hazle seguimiento cuando lo ganas y lleva un diario que el cliente puede ver. La IA escribe el primer borrador con tus tarifas y tus trabajos anteriores.",
-    heroImageAlt:
-      "El asistente de presupuestos de Freely, en el paso de subir o pegar el proyecto del cliente.",
 
     aiEyebrow: "Cómo se usa la IA",
     aiTitle: "La IA redacta. Tú decides.",
