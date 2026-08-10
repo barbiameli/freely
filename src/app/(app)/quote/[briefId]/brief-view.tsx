@@ -31,6 +31,8 @@ import {
 } from "@/actions/briefs";
 import { currencySymbol } from "@/lib/currencies";
 import { repriceForHours, effectiveRate } from "@/lib/repricing";
+import { paragraphs } from "@/lib/rich-text";
+import { DeliverableList } from "@/components/deliverable-list";
 import { TimelineView } from "@/components/timeline-view";
 import type { BriefExtras } from "@/lib/anthropic";
 import { EditableBlock, EditableSection } from "@/components/editable-text";
@@ -365,8 +367,15 @@ export function BriefView({
               value={content.scope}
               onSave={(scope) => saveContent({ scope })}
               ariaLabel="Scope"
-              className="text-sm leading-relaxed text-ink"
-            />
+            >
+              <div className="flex flex-col gap-3">
+                {paragraphs(content.scope).map((p, i) => (
+                  <p key={i} className="text-[15px] leading-[1.7] text-ink m-0">
+                    {p}
+                  </p>
+                ))}
+              </div>
+            </EditableBlock>
           </Section>
 
           <Section eyebrow="Deliverables" tint="coral" accent="coral">
@@ -383,14 +392,10 @@ export function BriefView({
               ariaLabel="Deliverables"
               hint="One deliverable per line. Delete a line to remove it."
             >
-              <div className="flex flex-col gap-2">
-                {content.deliverables.map((d, i) => (
-                  <div key={i} className="flex items-start gap-2 text-[13.5px] text-ink font-medium">
-                    <CheckCircle2 size={14} className="text-coral shrink-0 mt-0.5" />
-                    <span>{d}</span>
-                  </div>
-                ))}
-              </div>
+              <DeliverableList
+                deliverables={content.deliverables}
+                marker={() => <CheckCircle2 size={14} className="text-coral shrink-0 mt-0.5" />}
+              />
             </EditableBlock>
           </Section>
 

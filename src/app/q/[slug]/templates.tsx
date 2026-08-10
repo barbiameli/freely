@@ -1,4 +1,5 @@
 import { currencySymbol } from "@/lib/currencies";
+import { paragraphs, splitDeliverable } from "@/lib/rich-text";
 import { TimelineView } from "@/components/timeline-view";
 import type { BriefExtras } from "@/lib/anthropic";
 import { AcceptBlock } from "./accept-block";
@@ -73,6 +74,28 @@ function extraBlocks(extras?: BriefExtras | null): [string, string][] {
   return blocks;
 }
 
+/** A block of generated prose, broken into paragraphs so a long scope has
+ * somewhere for the eye to rest. */
+function Prose({
+  text,
+  className,
+  color,
+}: {
+  text: string;
+  className?: string;
+  color?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      {paragraphs(text).map((p, i) => (
+        <p key={i} className={`m-0 ${className ?? ""}`} style={color ? { color } : undefined}>
+          {p}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 function ExampleGallery({ examples, tint }: { examples: Example[]; tint?: string }) {
   if (examples.length === 0) return null;
   return (
@@ -134,17 +157,30 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
 
           <div className="rounded-lg p-4 bg-paper">
             <div className="font-label text-xs text-slate uppercase mb-2">Scope</div>
-            <p className="text-[13.5px] text-ink m-0 leading-relaxed">{brief.scope}</p>
+            <Prose text={brief.scope} className="text-[15px] text-ink leading-[1.7]" />
           </div>
 
           <div className="rounded-lg p-4" style={{ background: "rgba(244,91,105,0.08)" }}>
             <div className="font-label text-xs text-slate uppercase mb-2">Deliverables</div>
             <div className="flex flex-col gap-1.5">
-              {brief.deliverables.map((d, i) => (
-                <div key={i} className="text-[13.5px] text-ink font-medium">
-                  ✓ {d}
-                </div>
-              ))}
+              {brief.deliverables.map((d, i) => {
+                const { lead, detail } = splitDeliverable(d);
+                return (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="text-[15px] shrink-0" style={{ color: brand.accent }}>
+                      ✓
+                    </span>
+                    <div className="min-w-0">
+                      <div className="text-[15px] text-ink font-medium leading-snug">{lead}</div>
+                      {detail && (
+                        <div className="text-[13.5px] text-slate leading-relaxed mt-1.5">
+                          {detail}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -258,7 +294,7 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
           <h2 className="font-display italic text-2xl m-0 mb-4" style={{ color: brand.primary }}>
             Scope
           </h2>
-          <p className="text-[15px] leading-relaxed text-ink">{brief.scope}</p>
+          <Prose text={brief.scope} className="text-[16px] leading-[1.7] text-ink" />
         </div>
 
         <div className="py-10 border-b" style={{ borderColor: "#E8EAEF" }}>
@@ -266,12 +302,22 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
             Deliverables
           </h2>
           <div className="flex flex-col gap-2.5">
-            {brief.deliverables.map((d, i) => (
-              <div key={i} className="text-[14.5px] text-ink flex items-baseline gap-3">
-                <span className="text-[11px] tabular-nums text-slate w-5">{String(i + 1).padStart(2, "0")}</span>
-                {d}
-              </div>
-            ))}
+            {brief.deliverables.map((d, i) => {
+              const { lead, detail } = splitDeliverable(d);
+              return (
+                <div key={i} className="flex items-baseline gap-3">
+                  <span className="text-[11px] tabular-nums text-slate w-5 shrink-0">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-[16px] text-ink leading-snug">{lead}</div>
+                    {detail && (
+                      <div className="text-[14px] text-slate leading-relaxed mt-2">{detail}</div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -367,17 +413,28 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
 
         <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
           <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">Scope</div>
-          <p className="text-[13.5px] leading-relaxed m-0">{brief.scope}</p>
+          <Prose text={brief.scope} className="text-[14.5px] leading-[1.7]" />
         </div>
 
         <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
           <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">Deliverables</div>
           <div className="flex flex-col gap-1">
-            {brief.deliverables.map((d, i) => (
-              <div key={i} className="text-[13.5px]">
-                - {d}
-              </div>
-            ))}
+            {brief.deliverables.map((d, i) => {
+              const { lead, detail } = splitDeliverable(d);
+              return (
+                <div key={i} className="flex items-start gap-2">
+                  <span className="text-[14.5px] shrink-0">-</span>
+                  <div className="min-w-0">
+                    <div className="text-[14.5px] leading-snug">{lead}</div>
+                    {detail && (
+                      <div className="text-[13.5px] leading-relaxed mt-1.5" style={{ color: muted }}>
+                        {detail}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -470,17 +527,26 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
 
         <div className="py-6 border-b border-line">
           <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">Scope</div>
-          <p className="text-[13.5px] leading-relaxed m-0">{brief.scope}</p>
+          <Prose text={brief.scope} className="text-[14.5px] leading-[1.7]" />
         </div>
 
         <div className="py-6 border-b border-line">
           <div className="text-[11px] font-bold tracking-[0.1em] uppercase mb-2">Deliverables</div>
           <div className="flex flex-col gap-1">
-            {brief.deliverables.map((d, i) => (
-              <div key={i} className="text-[13.5px]">
-                - {d}
-              </div>
-            ))}
+            {brief.deliverables.map((d, i) => {
+              const { lead, detail } = splitDeliverable(d);
+              return (
+                <div key={i} className="flex items-start gap-2">
+                  <span className="text-[14.5px] shrink-0">-</span>
+                  <div className="min-w-0">
+                    <div className="text-[14.5px] leading-snug">{lead}</div>
+                    {detail && (
+                      <div className="text-[13.5px] leading-relaxed mt-1.5 text-slate">{detail}</div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 

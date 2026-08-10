@@ -10,6 +10,7 @@ import {
 } from "@react-pdf/renderer";
 import type { Style } from "@react-pdf/types";
 import { currencySymbol } from "@/lib/currencies";
+import { paragraphs, splitDeliverable } from "@/lib/rich-text";
 import { parseTimelineStages, isRoadmapWorthy, stageTick } from "@/lib/timeline";
 import type { BriefExtras } from "@/lib/anthropic";
 
@@ -92,7 +93,7 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica",
     color: "#343434",
   },
-  body: { fontSize: 10.5, lineHeight: 1.65, color: "#343434" },
+  body: { fontSize: 11, lineHeight: 1.7, color: "#343434" },
   bold: { fontFamily: "Helvetica-Bold" },
   semibold: { fontFamily: "Helvetica-Bold" },
 
@@ -112,7 +113,7 @@ const styles = StyleSheet.create({
   coverTitle: { fontSize: 22, lineHeight: 1.3, color: "#ffffff", marginTop: S2, fontFamily: "Helvetica-Bold" },
   coverMeta: { fontSize: 9.5, color: "rgba(255,255,255,0.55)", marginTop: S2 },
   coverMetaBold: { fontFamily: "Helvetica-Bold", color: "rgba(255,255,255,0.85)" },
-  coverDivider: { borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.15)", marginTop: S5, marginBottom: S4 },
+  coverDivider: { borderTopWidth: 1, borderTopColor: "#3A3A3D", marginTop: S5, marginBottom: S4 },
   coverStatRow: { flexDirection: "row" },
   coverStat: { marginRight: S7 },
   coverStatValue: { fontSize: 19, color: "#ffffff", fontFamily: "Helvetica-Bold" },
@@ -128,11 +129,18 @@ const styles = StyleSheet.create({
 
   bulletRow: { flexDirection: "row", marginBottom: S2 },
   bulletMark: { width: S3, fontSize: 10, color: FREELY_CORAL },
-  bulletText: { flex: 1, fontSize: 10.5, lineHeight: 1.65, color: "#343434" },
+  bulletText: { flex: 1, fontSize: 10.5, lineHeight: 1.7, color: "#343434" },
   subLabel: { fontSize: 8, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: S2, marginTop: S4, fontFamily: "Helvetica-Bold" },
-  deliverableRow: { flexDirection: "row", alignItems: "flex-start", fontSize: 10.5, marginBottom: S2 },
+  deliverableRow: { flexDirection: "row", alignItems: "flex-start", fontSize: 11, marginBottom: S2 },
   deliverableMark: { width: S3 + 2, fontSize: 10, color: FREELY_CORAL },
   deliverableText: { flex: 1, fontFamily: "Helvetica-Bold", lineHeight: 1.55 },
+  // Same look, without flex: this one sits in a column above its detail, and
+  // flex there makes it take its height from the layout rather than the text.
+  deliverableLead: { fontSize: 11, fontFamily: "Helvetica-Bold", lineHeight: 1.55 },
+  // The description under a deliverable name. Regular weight and a shade
+  // lighter: the whole line used to be bold, which is what made a long
+  // deliverable read as a slab rather than a heading with detail under it.
+  deliverableDetail: { fontSize: 10, lineHeight: 1.65, color: "#565656", marginTop: 4 },
 
   investmentRow: {
     flexDirection: "row",
@@ -453,16 +461,13 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
 
           <View style={[styles.section, styles.sectionPaper]} minPresenceAhead={64}>
             <Pill text="Scope" tint="#EFEFEF" color="#565656" />
-            <Text style={styles.body}>{brief.scope}</Text>
+            <Prose text={brief.scope} />
           </View>
 
-          <View style={[styles.section, styles.sectionCoral]} minPresenceAhead={64}>
+          <View style={[styles.section, styles.sectionCoral]} minPresenceAhead={120}>
             <Pill text="Deliverables" tint="rgba(244,91,105,0.14)" color={FREELY_CORAL} />
             {brief.deliverables.map((d, i) => (
-              <View key={i} style={styles.deliverableRow}>
-                <Text style={styles.deliverableMark}>•</Text>
-                <Text style={styles.deliverableText}>{d}</Text>
-              </View>
+              <DeliverableLine key={i} text={d} />
             ))}
           </View>
 
@@ -579,16 +584,13 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
 
           <View style={styles.edSection} minPresenceAhead={64}>
             <Text style={[styles.edSectionTitle, { color: primary }]}>Scope</Text>
-            <Text style={styles.body}>{brief.scope}</Text>
+            <Prose text={brief.scope} />
           </View>
 
-          <View style={styles.edSection} minPresenceAhead={64}>
+          <View style={styles.edSection} minPresenceAhead={120}>
             <Text style={[styles.edSectionTitle, { color: primary }]}>Deliverables</Text>
             {brief.deliverables.map((d, i) => (
-              <View key={i} style={styles.deliverableRow}>
-                <Text style={[styles.deliverableMark, { color: primary }]}>•</Text>
-                <Text style={styles.deliverableText}>{d}</Text>
-              </View>
+              <DeliverableLine key={i} text={d} markColor={primary} />
             ))}
           </View>
 
@@ -683,16 +685,13 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
 
           <View style={styles.minSection} minPresenceAhead={64}>
             <Text style={styles.minLabel}>Scope</Text>
-            <Text style={styles.body}>{brief.scope}</Text>
+            <Prose text={brief.scope} />
           </View>
 
           <View style={styles.minSection} minPresenceAhead={64}>
             <Text style={styles.minLabel}>Deliverables</Text>
             {brief.deliverables.map((d, i) => (
-              <View key={i} style={styles.deliverableRow}>
-                <Text style={styles.deliverableMark}>•</Text>
-                <Text style={styles.deliverableText}>{d}</Text>
-              </View>
+              <DeliverableLine key={i} text={d} />
             ))}
           </View>
 
@@ -809,7 +808,7 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
             <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
               Scope
             </Text>
-            <Text style={body}>{brief.scope}</Text>
+            <Prose text={brief.scope} style={body} />
           </View>
 
           <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }} minPresenceAhead={64}>
@@ -817,10 +816,7 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
               Deliverables
             </Text>
             {brief.deliverables.map((d, i) => (
-              <View key={i} style={styles.deliverableRow}>
-                <Text style={{ ...styles.deliverableMark, color: ink }}>•</Text>
-                <Text style={{ ...styles.deliverableText, color: ink }}>{d}</Text>
-              </View>
+              <DeliverableLine key={i} text={d} markColor={ink} textColor={ink} detailColor={muted} />
             ))}
           </View>
 
@@ -884,6 +880,50 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
         <Footer brief={brief} emailColor={muted} metaColor={muted} ruleColor={line} />
       </Page>
     </Document>
+  );
+}
+
+/** A deliverable as a name with its description underneath, rather than one
+ * long bold run. */
+function DeliverableLine({
+  text,
+  markColor,
+  textColor,
+  detailColor,
+}: {
+  text: string;
+  markColor?: string;
+  textColor?: string;
+  detailColor?: string;
+}) {
+  const { lead, detail } = splitDeliverable(text);
+  return (
+    <View style={[styles.deliverableRow, { marginBottom: detail ? S3 + 2 : S2 }]} wrap={false}>
+      <Text style={[styles.deliverableMark, markColor ? { color: markColor } : {}]}>•</Text>
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.deliverableLead, textColor ? { color: textColor } : {}]}>{lead}</Text>
+        {detail ? (
+          <Text style={[styles.deliverableDetail, detailColor ? { color: detailColor } : {}]}>
+            {detail}
+          </Text>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+/** Generated prose as separate paragraphs, so a long scope has some air in
+ * it instead of arriving as one block. */
+function Prose({ text, style }: { text: string; style?: Style }) {
+  const parts = paragraphs(text);
+  return (
+    <>
+      {parts.map((p, i) => (
+        <Text key={i} style={[style ?? styles.body, i > 0 ? { marginTop: S3 } : {}]}>
+          {p}
+        </Text>
+      ))}
+    </>
   );
 }
 
