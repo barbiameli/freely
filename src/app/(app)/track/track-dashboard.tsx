@@ -16,6 +16,7 @@ import {
 import { deliverableProgress } from "@/lib/project-state";
 import { extractFileText } from "@/lib/extract-file";
 import { currencySymbol } from "@/lib/currencies";
+import { useT } from "@/lib/i18n/context";
 
 interface ProjectCard {
   id: string;
@@ -37,6 +38,7 @@ const STATUS_FG: Record<string, string> = {
 
 export function TrackDashboard({ projects }: { projects: ProjectCard[] }) {
   const router = useRouter();
+  const t = useT();
   const [showAdd, setShowAdd] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
   const [title, setTitle] = useState("");
@@ -173,8 +175,8 @@ export function TrackDashboard({ projects }: { projects: ProjectCard[] }) {
       )}
       {showAdd && (
         <Card className="flex gap-2.5 items-center">
-          <TextField value={title} onChange={setTitle} placeholder="Project title" />
-          <TextField value={client} onChange={setClient} placeholder="Client name" />
+          <TextField value={title} onChange={setTitle} placeholder={t.track.projectTitle} />
+          <TextField value={client} onChange={setClient} placeholder={t.track.clientName} />
           <Button disabled={working} onClick={handleAdd}>
             Add
           </Button>
@@ -203,7 +205,7 @@ export function TrackDashboard({ projects }: { projects: ProjectCard[] }) {
                   type="button"
                   onClick={(e) => handleDelete(e, p.id, p.title)}
                   disabled={deletingId === p.id}
-                  aria-label="Delete project"
+                  aria-label={t.track.deleteProjectLabel}
                   className="absolute top-3 right-3 bg-none border-none cursor-pointer p-1 text-slate opacity-0 group-hover:opacity-100 hover:text-overdue transition-opacity"
                 >
                   <Trash2 size={14} />

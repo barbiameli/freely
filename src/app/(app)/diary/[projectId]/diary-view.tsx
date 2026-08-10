@@ -12,6 +12,7 @@ import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
 import { addDiaryEntryAction, setPublishedAction } from "@/actions/diary";
 import { deleteProjectAction } from "@/actions/projects";
+import { useT } from "@/lib/i18n/context";
 
 interface Entry {
   id: string;
@@ -46,6 +47,7 @@ export function DiaryView({
   allProjects: { id: string; title: string }[];
 }) {
   const router = useRouter();
+  const t = useT();
   const { run, pending: isPending, error } = useAction();
   const [newEntry, setNewEntry] = useState("");
   const [copied, setCopied] = useState(false);
@@ -121,9 +123,9 @@ export function DiaryView({
       <div className="flex flex-col md:flex-row gap-5 flex-1 min-h-0">
         <div className="flex-1 flex flex-col gap-3.5 overflow-y-auto">
           <div className="flex justify-between items-center">
-            <Label>Entries</Label>
+            <Label>{t.diary.entries}</Label>
             <div className="flex-1 mx-3">
-              <TextField value={newEntry} onChange={setNewEntry} placeholder="Write a quick update to add to the diary..." />
+              <TextField value={newEntry} onChange={setNewEntry} placeholder={t.diary.writeUpdate} />
             </div>
             <Button
               variant="ghost"
@@ -135,7 +137,7 @@ export function DiaryView({
                 void run(() => addDiaryEntryAction(project.id, "New update", value));
               }}
             >
-              Add entry
+              {t.diary.addEntry}
             </Button>
           </div>
           <ActionError error={error} />
@@ -151,17 +153,17 @@ export function DiaryView({
             </Card>
           ))}
           {project.diaryEntries.length === 0 && (
-            <div className="text-text-muted text-small">No entries yet.</div>
+            <div className="text-text-muted text-small">{t.diary.noEntries}</div>
           )}
         </div>
         <div className="w-full md:w-[340px]">
           <div className="flex justify-between items-center mb-3">
-            <Label>Client site</Label>
+            <Label>{t.diary.clientSite}</Label>
             <Button
               disabled={isPending}
               onClick={() => run(() => setPublishedAction(project.id, !project.published))}
             >
-              {project.published ? "Published" : "Publish"}
+              {project.published ? t.diary.published : t.diary.publish}
             </Button>
           </div>
           {project.published && (
@@ -199,7 +201,7 @@ export function DiaryView({
                   {project.timeline ? ` · ${project.timeline}` : ""}
                 </div>
               )}
-              <Label>Latest update</Label>
+              <Label>{t.diary.latestUpdate}</Label>
               <p className="text-small text-slate m-0">
                 {project.diaryEntries[0]?.body || "No updates yet."}
               </p>

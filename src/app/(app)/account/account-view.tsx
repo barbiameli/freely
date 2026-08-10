@@ -9,6 +9,7 @@ import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
 import { Trash2, Save, KeyRound } from "lucide-react";
 import { updateAccountAction, changePasswordAction, deleteAccountAction } from "@/actions/account";
+import { useT } from "@/lib/i18n/context";
 
 export function AccountView({
   name,
@@ -21,11 +22,12 @@ export function AccountView({
   email: string;
   hasPassword: boolean;
 }) {
+  const t = useT();
   return (
     <>
       <Topbar eyebrow="Account settings" />
       <div>
-        <h1 className="font-display italic text-[32px] text-coral m-0">Your account.</h1>
+        <h1 className="font-display italic text-[32px] text-coral m-0">{t.account.yourAccount}</h1>
         <p className="text-slate text-small mt-2">
           Basic info only, nothing here is shared with clients. Branding and quoting preferences
           live in Memory.
@@ -49,6 +51,7 @@ function BasicInfoCard({
   studioName: string | null;
   email: string;
 }) {
+  const t = useT();
   const [nameValue, setNameValue] = useState(name ?? "");
   const [studioValue, setStudioValue] = useState(studioName ?? "");
   const [saving, setSaving] = useState(false);
@@ -71,18 +74,18 @@ function BasicInfoCard({
 
   return (
     <Card>
-      <Label>Basic info</Label>
+      <Label>{t.account.basicInfo}</Label>
       <div className="flex flex-col gap-2.5 mt-2.5">
         <div>
           <div className="text-caption text-text-muted mb-1">Name</div>
           <TextField value={nameValue} onChange={setNameValue} placeholder="Your name" />
         </div>
         <div>
-          <div className="text-caption text-text-muted mb-1">Studio or business name</div>
+          <div className="text-caption text-text-muted mb-1">{t.account.studioOrBusiness}</div>
           <TextField value={studioValue} onChange={setStudioValue} placeholder="Optional" />
         </div>
         <div>
-          <div className="text-caption text-text-muted mb-1">Email</div>
+          <div className="text-caption text-text-muted mb-1">{t.account.email}</div>
           <div className="text-sm text-ink bg-paper rounded-lg px-3.5 py-3">{email}</div>
         </div>
       </div>
@@ -96,13 +99,14 @@ function BasicInfoCard({
         >
           {saving ? "Saving..." : "Save changes"}
         </Button>
-        {saved && <span className="text-xs text-success font-semibold">Saved</span>}
+        {saved && <span className="text-xs text-success font-semibold">{t.memory.saved}</span>}
       </div>
     </Card>
   );
 }
 
 function PasswordCard({ hasPassword }: { hasPassword: boolean }) {
+  const t = useT();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -132,7 +136,7 @@ function PasswordCard({ hasPassword }: { hasPassword: boolean }) {
 
   return (
     <Card>
-      <Label>Password</Label>
+      <Label>{t.account.password}</Label>
       {!hasPassword && (
         <p className="text-caption text-text-muted mt-1 mb-1">
           You signed in with Google and don&apos;t have a password yet, set one below if you&apos;d
@@ -142,7 +146,7 @@ function PasswordCard({ hasPassword }: { hasPassword: boolean }) {
       <div className="flex flex-col gap-2.5 mt-2.5">
         {hasPassword && (
           <div>
-            <div className="text-caption text-text-muted mb-1">Current password</div>
+            <div className="text-caption text-text-muted mb-1">{t.account.currentPassword}</div>
             <input
               type="password"
               value={current}
@@ -152,7 +156,7 @@ function PasswordCard({ hasPassword }: { hasPassword: boolean }) {
           </div>
         )}
         <div>
-          <div className="text-caption text-text-muted mb-1">New password</div>
+          <div className="text-caption text-text-muted mb-1">{t.account.newPassword}</div>
           <input
             type="password"
             value={next}
@@ -162,7 +166,7 @@ function PasswordCard({ hasPassword }: { hasPassword: boolean }) {
           />
         </div>
         <div>
-          <div className="text-caption text-text-muted mb-1">Confirm new password</div>
+          <div className="text-caption text-text-muted mb-1">{t.account.confirmNewPassword}</div>
           <input
             type="password"
             value={confirm}
@@ -189,6 +193,7 @@ function PasswordCard({ hasPassword }: { hasPassword: boolean }) {
 }
 
 function DangerZoneCard() {
+  const t = useT();
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
 
@@ -216,7 +221,7 @@ function DangerZoneCard() {
 
   return (
     <Card className="border-overdue/30">
-      <Label>Danger zone</Label>
+      <Label>{t.account.dangerZone}</Label>
       <p className="text-caption text-text-muted mt-1 mb-2.5">
         Permanently deletes your account, quotes, projects, and everything saved to Memory.
       </p>

@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
 import { createInviteAction, revokeInviteAction, removeMemberAction } from "@/actions/team";
+import { useT } from "@/lib/i18n/context";
 
 interface Member {
   id: string;
@@ -36,6 +37,7 @@ export function TeamView({
   pendingInvites: PendingInvite[];
 }) {
   const router = useRouter();
+  const t = useT();
   const { run, pending, error: actionError } = useAction();
   const [inviteEmail, setInviteEmail] = useState("");
   const [working, setWorking] = useState(false);
@@ -71,12 +73,12 @@ export function TeamView({
 
       {isOwner || members.length <= 1 ? (
         <Card>
-          <Label>Invite a teammate</Label>
+          <Label>{t.team.inviteTeammate}</Label>
           <div className="flex gap-2">
             <TextField
               value={inviteEmail}
               onChange={setInviteEmail}
-              placeholder="teammate@studio.com (optional, leave blank for a shareable link)"
+              placeholder={t.team.invitePlaceholder}
             />
             <Button icon={UserPlus} disabled={working} onClick={handleInvite}>
               Create invite
@@ -90,7 +92,7 @@ export function TeamView({
                 type="button"
                 onClick={() => navigator.clipboard.writeText(newInviteUrl)}
                 className="text-violet"
-                title="Copy link"
+                title={t.team.copyLink}
               >
                 <Copy size={14} />
               </button>
@@ -102,19 +104,19 @@ export function TeamView({
       <ActionError error={actionError} />
 
       <Card>
-        <Label>Members</Label>
+        <Label>{t.team.members}</Label>
         <div className="flex flex-col gap-2">
           {members.map((m) => (
             <div key={m.id} className="flex justify-between items-center py-1.5">
               <span className="text-body text-ink">
-                {m.email} {m.id === currentUserId && <span className="text-text-muted">(you)</span>}
+                {m.email} {m.id === currentUserId && <span className="text-text-muted">{t.team.you}</span>}
               </span>
               {isOwner && m.id !== currentUserId && (
                 <button
                   disabled={pending}
                   onClick={() => run(() => removeMemberAction(m.id))}
                   className="text-text-muted hover:text-overdue disabled:opacity-40"
-                  title="Remove from team"
+                  title={t.team.removeFromTeam}
                 >
                   <X size={14} />
                 </button>
@@ -123,7 +125,7 @@ export function TeamView({
           ))}
           {members.length === 0 && (
             <div className="text-text-muted text-small">
-              Just you for now, invite a teammate above.
+              {t.team.justYou}
             </div>
           )}
         </div>
@@ -131,18 +133,18 @@ export function TeamView({
 
       {isOwner && pendingInvites.length > 0 && (
         <Card>
-          <Label>Pending invites</Label>
+          <Label>{t.team.pendingInvites}</Label>
           <div className="flex flex-col gap-2">
             {pendingInvites.map((inv) => (
               <div key={inv.id} className="flex justify-between items-center py-1.5">
                 <span className="text-body text-slate">
-                  {inv.email ?? "Shareable link"}
+                  {inv.email ?? t.team.shareableLink}
                 </span>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => navigator.clipboard.writeText(inv.url)}
                     className="text-violet"
-                    title="Copy link"
+                    title={t.team.copyLink}
                   >
                     <Copy size={14} />
                   </button>
@@ -150,7 +152,7 @@ export function TeamView({
                     disabled={pending}
                     onClick={() => run(() => revokeInviteAction(inv.id))}
                     className="text-text-muted hover:text-overdue disabled:opacity-40"
-                    title="Revoke"
+                    title={t.team.revoke}
                   >
                     <X size={14} />
                   </button>

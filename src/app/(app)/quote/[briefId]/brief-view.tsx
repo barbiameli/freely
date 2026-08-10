@@ -46,6 +46,7 @@ import { DeliverableList } from "@/components/deliverable-list";
 import { TimelineView } from "@/components/timeline-view";
 import type { BriefExtras } from "@/lib/anthropic";
 import { EditableBlock, EditableSection } from "@/components/editable-text";
+import { useT } from "@/lib/i18n/context";
 
 interface Strategy {
   goal: string;
@@ -133,6 +134,7 @@ export function BriefView({
   history: { id: string; title: string; status: string }[];
 }) {
   const router = useRouter();
+  const t = useT();
   const [refinePrompt, setRefinePrompt] = useState("");
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
@@ -264,7 +266,7 @@ export function BriefView({
         <div className="flex items-start gap-2.5 bg-coral-tint rounded-card px-4 py-3">
           <Eye size={15} className="text-coral shrink-0 mt-0.5" />
           <div className="text-small text-ink">
-            <span className="font-semibold">This is your working draft.</span> Nobody else can see
+            <span className="font-semibold">{t.brief.workingDraft}</span> Nobody else can see
             it yet, and your branding isn&apos;t applied here. Publish it as a page or download the
             PDF to see how the client will actually receive it.
           </div>
@@ -279,7 +281,7 @@ export function BriefView({
           </span>
           <EditableSection
             tone="dark"
-            editLabel="Edit overview"
+            editLabel={t.brief.editOverview}
             fields={[
               { key: "title", label: "Title", value: content.title },
               { key: "client", label: "Client", value: content.client },
@@ -326,7 +328,7 @@ export function BriefView({
                   {currencySymbol(brief.currency)}
                   {content.price.toLocaleString()}
                 </div>
-                <div className="text-caption uppercase tracking-[0.06em] text-white/50">Total</div>
+                <div className="text-caption uppercase tracking-[0.06em] text-white/50">{t.brief.total}</div>
               </div>
               <div>
                 <div className="font-body font-bold text-[20px] text-white">
@@ -433,7 +435,7 @@ export function BriefView({
                 })
               }
               ariaLabel="Deliverables"
-              hint="One deliverable per line. Delete a line to remove it."
+              hint={t.brief.oneDeliverablePerLine}
             >
               <DeliverableList
                 deliverables={content.deliverables}
@@ -595,7 +597,7 @@ export function BriefView({
                   onSave={(next) => {
                     const hours = Number(next);
                     if (!Number.isFinite(hours) || hours < 0) {
-                      setError("Hours needs to be a number.");
+                      setError(t.brief.hoursNeedNumber);
                       return;
                     }
                     const repriced = repriceForHours(
@@ -657,7 +659,7 @@ export function BriefView({
                 onSave={(next) => {
                   const price = Number(next);
                   if (!Number.isFinite(price) || price < 0) {
-                    setError("Price needs to be a number.");
+                    setError(t.brief.priceNeedNumber);
                     return;
                   }
                   saveContent({ price });
@@ -687,7 +689,7 @@ export function BriefView({
                         <button
                           onClick={() => handleDeleteExample(ex.id)}
                           className="bg-none border-none cursor-pointer p-0 text-slate hover:text-overdue"
-                          aria-label="Remove example"
+                          aria-label={t.quote.removeExample}
                         >
                           <Trash2 size={12} />
                         </button>
@@ -738,7 +740,7 @@ export function BriefView({
 
         <div className="w-full md:w-[300px] flex flex-col gap-[18px]">
           <Card>
-            <Label>Refine</Label>
+            <Label>{t.brief.refine}</Label>
             <TextField
               value={refinePrompt}
               onChange={setRefinePrompt}
@@ -766,7 +768,7 @@ export function BriefView({
               >
                 <span className="flex items-center gap-1.5">
                   <FileText size={13} className="text-slate" />
-                  <Label>Original request</Label>
+                  <Label>{t.brief.originalRequest}</Label>
                 </span>
                 <ChevronDown
                   size={14}

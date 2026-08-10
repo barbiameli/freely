@@ -36,6 +36,7 @@ import {
   STORY_PRESETS,
   CONTEXT_PRESETS,
 } from "@/lib/memory-presets";
+import { useT } from "@/lib/i18n/context";
 
 /**
  * Memory used to be seven separate tabs. It's now one scrollable, modular
@@ -112,6 +113,7 @@ export function MemoryView({
   links: LinkAsset[];
   connections: ConnectionInfo[];
 }) {
+  const t = useT();
   return (
     <>
       <Topbar eyebrow="Memory" />
@@ -141,14 +143,14 @@ export function MemoryView({
             field={null}
             initial={initialInstructions}
             isInstructions
-            label="Instructions"
+            label={t.memory.instructions_label}
             presets={INSTRUCTIONS_PRESETS}
             rows={4}
           />
           <AutosaveNotes
             field="toneNotes"
             initial={initialTone}
-            label="Tone notes"
+            label={t.memory.toneNotes}
             placeholder="e.g. warm but efficient, no exclamation points, avoid jargon..."
             presets={TONE_PRESETS}
             rows={4}
@@ -159,7 +161,7 @@ export function MemoryView({
           <AutosaveNotes
             field="storyNotes"
             initial={initialStory}
-            label="Studio story"
+            label={t.memory.studioStory}
             placeholder="How the studio started, what you're known for, values that should come through in quotes..."
             presets={STORY_PRESETS}
             rows={4}
@@ -167,8 +169,8 @@ export function MemoryView({
           <AutosaveNotes
             field="contextNotes"
             initial={initialContext}
-            label="Additional context"
-            placeholder="Anything else the AI should know, rates, typical engagement length, industries you specialize in..."
+            label={t.memory.additionalContext}
+            placeholder={t.memory.contextPlaceholder}
             presets={CONTEXT_PRESETS}
             rows={4}
           />
@@ -198,6 +200,7 @@ export function MemoryView({
 }
 
 function PersonaCard({ initial, updatedAt }: { initial: string | null; updatedAt: string | null }) {
+  const t = useT();
   const [value, setValue] = useState(initial ?? "");
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -226,7 +229,7 @@ function PersonaCard({ initial, updatedAt }: { initial: string | null; updatedAt
   return (
     <Card>
       <div className="flex justify-between items-center mb-2.5">
-        <Label>Persona</Label>
+        <Label>{t.memory.persona}</Label>
         <span className="text-xs text-text-muted">
           {updatedAt ? `Updated ${new Date(updatedAt).toLocaleDateString()}` : "Not generated yet"}
         </span>
@@ -335,6 +338,7 @@ function ReferencesCard({
   images: ImageAsset[];
   links: LinkAsset[];
 }) {
+  const t = useT();
   const [fileItems, setFileItems] = useState(files);
   const [imageItems, setImageItems] = useState(images);
   const [linkItems, setLinkItems] = useState(links);
@@ -427,7 +431,7 @@ function ReferencesCard({
   return (
     <Card>
       <div className="flex justify-between items-center mb-1">
-        <Label>Files, images & links</Label>
+        <Label>{t.memory.filesImagesLinks}</Label>
         <span className="text-xs text-text-muted">
           Files &amp; links feed the AI directly; images are for your own brand reference.
         </span>
@@ -435,7 +439,7 @@ function ReferencesCard({
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mt-3">
         <div>
-          <div className="text-caption font-semibold text-slate mb-2 uppercase tracking-wide">Files</div>
+          <div className="text-caption font-semibold text-slate mb-2 uppercase tracking-wide">{t.memory.files}</div>
           <DropZone
             onFile={handleFileUpload}
             accept=".txt,.md,.pdf,.docx"
@@ -455,12 +459,12 @@ function ReferencesCard({
                 </button>
               </div>
             ))}
-            {fileItems.length === 0 && <div className="text-text-muted text-xs">None yet.</div>}
+            {fileItems.length === 0 && <div className="text-text-muted text-xs">{t.memory.noneYet}</div>}
           </div>
         </div>
 
         <div>
-          <div className="text-caption font-semibold text-slate mb-2 uppercase tracking-wide">Images</div>
+          <div className="text-caption font-semibold text-slate mb-2 uppercase tracking-wide">{t.memory.images}</div>
           <DropZone
             onFile={handleImageUpload}
             accept="image/*"
@@ -489,11 +493,11 @@ function ReferencesCard({
               </div>
             ))}
           </div>
-          {imageItems.length === 0 && <div className="text-text-muted text-xs">None yet.</div>}
+          {imageItems.length === 0 && <div className="text-text-muted text-xs">{t.memory.noneYet}</div>}
         </div>
 
         <div>
-          <div className="text-caption font-semibold text-slate mb-2 uppercase tracking-wide">Links</div>
+          <div className="text-caption font-semibold text-slate mb-2 uppercase tracking-wide">{t.memory.links}</div>
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -532,7 +536,7 @@ function ReferencesCard({
                 </button>
               </div>
             ))}
-            {linkItems.length === 0 && <div className="text-text-muted text-xs">None yet.</div>}
+            {linkItems.length === 0 && <div className="text-text-muted text-xs">{t.memory.noneYet}</div>}
           </div>
         </div>
       </div>
@@ -556,6 +560,7 @@ function BrandingCard({
   bodyFont: string | null;
   currency: string;
 }) {
+  const t = useT();
   const [primary, setPrimary] = useState(primaryColor ?? "#F45B69");
   const [accent, setAccent] = useState(accentColor ?? "#6320EE");
   const [logo, setLogo] = useState(logoDataUrl);
@@ -645,7 +650,7 @@ function BrandingCard({
 
   return (
     <Card>
-      <Label>Branding</Label>
+      <Label>{t.memory.branding}</Label>
       <p className="text-caption text-text-muted mb-3">
         Applied to your public client site, public quote pages, and PDF exports, so clients see
         your studio&apos;s look, not Freely&apos;s default.
@@ -695,7 +700,7 @@ function BrandingCard({
             // eslint-disable-next-line @next/next/no-img-element
             <img src={logo} alt="Logo" className="h-10 mb-2" />
           ) : (
-            <div className="text-xs text-text-muted mb-2">Using the Freely wordmark for now.</div>
+            <div className="text-xs text-text-muted mb-2">{t.memory.usingWordmark}</div>
           )}
           <DropZone
             onFile={handleLogoUpload}
@@ -703,7 +708,7 @@ function BrandingCard({
             className="flex items-center gap-1.5 cursor-pointer -m-1 p-1"
           >
             <Upload size={12} className="text-violet" />
-            <span className="font-body font-bold text-small text-violet">Upload or drag logo</span>
+            <span className="font-body font-bold text-small text-violet">{t.memory.uploadLogo}</span>
           </DropZone>
           <div className="text-caption text-text-muted mt-1 max-w-[160px]">
             PNG with a transparent background, at least 200×200px.
@@ -712,7 +717,7 @@ function BrandingCard({
         </div>
         <div className="flex flex-wrap gap-6">
           <div>
-            <div className="text-caption font-semibold text-slate mb-2 uppercase tracking-wide">Primary color</div>
+            <div className="text-caption font-semibold text-slate mb-2 uppercase tracking-wide">{t.memory.primaryColor}</div>
             <input
               type="color"
               value={primary}
@@ -724,7 +729,7 @@ function BrandingCard({
             />
           </div>
           <div>
-            <div className="text-caption font-semibold text-slate mb-2 uppercase tracking-wide">Accent color</div>
+            <div className="text-caption font-semibold text-slate mb-2 uppercase tracking-wide">{t.memory.accentColor}</div>
             <input
               type="color"
               value={accent}
@@ -736,7 +741,7 @@ function BrandingCard({
             />
           </div>
           <div>
-            <div className="text-caption font-semibold text-slate mb-2 uppercase tracking-wide">Currency</div>
+            <div className="text-caption font-semibold text-slate mb-2 uppercase tracking-wide">{t.memory.currency}</div>
             <select
               value={curr}
               onChange={(e) => {
@@ -778,7 +783,7 @@ function BrandingCard({
         Default currency for new quotes, each quote can still be changed individually in the
         wizard.
       </p>
-      {pending && <div className="text-xs text-text-muted mt-2">Saving...</div>}
+      {pending && <div className="text-xs text-text-muted mt-2">{t.common.saving}</div>}
     </Card>
   );
 }
@@ -790,11 +795,12 @@ const PROVIDER_LABEL: Record<Provider, string> = {
 };
 
 function ConnectorsCard({ connections }: { connections: ConnectionInfo[] }) {
+  const t = useT();
   const connected = new Map(connections.map((c) => [c.provider, c]));
 
   return (
     <Card>
-      <Label>Connectors</Label>
+      <Label>{t.memory.connectors}</Label>
       <div className="flex flex-col gap-3 mt-2">
         <ConnectorRow provider="FIGMA" icon={<PenTool size={16} />} info={connected.get("FIGMA")} />
         <ConnectorRow provider="NOTION" icon={<Link2 size={16} />} info={connected.get("NOTION")} />

@@ -13,6 +13,7 @@ import { CURRENCIES, currencySymbol } from "@/lib/currencies";
 import { BRANDING_OPTIONS } from "@/lib/branding";
 import { updateInvoiceAction, deleteInvoiceAction, type InvoicePatch } from "@/actions/invoices";
 import type { InvoiceLineItem } from "@/lib/invoice-pdf";
+import { useT } from "@/lib/i18n/context";
 
 interface EditorInvoice {
   id: string;
@@ -56,10 +57,11 @@ function SectionHeading({
   children: React.ReactNode;
   required?: boolean;
 }) {
+  const t = useT();
   return (
     <div className="flex items-baseline gap-2 flex-wrap">
       <Label>{children}</Label>
-      <span className="text-caption text-text-muted">{required ? "Required" : "Optional"}</span>
+      <span className="text-caption text-text-muted">{required ? t.common.required : t.common.optional}</span>
     </div>
   );
 }
@@ -115,6 +117,7 @@ export function InvoiceEditor({
   hasBrand?: boolean;
 }) {
   const router = useRouter();
+  const t = useT();
   const [form, setForm] = useState(invoice);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -268,15 +271,15 @@ export function InvoiceEditor({
         <Card className="flex-1">
           <SectionHeading required>From</SectionHeading>
           <div className="flex flex-col gap-2.5 mt-1">
-            <Field label="Name" value={form.fromName} onChange={(v) => set("fromName", v)} />
+            <Field label={t.invoices.name} value={form.fromName} onChange={(v) => set("fromName", v)} />
             <Field
-              label="Disciplines line"
+              label={t.invoices.disciplines}
               value={form.fromTagline}
               onChange={(v) => set("fromTagline", v)}
               placeholder="UX design · Product design · CRO"
             />
-            <Field label="Website" value={form.fromWebsite} onChange={(v) => set("fromWebsite", v)} />
-            <Field label="Email" value={form.fromEmail} onChange={(v) => set("fromEmail", v)} />
+            <Field label={t.invoices.website} value={form.fromWebsite} onChange={(v) => set("fromWebsite", v)} />
+            <Field label={t.invoices.email} value={form.fromEmail} onChange={(v) => set("fromEmail", v)} />
             <Field
               label="Location"
               value={form.fromAddress}
@@ -287,22 +290,22 @@ export function InvoiceEditor({
         </Card>
 
         <Card className="flex-1">
-          <SectionHeading required>Billed to</SectionHeading>
+          <SectionHeading required>{t.invoices.billedTo}</SectionHeading>
           <div className="flex flex-col gap-2.5 mt-1">
-            <Field label="Name" value={form.clientName} onChange={(v) => set("clientName", v)} />
+            <Field label={t.invoices.name} value={form.clientName} onChange={(v) => set("clientName", v)} />
             <Field
-              label="Company"
+              label={t.invoices.company}
               value={form.clientCompany}
               onChange={(v) => set("clientCompany", v)}
             />
             <Field
-              label="Website"
+              label={t.invoices.website}
               value={form.clientWebsite}
               onChange={(v) => set("clientWebsite", v)}
             />
-            <Field label="Email" value={form.clientEmail} onChange={(v) => set("clientEmail", v)} />
+            <Field label={t.invoices.email} value={form.clientEmail} onChange={(v) => set("clientEmail", v)} />
             <Field
-              label="Reference"
+              label={t.invoices.reference}
               value={form.reference}
               onChange={(v) => set("reference", v)}
               placeholder="INV-0001 / Client"
@@ -312,10 +315,10 @@ export function InvoiceEditor({
       </div>
 
       <Card>
-        <SectionHeading required>Dates and currency</SectionHeading>
+        <SectionHeading required>{t.invoices.datesAndCurrency}</SectionHeading>
         <div className="flex gap-4 mt-1">
           <div className="flex-1">
-            <Field label="Issued" type="date" value={form.issuedAt} onChange={(v) => set("issuedAt", v)} />
+            <Field label={t.invoices.issued} type="date" value={form.issuedAt} onChange={(v) => set("issuedAt", v)} />
           </div>
           <div className="flex-1">
             <Field label="Due" type="date" value={form.dueAt} onChange={(v) => set("dueAt", v)} />
@@ -338,7 +341,7 @@ export function InvoiceEditor({
           </label>
           <div className="flex-1">
             <Field
-              label="Tax %"
+              label={t.invoices.taxRate}
               type="number"
               value={String(form.taxRate)}
               onChange={(v) => set("taxRate", Number(v) || 0)}
@@ -348,7 +351,7 @@ export function InvoiceEditor({
       </Card>
 
       <Card>
-        <SectionHeading required>Line items</SectionHeading>
+        <SectionHeading required>{t.invoices.lineItems}</SectionHeading>
         <div className="flex flex-col gap-3 mt-1">
           {form.lineItems.map((item, i) => (
             <div key={i} className="bg-paper rounded-lg p-3">
@@ -377,7 +380,7 @@ export function InvoiceEditor({
                         )
                       )
                     }
-                    placeholder="A sentence of detail, optional"
+                    placeholder={t.invoices.detailOptional}
                     rows={2}
                     className="w-full font-body text-small text-slate bg-white border border-line rounded-lg px-2.5 py-2 outline-none"
                   />
@@ -423,7 +426,7 @@ export function InvoiceEditor({
                         )
                       )
                     }
-                    placeholder="Amount"
+                    placeholder={t.invoices.amount}
                     type="number"
                     className="w-full font-body font-bold text-small text-ink bg-white border border-line rounded-lg px-2 py-2 outline-none"
                   />
@@ -509,10 +512,10 @@ export function InvoiceEditor({
       </Card>
 
       <Card>
-        <SectionHeading>Closing note</SectionHeading>
+        <SectionHeading>{t.invoices.closingNote}</SectionHeading>
         <div className="mt-1">
           <Field
-            label="Shown at the foot of the invoice"
+            label={t.invoices.shownAtFoot}
             value={form.notes}
             onChange={(v) => set("notes", v)}
             multiline
@@ -525,7 +528,7 @@ export function InvoiceEditor({
         <div className="flex items-start gap-2 mb-1">
           <ShieldOff size={15} className="text-violet shrink-0 mt-0.5" />
           <div>
-            <SectionHeading required>Payment details</SectionHeading>
+            <SectionHeading required>{t.invoices.paymentDetails}</SectionHeading>
             <p className="text-meta text-text-muted mt-1 mb-0">
               These go into the PDF and are not saved to your Freely account.
             </p>
@@ -533,7 +536,7 @@ export function InvoiceEditor({
         </div>
         <div className="flex flex-col gap-2.5 mt-3">
           <Field
-            label="Details as they should appear"
+            label={t.invoices.detailsAsShown}
             value={paymentBlock}
             onChange={setPaymentBlock}
             placeholder={"Account name\nBank\nAccount identifier"}
@@ -549,7 +552,7 @@ export function InvoiceEditor({
             reject a transfer without it.
           </p>
           <Field
-            label="Extra line, optional"
+            label={t.invoices.extraLine}
             value={paymentNote}
             onChange={setPaymentNote}
             placeholder="e.g. full details on request, or a payment link"
@@ -561,7 +564,7 @@ export function InvoiceEditor({
               onChange={(e) => setRemember(e.target.checked)}
               className="mt-0.5 shrink-0"
             />
-            <span>Remember these on this device, so I do not retype them next time.</span>
+            <span>{t.invoices.rememberOnDevice}</span>
           </label>
         </div>
       </Card>
