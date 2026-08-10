@@ -30,7 +30,14 @@ import { industryQuoteExample } from "@/lib/industries";
 import { CURRENCIES, currencySymbol } from "@/lib/currencies";
 import { MAX_DOCUMENT_UPLOAD_BYTES, documentTooLargeError } from "@/lib/upload-limits";
 import { BRANDING_OPTIONS } from "@/lib/branding";
-import { INTERPRETATION_PRESETS, QUOTE_INCLUSIONS } from "@/lib/quote-prompts";
+import {
+  INTERPRETATION_PRESETS,
+  QUOTE_INCLUSIONS,
+  AVAILABILITY_OPTIONS,
+  AVAILABILITY_GROUP_LABEL,
+  toggleAvailability,
+  availabilityFacts,
+} from "@/lib/quote-prompts";
 import { readPastedText } from "@/lib/paste-text";
 import { BriefHistory } from "@/components/brief-history";
 import {
@@ -176,6 +183,8 @@ export function QuoteWizard({
     branding: hasBrand ? "own" : "freely",
     pricing: { yourLocation: savedLocation || "" },
   });
+  const [availabilityPicks, setAvailabilityPicks] = useState<string[]>([]);
+  const [availabilityNote, setAvailabilityNote] = useState("");
   const [sourceMode, setSourceMode] = useState<"paste" | "upload">("upload");
   const [fileName, setFileName] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -261,7 +270,14 @@ export function QuoteWizard({
     });
 
     try {
-      const result = await Promise.race([generateBriefAction(draft), timeout]);
+      // Availability is stated by the freelancer, so it is attached here
+      // rather than living in the draft, and an empty list means the section
+      // is skipped rather than invented.
+      const payload: QuoteDraftPayload = {
+        ...draft,
+        availability: { facts: availabilityFacts(availabilityPicks, availabilityNote) },
+      };
+      const result = await Promise.race([generateBriefAction(payload), timeout]);
       if (cancelledRef.current) return;
       clearGenerationTimers();
       setGenerating(false);
@@ -963,7 +979,7 @@ export function QuoteWizard({
             <div className="flex flex-col gap-2">
               {QUOTE_INCLUSIONS.map((inc) => {
                 const on = Boolean(draft[inc.key]);
-                return (
+                const toggle = (
                   <button
                     key={inc.key}
                     type="button"
@@ -987,6 +1003,48 @@ export function QuoteWizard({
                     </span>
                   </button>
                 );
+
+                // Availability is the one section nothing in the brief can
+                // answer, so it asks rather than guesses.
+                if (inc.key === "includeAvailability" && on) {
+                  return (
+                    <div key={inc.key} className="flex flex-col gap-2">
+                      {toggle}
+                      <div className="rounded-lg border border-line bg-white px-3.5 py-3 ml-0 sm:ml-7">
+                        <p className="text-[12px] text-text-muted mt-0 mb-3">
+                          Only what you pick here goes in the quote.
+                        </p>
+                        {(["start", "capacity", "response"] as const).map((group) => (
+                          <div key={group} className="mb-3 last:mb-0">
+                            <div className="text-[10.5px] font-bold text-slate uppercase tracking-wide mb-1.5">
+                              {AVAILABILITY_GROUP_LABEL[group]}
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {AVAILABILITY_OPTIONS.filter((o) => o.group === group).map((o) => (
+                                <Chip
+                                  key={o.id}
+                                  active={availabilityPicks.includes(o.id)}
+                                  onClick={() =>
+                                    setAvailabilityPicks((picks) => toggleAvailability(picks, o.id))
+                                  }
+                                >
+                                  {o.label}
+                                </Chip>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                        <TextField
+                          value={availabilityNote}
+                          onChange={setAvailabilityNote}
+                          placeholder="Anything else, e.g. away the first week of September"
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+
+                return toggle;
               })}
             </div>
           </Card>

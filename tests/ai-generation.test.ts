@@ -155,9 +155,22 @@ describe("buildGenerateUserPrompt", () => {
     expect(buildGenerateUserPrompt({ ...draft, includeRevisions: true })).toContain(
       '"revisions" string'
     );
-    expect(buildGenerateUserPrompt({ ...draft, includeAvailability: true })).toContain(
-      '"availability" string'
-    );
+  });
+
+  it("only writes an availability section from what the freelancer stated", () => {
+    // It used to be invented: the prompt asked for a start date and a weekly
+    // capacity the model had no way of knowing.
+    const noFacts = buildGenerateUserPrompt({ ...draft, includeAvailability: true });
+    expect(noFacts).not.toContain('"availability" string');
+
+    const stated = buildGenerateUserPrompt({
+      ...draft,
+      includeAvailability: true,
+      availability: { facts: ["Can start straight away", "Two to three days a week"] },
+    });
+    expect(stated).toContain('"availability" string');
+    expect(stated).toContain("Two to three days a week");
+    expect(stated).toContain("Do not add a start date");
   });
 
   it("asks for payment timing with the SOW, and forbids payment credentials", () => {

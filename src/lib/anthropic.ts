@@ -133,6 +133,10 @@ export interface QuoteDraftInput {
   includeRevisions?: boolean;
   /** Capacity, start date and response times. */
   includeAvailability?: boolean;
+  /** What the freelancer actually said about their availability, from the
+   * wizard. Without this the Availability section is invented, so when it is
+   * empty the section is skipped rather than guessed at. */
+  availability?: { facts: string[] };
   /** ISO 4217 code (e.g. "USD", "EUR") — defaults from the user's saved
    * preference. Purely a display choice; the underlying number is the same
    * regardless of currency. */
@@ -303,9 +307,18 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
       'Include a "revisions" string: how many rounds of changes are included at which stages, and what would count as new work priced separately. Base the number on the deliverables and hours, not a generic "two rounds".'
     );
   }
-  if (draft.includeAvailability) {
+  // Only written when there is something to write it from. The old version
+  // asked the model to state a start date and a weekly capacity it had no way
+  // of knowing, which is how a quote ends up promising something the
+  // freelancer never agreed to.
+  const availabilityFacts = draft.availability?.facts.filter((f) => f.trim()) ?? [];
+  if (draft.includeAvailability && availabilityFacts.length > 0) {
     extraSections.push(
-      'Include an "availability" string: when this work could start, roughly how much capacity per week it assumes, and expected response time. Keep it honest and non-committal about exact dates.'
+      `Include an "availability" string built ONLY from what this freelancer has stated about their availability:\n${availabilityFacts
+        .map((f) => `- ${f}`)
+        .join(
+          "\n"
+        )}\nWrite it as one or two sentences in their voice. Do not add a start date, a weekly capacity, a response time or any other commitment that is not in that list.`
     );
   }
   if (draft.includeAI) {
@@ -351,19 +364,59 @@ export function buildRefineUserPrompt(
 }
 
 /** Strips markdown fences and parses+validates the model's JSON response. */
+/**
+ * Pulls the JSON object out of a reply that may have prose around it.
+ *
+ * Web search makes the model narrate what it found before answering, and that
+ * narration can contain braces ("a rate of {x}", a code sample, a stray
+ * bracket). A greedy first-brace-to-last-brace match then spans from the
+ * prose into the JSON and parses as nothing. This walks the string tracking
+ * depth, ignoring braces inside strings, and returns the last complete
+ * top-level object, which is where the answer is.
+ */
+export function extractJsonObject(text: string): string | null {
+  let depth = 0;
+  let start = -1;
+  let inString = false;
+  let escaped = false;
+  let last: string | null = null;
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') inString = true;
+    else if (char === "{") {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (char === "}") {
+      depth--;
+      if (depth === 0 && start !== -1) last = text.slice(start, i + 1);
+      if (depth < 0) depth = 0;
+    }
+  }
+  return last;
+}
+
 export function parseBriefResponse(text: string): GeneratedBrief {
-  // When web search runs, Claude's final text can include commentary before/
-  // after the JSON object — pull out the outermost {...} block first.
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  const cleaned = (jsonMatch ? jsonMatch[0] : text)
-    .replace(/```json/gi, "")
-    .replace(/```/g, "")
-    .trim();
+  const stripped = text.replace(/```json/gi, "").replace(/```/g, "");
+  const cleaned = (extractJsonObject(stripped) ?? stripped).trim();
   let parsed: unknown;
   try {
     parsed = JSON.parse(cleaned);
   } catch {
-    throw new Error("The AI did not return valid JSON for the brief.");
+    // An unclosed object almost always means the reply was cut short, and
+    // "invalid JSON" tells the person nothing they can act on.
+    const truncated = cleaned.trimEnd().startsWith("{") && !cleaned.trimEnd().endsWith("}");
+    throw new Error(
+      truncated
+        ? "The quote came back cut off part way through. Try again, or turn off a section or two."
+        : "The AI did not return valid JSON for the brief."
+    );
   }
   const result = briefSchema.safeParse(parsed);
   if (!result.success) {
@@ -375,12 +428,12 @@ export function parseBriefResponse(text: string): GeneratedBrief {
 async function callClaude(
   system: string,
   userPrompt: string,
-  opts: { webSearch?: boolean } = {}
+  opts: { webSearch?: boolean; maxTokens?: number } = {}
 ): Promise<string> {
   const anthropic = getClient();
   const response = await anthropic.messages.create({
     model: MODEL,
-    max_tokens: 2000,
+    max_tokens: opts.maxTokens ?? 2000,
     system,
     messages: [{ role: "user", content: userPrompt }],
     ...(opts.webSearch
@@ -400,6 +453,14 @@ async function callClaude(
     .map((block) => block.text)
     .join("\n");
   if (!text) throw new Error("The AI returned an empty response.");
+  // Running out of room mid-JSON produces a half-written object, which then
+  // surfaces as an unhelpful "didn't return valid JSON". Say what actually
+  // happened instead.
+  if (response.stop_reason === "max_tokens") {
+    throw new Error(
+      "The quote came back longer than the space allowed and got cut off. Try again, or turn off a section or two."
+    );
+  }
   return text;
 }
 
@@ -414,6 +475,10 @@ export async function generateBriefFromDraft(
   // either because there is no history or because no rate was given.
   const text = await callClaude(system, user, {
     webSearch: pricingHistory.length === 0 || draft.hourlyRate <= 0,
+    // A quote with strategy, terms, an SOW and a staged timeline is already
+    // long, and the research path writes a preamble before the JSON. At 2000
+    // it was being truncated mid-object.
+    maxTokens: 8000,
   });
   return applyHourlyRate(parseBriefResponse(text), draft.hourlyRate);
 }
@@ -719,11 +784,8 @@ export async function breakDownDeliverable(
 }
 
 export function parseBreakdownResponse(text: string): DeliverableBreakdown {
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  const cleaned = (jsonMatch ? jsonMatch[0] : text)
-    .replace(/```json/gi, "")
-    .replace(/```/g, "")
-    .trim();
+  const stripped = text.replace(/```json/gi, "").replace(/```/g, "");
+  const cleaned = (extractJsonObject(stripped) ?? stripped).trim();
   let parsed: unknown;
   try {
     parsed = JSON.parse(cleaned);

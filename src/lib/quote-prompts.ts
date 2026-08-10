@@ -122,3 +122,60 @@ export const QUOTE_INCLUSIONS: QuoteInclusion[] = [
     hint: "Which parts of this project use AI, and which stay entirely human.",
   },
 ];
+
+/**
+ * Availability options.
+ *
+ * The Availability section used to be written from nothing: the prompt asked
+ * for a start date, a weekly capacity and a response time, none of which the
+ * model can know, and told it to stay "non-committal", which is what you say
+ * when you are guessing. These are the facts, clicked rather than typed,
+ * because the answer is nearly always one of a handful and nobody wants to
+ * write a sentence about their own calendar for every quote.
+ */
+export interface AvailabilityOption {
+  id: string;
+  label: string;
+  /** Which question it answers, so one from each group can be picked without
+   * contradicting the others. */
+  group: "start" | "capacity" | "response";
+}
+
+export const AVAILABILITY_OPTIONS: AvailabilityOption[] = [
+  { id: "start-now", label: "Can start straight away", group: "start" },
+  { id: "start-2w", label: "Free in about two weeks", group: "start" },
+  { id: "start-month", label: "Booked up for a month", group: "start" },
+  { id: "start-tbc", label: "Start date to agree", group: "start" },
+
+  { id: "cap-1", label: "About a day a week", group: "capacity" },
+  { id: "cap-2", label: "Two to three days a week", group: "capacity" },
+  { id: "cap-4", label: "Most of the week", group: "capacity" },
+  { id: "cap-full", label: "Full time on this", group: "capacity" },
+
+  { id: "resp-same", label: "Replies the same day", group: "response" },
+  { id: "resp-24", label: "Replies within a day", group: "response" },
+  { id: "resp-48", label: "Replies within two working days", group: "response" },
+];
+
+export const AVAILABILITY_GROUP_LABEL: Record<AvailabilityOption["group"], string> = {
+  start: "When you could start",
+  capacity: "How much time you can give it",
+  response: "How quickly you reply",
+};
+
+/** One option per question. Picking a second in the same group replaces the
+ * first, so a quote can't promise to start now and be booked for a month. */
+export function toggleAvailability(selected: string[], id: string): string[] {
+  const option = AVAILABILITY_OPTIONS.find((o) => o.id === id);
+  if (!option) return selected;
+  if (selected.includes(id)) return selected.filter((s) => s !== id);
+  const sameGroup = AVAILABILITY_OPTIONS.filter((o) => o.group === option.group).map((o) => o.id);
+  return [...selected.filter((s) => !sameGroup.includes(s)), id];
+}
+
+/** The selected options as plain sentences for the prompt. */
+export function availabilityFacts(selected: string[], note?: string): string[] {
+  const facts = AVAILABILITY_OPTIONS.filter((o) => selected.includes(o.id)).map((o) => o.label);
+  if (note?.trim()) facts.push(note.trim());
+  return facts;
+}
