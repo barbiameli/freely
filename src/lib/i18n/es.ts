@@ -8,10 +8,12 @@ import type { Dictionary } from "@/lib/i18n/en";
  * thing in its own way: "Pick up where you left off" becomes "Sigue donde lo
  * dejaste" rather than a longer literal rendering.
  *
- * Neutral Spanish throughout, and "tú" rather than "usted": the app talks to
- * one freelancer about their own work, and "usted" would put a desk between
- * them. Terms the industry uses in English (brief, PDF, Figma) stay in
- * English, because translating them would be less clear, not more.
+ * Neutral Spanish throughout, and "tú" rather than "usted", here and in the
+ * generated quotes: freelance work is a relationship between two people, and
+ * "usted" puts a desk between them. A freelancer who wants "usted" can say so
+ * in their tone notes, which the generation prompt reads. Terms the industry
+ * uses in English (brief, PDF, Figma) stay in English, because translating
+ * them would be less clear, not more.
  *
  * Typed as Dictionary, so a missing or spare key fails the build.
  */

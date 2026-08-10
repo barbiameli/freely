@@ -272,7 +272,7 @@ function truncateSourceText(text: string): string {
  */
 function languageInstruction(language?: Locale): string {
   if (!language || language === "en") return "";
-  return "Write the entire quote in Spanish, in neutral Latin American and European Spanish that reads naturally to both. Address the client as \"usted\" throughout, since this is a business document. Keep industry terms that are normally used in English in English (brief, UX, PDF, Figma, sprint) rather than translating them into something less clear. This applies to every field you return, including titles, section text and open questions. The source material may be in another language; translate the meaning, do not copy its wording.";
+  return 'Write the entire quote in Spanish, in neutral Latin American and European Spanish that reads naturally to both. Address the client as "tú", not "usted": freelance work is a relationship between two people, and "usted" puts a desk between them. Only use "usted" if this freelancer\'s saved tone notes ask for it. Keep industry terms that are normally used in English in English (brief, UX, PDF, Figma, sprint) rather than translating them into something less clear. This applies to every field you return, including titles, section text and open questions. The source material may be in another language; translate the meaning, do not copy its wording.';
 }
 
 export function buildGenerateUserPrompt(
