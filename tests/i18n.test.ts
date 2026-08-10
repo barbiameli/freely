@@ -151,6 +151,11 @@ describe("strings fit where they are rendered", () => {
     "marketing.signUp": 16,
     "marketing.signUpFree": 22,
     "marketing.getStarted": 26,
+    // The headline is set at 44px and wants two lines at most. This is a
+    // length budget rather than a width one: a headline that needs three lines
+    // to land has stopped being a headline.
+    "marketing.heroTitle": 45,
+    "marketing.heroTitleAccent": 28,
   };
 
   for (const [key, budget] of Object.entries(budgets)) {

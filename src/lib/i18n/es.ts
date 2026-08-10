@@ -463,48 +463,48 @@ export const es: Dictionary = {
     signUpFree: "Crear cuenta gratis",
     getStarted: "Empezar gratis",
 
-    heroTitle: "Presupuesta, haz seguimiento y da parte del trabajo con tus clientes,",
-    heroTitleAccent: "sin el papeleo de siempre.",
+    // Spanish runs longer than English by default, and a headline is where
+    // that shows most. This says the same thing in half the words: three long
+    // clauses became two short ones.
+    heroTitle: "Presupuesta y controla tus proyectos,",
+    heroTitleAccent: "sin el papeleo.",
     heroBody:
-      "Freely reúne en un sitio lo que necesitas como freelance: convertir el proyecto de un cliente en un presupuesto con precio, hacerle seguimiento cuando lo ganas y llevar un diario que el cliente puede ver, con la IA escribiendo el primer borrador de cada presupuesto a partir de tus tarifas y de tus trabajos anteriores.",
+      "Convierte el proyecto de un cliente en un presupuesto con precio, hazle seguimiento cuando lo ganas y lleva un diario que el cliente puede ver. La IA escribe el primer borrador con tus tarifas y tus trabajos anteriores.",
     heroImageAlt:
-      "El asistente de presupuestos de Freely, en el primer paso, donde pegas o subes el proyecto del cliente.",
+      "El asistente de presupuestos de Freely, en el paso de subir o pegar el proyecto del cliente.",
 
-    aiEyebrow: "Cómo se usa la IA aquí",
+    aiEyebrow: "Cómo se usa la IA",
     aiTitle: "La IA redacta. Tú decides.",
     aiContextTitle: "Escribe con tu contexto",
     aiContextBody:
-      "Todo lo que guardas en Memoria (tus tarifas, tus proyectos anteriores, tu tono, los archivos y enlaces que subes) es lo que lee la IA antes de escribir un presupuesto. Cuanto más tengas ahí, más se parece a como escribes tú.",
-    aiReviewTitle: "Lo revisas tú antes de que lo vea el cliente",
+      "Antes de escribir lee lo que tienes en Memoria: tarifas, proyectos anteriores, tono, archivos y enlaces. Cuanto más haya, más se parece a como escribes tú.",
+    aiReviewTitle: "Lo revisas tú antes que el cliente",
     aiReviewBody:
-      "La IA escribe un primer borrador. Tú lo editas, lo afinas con una instrucción o lo reescribes entero antes de publicarlo. No sale nada solo.",
-    aiDisclosureTitle: "Tú decides si declaras el uso de IA",
+      "La IA escribe un borrador. Tú lo editas, lo afinas o lo reescribes antes de publicarlo. No sale nada solo.",
+    aiDisclosureTitle: "Tú decides si declaras la IA",
     aiDisclosureBody:
-      "Cada presupuesto lleva una declaración de uso de IA opcional que añade una nota breve y honesta a la página del cliente cuando la activas. Viene desactivada.",
+      "Cada presupuesto puede llevar una nota breve sobre el uso de IA en la página del cliente. Viene desactivada.",
     aiPricingTitle: "El precio va razonado",
     aiPricingBody:
-      "Si tienes histórico de precios, la IA calcula las horas y el precio a partir de tus proyectos anteriores. Si no lo tienes, busca las tarifas de mercado antes de proponer una cifra, y siempre enseña de dónde sale respecto a la tarifa que has puesto.",
+      "Con histórico, calcula horas y precio con tus proyectos anteriores. Sin él, busca tarifas de mercado y siempre enseña de dónde sale la cifra.",
 
-    featureQuotesTitle: "Presupuestos escritos por IA",
+    featureQuotesTitle: "Presupuestos con IA",
     featureQuotesBody:
-      "Pega o sube el proyecto del cliente y recibes un presupuesto con precio y estructura (alcance, entregables, calendario y una sección de Estrategia opcional), como página web o como PDF.",
+      "Pega o sube el proyecto y recibes un presupuesto con alcance, entregables, calendario y precio. Como página web o como PDF.",
     featureTrackingTitle: "Seguimiento de proyectos",
     featureTrackingBody:
-      "Convierte un presupuesto aceptado en un proyecto con hitos y estado, todo en un panel.",
-    featureDiaryTitle: "Diario y partes para el cliente",
+      "Convierte un presupuesto aceptado en un proyecto con hitos y estado, en un solo panel.",
+    featureDiaryTitle: "Diario para el cliente",
     featureDiaryBody:
-      "Lleva un registro de avances que tu cliente puede seguir, con tus colores y tu logo.",
+      "Un registro de avances que tu cliente puede seguir, con tus colores y tu logo.",
 
     howItWorks: "Cómo funciona",
     step1Title: "Configura Memoria",
-    step1Body:
-      "Añade tus tarifas, tu tono, tus trabajos anteriores y, si quieres, tu marca. Son unos minutos.",
+    step1Body: "Tus tarifas, tu tono, tus trabajos y tu marca. Unos minutos.",
     step2Title: "Genera un presupuesto",
-    step2Body:
-      "Suelta ahí el proyecto del cliente y recibes un borrador con precio y estructura en segundos.",
-    step3Title: "Revisa, envía, haz seguimiento",
-    step3Body:
-      "Edita lo que quieras, publica la página o el PDF y haz seguimiento del proyecto cuando lo ganes.",
+    step2Body: "Suelta el proyecto del cliente y tienes un borrador con precio en segundos.",
+    step3Title: "Revisa, envía, controla",
+    step3Body: "Edita, publica la página o el PDF y haz seguimiento cuando lo ganes.",
 
     freeToStart: "Gratis para empezar, sin tarjeta.",
     tryIt: "Pruébalo en tu próximo presupuesto.",
