@@ -3,14 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FreelyLogo } from "@/components/freely-logo";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { useT } from "@/lib/i18n/context";
 
 const ITEMS = [
-  { key: "quote", label: "Quote", glyph: "Q", href: "/quote" },
-  { key: "track", label: "Track", glyph: "T", href: "/track" },
-  { key: "diary", label: "Diary", glyph: "D", href: "/diary" },
-  { key: "invoices", label: "Invoice", glyph: "I", href: "/invoices" },
-  { key: "memory", label: "Memory", glyph: "M", href: "/memory" },
-];
+  { key: "quote", glyph: "Q", href: "/quote" },
+  { key: "track", glyph: "T", href: "/track" },
+  { key: "diary", glyph: "D", href: "/diary" },
+  { key: "invoices", glyph: "I", href: "/invoices" },
+  { key: "memory", glyph: "M", href: "/memory" },
+] as const;
 
 /**
  * Navigation. A vertical rail on desktop, a fixed bottom bar on mobile.
@@ -23,6 +25,7 @@ const ITEMS = [
  */
 export function Sidebar() {
   const pathname = usePathname();
+  const t = useT();
 
   return (
     <nav
@@ -66,11 +69,17 @@ export function Sidebar() {
                   active ? "font-bold text-violet" : "font-medium text-text-muted"
                 }`}
               >
-                {item.label}
+                {t.nav[item.key]}
               </span>
             </Link>
           );
         })}
+      </div>
+
+      {/* Desktop only: on mobile the rail is a bottom bar with no room, so the
+          switcher rides in the top bar there instead. */}
+      <div className="hidden md:block md:mt-auto">
+        <LanguageSwitcher compact />
       </div>
     </nav>
   );

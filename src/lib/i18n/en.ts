@@ -116,20 +116,20 @@ export const en = {
     quoteLanguage: "Quote language",
     quoteLanguageHint: "The language the quote is written in, which need not be yours.",
 
-    generate: "Generate brief",
+    generate: "Generate the quote",
     stop: "Stop",
     generatingTooLong:
       "This is taking longer than it should. It may still finish in the background, but don't wait on it. Try again, or simplify the source material first (a very large uploaded file slows this down a lot).",
-    generateFailed: "Something went wrong generating the brief. Try again.",
+    generateFailed: "Something went wrong generating it. Try again.",
 
-    addSource: "Add some source material before generating a brief.",
+    addSource: "Add the client's material before generating anything.",
     addRateOrLocation: "Add your rate, or say where you or the client are based.",
     addRateOrLocationLong:
       "Add your rate, or say where you or the client are based so a rate can be researched.",
     output: "Output",
     outputHint: "What the client receives, and how it looks.",
     pageFormat: "Page format",
-    briefHistory: "Brief history",
+    briefHistory: "Past projects",
     chooseFile: "Choose file",
     visualReferences: "Visual references",
     removeExample: "Remove example",
