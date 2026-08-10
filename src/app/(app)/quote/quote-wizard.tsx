@@ -40,6 +40,7 @@ import {
   availabilityFacts,
 } from "@/lib/quote-prompts";
 import { readPastedText } from "@/lib/paste-text";
+import { extractFileText } from "@/lib/extract-file";
 import { BriefHistory } from "@/components/brief-history";
 import {
   analyzeBrandGuideAction,
@@ -233,13 +234,10 @@ export function QuoteWizard({
       return;
     }
     setUploading(true);
-    const formData = new FormData();
-    formData.set("file", file);
-    const res = await fetch("/api/extract-text", { method: "POST", body: formData });
-    const result = await res.json();
+    const result = await extractFileText(file);
     setUploading(false);
-    if (!res.ok) {
-      setError(result.error || "Couldn't read that file.");
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
     setFileName(result.fileName);
@@ -394,11 +392,8 @@ export function QuoteWizard({
         const result = await analyzeBrandGuideImageAction(dataUrl);
         if (!result.ok) throw new Error(result.error);
       } else {
-        const formData = new FormData();
-        formData.set("file", file);
-        const res = await fetch("/api/extract-text", { method: "POST", body: formData });
-        const extracted = await res.json();
-        if (!res.ok) throw new Error(extracted.error || "Couldn't read that file.");
+        const extracted = await extractFileText(file);
+        if (!extracted.ok) throw new Error(extracted.error);
         const result = await analyzeBrandGuideAction(extracted.text);
         if (!result.ok) throw new Error(result.error);
       }

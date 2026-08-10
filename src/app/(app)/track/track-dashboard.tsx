@@ -14,6 +14,7 @@ import {
   deleteProjectAction,
 } from "@/actions/projects";
 import { deliverableProgress } from "@/lib/project-state";
+import { extractFileText } from "@/lib/extract-file";
 import { currencySymbol } from "@/lib/currencies";
 
 interface ProjectCard {
@@ -90,16 +91,12 @@ export function TrackDashboard({ projects }: { projects: ProjectCard[] }) {
   async function handleUploadFile(file: File) {
     setUploadReading(true);
     setUploadError("");
-    const formData = new FormData();
-    formData.set("file", file);
-    const res = await fetch("/api/extract-text", { method: "POST", body: formData });
-    const extracted = await res.json();
-    if (!res.ok) {
-      setUploadReading(false);
-      setUploadError(extracted.error || "Couldn't read that file.");
+    const extracted = await extractFileText(file);
+    setUploadReading(false);
+    if (!extracted.ok) {
+      setUploadError(extracted.error);
       return;
     }
-    setUploadReading(false);
     setWorking(true);
     const result = await createProjectFromDocumentAction(extracted.text);
     setWorking(false);

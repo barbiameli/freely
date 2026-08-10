@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   Sparkles,
   Check,
-  Download,
   Link2,
   CheckCircle2,
   Trash2,
@@ -34,6 +33,7 @@ import { repriceForHours, effectiveRate } from "@/lib/repricing";
 import { paragraphs } from "@/lib/rich-text";
 import { useAction } from "@/lib/use-action";
 import { ActionError } from "@/components/ui/action-error";
+import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { rateSuffix, describeEffort, parseRateUnit } from "@/lib/rate-unit";
 import { DeliverableList } from "@/components/deliverable-list";
 import { TimelineView } from "@/components/timeline-view";
@@ -802,11 +802,10 @@ export function BriefView({
         <Button variant="ghost" onClick={() => router.push("/quote")}>
           New quote
         </Button>
-        <a href={`/api/briefs/${brief.id}/pdf?template=${brief.template || "classic"}`} download>
-          <Button variant="outline" icon={Download}>
-            Download PDF
-          </Button>
-        </a>
+        <DownloadPdfButton
+          href={`/api/briefs/${brief.id}/pdf?template=${brief.template || "classic"}`}
+          fileName={`${brief.title.replace(/[^\w\s-]/g, "").trim() || "quote"}.pdf`}
+        />
         {brief.status === "DRAFT" && (
           <Button variant="outline" icon={Check} disabled={working} onClick={handleAddToTrack}>
             Add to Track

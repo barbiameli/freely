@@ -22,6 +22,7 @@ import {
   uploadBrandLogoAction,
 } from "@/actions/memory";
 import { MAX_DOCUMENT_UPLOAD_BYTES, documentTooLargeError } from "@/lib/upload-limits";
+import { extractFileText } from "@/lib/extract-file";
 import { hostnameOf, normalizeUrl } from "@/lib/links";
 import {
   ArrowRight,
@@ -272,13 +273,10 @@ function ReferencesStep({
       return;
     }
     setUploading("file");
-    const formData = new FormData();
-    formData.set("file", file);
-    const res = await fetch("/api/extract-text", { method: "POST", body: formData });
-    const extracted = await res.json();
-    if (!res.ok) {
+    const extracted = await extractFileText(file);
+    if (!extracted.ok) {
       setUploading(null);
-      setError(extracted.error || "Couldn't read that file.");
+      setError(extracted.error);
       return;
     }
     const result = await saveMemoryFileAction(extracted.fileName, extracted.text);
@@ -509,13 +507,10 @@ function BrandingStep({
       return;
     }
 
-    const formData = new FormData();
-    formData.set("file", file);
-    const res = await fetch("/api/extract-text", { method: "POST", body: formData });
-    const extracted = await res.json();
-    if (!res.ok) {
+    const extracted = await extractFileText(file);
+    if (!extracted.ok) {
       setGuideUploading(false);
-      setGuideError(extracted.error || "Couldn't read that file.");
+      setGuideError(extracted.error);
       return;
     }
     const result = await analyzeBrandGuideAction(extracted.text);
