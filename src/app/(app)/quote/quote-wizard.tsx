@@ -32,7 +32,7 @@ import { MAX_DOCUMENT_UPLOAD_BYTES, documentTooLargeError } from "@/lib/upload-l
 import { BRANDING_OPTIONS } from "@/lib/branding";
 import { INTERPRETATION_PRESETS, QUOTE_INCLUSIONS } from "@/lib/quote-prompts";
 import { readPastedText } from "@/lib/paste-text";
-import { BriefCarousel } from "@/components/brief-carousel";
+import { BriefHistory } from "@/components/brief-history";
 import {
   analyzeBrandGuideAction,
   analyzeBrandGuideImageAction,
@@ -147,16 +147,12 @@ export function QuoteWizard({
   userIndustry,
   userCurrency,
   hasBrand,
-  hasPricingHistory,
   savedLocation,
 }: {
   recentBriefs: BriefSummary[];
   userIndustry?: string | null;
   userCurrency?: string | null;
   hasBrand?: boolean;
-  /** False on a first quote, when there is nothing of their own to price
-   * against and the model has to research the market. */
-  hasPricingHistory?: boolean;
   savedLocation?: string;
 }) {
   const router = useRouter();
@@ -446,8 +442,15 @@ export function QuoteWizard({
   // disabled with no indication of what's missing. A greyed-out button that
   // won't say why is the least helpful possible failure state.
   function goToOutputStep() {
-    if (!draft.hourlyRate || draft.hourlyRate <= 0) {
-      setError("Add your hourly rate before continuing. It's what pricing and hours are worked out from.");
+    // Either they price the work, or they say where it is being priced for.
+    if (
+      (!draft.hourlyRate || draft.hourlyRate <= 0) &&
+      !draft.pricing?.yourLocation?.trim() &&
+      !draft.pricing?.clientLocation?.trim()
+    ) {
+      setError(
+        "Add your hourly rate, or say where you or the client are based so a rate can be researched."
+      );
       return;
     }
     setError("");
@@ -466,7 +469,7 @@ export function QuoteWizard({
       {step === 0 && (
         <>
           <Topbar eyebrow="Quote - Step 1 of 2" />
-          {recentBriefs.length > 0 && <BriefCarousel briefs={recentBriefs} />}
+          <BriefHistory briefs={recentBriefs} />
           <div>
             <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">
               What are we quoting?
@@ -640,7 +643,7 @@ export function QuoteWizard({
 
           <div className="flex flex-col md:flex-row gap-4 md:gap-5">
             <Card className="flex-1">
-              <FieldHeading required>Your hourly rate</FieldHeading>
+              <FieldHeading>Your hourly rate</FieldHeading>
               <div className="flex items-center gap-2">
                 <select
                   value={draft.currency}
@@ -666,7 +669,9 @@ export function QuoteWizard({
                 <span className="text-slate text-sm">/hr</span>
               </div>
               <div className="text-[12px] text-text-muted mt-2.5">
-                Price and hours are worked out from this.
+                {draft.hourlyRate > 0
+                  ? "The price is your rate times the hours. Your rate is used exactly as typed."
+                  : "Leave it blank and a rate gets researched for your market."}
               </div>
             </Card>
             <Card className="flex-1">
@@ -683,17 +688,17 @@ export function QuoteWizard({
                 ))}
               </div>
               <div className="text-[12px] text-text-muted mt-2.5">
-                Used when there is no pricing history yet, to research a realistic baseline.
+                Used when no rate is given, to research a realistic one.
               </div>
             </Card>
           </div>
 
-          {!hasPricingHistory && (
+          {draft.hourlyRate <= 0 && (
             <Card>
-              <FieldHeading>Help price this accurately</FieldHeading>
+              <FieldHeading required>Where is this being priced for?</FieldHeading>
               <p className="text-[12px] text-text-muted mb-3">
-                This is your first quote, so there is no past work to price against. Rates for the
-                same job differ a lot between markets, so these help the AI research the right one.
+                No hourly rate given, so one gets researched. The same job pays very differently
+                from one market to the next, so a location is needed.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {(
@@ -749,8 +754,8 @@ export function QuoteWizard({
                 ))}
               </div>
               <p className="text-[11.5px] text-text-muted mt-3">
-                All optional. Where the client is usually matters most, since that is what sets
-                what you can charge.
+                Your location or the client&apos;s is needed. The rest is optional. Where the client is
+                usually matters most, since that is what sets what you can charge.
               </p>
             </Card>
           )}

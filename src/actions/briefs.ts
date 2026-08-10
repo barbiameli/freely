@@ -139,8 +139,18 @@ export async function generateBriefAction(
   if (!draft.sourceText.trim()) {
     return { ok: false, error: "Add some source material before generating a brief." };
   }
-  if (!draft.hourlyRate || draft.hourlyRate <= 0) {
-    return { ok: false, error: "Add your hourly rate before generating a brief." };
+  // The rate is optional, but then a market has to be named, because a rate
+  // has to come from somewhere and the same job pays very differently from
+  // one place to the next.
+  const hasRate = Boolean(draft.hourlyRate && draft.hourlyRate > 0);
+  const hasMarket = Boolean(
+    draft.pricing?.yourLocation?.trim() || draft.pricing?.clientLocation?.trim()
+  );
+  if (!hasRate && !hasMarket) {
+    return {
+      ok: false,
+      error: "Add your hourly rate, or say where you or the client are based.",
+    };
   }
 
   const pricingHistory = await buildPricingHistory(user);

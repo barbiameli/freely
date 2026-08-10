@@ -113,9 +113,10 @@ export interface QuoteDraftInput {
    * section (it's always present on a brief, but this controls how much
    * weight/detail it gets, matching the wizard's Include toggles). */
   includeTimeline: boolean;
-  /** Always asked in the wizard — this freelancer's hourly rate for this
-   * kind of work, used to reason about price and hours together instead of
-   * guessing a round number. */
+  /** This freelancer's rate for this kind of work. Optional: 0 means they
+   * did not give one, in which case a location is required instead and the
+   * rate comes from market research. When it is given it is authoritative,
+   * and the generated price is forced to hours x rate. */
   hourlyRate: number;
   /** Self-reported seniority, only really load-bearing when there's no
    * pricing history to anchor to and Claude has to research market rates. */
@@ -248,13 +249,24 @@ export function buildGenerateUserPrompt(
   const currencyCode = draft.currency || "USD";
   const symbol = currencySymbol(currencyCode);
 
-  const pricingInstruction = hasHistory
-    ? `Pricing approach: this freelancer charges ${symbol}${draft.hourlyRate}/hr (currency: ${currencyCode}). Look at the pricing history below for comparable past work, estimate the hours this new project will realistically take (informed by how long similar past projects took), and set price = hours × hourly rate, adjusting for scope differences. Briefly sanity-check that the implied rate stays close to ${symbol}${draft.hourlyRate}/hr.`
-    : `Pricing approach: this freelancer charges ${symbol}${draft.hourlyRate}/hr (currency: ${currencyCode}) and has no comparable pricing history yet, so the numbers have to come from research rather than from their own past work.${formatPricingContext(
-        draft.pricing
-      )}
-Use web search to find what this kind of project actually costs, and how many hours it typically takes, for a "${draft.expertiseLevel}"-level freelancer. Search against the client's market where one is given, since that is what sets what can be charged, and note the freelancer's own market as a cross-check. Then estimate the hours this project realistically needs and set price = hours × ${symbol}${draft.hourlyRate}/hr.
-If the research suggests their stated rate is well below or well above the going rate for that market, say so plainly in the strategy findings or open questions. Do not silently change their rate.`;
+  // The stated rate is the freelancer's decision, not a suggestion. Whichever
+  // branch runs, price is hours x rate, and the rate itself is enforced in
+  // code after parsing (see applyHourlyRate) because a model asked to
+  // multiply will sometimes quietly price to what it thinks the market bears.
+  const hasRate = draft.hourlyRate > 0;
+  const rateLine = `${symbol}${draft.hourlyRate}/hr (currency: ${currencyCode})`;
+
+  let pricingInstruction: string;
+  if (hasRate && hasHistory) {
+    pricingInstruction = `Pricing approach: this freelancer charges ${rateLine}. That rate is fixed and must be used exactly as given. Look at the pricing history below for comparable past work, estimate the hours this new project will realistically take, and set price = hours x ${symbol}${draft.hourlyRate}. Your only real decision here is the hours. Do not substitute a market rate, a rounder number, or a rate you consider more appropriate.`;
+  } else if (hasRate) {
+    pricingInstruction = `Pricing approach: this freelancer charges ${rateLine}. That rate is fixed and must be used exactly as given. Estimate the hours this project realistically needs for a "${draft.expertiseLevel}"-level freelancer, then set price = hours x ${symbol}${draft.hourlyRate}. Your only real decision here is the hours. Do not substitute a market rate, a rounder number, or a rate you consider more appropriate. If the stated rate looks well below or well above the going rate, say so in the open questions and leave the numbers alone.`;
+  } else {
+    pricingInstruction = `Pricing approach: this freelancer has not given an hourly rate, so you set one from market research.${formatPricingContext(
+      draft.pricing
+    )}
+Use web search to find the going hourly rate, and the typical hours, for this kind of project for a "${draft.expertiseLevel}"-level freelancer. Price against the client's market where one is given, since that is what sets what can be charged, and use the freelancer's own location as a cross-check. Then set hours, and price = hours x the rate you landed on. State the rate you used, and where it came from, in the open questions so they can check it.`;
+  }
 
   const strategyInstruction = draft.includeStrategy
     ? `\nInclude a "strategy" object, written the way a senior consultant frames a proposal's approach: "goal" is one sentence naming the outcome this project is actually for. "findings" is 2-4 concrete, standalone observations drawn from the source material (what's currently true / what's missing / what was asked for), each its own bullet, not one merged sentence. "openQuestions" is 2-4 notes for the freelancer only, never shown to the client: things worth confirming before starting, risks the brief glosses over, or a suggestion about how to approach the work that they may not have considered. Do not mention AI usage anywhere in this object, that's handled separately.`
@@ -400,8 +412,28 @@ export async function generateBriefFromDraft(
   const user = buildGenerateUserPrompt(draft, pricingHistory);
   // No pricing history to anchor to → let Claude research market rates
   // online before it commits to a number.
-  const text = await callClaude(system, user, { webSearch: pricingHistory.length === 0 });
-  return parseBriefResponse(text);
+  // Research the market when there is nothing of their own to anchor to,
+  // either because there is no history or because no rate was given.
+  const text = await callClaude(system, user, {
+    webSearch: pricingHistory.length === 0 || draft.hourlyRate <= 0,
+  });
+  return applyHourlyRate(parseBriefResponse(text), draft.hourlyRate);
+}
+
+/**
+ * Forces price = hours x the stated rate.
+ *
+ * The prompt says this plainly, and the model still drifted: a quote built on
+ * a stated 40/hr came back priced at an implied 105/hr. The rate is the one
+ * number the freelancer has actually decided, so it is enforced here rather
+ * than asked for. Hours stay as generated, since that is the part that
+ * genuinely calls for judgment.
+ */
+export function applyHourlyRate(brief: GeneratedBrief, hourlyRate: number): GeneratedBrief {
+  if (hourlyRate <= 0 || brief.hours <= 0) return brief;
+  const price = Math.round(brief.hours * hourlyRate);
+  if (price === brief.price) return brief;
+  return { ...brief, price };
 }
 
 export const projectExtractionSchema = z.object({

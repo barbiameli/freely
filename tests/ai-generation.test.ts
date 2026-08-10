@@ -96,11 +96,25 @@ describe("buildGenerateUserPrompt", () => {
     expect(prompt).not.toContain("Use web search");
   });
 
-  it("asks Claude to research market rates when there's no pricing history", () => {
-    const prompt = buildGenerateUserPrompt(draft, []);
+  it("treats a stated rate as fixed, with or without pricing history", () => {
+    // The rate is the one number the freelancer has actually decided, so it
+    // is never researched away.
+    for (const history of [[], [{ title: "Nordic App", price: 6000, hours: 100, impliedHourlyRate: 60 }]]) {
+      const prompt = buildGenerateUserPrompt(draft, history);
+      expect(prompt).toContain("That rate is fixed and must be used exactly as given");
+      expect(prompt).not.toContain("you set one from market research");
+    }
+  });
+
+  it("researches a rate only when none was given, and needs a market to do it", () => {
+    const prompt = buildGenerateUserPrompt(
+      { ...draft, hourlyRate: 0, pricing: { clientLocation: "London, UK" } },
+      []
+    );
     expect(prompt).toContain("web search");
     expect(prompt).toContain("Senior");
-    expect(prompt).not.toContain("Pricing history");
+    expect(prompt).toContain("London, UK");
+    expect(prompt).not.toContain("That rate is fixed");
   });
 
   it("asks for a Strategy section only when includeStrategy is set, without any AI-usage split", () => {

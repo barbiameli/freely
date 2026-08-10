@@ -27,20 +27,30 @@ export interface BriefSummary {
  * list) is enough to recognise a quote at a glance, and costs nothing to
  * render.
  */
-function DocumentPreview({ brief }: { brief: BriefSummary }) {
+export function DocumentPreview({
+  brief,
+  height = 104,
+}: {
+  brief: BriefSummary;
+  /** Small enough to sit inside a list row, or large enough to lead a card. */
+  height?: number;
+}) {
+  const tiny = height < 60;
   return (
     <div
       aria-hidden
-      className="w-full h-[104px] rounded-md bg-white border border-line overflow-hidden flex flex-col"
+      style={{ height }}
+      className="w-full rounded bg-white border border-line overflow-hidden flex flex-col"
     >
-      <div className="bg-ink px-2.5 py-2">
+      <div className={tiny ? "bg-ink px-1.5 py-1" : "bg-ink px-2.5 py-2"}>
         <div className="w-6 h-[2px] bg-coral rounded-full" />
         <div className="w-3/4 h-[5px] bg-white/85 rounded-full mt-1.5" />
         <div className="w-1/3 h-[3px] bg-white/35 rounded-full mt-1" />
       </div>
-      <div className="flex-1 px-2.5 py-2 flex flex-col gap-1">
+      <div className={`flex-1 flex flex-col gap-1 ${tiny ? "px-1.5 py-1" : "px-2.5 py-2"}`}>
         <div className="w-full h-[3px] rounded bg-violet-tint" />
         <div className="w-5/6 h-[3px] rounded bg-violet-tint" />
+        {!tiny && (
         <div className="mt-1 flex flex-col gap-[3px]">
           {Array.from({ length: Math.min(3, Math.max(1, brief.deliverables.length)) }).map(
             (_, i) => (
@@ -51,6 +61,7 @@ function DocumentPreview({ brief }: { brief: BriefSummary }) {
             )
           )}
         </div>
+        )}
       </div>
     </div>
   );
