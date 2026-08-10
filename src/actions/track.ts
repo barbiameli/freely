@@ -8,6 +8,7 @@ import { sanitizeText, stripLongDashes } from "@/lib/sanitize-text";
 import { breakDownDeliverable, type MemoryContext } from "@/lib/anthropic";
 import { stepDb, flagDb, deliverableDb, type FlagKind } from "@/lib/track-db";
 import { scheduleDeliverables, projectEndFromTimeline } from "@/lib/schedule";
+import { tidyTitle, summaryRepeatsTitle } from "@/lib/rich-text";
 import type { ActionResult } from "@/actions/briefs";
 
 function clean(text: string): string {
@@ -222,13 +223,19 @@ export async function breakDownDeliverableAction(
     });
   }
 
+  // The client-facing sentence becomes a short title, since this list is the
+  // freelancer's own work rather than something a client reads. Brevity is
+  // enforced here rather than trusted to the prompt, which the model does not
+  // always honour.
+  const title = tidyTitle(clean(breakdown.title || deliverable.name));
+  const summary = clean(breakdown.summary);
+
   await deliverableDb.update({
     where: { id: deliverableId },
     data: {
-      summary: clean(breakdown.summary),
-      // The client-facing sentence becomes a short title, since this list is
-      // the freelancer's own work rather than something a client reads.
-      ...(breakdown.title ? { name: clean(breakdown.title) } : {}),
+      // A summary that just restates the title is the same sentence twice.
+      summary: summaryRepeatsTitle(summary, title) ? null : summary,
+      name: title,
       brokenDownAt: new Date(),
     },
   });

@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { splitDeliverable, paragraphs } from "@/lib/rich-text";
+import {
+  splitDeliverable,
+  paragraphs,
+  tidyTitle,
+  summaryRepeatsTitle,
+} from "@/lib/rich-text";
 import { toggleExampleLine } from "@/lib/quote-prompts";
 
 describe("splitDeliverable", () => {
@@ -102,5 +107,67 @@ describe("toggleExampleLine", () => {
 
   it("comes back empty when the only line is removed", () => {
     expect(toggleExampleLine("Price this fixed", "Price this fixed", false)).toBe("");
+  });
+});
+
+describe("tidyTitle", () => {
+  it("keeps a title that is already short", () => {
+    expect(tidyTitle("Token foundations")).toBe("Token foundations");
+  });
+
+  it("cuts a whole sentence back to its leading clause", () => {
+    // The bug: the model returned the full client-facing sentence as the
+    // title, so the heading wrapped to three lines.
+    expect(
+      tidyTitle(
+        "Token foundations, colour, spacing, radius, shadow, and motion values set up as Variables in Figma"
+      )
+    ).toBe("Token foundations");
+  });
+
+  it("strips trailing punctuation", () => {
+    expect(tidyTitle("Developer handoff:")).toBe("Developer handoff");
+  });
+
+  it("cuts on a word boundary when there is no clause to fall back on", () => {
+    const long =
+      "Map every step from landing page to checkout confirmation and deliver a prioritised fix list";
+    const out = tidyTitle(long, 40);
+    expect(out.length).toBeLessThanOrEqual(43);
+    expect(out.endsWith("...")).toBe(true);
+    expect(out).not.toMatch(/\s\.\.\.$/);
+  });
+
+  it("takes only the first line", () => {
+    expect(tidyTitle("Research phase\nand then some other text")).toBe("Research phase");
+  });
+});
+
+describe("summaryRepeatsTitle", () => {
+  it("catches a summary that is the title again", () => {
+    // What Barbara saw: the same sentence printed twice, once as the heading
+    // and once as the summary under it.
+    const line =
+      "Map every step from landing page to checkout confirmation on the site and deliver a fix list";
+    expect(summaryRepeatsTitle(line, line)).toBe(true);
+  });
+
+  it("catches a summary that opens with the title", () => {
+    expect(summaryRepeatsTitle("Token foundations set up as Variables", "Token foundations")).toBe(
+      true
+    );
+  });
+
+  it("keeps a summary that says something new", () => {
+    expect(
+      summaryRepeatsTitle(
+        "Translate whatever token values exist today into a linked collection the devs can read",
+        "Token foundations"
+      )
+    ).toBe(false);
+  });
+
+  it("handles an empty summary", () => {
+    expect(summaryRepeatsTitle("", "Token foundations")).toBe(false);
   });
 });

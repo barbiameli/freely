@@ -107,3 +107,49 @@ export function paragraphs(text: string, maxChars = 320, perGroup = 2): string[]
   }
   return out.length ? out : [text.trim()];
 }
+
+/**
+ * Forces a generated title to be a title.
+ *
+ * The prompt asks for two to five words and the model sometimes returns the
+ * whole sentence anyway, so the rule is enforced here rather than hoped for:
+ * first line only, no trailing punctuation, and anything still long falls back
+ * to the leading clause. A heading that wraps to three lines is not a heading.
+ */
+export function tidyTitle(text: string, max = 52): string {
+  const firstLine = text.split("\n")[0].trim().replace(/[.,;:]+$/, "");
+  if (firstLine.length <= max) return firstLine;
+
+  const { lead } = splitDeliverable(firstLine);
+  const candidate = lead.replace(/[.,;:]+$/, "");
+  if (candidate.length <= max) return candidate;
+
+  // Cut on a word boundary rather than mid-word.
+  const cut = candidate.slice(0, max);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${(lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd()}...`;
+}
+
+/**
+ * Whether a summary is just the title again.
+ *
+ * The model sometimes returns both saying the same thing, which showed up as
+ * the same sentence twice in a row. Compared on words rather than characters
+ * so a reworded-but-identical pair still counts.
+ */
+export function summaryRepeatsTitle(summary: string, title: string): boolean {
+  const normalise = (t: string) =>
+    t
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "")
+      .split(/\s+/)
+      .filter(Boolean);
+  const s = normalise(summary);
+  const t = normalise(title);
+  if (t.length === 0 || s.length === 0) return false;
+  // A summary that opens with the whole title, or is a near-identical set of
+  // words, is a repeat.
+  if (s.slice(0, t.length).join(" ") === t.join(" ")) return true;
+  const shared = t.filter((word) => s.includes(word)).length;
+  return shared / t.length > 0.85 && Math.abs(s.length - t.length) <= 3;
+}

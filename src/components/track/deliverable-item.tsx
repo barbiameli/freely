@@ -137,24 +137,28 @@ export function DeliverableItem({
         <button
           type="button"
           onClick={onToggleExpanded}
-          className="flex-1 min-w-0 text-left bg-none border-none cursor-pointer p-0"
+          title={deliverable.name}
+          className="flex-1 min-w-0 text-left bg-none border-none cursor-pointer p-0 flex items-start gap-1.5"
         >
-          <div className="flex items-center gap-1.5">
+          {/* Its own column, so a title that wraps does not drag the chevron
+              down beside the second line. */}
+          <span className="shrink-0 pt-[3px]">
             {expanded ? (
-              <ChevronDown size={13} className="text-text-muted shrink-0" />
+              <ChevronDown size={13} className="text-text-muted" />
             ) : (
-              <ChevronRight size={13} className="text-text-muted shrink-0" />
+              <ChevronRight size={13} className="text-text-muted" />
             )}
+          </span>
+          <span className="min-w-0 flex-1">
             <span
-              className={`font-body font-semibold text-body tracking-[-0.01em] ${
+              className={`block font-body font-semibold text-body tracking-[-0.01em] line-clamp-2 ${
                 deliverable.done ? "text-text-muted line-through" : "text-ink"
               }`}
             >
-              {shortName(deliverable.name, 48)}
+              {shortName(deliverable.name, 56)}
             </span>
-          </div>
           {deliverable.steps.length > 0 && (
-            <div className="flex items-center gap-2 mt-1.5 ml-[19px]">
+            <div className="flex items-center gap-2 mt-1.5">
               <div className="w-16 h-[3px] rounded-full bg-line overflow-hidden">
                 <div
                   className="h-full rounded-full bg-violet"
@@ -166,6 +170,7 @@ export function DeliverableItem({
               </span>
             </div>
           )}
+          </span>
         </button>
 
         <div className="shrink-0 pt-0.5">
@@ -198,7 +203,7 @@ export function DeliverableItem({
       </div>
 
       {expanded && (
-        <div className="pb-4 pl-[32px] pr-1">
+        <div className="pb-4 pl-[30px] pr-1">
           {deliverable.summary && !editing && (
             <p className="text-small text-slate leading-relaxed mt-0 mb-3 max-w-[62ch]">
               {deliverable.summary}
