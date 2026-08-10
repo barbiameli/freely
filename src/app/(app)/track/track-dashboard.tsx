@@ -198,6 +198,10 @@ export function TrackDashboard({ projects }: { projects: ProjectCard[] }) {
             return (
               <Card
                 key={p.id}
+                // The card navigates on click rather than being a link, so
+                // there is no href for the screenshot script to read. This
+                // gives it something stable to find.
+                data-project={p.id}
                 onClick={() => router.push(`/track/${p.id}`)}
                 className="cursor-pointer flex flex-col gap-3 relative group"
               >

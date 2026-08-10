@@ -9,11 +9,10 @@
  * Every shot is taken at the same viewport and pixel density, so they sit
  * together on the page without one looking softer or larger than the rest.
  *
- *   FREELY_EMAIL=you@example.com FREELY_PASSWORD=... \
- *     npm run screenshots -- --quote /quote/abc123 --project /track/def456
+ *   FREELY_EMAIL=you@example.com FREELY_PASSWORD=secret npm run screenshots
  *
- * The two paths are the ones only you can pick: which quote and which project
- * look best. Copy them out of the address bar. Everything else is fixed.
+ * It photographs the newest quote and the newest project. To choose a
+ * different one, pass --quote /quote/<id> or --project /track/<id>.
  */
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
@@ -61,22 +60,6 @@ if (!EMAIL || !PASSWORD) {
   );
 }
 
-const quotePath = arg("quote");
-const projectPath = arg("project");
-if (!quotePath || !projectPath) {
-  fail(
-    "Pass the two paths to capture, copied from the address bar:\n" +
-      "  npm run screenshots -- --quote /quote/<id> --project /track/<id>",
-  );
-}
-
-const shots = [
-  { file: "marketing-hero.png", path: "/quote", label: "the quote wizard" },
-  { file: "marketing-quote.png", path: quotePath, label: "a finished quote" },
-  { file: "marketing-track.png", path: "/track", label: "the Track dashboard" },
-  { file: "marketing-project.png", path: projectPath, label: "one project" },
-];
-
 const outputDir = join(process.cwd(), "public");
 mkdirSync(outputDir, { recursive: true });
 
@@ -102,6 +85,41 @@ try {
 } catch {
   fail("Could not sign in. Check the email and password, and that the app is running at " + BASE);
 }
+
+/**
+ * Picks the newest quote and project unless told otherwise.
+ *
+ * Asking for two ids meant copying them out of the address bar before every
+ * run, which is the sort of small friction that stops the pictures being
+ * refreshed. Pass --quote or --project to override.
+ */
+async function findFirst(listPath, selector, attribute) {
+  await page.goto(`${BASE}${listPath}`, { waitUntil: "networkidle" });
+  const element = page.locator(selector).first();
+  if ((await element.count()) === 0) return null;
+  return attribute === "href"
+    ? await element.getAttribute("href")
+    : `/track/${await element.getAttribute(attribute)}`;
+}
+
+const quotePath =
+  arg("quote") ?? (await findFirst("/quote/all", 'a[href^="/quote/"]', "href"));
+const projectPath =
+  arg("project") ?? (await findFirst("/track", "[data-project]", "data-project"));
+
+if (!quotePath) {
+  fail("No quotes found on /quote/all. Make one first, or pass --quote /quote/<id>.");
+}
+if (!projectPath) {
+  fail("No projects found on /track. Send a quote to Track first, or pass --project /track/<id>.");
+}
+
+const shots = [
+  { file: "marketing-hero.png", path: "/quote", label: "the quote wizard" },
+  { file: "marketing-quote.png", path: quotePath, label: "a finished quote" },
+  { file: "marketing-track.png", path: "/track", label: "the Track dashboard" },
+  { file: "marketing-project.png", path: projectPath, label: "one project" },
+];
 
 for (const shot of shots) {
   const url = shot.path.startsWith("http") ? shot.path : `${BASE}${shot.path}`;
