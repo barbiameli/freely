@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { FileText, ListChecks, Users, ShieldCheck, Sparkles } from "lucide-react";
 import { FreelyLogo } from "@/components/freely-logo";
-import { useT } from "@/lib/i18n/context";
+import type { Dictionary } from "@/lib/i18n";
 
 /**
  * The public marketing page, shown at "/" to signed-out visitors only
@@ -9,16 +9,20 @@ import { useT } from "@/lib/i18n/context";
  * deliberately simple and honest: every claim here matches something that
  * actually exists in the app today. No fabricated testimonials, no made-up
  * user counts, no "coming soon" features described as if they already work.
+ *
+ * This renders on the server, so its strings arrive as a prop rather than
+ * through useT(): that hook reads a client context, and the provider is
+ * mounted in the (app) layout, which this page sits outside of.
  */
-export function Marketing() {
+export function Marketing({ t }: { t: Dictionary }) {
   return (
     <div className="bg-paper">
       <Header />
       <Hero />
       <HowAIIsUsed />
       <Features />
-      <HowItWorks />
-      <ClosingCTA />
+      <HowItWorks t={t} />
+      <ClosingCTA t={t} />
       <Footer />
     </div>
   );
@@ -156,8 +160,7 @@ function Features() {
   );
 }
 
-function HowItWorks() {
-  const t = useT();
+function HowItWorks({ t }: { t: Dictionary }) {
   const steps = [
     { n: "1", title: "Set up Memory", body: "Add your rates, tone, past work, and (optionally) your branding, takes a few minutes." },
     { n: "2", title: "Generate a quote", body: "Drop in a client brief and get a priced, structured draft back in seconds." },
@@ -181,8 +184,7 @@ function HowItWorks() {
   );
 }
 
-function ClosingCTA() {
-  const t = useT();
+function ClosingCTA({ t }: { t: Dictionary }) {
   return (
     <section className="max-w-2xl mx-auto text-center px-5 sm:px-6 py-12 sm:py-16 border-t border-line">
       <div className="flex items-center justify-center gap-2 text-text-muted text-meta mb-4">

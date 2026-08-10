@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { requireUser } from "@/lib/session";
+import { getCurrentUser } from "@/lib/session";
 import { dict, localeFromHeader, parseLocale, type Dictionary, type Locale } from "@/lib/i18n";
 
 /**
@@ -10,13 +10,13 @@ import { dict, localeFromHeader, parseLocale, type Dictionary, type Locale } fro
  * is an account to store a preference on.
  */
 export async function currentLocale(): Promise<Locale> {
-  try {
-    const user = await requireUser();
-    const saved = (user as unknown as { locale?: string }).locale;
-    if (saved) return parseLocale(saved);
-  } catch {
-    // Not signed in, which is a normal case here rather than a failure.
-  }
+  // getCurrentUser rather than requireUser: signed out is the normal case on
+  // the marketing and auth screens, and requireUser signals that by throwing a
+  // redirect, which a catch here would swallow.
+  const user = await getCurrentUser();
+  const saved = (user as unknown as { locale?: string } | null)?.locale;
+  if (saved) return parseLocale(saved);
+
   const header = (await headers()).get("accept-language");
   return localeFromHeader(header);
 }
