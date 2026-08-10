@@ -47,10 +47,13 @@ export default async function QuotePage() {
         published: b.published,
         createdAt: b.createdAt.toISOString(),
       }))}
-      userIndustry={user.industry}
       userCurrency={user.currency}
       hasBrand={hasOwnBranding(user)}
       savedLocation={(user as unknown as { location: string | null }).location ?? ""}
+      savedRate={(user as unknown as { defaultRate: number | null }).defaultRate ?? 0}
+      savedRateUnit={
+        (user as unknown as { defaultRateUnit: string | null }).defaultRateUnit ?? "HOUR"
+      }
     />
   );
 }

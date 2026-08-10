@@ -79,6 +79,11 @@ model User {
   // Memory → Branding. Each Brief/Project stores its own currency too, so
   // changing this later doesn't rewrite past quotes.
   currency           String   @default("USD")
+  // The rate this freelancer usually charges, and whether it is per hour or
+  // per day. Prefilled into every quote so it is not retyped, and still
+  // editable per quote, since one job is not always priced like the last.
+  defaultRate        Float?
+  defaultRateUnit    String   @default("HOUR")
 
   // A user either owns a team (TeamOwner) or belongs to one as a member
   // (TeamMember, via teamId). Solo users have neither set.

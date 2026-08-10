@@ -26,17 +26,15 @@ import {
   addBriefExampleAction,
   type QuoteDraftPayload,
 } from "@/actions/briefs";
-import { industryQuoteExample } from "@/lib/industries";
 import { CURRENCIES, currencySymbol } from "@/lib/currencies";
-import { rateSuffix, type RateUnit } from "@/lib/rate-unit";
+import { rateSuffix, parseRateUnit, type RateUnit } from "@/lib/rate-unit";
 import { MAX_DOCUMENT_UPLOAD_BYTES, documentTooLargeError } from "@/lib/upload-limits";
 import { BRANDING_OPTIONS } from "@/lib/branding";
 import {
-  INTERPRETATION_PRESETS,
+  PROJECT_PREFERENCE_EXAMPLES,
+  PROJECT_PREFERENCE_PLACEHOLDER,
   QUOTE_INCLUSIONS,
-  AVAILABILITY_OPTIONS,
-  AVAILABILITY_GROUP_LABEL,
-  toggleAvailability,
+  AVAILABILITY_PLACEHOLDER,
   availabilityFacts,
 } from "@/lib/quote-prompts";
 import { readPastedText } from "@/lib/paste-text";
@@ -46,6 +44,7 @@ import {
   analyzeBrandGuideAction,
   analyzeBrandGuideImageAction,
   uploadBrandLogoAction,
+  updateDefaultRateAction,
 } from "@/actions/memory";
 
 import type { BriefSummary } from "@/components/brief-card";
@@ -153,16 +152,19 @@ function TemplatePreview({ id }: { id: "classic" | "editorial" | "minimal" }) {
 
 export function QuoteWizard({
   recentBriefs,
-  userIndustry,
   userCurrency,
   hasBrand,
   savedLocation,
+  savedRate,
+  savedRateUnit,
 }: {
   recentBriefs: BriefSummary[];
-  userIndustry?: string | null;
   userCurrency?: string | null;
   hasBrand?: boolean;
   savedLocation?: string;
+  /** The rate saved in Memory, prefilled so it is not retyped each time. */
+  savedRate?: number;
+  savedRateUnit?: string;
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -176,8 +178,8 @@ export function QuoteWizard({
     includeAI: false,
     includeStrategy: false,
     includeTimeline: false,
-    hourlyRate: 0,
-    rateUnit: "HOUR" as RateUnit,
+    hourlyRate: savedRate ?? 0,
+    rateUnit: parseRateUnit(savedRateUnit),
     currency: userCurrency || "USD",
     expertiseLevel: "Senior",
     template: "classic",
@@ -186,7 +188,6 @@ export function QuoteWizard({
     branding: hasBrand ? "own" : "freely",
     pricing: { yourLocation: savedLocation || "" },
   });
-  const [availabilityPicks, setAvailabilityPicks] = useState<string[]>([]);
   const [availabilityNote, setAvailabilityNote] = useState("");
   const [sourceMode, setSourceMode] = useState<"paste" | "upload">("upload");
   const [fileName, setFileName] = useState("");
@@ -199,7 +200,10 @@ export function QuoteWizard({
   // Which interpretation presets are currently in the instructions, so they
   // read as selected and clicking again takes them out rather than pasting a
   // second copy.
-  const [appliedPresets, setAppliedPresets] = useState<string[]>([]);
+  // The location questions exist only to research a rate, so they stay hidden
+  // unless someone says they are unsure.
+  const [showRateHelp, setShowRateHelp] = useState(false);
+  const [rememberRate, setRememberRate] = useState(false);
   // Branding can be added without leaving the wizard, so a half-filled brief
   // isn't lost to a trip to Memory.
   const [showBrandUpload, setShowBrandUpload] = useState(false);
@@ -275,8 +279,17 @@ export function QuoteWizard({
       // is skipped rather than invented.
       const payload: QuoteDraftPayload = {
         ...draft,
-        availability: { facts: availabilityFacts(availabilityPicks, availabilityNote) },
+        availability: { facts: availabilityFacts(availabilityNote) },
       };
+      // Not awaited: failing to remember a rate is no reason to hold up
+      // someone's quote.
+      if (rememberRate && draft.hourlyRate > 0) {
+        void updateDefaultRateAction({
+          rate: draft.hourlyRate,
+          unit: (draft.rateUnit ?? "HOUR") as RateUnit,
+          currency: draft.currency,
+        });
+      }
       const result = await Promise.race([generateBriefAction(payload), timeout]);
       if (cancelledRef.current) return;
       clearGenerationTimers();
@@ -308,53 +321,6 @@ export function QuoteWizard({
           : "Something went wrong generating the brief. Try again."
       );
     }
-  }
-
-  /** Presets toggle. Several can be combined, anything typed by hand survives,
-   * and clicking a selected one removes just that preset's text. Presets in
-   * the same group replace each other, since two contradictory instructions
-   * leave the result down to whichever the model happens to weight more. */
-  function togglePreset(label: string, text: string) {
-    const preset = INTERPRETATION_PRESETS.find((pr) => pr.label === label);
-    const on = appliedPresets.includes(label);
-
-    if (!on && preset?.group) {
-      const conflicting = INTERPRETATION_PRESETS.filter(
-        (pr) => pr.group === preset.group && pr.label !== label && appliedPresets.includes(pr.label)
-      );
-      for (const other of conflicting) {
-        setAppliedPresets((prev) => prev.filter((l) => l !== other.label));
-        setDraft((d) => ({
-          ...d,
-          instructions: d.instructions
-            .split("\n")
-            .filter((line) => line.trim() !== other.text)
-            .join("\n")
-            .replace(/\n{3,}/g, "\n\n")
-            .trim(),
-        }));
-      }
-    }
-
-    setAppliedPresets((prev) => (on ? prev.filter((l) => l !== label) : [...prev, label]));
-    setDraft((d) => {
-      if (on) {
-        // Remove that preset's exact text. If it isn't found (because it was
-        // edited by hand) the chip still deselects, rather than silently
-        // stripping something the user wrote.
-        const without = d.instructions
-          .split("\n")
-          .filter((line) => line.trim() !== text)
-          .join("\n")
-          .replace(/\n{3,}/g, "\n\n")
-          .trim();
-        return { ...d, instructions: without };
-      }
-      return {
-        ...d,
-        instructions: d.instructions.trim() ? `${d.instructions.trim()}\n${text}` : text,
-      };
-    });
   }
 
   /** Keeps headings, paragraphs and bullets when pasting from a doc or an
@@ -461,6 +427,7 @@ export function QuoteWizard({
       !draft.pricing?.yourLocation?.trim() &&
       !draft.pricing?.clientLocation?.trim()
     ) {
+      setShowRateHelp(true);
       setError(
         "Add your rate, or say where you or the client are based so a rate can be researched."
       );
@@ -630,28 +597,44 @@ export function QuoteWizard({
           </Card>
 
           <Card>
-            <FieldHeading>How should this be read?</FieldHeading>
-            <p className="text-meta text-text-muted mb-3">
-              How you want the brief interpreted and the quote structured. Leave it empty and the AI decides from the brief and your past quotes. Pick as many as you like, contradictory ones cannot both be on.
+            <FieldHeading>How should this project run?</FieldHeading>
+            <p className="text-meta text-slate mb-3 leading-relaxed">
+              Anything you have already decided about this particular job: how it should be priced,
+              how it should be split up, what needs agreeing before the next part starts.
             </p>
-            <div className="flex flex-wrap gap-2 mb-3">
-              {INTERPRETATION_PRESETS.map((preset) => (
-                <Chip
-                  key={preset.label}
-                  active={appliedPresets.includes(preset.label)}
-                  onClick={() => togglePreset(preset.label, preset.text)}
-                >
-                  {preset.label}
-                </Chip>
-              ))}
-            </div>
             <TextField
               value={draft.instructions}
               onChange={(v) => setDraft((d) => ({ ...d, instructions: v }))}
-              placeholder={industryQuoteExample(userIndustry)}
+              placeholder={PROJECT_PREFERENCE_PLACEHOLDER}
               multiline
               rows={4}
             />
+            {/* Examples, not options. Clicking one drops it into the field as a
+                starting point to edit, so it teaches the kind of thing that
+                belongs here without pretending to be a menu of settings. */}
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mt-2.5">
+              <span className="text-caption text-text-muted">For example</span>
+              {PROJECT_PREFERENCE_EXAMPLES.map((example) => (
+                <button
+                  key={example}
+                  type="button"
+                  onClick={() =>
+                    setDraft((d) => ({
+                      ...d,
+                      instructions: d.instructions.trim()
+                        ? `${d.instructions.trim()}\n${example}`
+                        : example,
+                    }))
+                  }
+                  className="text-caption text-violet bg-none border-none cursor-pointer p-0 underline decoration-violet/30 hover:decoration-violet"
+                >
+                  {example}
+                </button>
+              ))}
+            </div>
+            <p className="text-caption text-text-muted mt-3 mb-0">
+              Left blank, this gets worked out from the brief and your past quotes.
+            </p>
           </Card>
 
           <div className="flex flex-col md:flex-row gap-4 md:gap-5">
@@ -701,13 +684,32 @@ export function QuoteWizard({
                   {rateSuffix((draft.rateUnit ?? "HOUR") as RateUnit)}
                 </span>
               </div>
-              <div className="text-meta text-text-muted mt-2.5">
-                {draft.hourlyRate > 0
-                  ? `The price is your rate times the ${
-                      (draft.rateUnit ?? "HOUR") === "DAY" ? "days" : "hours"
-                    }. Your rate is used exactly as typed.`
-                  : "Leave it blank and a rate gets researched for your market."}
+              <div className="flex flex-wrap items-center justify-between gap-2 mt-2.5">
+                <span className="text-meta text-text-muted">
+                  {draft.hourlyRate > 0 ? "Used exactly as typed." : "Or have one researched."}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowRateHelp((v) => !v);
+                    if (!showRateHelp) setDraft((d) => ({ ...d, hourlyRate: 0 }));
+                  }}
+                  className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0"
+                >
+                  {showRateHelp ? "I know my rate" : "Not sure what to charge?"}
+                </button>
               </div>
+              {draft.hourlyRate > 0 && draft.hourlyRate !== savedRate && (
+                <label className="flex items-center gap-2 mt-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={rememberRate}
+                    onChange={(e) => setRememberRate(e.target.checked)}
+                    className="accent-violet"
+                  />
+                  <span className="text-meta text-slate">Remember this as my usual rate</span>
+                </label>
+              )}
             </Card>
             <Card className="flex-1">
               <FieldHeading>Your expertise level</FieldHeading>
@@ -728,12 +730,12 @@ export function QuoteWizard({
             </Card>
           </div>
 
-          {draft.hourlyRate <= 0 && (
+          {showRateHelp && (
             <Card>
               <FieldHeading required>Where is this being priced for?</FieldHeading>
               <p className="text-meta text-text-muted mb-3">
-                No hourly rate given, so one gets researched. The same job pays very differently
-                from one market to the next, so a location is needed.
+                The same job pays very differently from one market to the next, so a location is
+                the one thing needed to research a rate.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {(
@@ -789,8 +791,7 @@ export function QuoteWizard({
                 ))}
               </div>
               <p className="text-meta text-text-muted mt-3">
-                Your location or the client&apos;s is needed. The rest is optional. Where the client is
-                usually matters most, since that is what sets what you can charge.
+                Your location or the client&apos;s is needed. The rest is optional.
               </p>
             </Card>
           )}
@@ -1023,41 +1024,27 @@ export function QuoteWizard({
                   </button>
                 );
 
-                // Availability is the one section nothing in the brief can
-                // answer, so it asks rather than guesses.
+                // Nothing in the brief can answer this, so it asks. One field
+                // rather than a form about your own calendar.
                 if (inc.key === "includeAvailability" && on) {
                   return (
                     <div key={inc.key} className="flex flex-col gap-2">
                       {toggle}
-                      <div className="rounded-lg border border-line bg-white px-3.5 py-3 ml-0 sm:ml-7">
-                        <p className="text-meta text-text-muted mt-0 mb-3">
-                          Only what you pick here goes in the quote.
+                      <div className="rounded-lg border border-line bg-white px-3.5 py-3 sm:ml-7">
+                        <p className="text-meta text-slate mt-0 mb-2 leading-relaxed">
+                          Anything specific worth saying? Start dates, how much time you can give
+                          it, or that availability is not held until the quote is agreed.
                         </p>
-                        {(["start", "capacity", "response"] as const).map((group) => (
-                          <div key={group} className="mb-3 last:mb-0">
-                            <div className="text-caption font-bold text-slate uppercase tracking-wide mb-1.5">
-                              {AVAILABILITY_GROUP_LABEL[group]}
-                            </div>
-                            <div className="flex flex-wrap gap-1.5">
-                              {AVAILABILITY_OPTIONS.filter((o) => o.group === group).map((o) => (
-                                <Chip
-                                  key={o.id}
-                                  active={availabilityPicks.includes(o.id)}
-                                  onClick={() =>
-                                    setAvailabilityPicks((picks) => toggleAvailability(picks, o.id))
-                                  }
-                                >
-                                  {o.label}
-                                </Chip>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
                         <TextField
                           value={availabilityNote}
                           onChange={setAvailabilityNote}
-                          placeholder="Anything else, e.g. away the first week of September"
+                          placeholder={AVAILABILITY_PLACEHOLDER}
+                          multiline
+                          rows={2}
                         />
+                        <p className="text-caption text-text-muted mt-2 mb-0">
+                          Left blank, this section is skipped rather than guessed at.
+                        </p>
                       </div>
                     </div>
                   );

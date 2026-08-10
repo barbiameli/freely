@@ -327,3 +327,37 @@ export async function deleteMemoryAssetAction(assetId: string): Promise<ActionRe
   revalidatePath("/memory");
   return { ok: true, data: undefined };
 }
+
+/**
+ * The rate this freelancer usually charges.
+ *
+ * Saved once and prefilled into every quote, since retyping it each time is
+ * both tedious and a chance to fat-finger a digit. Still editable per quote:
+ * one job is not always priced like the last.
+ */
+export async function updateDefaultRateAction(patch: {
+  rate: number;
+  unit: "HOUR" | "DAY";
+  currency?: string;
+}): Promise<ActionResult<undefined>> {
+  const user = await requireFullUser();
+  if (!Number.isFinite(patch.rate) || patch.rate < 0) {
+    return { ok: false, error: "That rate isn't a number." };
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      // The generated client in this environment predates these columns; see
+      // lib/track-db for the same situation.
+      ...({
+        defaultRate: patch.rate > 0 ? patch.rate : null,
+        defaultRateUnit: patch.unit,
+        ...(patch.currency ? { currency: patch.currency } : {}),
+      } as Record<string, unknown>),
+    },
+  });
+  revalidatePath("/memory");
+  revalidatePath("/quote");
+  return { ok: true, data: undefined };
+}

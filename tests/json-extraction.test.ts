@@ -1,10 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { extractJsonObject, parseBriefResponse } from "@/lib/anthropic";
-import {
-  toggleAvailability,
-  availabilityFacts,
-  AVAILABILITY_OPTIONS,
-} from "@/lib/quote-prompts";
+import { availabilityFacts } from "@/lib/quote-prompts";
 
 const valid = JSON.stringify({
   title: "Design system rebuild",
@@ -63,31 +59,14 @@ describe("parseBriefResponse", () => {
 });
 
 describe("availability", () => {
-  it("replaces a pick within the same question", () => {
-    const picked = toggleAvailability(["start-now"], "start-2w");
-    expect(picked).toEqual(["start-2w"]);
-  });
-
-  it("keeps picks from different questions", () => {
-    const picked = toggleAvailability(["start-now"], "cap-2");
-    expect(picked).toContain("start-now");
-    expect(picked).toContain("cap-2");
-  });
-
-  it("unpicks when the same one is clicked again", () => {
-    expect(toggleAvailability(["start-now"], "start-now")).toEqual([]);
-  });
-
-  it("turns picks and a note into plain facts", () => {
-    const facts = availabilityFacts(["start-now", "resp-24"], "  Away in September  ");
-    expect(facts).toEqual([
-      AVAILABILITY_OPTIONS.find((o) => o.id === "start-now")?.label,
-      AVAILABILITY_OPTIONS.find((o) => o.id === "resp-24")?.label,
-      "Away in September",
+  it("passes on what was actually written", () => {
+    expect(availabilityFacts("  Could start in September  ")).toEqual([
+      "Could start in September",
     ]);
   });
 
-  it("gives nothing back when nothing was said", () => {
-    expect(availabilityFacts([], "   ")).toEqual([]);
+  it("gives nothing back when nothing was said, so the section is skipped", () => {
+    expect(availabilityFacts("   ")).toEqual([]);
+    expect(availabilityFacts()).toEqual([]);
   });
 });
