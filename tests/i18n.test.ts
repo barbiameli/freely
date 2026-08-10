@@ -106,3 +106,53 @@ describe("relative dates", () => {
     expect(formatDay(date, "es")).toMatch(/mar/);
   });
 });
+
+describe("strings fit where they are rendered", () => {
+  /**
+   * Spanish runs roughly 20% longer than English, and a few places in the app
+   * have a width that cannot give: the nav rail is five items across a phone,
+   * and the stat cards are a quarter of the page each.
+   *
+   * The budgets are characters that fit at the size each is rendered. They are
+   * deliberately generous, so a failure means something genuinely will not fit
+   * rather than that it got a little longer.
+   */
+  const budgets: Record<string, number> = {
+    "nav.quote": 12,
+    "nav.track": 12,
+    "nav.diary": 12,
+    "nav.invoices": 12,
+    "nav.memory": 12,
+    "track.done": 14,
+    "track.pace": 14,
+    "track.nextUp": 14,
+    "track.hours": 14,
+    "track.paceAhead": 18,
+    "track.paceOnTrack": 18,
+    "track.paceSlipping": 18,
+    "track.paceBehind": 18,
+    "track.notScheduled": 18,
+    "track.nothingDated": 18,
+    "quote.perHour": 14,
+    "quote.perDay": 14,
+    "common.back": 12,
+    "common.continue": 14,
+    "quote.stop": 10,
+  };
+
+  for (const [key, budget] of Object.entries(budgets)) {
+    it(`${key} fits in both languages`, () => {
+      for (const [language, table] of [
+        ["English", english],
+        ["Spanish", spanish],
+      ] as const) {
+        const value = table[key];
+        expect(value, `${key} missing`).toBeDefined();
+        expect(
+          value.length,
+          `${language} "${value}" is ${value.length} characters, budget ${budget}`
+        ).toBeLessThanOrEqual(budget);
+      }
+    });
+  }
+});

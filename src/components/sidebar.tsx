@@ -65,7 +65,10 @@ export function Sidebar() {
                 </span>
               </div>
               <span
-                className={`font-body text-caption ${
+                // Wraps rather than overflowing: Spanish nav labels run about
+                // half as long again as the English, and five of them share
+                // the width of a phone.
+                className={`font-body text-caption text-center leading-tight max-w-full ${
                   active ? "font-bold text-violet" : "font-medium text-text-muted"
                 }`}
               >

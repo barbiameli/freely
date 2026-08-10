@@ -46,8 +46,8 @@ export const es: Dictionary = {
   },
 
   nav: {
-    quote: "Presupuestar",
-    track: "Seguimiento",
+    quote: "Presupuesto",
+    track: "Proyectos",
     diary: "Diario",
     invoices: "Facturas",
     memory: "Memoria",
