@@ -168,3 +168,29 @@ export function sectionNoteLines(notes: SectionNotes | undefined): SectionNotes 
       .filter(([, value]) => Boolean(value))
   );
 }
+
+/**
+ * Adding or removing an example line from the free text.
+ *
+ * The examples were links that appended on click, which meant clicking one
+ * twice added it twice and there was no way to take it back. They are chips
+ * with a selected state now, and this is the text side of that: select adds
+ * the line, deselect removes exactly that line and leaves everything else
+ * alone.
+ *
+ * A line edited by hand after being added no longer matches, so deselecting
+ * cannot find it. The chip still turns off, since silently deleting a line
+ * someone rewrote would be worse than leaving it in place for them to delete.
+ */
+export function toggleExampleLine(text: string, line: string, add: boolean): string {
+  const lines = text.split("\n");
+  if (add) {
+    if (lines.some((l) => l.trim() === line)) return text;
+    return text.trim() ? `${text.trim()}\n${line}` : line;
+  }
+  return lines
+    .filter((l) => l.trim() !== line)
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}

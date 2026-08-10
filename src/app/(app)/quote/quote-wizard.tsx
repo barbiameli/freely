@@ -37,6 +37,7 @@ import {
   AVAILABILITY_PLACEHOLDER,
   SECTION_QUESTIONS,
   sectionNoteLines,
+  toggleExampleLine,
   availabilityFacts,
   type SectionNotes,
 } from "@/lib/quote-prompts";
@@ -195,6 +196,9 @@ export function QuoteWizard({
   // One optional question per section that rests on a decision only the
   // freelancer can make. See SECTION_QUESTIONS.
   const [sectionNotes, setSectionNotes] = useState<SectionNotes>({});
+  // Which examples are currently in the text, so a chip can show as selected
+  // and be clicked again to take it back out.
+  const [pickedExamples, setPickedExamples] = useState<string[]>([]);
   const [sourceMode, setSourceMode] = useState<"paste" | "upload">("upload");
   const [fileName, setFileName] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -616,28 +620,33 @@ export function QuoteWizard({
               multiline
               rows={4}
             />
-            {/* Examples, not options. Clicking one drops it into the field as a
-                starting point to edit, so it teaches the kind of thing that
-                belongs here without pretending to be a menu of settings. */}
-            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mt-2.5">
-              <span className="text-caption text-text-muted">For example</span>
-              {PROJECT_PREFERENCE_EXAMPLES.map((example) => (
-                <button
-                  key={example}
-                  type="button"
-                  onClick={() =>
-                    setDraft((d) => ({
-                      ...d,
-                      instructions: d.instructions.trim()
-                        ? `${d.instructions.trim()}\n${example}`
-                        : example,
-                    }))
-                  }
-                  className="text-caption text-violet bg-none border-none cursor-pointer p-0 underline decoration-violet/30 hover:decoration-violet"
-                >
-                  {example}
-                </button>
-              ))}
+            {/* Chips, not links: a link appends every time it is clicked and
+                gives no way to take it back, so clicking one twice put the
+                same sentence in twice. */}
+            <div className="mt-3">
+              <div className="text-caption text-text-muted mb-1.5">Common ones</div>
+              <div className="flex flex-wrap gap-1.5">
+                {PROJECT_PREFERENCE_EXAMPLES.map((example) => {
+                  const picked = pickedExamples.includes(example);
+                  return (
+                    <Chip
+                      key={example}
+                      active={picked}
+                      onClick={() => {
+                        setPickedExamples((prev) =>
+                          picked ? prev.filter((e) => e !== example) : [...prev, example]
+                        );
+                        setDraft((d) => ({
+                          ...d,
+                          instructions: toggleExampleLine(d.instructions, example, !picked),
+                        }));
+                      }}
+                    >
+                      {example}
+                    </Chip>
+                  );
+                })}
+              </div>
             </div>
             <p className="text-caption text-text-muted mt-3 mb-0">
               Left blank, this gets worked out from the brief and your past quotes.

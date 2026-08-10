@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { splitDeliverable, paragraphs } from "@/lib/rich-text";
+import { toggleExampleLine } from "@/lib/quote-prompts";
 
 describe("splitDeliverable", () => {
   it("separates the name from what it covers", () => {
@@ -67,5 +68,39 @@ describe("paragraphs", () => {
 
   it("never returns nothing", () => {
     expect(paragraphs("   ")).toEqual([""]);
+  });
+});
+
+describe("toggleExampleLine", () => {
+  it("adds a line", () => {
+    expect(toggleExampleLine("", "Price this fixed", true)).toBe("Price this fixed");
+  });
+
+  it("appends to what is already written", () => {
+    expect(toggleExampleLine("My own note", "Price this fixed", true)).toBe(
+      "My own note\nPrice this fixed"
+    );
+  });
+
+  it("does not add the same line twice", () => {
+    // The bug: clicking an example twice put the same sentence in twice.
+    const once = toggleExampleLine("", "Price this fixed", true);
+    expect(toggleExampleLine(once, "Price this fixed", true)).toBe(once);
+  });
+
+  it("removes exactly that line and leaves the rest", () => {
+    const text = "My own note\nPrice this fixed\nSplit into milestones";
+    expect(toggleExampleLine(text, "Price this fixed", false)).toBe(
+      "My own note\nSplit into milestones"
+    );
+  });
+
+  it("leaves a line that was edited by hand, rather than deleting someone's writing", () => {
+    const text = "Price this fixed, but only for phase one";
+    expect(toggleExampleLine(text, "Price this fixed", false)).toBe(text);
+  });
+
+  it("comes back empty when the only line is removed", () => {
+    expect(toggleExampleLine("Price this fixed", "Price this fixed", false)).toBe("");
   });
 });
