@@ -18,7 +18,19 @@ export default async function QuotePage() {
   const briefs = await prisma.brief.findMany({
     where: scope,
     orderBy: { createdAt: "desc" },
-    select: { id: true, title: true, status: true },
+    take: 12,
+    select: {
+      id: true,
+      title: true,
+      client: true,
+      price: true,
+      hours: true,
+      currency: true,
+      deliverables: true,
+      status: true,
+      published: true,
+      createdAt: true,
+    },
   });
 
   // With no priced history, the model has nothing of the freelancer's own to
@@ -30,7 +42,18 @@ export default async function QuotePage() {
 
   return (
     <QuoteWizard
-      recentBriefs={briefs}
+      recentBriefs={briefs.map((b) => ({
+        id: b.id,
+        title: b.title,
+        client: b.client,
+        price: b.price,
+        hours: b.hours,
+        currency: b.currency,
+        deliverables: (b.deliverables as string[]) ?? [],
+        status: b.status as "DRAFT" | "TRACKED",
+        published: b.published,
+        createdAt: b.createdAt.toISOString(),
+      }))}
       userIndustry={user.industry}
       userCurrency={user.currency}
       hasBrand={hasOwnBranding(user)}

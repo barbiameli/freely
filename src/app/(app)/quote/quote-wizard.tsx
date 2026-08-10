@@ -32,13 +32,14 @@ import { MAX_DOCUMENT_UPLOAD_BYTES, documentTooLargeError } from "@/lib/upload-l
 import { BRANDING_OPTIONS } from "@/lib/branding";
 import { INTERPRETATION_PRESETS, QUOTE_INCLUSIONS } from "@/lib/quote-prompts";
 import { readPastedText } from "@/lib/paste-text";
+import { BriefCarousel } from "@/components/brief-carousel";
 import {
   analyzeBrandGuideAction,
   analyzeBrandGuideImageAction,
   uploadBrandLogoAction,
 } from "@/actions/memory";
 
-type BriefSummary = { id: string; title: string; status: "DRAFT" | "TRACKED" };
+import type { BriefSummary } from "@/components/brief-card";
 
 /** A visual reference held in wizard state. These can only be saved once the
  * brief exists (a BriefExample needs a briefId), so they're attached
@@ -48,11 +49,6 @@ interface ReferenceImage {
   dataUrl: string;
   caption: string;
 }
-
-const STATUS_COLOR: Record<string, string> = {
-  DRAFT: "text-violet",
-  TRACKED: "text-slate",
-};
 
 // Generation involves a real Claude call (sometimes with web search on top),
 // so it can genuinely take a while — but it should never just hang with no
@@ -470,6 +466,7 @@ export function QuoteWizard({
       {step === 0 && (
         <>
           <Topbar eyebrow="Quote - Step 1 of 2" />
+          {recentBriefs.length > 0 && <BriefCarousel briefs={recentBriefs} />}
           <div>
             <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">
               What are we quoting?
@@ -1028,25 +1025,6 @@ export function QuoteWizard({
         </>
       )}
 
-      {recentBriefs.length > 0 && step === 0 && (
-        <Card>
-          <Label>Brief history</Label>
-          <div className="flex flex-col gap-2">
-            {recentBriefs.slice(0, 6).map((b) => (
-              <button
-                key={b.id}
-                onClick={() => router.push(`/quote/${b.id}`)}
-                className="bg-none border-none text-left cursor-pointer p-0 flex justify-between gap-2"
-              >
-                <span className="text-[12.5px] text-slate">{b.title}</span>
-                <span className={`font-body font-semibold text-[10px] ${STATUS_COLOR[b.status]}`}>
-                  {b.status}
-                </span>
-              </button>
-            ))}
-          </div>
-        </Card>
-      )}
     </>
   );
 }
