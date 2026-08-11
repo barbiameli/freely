@@ -90,10 +90,16 @@ const FREELY_INK = "#181722";
 // ended up leaving half a page blank.
 const HEADING_ROOM = 78;
 
-// Space a section wants after it before committing to this page. Only has an
-// effect on sections that already fit: per the layout engine, a section too
-// tall for the space left will split whatever this says, unless it is also
-// marked wrap={false}. Short sections below use both.
+// Space a short, atomic block wants after it before committing to this page.
+//
+// Only ever used together with wrap={false}, on blocks that genuinely cannot be
+// split: the price row, the acceptance box. It used to sit on every section,
+// including the long ones, which is what left a third of a page blank whenever
+// Deliverables or Timeline did not fit: given minPresenceAhead, react-pdf moves
+// the whole View rather than filling the page and continuing overleaf.
+//
+// Long sections carry nothing now. They split, the page fills, and the heading
+// is what stops a section starting one line before a break (see HEADING_ROOM).
 const SECTION_ROOM = 130;
 
 const S1 = 4;
@@ -414,7 +420,13 @@ function ExtraSections({
   return (
     <>
       {blocks.map(([label, text]) => (
-        <View key={label} style={wrapStyle} minPresenceAhead={SECTION_ROOM}>
+        // wrap={false} rather than a minPresenceAhead on the label. These are
+        // short clauses (payment terms, a revisions policy, a cancellation
+        // note), so moving one whole costs a few lines of space at worst, and
+        // minPresenceAhead does not help here: the wrapper has its own padding
+        // and background, which the layout engine counts as presence, so it
+        // leaves the label sitting alone above an empty box.
+        <View key={label} style={wrapStyle} wrap={false}>
           <Text style={labelStyle}>{label}</Text>
           <Text style={bodyStyle}>{text}</Text>
         </View>
@@ -487,7 +499,7 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
 
         <View style={styles.content}>
           {brief.strategy && (
-            <View style={[styles.section, styles.sectionViolet]} minPresenceAhead={SECTION_ROOM}>
+            <View style={[styles.section, styles.sectionViolet]}>
               <Pill text="Strategy" tint="rgba(99,32,238,0.12)" color={FREELY_VIOLET} />
               <Text style={[styles.body, styles.semibold]}>{brief.strategy.goal}</Text>
               {brief.strategy.findings.length > 0 && (
@@ -500,7 +512,7 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
             </View>
           )}
 
-          <View style={[styles.section, styles.sectionPaper]} minPresenceAhead={SECTION_ROOM}>
+          <View style={[styles.section, styles.sectionPaper]}>
             <Pill text="Scope" tint="#EFEFEF" color="#565656" />
             <Prose text={brief.scope} />
           </View>
@@ -548,7 +560,7 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
           />
 
           {brief.includeSOW && (
-            <View style={[styles.section, styles.sectionPaper]} minPresenceAhead={SECTION_ROOM}>
+            <View style={[styles.section, styles.sectionPaper]}>
               <Pill text="Statement of Work" tint="#EFEFEF" color="#565656" />
               <Text style={styles.body}>
                 This quote constitutes a Statement of Work for the deliverables listed above, to
@@ -558,7 +570,7 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
           )}
 
           {brief.includeAI && !brief.extras?.aiUsage && (
-            <View minPresenceAhead={SECTION_ROOM}>
+            <View>
               <Text style={styles.disclosure}>
                 Portions of this quote were drafted with AI assistance and reviewed before sending.
               </Text>
@@ -619,7 +631,7 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
 
         <View style={styles.content}>
           {brief.strategy && (
-            <View style={styles.edSection} minPresenceAhead={SECTION_ROOM}>
+            <View style={styles.edSection}>
               <SectionHeading>
               <Text style={[styles.edSectionTitle, { color: primary }]}>Strategy</Text>
             </SectionHeading>
@@ -633,7 +645,7 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
             </View>
           )}
 
-          <View style={styles.edSection} minPresenceAhead={SECTION_ROOM}>
+          <View style={styles.edSection}>
             <SectionHeading>
               <Text style={[styles.edSectionTitle, { color: primary }]}>Scope</Text>
             </SectionHeading>
@@ -642,10 +654,8 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
 
           <View style={styles.edSection}>
             <SectionHeading>
-                <SectionHeading>
               <Text style={[styles.edSectionTitle, { color: primary }]}>Deliverables</Text>
             </SectionHeading>
-              </SectionHeading>
             {brief.deliverables.map((d, i) => (
               <DeliverableLine key={i} text={d} markColor={primary} />
             ))}
@@ -675,7 +685,7 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
           />
 
           {brief.includeSOW && (
-            <View style={styles.edSection} minPresenceAhead={SECTION_ROOM}>
+            <View style={styles.edSection}>
               <SectionHeading>
               <Text style={[styles.edSectionTitle, { color: primary }]}>Statement of Work</Text>
             </SectionHeading>
@@ -687,7 +697,7 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
           )}
 
           {brief.includeAI && !brief.extras?.aiUsage && (
-            <View minPresenceAhead={SECTION_ROOM}>
+            <View>
               <Text style={styles.disclosure}>
                 Portions of this quote were drafted with AI assistance and reviewed before sending.
               </Text>
@@ -737,7 +747,7 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
 
         <View style={styles.content}>
           {brief.strategy && (
-            <View style={styles.minSection} minPresenceAhead={SECTION_ROOM}>
+            <View style={styles.minSection}>
               <SectionHeading>
               <Text style={styles.minLabel}>Strategy</Text>
             </SectionHeading>
@@ -750,7 +760,7 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
             </View>
           )}
 
-          <View style={styles.minSection} minPresenceAhead={SECTION_ROOM}>
+          <View style={styles.minSection}>
             <SectionHeading>
               <Text style={styles.minLabel}>Scope</Text>
             </SectionHeading>
@@ -790,7 +800,7 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
           />
 
           {brief.includeSOW && (
-            <View style={styles.minSection} minPresenceAhead={SECTION_ROOM}>
+            <View style={styles.minSection}>
               <SectionHeading>
               <Text style={styles.minLabel}>Statement of Work</Text>
             </SectionHeading>
@@ -802,7 +812,7 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
           )}
 
           {brief.includeAI && !brief.extras?.aiUsage && (
-            <View minPresenceAhead={SECTION_ROOM}>
+            <View>
               <Text style={styles.disclosure}>
                 Portions of this quote were drafted with AI assistance and reviewed before sending.
               </Text>
@@ -863,7 +873,7 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
 
         <View style={styles.content}>
           {brief.strategy && (
-            <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }} minPresenceAhead={SECTION_ROOM}>
+            <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }}>
               <SectionHeading>
                   <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
                     Strategy
@@ -883,7 +893,7 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
             </View>
           )}
 
-          <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }} minPresenceAhead={SECTION_ROOM}>
+          <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }}>
             <SectionHeading>
                 <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
                   Scope
@@ -944,7 +954,7 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
           />
 
           {brief.includeSOW && (
-            <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }} minPresenceAhead={SECTION_ROOM}>
+            <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }}>
               <SectionHeading>
                   <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
                     Statement of Work
@@ -958,7 +968,7 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
           )}
 
           {brief.includeAI && !brief.extras?.aiUsage && (
-            <View minPresenceAhead={SECTION_ROOM}>
+            <View>
               <Text style={{ ...styles.disclosure, color: muted }}>
                 Portions of this quote were drafted with AI assistance and reviewed before sending.
               </Text>

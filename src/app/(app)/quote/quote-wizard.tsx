@@ -29,7 +29,6 @@ import {
 import { CURRENCIES, currencySymbol } from "@/lib/currencies";
 import { rateSuffix, parseRateUnit, type RateUnit } from "@/lib/rate-unit";
 import { useT, useLocale } from "@/lib/i18n/context";
-import { LOCALES, LOCALE_NAMES, type Locale } from "@/lib/i18n";
 import { MAX_DOCUMENT_UPLOAD_BYTES, documentTooLargeError } from "@/lib/upload-limits";
 import { BRANDING_OPTIONS } from "@/lib/branding";
 import {
