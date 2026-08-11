@@ -19,6 +19,24 @@ if (!email) {
   process.exit(1);
 }
 
+// Which database this is actually asking, printed first.
+//
+// The first version of this script did not say, and that made it worse than
+// useless: run on its own it reads .env, which points at the local Postgres,
+// so it cheerfully confirmed the account was fine while the live site was
+// refusing to sign in. An answer about the wrong database is not a smaller
+// answer, it is a wrong one.
+//
+// Use scripts/db.mjs to choose: node scripts/db.mjs production check <email>
+try {
+  const host = new URL(process.env.DATABASE_URL ?? "").hostname;
+  console.log(`Asking: ${host}`);
+  console.log("");
+} catch {
+  console.error("DATABASE_URL is missing or unparseable.");
+  process.exit(1);
+}
+
 const prisma = new PrismaClient();
 
 try {
