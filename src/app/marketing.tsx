@@ -1,23 +1,37 @@
 import Link from "next/link";
-import { FileText, ListChecks, Users, ShieldCheck, Sparkles } from "lucide-react";
+import { ShieldCheck, Sparkles } from "lucide-react";
 import { FreelyLogo } from "@/components/freely-logo";
 import { LanguageSwitcher } from "@/components/language-switcher";
-import { ProductPreview } from "./product-preview";
 import { LocaleProvider } from "@/lib/i18n/context";
 import { fill, type Dictionary, type Locale } from "@/lib/i18n";
+import {
+  ProductPreview,
+  QuotePreview,
+  TrackPreview,
+  ReportPreview,
+  InvoicePreview,
+} from "./product-preview";
 
 /**
  * The public marketing page, shown at "/" to signed-out visitors only
- * (signed-in users are redirected straight to /quote, see page.tsx). Kept
- * deliberately simple and honest: every claim here matches something that
- * actually exists in the app today. No fabricated testimonials, no made-up
- * user counts, no "coming soon" features described as if they already work.
+ * (signed-in users are redirected straight to /quote, see page.tsx).
+ *
+ * Organised by what the product does rather than how it does it: quoting,
+ * tracking, client reporting, invoicing, one section each with a picture of
+ * that part of the app. It previously spent a section explaining the AI in four
+ * points and another walking through the setup steps, which is mechanism, and
+ * mechanism is not what someone deciding whether to sign up is asking about.
+ * The AI is one line now, next to the sign-up button, where the question it
+ * answers ("does this send things to my clients on its own?") actually occurs.
+ *
+ * Every claim matches something that exists in the app today. No invented
+ * testimonials, no user counts, no "coming soon" described as if it works.
  *
  * This renders on the server, so its strings arrive as a prop rather than
  * through useT(): that hook reads a client context, and the provider is
- * mounted in the (app) layout, which this page sits outside of. The provider
- * is mounted here too, but only so the switcher in the header knows which
- * language is currently showing.
+ * mounted in the (app) layout, which this page sits outside of. The provider is
+ * mounted here too, but only so the switcher in the header knows which
+ * language is showing.
  */
 export function Marketing({ t, locale }: { t: Dictionary; locale: Locale }) {
   return (
@@ -25,9 +39,7 @@ export function Marketing({ t, locale }: { t: Dictionary; locale: Locale }) {
       <div className="bg-paper">
         <Header t={t} />
         <Hero t={t} />
-        <HowAIIsUsed t={t} />
-        <Features t={t} />
-        <HowItWorks t={t} />
+        <Capabilities t={t} />
         <ClosingCTA t={t} />
         <Footer t={t} />
       </div>
@@ -85,109 +97,80 @@ function Hero({ t }: { t: Dictionary }) {
   );
 }
 
-function HowAIIsUsed({ t }: { t: Dictionary }) {
-  const points = [
-    { title: t.marketing.aiContextTitle, body: t.marketing.aiContextBody },
-    { title: t.marketing.aiReviewTitle, body: t.marketing.aiReviewBody },
-    { title: t.marketing.aiDisclosureTitle, body: t.marketing.aiDisclosureBody },
-    { title: t.marketing.aiPricingTitle, body: t.marketing.aiPricingBody },
-  ];
-
-  return (
-    <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-14 border-t border-line">
-      <div className="text-center mb-10">
-        <div className="inline-flex items-center gap-1.5 text-caption font-bold text-violet uppercase tracking-wide mb-3">
-          <Sparkles size={13} /> {t.marketing.aiEyebrow}
-        </div>
-        <h2 className="font-display italic text-3xl text-ink m-0">{t.marketing.aiTitle}</h2>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {points.map((p) => (
-          <div key={p.title}>
-            <div className="font-body font-bold text-lead text-ink mb-1.5">{p.title}</div>
-            <div className="text-slate text-body leading-relaxed">{p.body}</div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function Features({ t }: { t: Dictionary }) {
-  const items = [
+/**
+ * The four things it does, each beside a picture of itself.
+ *
+ * Alternating sides rather than a grid of equal cards: four capabilities in a
+ * row reads as a feature list to be skimmed, where one at a time with its own
+ * image gets each of them actually looked at.
+ */
+function Capabilities({ t }: { t: Dictionary }) {
+  const sections = [
     {
-      icon: FileText,
-      title: t.marketing.featureQuotesTitle,
-      body: t.marketing.featureQuotesBody,
+      title: t.marketing.capQuoteTitle,
+      body: t.marketing.capQuoteBody,
+      visual: <QuotePreview t={t} />,
     },
     {
-      icon: ListChecks,
-      title: t.marketing.featureTrackingTitle,
-      body: t.marketing.featureTrackingBody,
+      title: t.marketing.capTrackTitle,
+      body: t.marketing.capTrackBody,
+      visual: <TrackPreview t={t} />,
     },
     {
-      icon: Users,
-      title: t.marketing.featureDiaryTitle,
-      body: t.marketing.featureDiaryBody,
+      title: t.marketing.capReportTitle,
+      body: t.marketing.capReportBody,
+      visual: <ReportPreview t={t} />,
+    },
+    {
+      title: t.marketing.capInvoiceTitle,
+      body: t.marketing.capInvoiceBody,
+      visual: <InvoicePreview t={t} />,
     },
   ];
 
   return (
-    <section className="max-w-4xl mx-auto px-5 sm:px-6 py-12 sm:py-14 border-t border-line">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        {items.map(({ icon: Icon, title, body }) => (
-          <div key={title} className="bg-white border border-line rounded-card px-5 py-6">
-            <div className="w-9 h-9 rounded-lg bg-violet-tint flex items-center justify-center text-violet mb-3">
-              <Icon size={17} />
+    <div className="border-t border-line">
+      {sections.map((section, i) => (
+        <section
+          key={section.title}
+          className="max-w-5xl mx-auto px-5 sm:px-6 py-12 sm:py-16 border-b border-line last:border-b-0"
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-center">
+            <div className={i % 2 === 1 ? "lg:order-2" : undefined}>
+              <h2 className="font-display italic text-[26px] sm:text-3xl text-ink m-0">
+                {section.title}
+              </h2>
+              <p className="text-slate text-body leading-relaxed mt-3 max-w-md">{section.body}</p>
             </div>
-            <div className="font-body font-bold text-lead text-ink mb-1.5">{title}</div>
-            <div className="text-slate text-small leading-relaxed">{body}</div>
+            <div className={i % 2 === 1 ? "lg:order-1" : undefined}>{section.visual}</div>
           </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function HowItWorks({ t }: { t: Dictionary }) {
-  const steps = [
-    { n: "1", title: t.marketing.step1Title, body: t.marketing.step1Body },
-    { n: "2", title: t.marketing.step2Title, body: t.marketing.step2Body },
-    { n: "3", title: t.marketing.step3Title, body: t.marketing.step3Body },
-  ];
-  return (
-    <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-14 border-t border-line">
-      <h2 className="font-display italic text-3xl text-ink text-center m-0 mb-10">
-        {t.marketing.howItWorks}
-      </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        {steps.map((s) => (
-          <div key={s.n} className="text-center">
-            <div className="w-8 h-8 rounded-full bg-coral text-white font-body font-bold text-sm flex items-center justify-center mx-auto mb-3">
-              {s.n}
-            </div>
-            <div className="font-body font-bold text-lead text-ink mb-1">{s.title}</div>
-            <div className="text-slate text-small leading-relaxed">{s.body}</div>
-          </div>
-        ))}
-      </div>
-    </section>
+        </section>
+      ))}
+    </div>
   );
 }
 
 function ClosingCTA({ t }: { t: Dictionary }) {
   return (
-    <section className="max-w-2xl mx-auto text-center px-5 sm:px-6 py-12 sm:py-16 border-t border-line">
-      <div className="flex items-center justify-center gap-2 text-text-muted text-meta mb-4">
-        <ShieldCheck size={14} /> {t.marketing.freeToStart}
-      </div>
+    <section className="max-w-2xl mx-auto text-center px-5 sm:px-6 py-12 sm:py-16">
       <h2 className="font-display italic text-3xl text-ink m-0">{t.marketing.tryIt}</h2>
+
+      {/* The AI, in one line, here rather than in a section of its own: this is
+          where someone decides to hand their client documents to it. */}
+      <p className="flex items-start justify-center gap-2 text-slate text-small mt-4 max-w-sm mx-auto text-left sm:text-center">
+        <Sparkles size={14} className="text-violet shrink-0 mt-0.5" />
+        <span>{t.marketing.aiNote}</span>
+      </p>
+
       <Link
         href="/signup"
         className="inline-block font-body font-bold text-sm text-white bg-violet px-6 py-3.5 rounded-lg mt-6"
       >
         {t.marketing.getStarted}
       </Link>
+      <div className="flex items-center justify-center gap-2 text-text-muted text-meta mt-4">
+        <ShieldCheck size={14} /> {t.marketing.freeToStart}
+      </div>
     </section>
   );
 }

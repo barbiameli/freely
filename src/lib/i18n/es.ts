@@ -464,46 +464,25 @@ export const es: Dictionary = {
     signUpFree: "Crear cuenta gratis",
     getStarted: "Empezar gratis",
 
-    // Spanish runs longer than English by default, and a headline is where
-    // that shows most. This says the same thing in half the words: three long
-    // clauses became two short ones.
-    heroTitle: "Presupuesta y controla tus proyectos,",
-    heroTitleAccent: "sin el papeleo.",
+    heroTitle: "Del primer presupuesto a la última factura,",
+    heroTitleAccent: "en un solo sitio.",
     heroBody:
-      "Pega el proyecto del cliente y te sale un presupuesto con precio. Cuando lo ganas pasa a seguimiento, con un diario que el cliente puede ir viendo. El primer borrador lo escribe la IA a partir de tus tarifas y de lo que ya has hecho.",
+      "Aquí vive tu trabajo con clientes. Pon precio con criterio, lleva todos los proyectos que tengas abiertos, enseña al cliente por dónde va y factura al terminar.",
 
-    aiEyebrow: "Cómo se usa la IA",
-    aiTitle: "La IA redacta. Tú decides.",
-    aiContextTitle: "Escribe con tu contexto",
-    aiContextBody:
-      "Antes de escribir lee lo que tienes en Memoria: tarifas, proyectos anteriores, tono, archivos y enlaces. Cuanto más haya, más se parece a como escribes tú.",
-    aiReviewTitle: "Lo revisas tú antes que el cliente",
-    aiReviewBody:
-      "La IA escribe un borrador. Tú lo editas, lo afinas o lo reescribes antes de publicarlo. No sale nada solo.",
-    aiDisclosureTitle: "Tú decides si declaras la IA",
-    aiDisclosureBody:
-      "Cada presupuesto puede llevar una nota breve sobre el uso de IA en la página del cliente. Viene desactivada.",
-    aiPricingTitle: "El precio va razonado",
-    aiPricingBody:
-      "Con histórico, calcula horas y precio con tus proyectos anteriores. Sin él, busca tarifas de mercado y siempre enseña de dónde sale la cifra.",
+    capQuoteTitle: "Presupuesta con criterio",
+    capQuoteBody:
+      "Pon precio con tus tarifas y con lo que ya has cobrado antes, para que el número aguante cuando el cliente pregunte. Con alcance, entregables y calendario, como página o como PDF.",
+    capTrackTitle: "Todos tus proyectos de un vistazo",
+    capTrackBody:
+      "Todo lo que tienes abierto en una sola vista: qué toca, qué se ha retrasado y qué proyecto te necesita hoy. Cada uno se desglosa en pasos que vas marcando.",
+    capReportTitle: "El cliente sabe por dónde va",
+    capReportBody:
+      "Un registro de avances que tu cliente abre cuando quiera, con tu nombre y tus colores. Muchos menos correos preguntando cómo va la cosa.",
+    capInvoiceTitle: "Factura al terminar",
+    capInvoiceBody:
+      "Convierte el trabajo hecho en una factura con tus condiciones y tus datos de pago, lista para enviar y con las horas y las cifras ya puestas.",
 
-    featureQuotesTitle: "Presupuestos con IA",
-    featureQuotesBody:
-      "Pega o sube el proyecto y recibes un presupuesto con alcance, entregables, calendario y precio. Como página web o como PDF.",
-    featureTrackingTitle: "Seguimiento de proyectos",
-    featureTrackingBody:
-      "Convierte un presupuesto aceptado en un proyecto con hitos y estado, en un solo panel.",
-    featureDiaryTitle: "Diario para el cliente",
-    featureDiaryBody:
-      "Un registro de avances que tu cliente puede seguir, con tus colores y tu logo.",
-
-    howItWorks: "Cómo funciona",
-    step1Title: "Configura Memoria",
-    step1Body: "Tus tarifas, tu tono, tus trabajos y tu marca. Unos minutos.",
-    step2Title: "Genera un presupuesto",
-    step2Body: "Suelta el proyecto del cliente y tienes un borrador con precio en segundos.",
-    step3Title: "Revisa, envía, controla",
-    step3Body: "Edita, publica la página o el PDF y haz seguimiento cuando lo ganes.",
+    aiNote: "La IA escribe el primer borrador. Tú lo editas, y no le llega nada al cliente hasta que tú lo digas.",
 
     freeToStart: "Gratis para empezar, sin tarjeta.",
     tryIt: "Pruébalo en tu próximo presupuesto.",
