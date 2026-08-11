@@ -87,7 +87,7 @@ export default async function InvoicesPage() {
 
   return (
     <>
-      <Topbar eyebrow="Invoices" />
+      <Topbar />
       <InvoicesView
         invoices={invoiceRows}
         queue={queue}

@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { acceptQuoteAction } from "@/actions/acceptance";
-import { useT } from "@/lib/i18n/context";
+import { useT, useLocale } from "@/lib/i18n/context";
+import { fill } from "@/lib/i18n";
+import { formatLongDay } from "@/lib/schedule";
 
 /**
  * The client-facing accept form on a published quote.
@@ -25,6 +27,7 @@ export function AcceptBlock({
   dark?: boolean;
 }) {
   const t = useT();
+  const locale = useLocale();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [agreed, setAgreed] = useState(false);
@@ -42,16 +45,13 @@ export function AcceptBlock({
       <div className="py-8" style={{ borderTop: `1px solid ${subtle}33` }}>
         <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{t.publicQuote.accepted}</div>
         <p className="text-body m-0">
-          Accepted by <strong>{done.name}</strong> on{" "}
-          {new Date(done.at).toLocaleDateString("en-GB", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
+          {fill(t.publicQuote.acceptedBy, {
+            name: done.name,
+            date: formatLongDay(new Date(done.at), locale),
           })}
-          .
         </p>
         <p className="text-meta mt-1.5 m-0" style={{ color: subtle }}>
-          A copy of this page is the record of that agreement.
+          {t.publicQuote.acceptedRecord}
         </p>
       </div>
     );
@@ -77,8 +77,7 @@ export function AcceptBlock({
     <div className="py-8" style={{ borderTop: `1px solid ${subtle}33` }}>
       <div className="text-caption font-bold tracking-[0.1em] uppercase mb-1">{t.publicQuote.acceptThisQuote}</div>
       <p className="text-small m-0 mb-4" style={{ color: subtle }}>
-        Typing your name below and ticking the box records your acceptance of the scope, timeline
-        and price set out on this page.
+        {t.publicQuote.acceptIntro}
       </p>
 
       <form
@@ -112,7 +111,7 @@ export function AcceptBlock({
             onChange={(e) => setAgreed(e.target.checked)}
             className="mt-0.5 shrink-0"
           />
-          <span>I accept this quote and agree to the scope, timeline and price above.</span>
+          <span>{t.publicQuote.acceptCheckbox}</span>
         </label>
         {error && (
           <div className="text-small" style={{ color: "#D7263D" }}>

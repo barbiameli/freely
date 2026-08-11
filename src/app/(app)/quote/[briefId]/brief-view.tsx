@@ -240,7 +240,7 @@ export function BriefView({
 
   return (
     <>
-      <Topbar eyebrow={published ? "Quote - Published" : "Quote - Draft"} />
+      <Topbar />
 
       {/* This page is a working view, not the finished article: it shows the
           content without any branding applied. That was reading as "done",
@@ -359,10 +359,9 @@ export function BriefView({
       <div className="flex flex-col md:flex-row gap-5 flex-1 min-h-0 mt-5">
         <div className="flex-[2] flex flex-col gap-4 overflow-y-auto pr-1">
           {content.strategy && (
-            <Section eyebrow="Strategy" tint="violet" accent="violet">
+            <Section eyebrow={t.publicQuote.strategy} tint="violet" accent="violet">
               <p className="text-meta text-slate mb-3">
-                What the AI understood the project to be about, drawn from the brief you gave it.
-                Edit anything that misses the mark.
+                {t.brief.whatTheAiUnderstood}
               </p>
               <EditableSection
                 editLabel="Edit strategy"
@@ -370,7 +369,7 @@ export function BriefView({
                   { key: "goal", label: "Goal", value: content.strategy.goal, multiline: true },
                   {
                     key: "findings",
-                    label: "Findings",
+                    label: t.publicQuote.findings,
                     value: content.strategy.findings.join("\n"),
                     multiline: true,
                     hint: "One finding per line.",
@@ -395,7 +394,7 @@ export function BriefView({
                 {content.strategy.findings.length > 0 && (
                   <div className="mt-3">
                     <span className="text-caption font-bold text-slate uppercase tracking-[0.04em]">
-                      Findings
+                      {t.publicQuote.findings}
                     </span>
                     <div className="mt-1.5">
                       <Bullets items={content.strategy.findings} />
@@ -406,7 +405,7 @@ export function BriefView({
             </Section>
           )}
 
-          <Section eyebrow="Scope" tint="paper" accent="coral">
+          <Section eyebrow={t.publicQuote.scope} tint="paper" accent="coral">
             <EditableBlock
               value={content.scope}
               onSave={(scope) => saveContent({ scope })}
@@ -422,7 +421,7 @@ export function BriefView({
             </EditableBlock>
           </Section>
 
-          <Section eyebrow="Deliverables" tint="coral" accent="coral">
+          <Section eyebrow={t.publicQuote.deliverables} tint="coral" accent="coral">
             <EditableBlock
               value={content.deliverables.join("\n")}
               onSave={(next) =>
@@ -443,7 +442,7 @@ export function BriefView({
             </EditableBlock>
           </Section>
 
-          <Section eyebrow="Timeline" tint="paper" accent="violet">
+          <Section eyebrow={t.publicQuote.timeline} tint="paper" accent="violet">
             <EditableBlock
               value={content.timeline}
               onSave={(timeline) => saveContent({ timeline })}
@@ -455,7 +454,7 @@ export function BriefView({
           </Section>
 
           {content.extras?.paymentTerms && (
-            <Section eyebrow="Payment terms" tint="paper" accent="violet">
+            <Section eyebrow={t.publicQuote.paymentTerms} tint="paper" accent="violet">
               <EditableBlock
                 value={content.extras.paymentTerms}
                 onSave={(next) =>
@@ -465,13 +464,13 @@ export function BriefView({
                 className="text-sm leading-relaxed text-ink"
               />
               <p className="text-xs text-text-muted mt-2 m-0">
-                Bank details go on the invoice.
+                {t.brief.bankDetailsOnInvoice}
               </p>
             </Section>
           )}
 
           {content.extras?.revisions && (
-            <Section eyebrow="Revisions" tint="paper" accent="violet">
+            <Section eyebrow={t.publicQuote.revisions} tint="paper" accent="violet">
               <EditableBlock
                 value={content.extras.revisions}
                 onSave={(next) =>
@@ -484,7 +483,7 @@ export function BriefView({
           )}
 
           {content.extras?.availability && (
-            <Section eyebrow="Availability" tint="paper" accent="violet">
+            <Section eyebrow={t.publicQuote.availability} tint="paper" accent="violet">
               <EditableBlock
                 value={content.extras.availability}
                 onSave={(next) =>
@@ -497,20 +496,20 @@ export function BriefView({
           )}
 
           {content.extras?.aiUsage && (
-            <Section eyebrow="How AI is used on this project" tint="paper" accent="violet">
+            <Section eyebrow={t.quote.sectionAi} tint="paper" accent="violet">
               <EditableSection
                 editLabel="Edit AI use"
                 fields={[
                   {
                     key: "will",
-                    label: "Where AI is used",
+                    label: t.publicQuote.aiWhereUsed,
                     value: content.extras.aiUsage.will.join("\n"),
                     multiline: true,
                     hint: "One per line.",
                   },
                   {
                     key: "willNot",
-                    label: "Where it is not",
+                    label: t.publicQuote.aiWhereNot,
                     value: content.extras.aiUsage.willNot.join("\n"),
                     multiline: true,
                     hint: "One per line.",
@@ -531,7 +530,7 @@ export function BriefView({
                 <div className="flex flex-col gap-3">
                   <div>
                     <span className="text-caption font-bold text-slate uppercase tracking-[0.04em]">
-                      Where AI is used
+                      {t.publicQuote.aiWhereUsed}
                     </span>
                     <div className="mt-1.5">
                       <Bullets items={content.extras.aiUsage.will} dense />
@@ -539,7 +538,7 @@ export function BriefView({
                   </div>
                   <div>
                     <span className="text-caption font-bold text-slate uppercase tracking-[0.04em]">
-                      Where it is not
+                      {t.publicQuote.aiWhereNot}
                     </span>
                     <div className="mt-1.5">
                       <Bullets items={content.extras.aiUsage.willNot} dense />
@@ -551,7 +550,7 @@ export function BriefView({
           )}
 
           {content.extras?.terms && (
-            <Section eyebrow="Terms" tint="paper" accent="violet">
+            <Section eyebrow={t.quote.sectionTerms} tint="paper" accent="violet">
               <div className="flex flex-col gap-2.5">
                 {(
                   [
@@ -588,7 +587,7 @@ export function BriefView({
           <div className="bg-ink rounded-card px-5 py-4 flex justify-between items-start gap-6">
             <div className="min-w-0">
               <span className="font-body font-bold text-caption tracking-[0.08em] uppercase text-white/50">
-                Investment
+                {t.publicQuote.investment}
               </span>
               <div className="mt-1 max-w-[160px]">
                 <EditableBlock
@@ -676,7 +675,7 @@ export function BriefView({
           </div>
 
           {examples.length > 0 && (
-            <Section eyebrow="Examples" tint="paper" accent="coral">
+            <Section eyebrow={t.publicQuote.examples} tint="paper" accent="coral">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {examples.map((ex) => (
                   <div key={ex.id} className="bg-white rounded-lg overflow-hidden border border-line">
@@ -709,11 +708,11 @@ export function BriefView({
               <div className="flex items-center gap-1.5">
                 <Lightbulb size={14} className="text-violet" />
                 <span className="font-body font-bold text-caption tracking-[0.08em] uppercase text-violet">
-                  Worth thinking about
+                  {t.brief.worthThinkingAbout}
                 </span>
               </div>
               <p className="text-meta text-slate mt-1.5 mb-3">
-                Notes for you, not for the client. These do not appear on the quote you send.
+                {t.brief.notesForYouOnly}
               </p>
               <EditableBlock
                 value={content.strategy.openQuestions.join("\n")}
@@ -812,7 +811,7 @@ export function BriefView({
           that's what you came back for, with unpublish demoted underneath. */}
       <div className="flex flex-wrap justify-start md:justify-end items-start gap-3">
         <Button variant="ghost" onClick={() => router.push("/quote")}>
-          New quote
+          {t.quote.newQuote}
         </Button>
         <DownloadPdfButton
           href={`/api/briefs/${brief.id}/pdf?template=${brief.template || "classic"}`}
@@ -820,7 +819,7 @@ export function BriefView({
         />
         {brief.status === "DRAFT" && (
           <Button variant="outline" icon={Check} disabled={working} onClick={handleAddToTrack}>
-            Add to Track
+            {t.brief.addToTrack}
           </Button>
         )}
 

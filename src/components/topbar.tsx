@@ -16,7 +16,19 @@ function initialsFor(name?: string | null, email?: string | null): string {
   return "?";
 }
 
-export function Topbar({ eyebrow }: { eyebrow: string }) {
+/**
+ * The account controls, and nothing else.
+ *
+ * It used to carry an eyebrow on the left: "Memory", "Track - Projects",
+ * "Quote - Step 1 of 2". Every one of them repeated the item already
+ * highlighted in the nav two inches to the left, and sat directly above a
+ * heading that said the same thing a third time. On the quotes list it was
+ * actively wrong, announcing "Step 1 of 2" over a list of finished quotes.
+ *
+ * Three names for one screen is two too many, so the row is now what it was
+ * always really for: who you are signed in as, and the language.
+ */
+export function Topbar() {
   const { data: session } = useSession();
   const [open, setOpen] = useState(false);
   const t = useT();
@@ -34,8 +46,7 @@ export function Topbar({ eyebrow }: { eyebrow: string }) {
   const email = session?.user?.email;
 
   return (
-    <div className="flex justify-between items-center w-full">
-      <span className="font-label text-sm text-slate uppercase tracking-wide">{eyebrow}</span>
+    <div className="flex justify-end items-center w-full">
       <div className="flex items-center gap-3">
       <span className="md:hidden">
         <LanguageSwitcher compact />

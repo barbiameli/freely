@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import type { Strategy, BriefExtras } from "@/lib/anthropic";
 import { resolveBrand } from "@/lib/branding";
+import { LocaleProvider } from "@/lib/i18n/context";
+import { parseLocale } from "@/lib/i18n";
 import { ClassicTemplate, EditorialTemplate, MinimalTemplate, MonoTemplate, type PublicBrief } from "./templates";
 
 export const dynamic = "force-dynamic";
@@ -58,11 +60,27 @@ export default async function PublicQuotePage({ params }: { params: { slug: stri
   };
 
   const resolved = resolveBrand(brief.branding, brief.user);
-  if (resolved.mono) return <MonoTemplate brief={publicBrief} dark={resolved.dark} />;
-
   const brand = { primary: resolved.primary, accent: resolved.accent, logoDataUrl: resolved.logoDataUrl };
 
-  if (brief.template === "editorial") return <EditorialTemplate brief={publicBrief} brand={brand} />;
-  if (brief.template === "minimal") return <MinimalTemplate brief={publicBrief} brand={brand} />;
-  return <ClassicTemplate brief={publicBrief} brand={brand} />;
+  const template = resolved.mono ? (
+    <MonoTemplate brief={publicBrief} dark={resolved.dark} />
+  ) : brief.template === "editorial" ? (
+    <EditorialTemplate brief={publicBrief} brand={brand} />
+  ) : brief.template === "minimal" ? (
+    <MinimalTemplate brief={publicBrief} brand={brand} />
+  ) : (
+    <ClassicTemplate brief={publicBrief} brand={brand} />
+  );
+
+  /**
+   * The page had no provider, so the acceptance block underneath it, which is
+   * a client component reading useT(), fell through to the context default and
+   * rendered in English. On a Spanish quote that meant the one paragraph the
+   * client actually agrees to, and the checkbox they tick, were in the wrong
+   * language. Nothing failed: a missing provider has a working default.
+   *
+   * The quote's language, not the visitor's browser. The client reads what the
+   * quote was written in.
+   */
+  return <LocaleProvider locale={parseLocale(publicBrief.language)}>{template}</LocaleProvider>;
 }

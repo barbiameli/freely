@@ -17,6 +17,7 @@ import { deliverableProgress } from "@/lib/project-state";
 import { extractFileText } from "@/lib/extract-file";
 import { currencySymbol } from "@/lib/currencies";
 import { useT } from "@/lib/i18n/context";
+import { fill } from "@/lib/i18n";
 
 interface TrackProject {
   id: string;
@@ -104,15 +105,16 @@ export function TrackDashboard({ projects }: { projects: TrackProject[] }) {
 
   return (
     <>
-      <Topbar eyebrow="Track - Projects" />
+      <Topbar />
       <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
         <div>
           <h1 className="font-display italic text-[32px] text-coral m-0">
-            Everything you&apos;re running right now.
+            {t.track.everythingRunning}
           </h1>
           <p className="text-slate text-small mt-2">
-            {visibleProjects.length} project{visibleProjects.length === 1 ? "" : "s"} · from accepted
-            quotes or added directly.
+            {visibleProjects.length === 1
+              ? t.track.projectCountOne
+              : fill(t.track.projectCount, { count: visibleProjects.length })}
           </p>
         </div>
         <div className="flex gap-2.5">
@@ -121,18 +123,17 @@ export function TrackDashboard({ projects }: { projects: TrackProject[] }) {
             icon={Upload}
             onClick={() => setShowUpload((s) => !s)}
           >
-            Upload a brief / SOW
+            {t.track.uploadSow}
           </Button>
           <Button icon={Plus} onClick={() => setShowAdd((s) => !s)}>
-            Add project
+            {t.track.addProject}
           </Button>
         </div>
       </div>
       {showUpload && (
         <Card className="flex flex-col gap-2.5">
           <div className="text-small text-slate">
-            Drop a brief, SOW, or contract, Freely reads it and creates the project with
-            deliverables and timeline already filled in.
+            {t.track.uploadSowHint}
           </div>
           <label className="flex flex-col gap-2 cursor-pointer">
             <input
@@ -154,10 +155,10 @@ export function TrackDashboard({ projects }: { projects: TrackProject[] }) {
       {visibleProjects.length > 0 && (
         <div className="flex gap-[14px]">
           {[
-            ["Active now", String(activeCount)],
-            ["Overdue", String(overdueCount)],
-            ["Total value", `${currencySymbol(visibleProjects[0]?.currency)}${totalValue.toLocaleString()}`],
-            ["Deliverables done", `${doneDeliverables}/${totalDeliverables}`],
+            [t.track.activeNow, String(activeCount)],
+            [t.track.overdueCount, String(overdueCount)],
+            [t.track.totalValue, `${currencySymbol(visibleProjects[0]?.currency)}${totalValue.toLocaleString()}`],
+            [t.track.doneCount, `${doneDeliverables}/${totalDeliverables}`],
           ].map(([label, value]) => (
             <Card key={label} className="flex-1 px-5 py-3.5">
               <div className="font-label text-caption text-slate uppercase tracking-wide">{label}</div>
@@ -171,7 +172,7 @@ export function TrackDashboard({ projects }: { projects: TrackProject[] }) {
           <TextField value={title} onChange={setTitle} placeholder={t.track.projectTitle} />
           <TextField value={client} onChange={setClient} placeholder={t.track.clientName} />
           <Button disabled={working} onClick={handleAdd}>
-            Add
+            {t.common.add}
           </Button>
           <Button variant="ghost" onClick={() => setShowAdd(false)}>
             <X size={14} />
@@ -181,7 +182,7 @@ export function TrackDashboard({ projects }: { projects: TrackProject[] }) {
       {error && <div className="text-overdue text-small">{error}</div>}
       {visibleProjects.length === 0 ? (
         <Card className="text-center text-slate p-10">
-          Nothing tracked yet. Generate a quote and add it to Track, or add a project directly.
+          {t.track.nothingTracked}
         </Card>
       ) : (
         <ProjectCardGrid>

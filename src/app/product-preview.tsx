@@ -108,10 +108,8 @@ export function ProductPreview({ t }: { t: Dictionary }) {
       </div>
 
       <div className="flex-1 min-w-0 px-5 sm:px-7 py-5 sm:py-6">
-        <div className="text-[9px] sm:text-caption tracking-[0.12em] uppercase text-text-muted mb-4">
-          {t.quote.eyebrowStep1}
-        </div>
-
+        {/* No eyebrow above the tabs, because the real screen no longer has
+            one: it repeated the item already lit up in the rail beside it. */}
         <div className="flex items-center gap-1 border-b border-line mb-5">
           <span className="font-body font-semibold text-small text-ink px-3 pb-2 border-b-2 border-b-violet -mb-px">
             {t.quote.allQuotes}

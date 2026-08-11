@@ -1,10 +1,15 @@
+"use client";
+
+import { useT } from "@/lib/i18n/context";
 import { Skeleton, SkeletonCard } from "@/components/ui/skeleton";
 
 /** The tracker has a distinctive shape (sidebar, stat row, timeline, list),
  * so it gets its own outline rather than the generic one. */
 export default function Loading() {
+  const t = useT();
+
   return (
-    <div className="flex flex-col lg:flex-row gap-5 lg:gap-6" role="status" aria-label="Loading">
+    <div className="flex flex-col lg:flex-row gap-5 lg:gap-6" role="status" aria-label={t.common.loading}>
       <div className="w-full lg:w-[200px] lg:shrink-0 bg-white border border-line rounded-card p-5">
         <Skeleton className="h-2.5 w-20 mb-3" />
         <div className="flex flex-col gap-2">
@@ -29,7 +34,7 @@ export default function Loading() {
         <SkeletonCard lines={2} />
         <SkeletonCard lines={5} />
       </div>
-      <span className="sr-only">Loading</span>
+      <span className="sr-only">{t.common.loading}</span>
     </div>
   );
 }

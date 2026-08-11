@@ -25,7 +25,7 @@ export function AccountView({
   const t = useT();
   return (
     <>
-      <Topbar eyebrow="Account settings" />
+      <Topbar />
       <div>
         <h1 className="font-display italic text-[32px] text-coral m-0">{t.account.yourAccount}</h1>
         <p className="text-slate text-small mt-2">

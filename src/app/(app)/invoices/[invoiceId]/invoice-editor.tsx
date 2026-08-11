@@ -247,7 +247,7 @@ export function InvoiceEditor({
 
   return (
     <>
-      <Topbar eyebrow={`Invoice #${String(invoice.number).padStart(4, "0")}`} />
+      <Topbar />
 
       <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
         <div>

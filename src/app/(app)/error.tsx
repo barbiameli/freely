@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { RefreshCw } from "lucide-react";
+import { useT } from "@/lib/i18n/context";
 
 /**
  * When a page fails to render.
@@ -18,6 +19,8 @@ export default function AppError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useT();
+
   useEffect(() => {
     // The digest is what ties this to a line in the server logs.
     console.error("[app] page failed to render", error);
@@ -27,10 +30,10 @@ export default function AppError({
     <div className="flex flex-col items-start gap-4 max-w-[520px]">
       <div>
         <h1 className="font-display italic text-[28px] text-coral m-0">
-          That page didn&apos;t load.
+          {t.errors.pageTitle}
         </h1>
         <p className="text-slate text-body mt-2 leading-relaxed">
-          Something went wrong on our side rather than yours. Your work is saved.
+          {t.errors.pageBody}
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-3">
@@ -39,14 +42,16 @@ export default function AppError({
           onClick={reset}
           className="flex items-center gap-2 font-body font-bold text-sm text-white bg-violet rounded-lg px-4 py-2.5 border-none cursor-pointer"
         >
-          <RefreshCw size={13} /> Try again
+          <RefreshCw size={13} /> {t.common.tryAgain}
         </button>
         <Link href="/quote" className="text-small font-semibold text-violet">
-          Go to Quote
+          {t.errors.goToQuote}
         </Link>
       </div>
       {error.digest && (
-        <p className="text-meta text-text-muted m-0">Reference: {error.digest}</p>
+        <p className="text-meta text-text-muted m-0">
+          {t.errors.reference}: {error.digest}
+        </p>
       )}
     </div>
   );

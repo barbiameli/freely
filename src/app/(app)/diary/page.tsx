@@ -37,7 +37,7 @@ export default async function DiaryIndexPage() {
 
   return (
     <>
-      <Topbar eyebrow="Diary" />
+      <Topbar />
       <DiaryIndex projects={rows} />
     </>
   );

@@ -255,7 +255,7 @@ export function ProjectDetail({
       </Card>
 
       <div className="flex flex-col gap-5 md:gap-6 flex-1 min-w-0">
-        <Topbar eyebrow={`Track - ${project.title}`} />
+        <Topbar />
 
         <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3">
           <div className="min-w-0">

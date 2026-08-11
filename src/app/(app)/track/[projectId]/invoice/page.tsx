@@ -25,7 +25,7 @@ export default async function InvoicePage({ params }: { params: { projectId: str
 
   return (
     <>
-      <Topbar eyebrow={`Track - ${project.title} - Invoice`} />
+      <Topbar />
       <div>
         <h1 className="font-display italic text-[30px] text-coral m-0">{t.invoices.summary}</h1>
         <p className="text-slate text-small mt-1.5">

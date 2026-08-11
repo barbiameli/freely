@@ -1,3 +1,7 @@
+"use client";
+
+import { useT } from "@/lib/i18n/context";
+
 /**
  * Placeholder shapes shown while a page loads.
  *
@@ -27,8 +31,10 @@ export function SkeletonCard({ lines = 3 }: { lines?: number }) {
 /** The shape most pages in the app share: a title, a row of stats, some
  * cards. Close enough that the swap to real content is not a jolt. */
 export function PageSkeleton() {
+  const t = useT();
+
   return (
-    <div className="flex flex-col gap-5 md:gap-7" role="status" aria-label="Loading">
+    <div className="flex flex-col gap-5 md:gap-7" role="status" aria-label={t.common.loading}>
       <div>
         <Skeleton className="h-8 w-64 mb-3" />
         <Skeleton className="h-3.5 w-40" />
@@ -43,7 +49,7 @@ export function PageSkeleton() {
       </div>
       <SkeletonCard lines={4} />
       <SkeletonCard lines={2} />
-      <span className="sr-only">Loading</span>
+      <span className="sr-only">{t.common.loading}</span>
     </div>
   );
 }

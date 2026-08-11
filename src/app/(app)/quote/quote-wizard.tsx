@@ -19,7 +19,6 @@ import { Label } from "@/components/ui/label";
 import { Chip } from "@/components/ui/chip";
 import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
-import { Stepper } from "@/components/ui/stepper";
 import { DropZone } from "@/components/ui/drop-zone";
 import {
   generateBriefAction,
@@ -472,7 +471,7 @@ export function QuoteWizard({
     <>
       {step === 0 && tab === "all" && (
         <>
-          <Topbar eyebrow={t.quote.eyebrowStep1} />
+          <Topbar />
           <QuoteTabs value={tab} onChange={setTab} count={recentBriefs.length} />
           <QuoteList briefs={recentBriefs} onStartNew={() => setTab("new")} />
         </>
@@ -480,7 +479,7 @@ export function QuoteWizard({
 
       {step === 0 && tab === "new" && (
         <>
-          <Topbar eyebrow={t.quote.eyebrowStep1} />
+          <Topbar />
           <QuoteTabs value={tab} onChange={setTab} count={recentBriefs.length} />
           <div>
             <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">
@@ -490,7 +489,6 @@ export function QuoteWizard({
               {t.quote.subtitleStep1}
             </p>
           </div>
-          <Stepper activeIndex={0} />
           {/* One bordered container: the two choices sit side by side as a
               toggle at the top, and the input for whichever is selected
               expands underneath, inside the same box. */}
@@ -843,7 +841,7 @@ export function QuoteWizard({
 
       {step === 1 && (
         <>
-          <Topbar eyebrow={t.quote.eyebrowStep2} />
+          <Topbar />
           <div>
             <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">
               {t.quote.titleStep2}
@@ -852,15 +850,6 @@ export function QuoteWizard({
               {t.quote.subtitleStep2}
             </p>
           </div>
-          <Stepper
-            activeIndex={1}
-            onStepClick={() => {
-              if (generating) handleStopGenerating();
-              setError("");
-              setStep(0);
-            }}
-          />
-
           <Card>
             <FieldHeading required>{t.quote.output}</FieldHeading>
             <p className="text-meta text-text-muted mb-3">

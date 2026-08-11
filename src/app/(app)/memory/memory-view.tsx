@@ -121,7 +121,7 @@ export function MemoryView({
   const t = useT();
   return (
     <>
-      <Topbar eyebrow="Memory" />
+      <Topbar />
       <div>
         <h1 className="font-display italic text-[32px] text-coral m-0">
           What it knows about your studio.

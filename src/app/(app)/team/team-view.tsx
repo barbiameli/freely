@@ -60,7 +60,7 @@ export function TeamView({
 
   return (
     <>
-      <Topbar eyebrow="Team" />
+      <Topbar />
       <div>
         <h1 className="font-display italic text-[32px] text-coral m-0">
           {teamName ?? "Your studio"}
