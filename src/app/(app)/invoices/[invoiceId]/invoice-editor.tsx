@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Download, Trash2, Check, Plus, ShieldOff } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { Label, SubLabel } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { CURRENCIES, currencySymbol } from "@/lib/currencies";
@@ -87,9 +87,9 @@ function Field({
     "w-full font-body text-small text-ink bg-paper border border-line rounded-lg px-2.5 py-2 outline-none";
   return (
     <label className="block">
-      <span className="block text-caption font-bold text-slate uppercase tracking-wide mb-1">
+      <SubLabel className="mb-1">
         {label}
-      </span>
+      </SubLabel>
       {multiline ? (
         <textarea
           value={value}
@@ -289,9 +289,9 @@ export function InvoiceEditor({
           className="w-full flex items-center justify-between gap-3 bg-none border-none cursor-pointer p-0 text-left"
         >
           <span className="min-w-0">
-            <span className="block text-caption font-bold text-slate uppercase tracking-wide">
+            <SubLabel>
               {t.invoices.from}
-            </span>
+            </SubLabel>
             <span className="block text-small text-ink truncate mt-0.5">
               {[form.fromName, form.fromEmail].filter(Boolean).join(" · ") || t.invoices.addYourDetails}
             </span>
@@ -358,9 +358,9 @@ export function InvoiceEditor({
             <Field label="Due" type="date" value={form.dueAt} onChange={(v) => set("dueAt", v)} />
           </div>
           <label className="block flex-1">
-            <span className="block text-caption font-bold text-slate uppercase tracking-wide mb-1">
+            <SubLabel className="mb-1">
               {t.invoices.currency}
-            </span>
+            </SubLabel>
             <select
               value={form.currency}
               onChange={(e) => set("currency", e.target.value)}

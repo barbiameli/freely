@@ -5,6 +5,7 @@ import { useAction } from "@/lib/use-action";
 import { ActionError } from "@/components/ui/action-error";
 import type { DeliverableView, FlagView } from "@/components/track/deliverable-item";
 import { useT } from "@/lib/i18n/context";
+import { SubLabel } from "@/components/ui/label";
 
 /**
  * Things worth raising about this deliverable.
@@ -40,9 +41,9 @@ export function FlagsPanel({ deliverable }: { deliverable: DeliverableView | nul
 
   return (
     <div className="bg-paper border border-line rounded-lg px-4 py-3.5 mt-4">
-      <div className="font-body font-bold text-caption text-slate uppercase tracking-wide mb-3">
+      <SubLabel className="mb-3">
         {t.track.worthRaising}
-      </div>
+      </SubLabel>
 
       {open.length === 0 ? (
         <p className="text-small text-text-muted m-0">{t.track.allAnswered}</p>

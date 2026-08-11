@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createInvoiceAction } from "@/actions/invoices";
 import { useT } from "@/lib/i18n/context";
+import { SubLabel } from "@/components/ui/label";
 
 /** Starting from a project pre-fills the client, amount, currency and the
  * quote's branding, which is most of the invoice. Blank is there for anything
@@ -43,9 +44,9 @@ export function NewInvoiceButton({
 
   return (
     <div className="bg-white border border-line rounded-card shadow-panel p-4 w-full md:w-[320px]">
-      <div className="text-caption font-bold text-slate uppercase tracking-wide mb-2.5">
+      <SubLabel className="mb-2.5">
         {t.invoices.startFrom}
-      </div>
+      </SubLabel>
       <div className="flex flex-col gap-1.5 max-h-[240px] overflow-y-auto">
         {projects.map((p) => (
           <button

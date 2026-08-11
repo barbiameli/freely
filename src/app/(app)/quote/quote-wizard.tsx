@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { Label, SubLabel } from "@/components/ui/label";
 import { Chip } from "@/components/ui/chip";
 import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
@@ -807,9 +807,9 @@ export function QuoteWizard({
                   ]
                 ).map((field) => (
                   <label key={field.key} className="block">
-                    <span className="block text-caption font-bold text-slate uppercase tracking-wide mb-1">
+                    <SubLabel className="mb-1">
                       {field.label}
-                    </span>
+                    </SubLabel>
                     <input
                       value={draft.pricing?.[field.key] || ""}
                       onChange={(e) =>
@@ -859,9 +859,9 @@ export function QuoteWizard({
             {/* The quote's language used to be two chips here. It is a Memory
                 preference now: it changes about once a year, so asking on every
                 quote was a decision presented far more often than it is made. */}
-            <div className="text-caption font-bold text-slate uppercase tracking-wide mb-2">
+            <SubLabel>
               {t.quote.pageFormat}
-            </div>
+            </SubLabel>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
               {(["HTML", "PDF", "Figma"] as const).map((fmt) => {
                 const disabled = fmt === "Figma";
@@ -897,9 +897,9 @@ export function QuoteWizard({
 
             {(draft.format === "HTML" || draft.format === "PDF") && (
               <>
-                <div className="text-caption font-bold text-slate uppercase tracking-wide mb-2">
+                <SubLabel>
                   {t.quote.branding}
-                </div>
+                </SubLabel>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
                   {BRANDING_OPTIONS.map((opt) => {
                     const disabled = opt.id === "own" && !hasBrand;
@@ -991,9 +991,9 @@ export function QuoteWizard({
                   </div>
                 )}
 
-                <div className="text-caption font-bold text-slate uppercase tracking-wide mb-2">
+                <SubLabel>
                   {t.quote.style}
-                </div>
+                </SubLabel>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {(
                     [

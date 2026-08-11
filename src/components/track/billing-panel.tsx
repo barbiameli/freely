@@ -11,6 +11,7 @@ import { invoiceProjectAction } from "@/actions/invoices";
 import { billable, type QueueProject } from "@/lib/invoice-queue";
 import { useT } from "@/lib/i18n/context";
 import { fill } from "@/lib/i18n";
+import { SubLabel } from "@/components/ui/label";
 
 /**
  * What is billable on this project right now.
@@ -60,9 +61,9 @@ export function BillingPanel({
     <Card className={ready ? "border-violet border-[1.5px]" : undefined}>
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <div className="text-caption font-bold text-slate uppercase tracking-wide">
+          <SubLabel>
             {t.invoices.billing}
-          </div>
+          </SubLabel>
           {perMilestone && (
             <div className="font-body font-semibold text-body text-ink mt-1">
               {t.invoices.perMilestone}

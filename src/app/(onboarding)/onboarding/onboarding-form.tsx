@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { DropZone } from "@/components/ui/drop-zone";
 import { useT } from "@/lib/i18n/context";
+import { SubLabel } from "@/components/ui/label";
 
 type StepId = "industry" | "instructions" | "toneNotes" | "storyNotes" | "contextNotes";
 
@@ -329,9 +330,9 @@ function ReferencesStep({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-paper rounded-lg p-3.5 border border-dashed border-line">
-          <div className="flex items-center gap-1.5 text-caption font-bold text-slate uppercase tracking-wide mb-2.5">
+          <SubLabel className="flex items-center gap-1.5 mb-2.5">
             <FileText size={12} /> {t.onboarding.files}
-          </div>
+          </SubLabel>
           <DropZone
             onFile={handleFileUpload}
             accept=".txt,.md,.pdf,.docx"
@@ -360,9 +361,9 @@ function ReferencesStep({
         </div>
 
         <div className="bg-paper rounded-lg p-3.5 border border-dashed border-line">
-          <div className="flex items-center gap-1.5 text-caption font-bold text-slate uppercase tracking-wide mb-2.5">
+          <SubLabel className="flex items-center gap-1.5 mb-2.5">
             <Link2 size={12} /> {t.onboarding.links}
-          </div>
+          </SubLabel>
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -549,9 +550,9 @@ function BrandingStep({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-paper rounded-lg p-3.5 border border-dashed border-line">
-          <div className="flex items-center gap-1.5 text-caption font-bold text-slate uppercase tracking-wide mb-2.5">
+          <SubLabel className="flex items-center gap-1.5 mb-2.5">
             <FileText size={12} /> {t.onboarding.brandGuidelines}
-          </div>
+          </SubLabel>
           <DropZone
             onFile={handleGuideUpload}
             accept=".pdf,.docx,.txt,.md,image/png,image/jpeg"
@@ -583,9 +584,9 @@ function BrandingStep({
         </div>
 
         <div className="bg-paper rounded-lg p-3.5 border border-dashed border-line">
-          <div className="flex items-center gap-1.5 text-caption font-bold text-slate uppercase tracking-wide mb-2.5">
+          <SubLabel className="flex items-center gap-1.5 mb-2.5">
             <Upload size={12} /> {t.onboarding.logo}
-          </div>
+          </SubLabel>
           {logo ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={logo} alt={t.onboarding.logo} className="h-9 mb-2" />
