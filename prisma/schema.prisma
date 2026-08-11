@@ -266,6 +266,12 @@ model Project {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
+  // How this project gets billed, which decides when it can be invoiced.
+  // Set by the freelancer rather than inferred from the quote's payment terms:
+  // that text is free-form prose, and guessing wrong here means either
+  // withholding an invoice that is due or offering one that is not.
+  billing     BillingMode   @default(ON_COMPLETION)
+
   invoiceStatus      InvoiceStatus @default(UNPAID)
   stripeCheckoutUrl  String?
   stripeSessionId    String?
@@ -311,6 +317,10 @@ model Invoice {
 
   /// [{ title, description, rate, hours, amount }]
   lineItems Json
+  /// Whether the client sees the deliverables and hours, or one line and a
+  /// total. Stored rather than chosen at download time, so re-downloading an
+  /// invoice produces the document that was sent.
+  itemised  Boolean @default(true)
   currency  String  @default("USD")
   /// Percentage, e.g. 21 for 21%. Zero means the tax row is omitted entirely.
   taxRate   Float   @default(0)
@@ -341,6 +351,13 @@ enum ProjectStatus {
   DONE
 }
 
+/// ON_COMPLETION: one invoice, once the whole project is done.
+/// PER_MILESTONE: one invoice per deliverable, as each is finished.
+enum BillingMode {
+  ON_COMPLETION
+  PER_MILESTONE
+}
+
 enum InvoiceStatus {
   UNPAID
   PENDING
@@ -363,6 +380,11 @@ model Deliverable {
   // Set once the steps and flags have been generated, so the UI can tell
   // "not broken down yet" apart from "broken down into nothing".
   brokenDownAt DateTime?
+  // When this deliverable was billed, on a per-milestone project. Null means
+  // it is still outstanding, which is what puts it in the invoice queue. A
+  // date rather than a boolean, because "when did I bill that" is a question
+  // worth being able to answer.
+  invoicedAt DateTime?
 
   steps Step[]
   flags Flag[]
