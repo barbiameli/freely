@@ -81,6 +81,13 @@ interface Brief {
   published: boolean;
   publicSlug: string;
   template?: string;
+  /**
+   * How the work splits into billable chunks, when the quote is billed that
+   * way. Shown so it can be checked before the quote goes out: the split is
+   * part of what the client agrees to, and changing it afterwards means
+   * changing the agreement.
+   */
+  milestones?: { name: string; deliverableIndexes: number[]; amount: number }[];
   sourceText?: string | null;
   accepted?: { name: string; email: string; at: string } | null;
   examples: Example[];
@@ -441,6 +448,35 @@ export function BriefView({
               />
             </EditableBlock>
           </Section>
+
+          {brief.milestones && brief.milestones.length > 0 && (
+            <Section eyebrow={t.quote.milestonesSection} tint="paper" accent="violet">
+              <div className="flex flex-col gap-2.5">
+                {brief.milestones.map((ms, i) => (
+                  <div
+                    key={i}
+                    className="flex items-baseline justify-between gap-3 pb-2.5 border-b border-line last:border-b-0 last:pb-0"
+                  >
+                    <div className="min-w-0">
+                      <div className="font-body font-semibold text-body text-ink">{ms.name}</div>
+                      {/* Named, not counted. "3 deliverables" is a number;
+                          the names are what tells you the split is right. */}
+                      <div className="text-caption text-slate mt-0.5 leading-relaxed">
+                        {ms.deliverableIndexes
+                          .map((n) => brief.deliverables[n])
+                          .filter(Boolean)
+                          .join(", ")}
+                      </div>
+                    </div>
+                    <div className="font-body font-bold text-small text-ink tabular-nums shrink-0">
+                      {currencySymbol(brief.currency)}
+                      {ms.amount.toLocaleString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Section>
+          )}
 
           <Section eyebrow={t.publicQuote.timeline} tint="paper" accent="violet">
             <EditableBlock

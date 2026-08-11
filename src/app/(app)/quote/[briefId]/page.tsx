@@ -50,6 +50,15 @@ export default async function BriefPage({ params }: { params: { briefId: string 
         published: brief.published,
         publicSlug: brief.publicSlug,
         template: brief.template,
+        // The milestone split, so it can be checked before the quote goes out.
+        // Stored on the quote at generation, because that is what the client
+        // agrees to.
+        milestones:
+          (brief.settings as { useMilestones?: boolean; milestones?: unknown } | null)
+            ?.useMilestones
+            ? ((brief.settings as { milestones?: { name: string; deliverableIndexes: number[]; amount: number }[] })
+                .milestones ?? [])
+            : [],
         accepted: acceptance.acceptedAt
           ? {
               name: acceptance.acceptedName || "the client",
