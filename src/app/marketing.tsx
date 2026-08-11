@@ -3,6 +3,7 @@ import { ShieldCheck, Sparkles } from "lucide-react";
 import { FreelyLogo } from "@/components/freely-logo";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { LocaleProvider } from "@/lib/i18n/context";
+import { Reveal } from "./reveal";
 import { fill, type Dictionary, type Locale } from "@/lib/i18n";
 import {
   ProductPreview,
@@ -153,13 +154,17 @@ function Capabilities({ t }: { t: Dictionary }) {
           className="max-w-5xl mx-auto px-5 sm:px-6 py-12 sm:py-16 border-b border-line last:border-b-0"
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-center">
-            <div className={i % 2 === 1 ? "lg:order-2" : undefined}>
+            <Reveal className={i % 2 === 1 ? "lg:order-2" : undefined}>
               <h2 className="font-display italic text-[26px] sm:text-3xl text-ink m-0">
                 {section.title}
               </h2>
               <p className="text-slate text-body leading-relaxed mt-3 max-w-md">{section.body}</p>
-            </div>
-            <div className={i % 2 === 1 ? "lg:order-1" : undefined}>{section.visual}</div>
+            </Reveal>
+            {/* The picture a beat behind the words, so the eye reads the claim
+                and then arrives at the evidence. */}
+            <Reveal delay={120} className={i % 2 === 1 ? "lg:order-1" : undefined}>
+              {section.visual}
+            </Reveal>
           </div>
         </section>
       ))}

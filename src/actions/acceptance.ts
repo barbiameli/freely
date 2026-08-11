@@ -4,6 +4,8 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { sanitizeText } from "@/lib/sanitize-text";
+import { send, appUrl } from "@/lib/email";
+import { currencySymbol } from "@/lib/currencies";
 import type { ActionResult } from "@/actions/briefs";
 
 /**
@@ -45,7 +47,15 @@ export async function acceptQuoteAction(
   // already-accepted guard below would silently never fire.
   const brief = (await prisma.brief.findUnique({
     where: { publicSlug },
-  })) as { id: string; published: boolean; acceptedAt: Date | null } | null;
+  })) as {
+    id: string;
+    published: boolean;
+    acceptedAt: Date | null;
+    userId: string;
+    title: string;
+    price: number;
+    currency: string;
+  } | null;
   if (!brief || !brief.published) {
     return { ok: false, error: "This quote isn't available." };
   }
@@ -68,6 +78,35 @@ export async function acceptQuoteAction(
       acceptedIp: ip,
     } as unknown as Parameters<typeof prisma.brief.update>[0]["data"],
   });
+
+  // Telling the freelancer. Until now the only way to find out a quote had been
+  // accepted was to open it, which means a client can agree to a job and nobody
+  // knows.
+  //
+  // After the update and deliberately not awaited into the result: the
+  // acceptance is already recorded, so a client clicking "accept" must not see
+  // an error because an email provider was having a bad morning. send() never
+  // throws and logs its own failures.
+  const owner = await prisma.user.findUnique({
+    where: { id: brief.userId },
+    select: { email: true },
+  });
+  if (owner?.email) {
+    const amount = brief.price
+      ? `${currencySymbol(brief.currency)}${brief.price.toLocaleString()}`
+      : "";
+    await send({
+      to: owner.email,
+      subject: `${cleanName} accepted your quote`,
+      lines: [
+        `${cleanName} has accepted "${brief.title}".`,
+        [amount, `Accepted ${acceptedAt.toLocaleDateString("en-GB")} by ${cleanEmail}.`]
+          .filter(Boolean)
+          .join(" · "),
+      ],
+      action: { label: "Open the quote", url: `${appUrl()}/quote/${brief.id}` },
+    });
+  }
 
   revalidatePath(`/q/${publicSlug}`);
   return { ok: true, data: { acceptedAt: acceptedAt.toISOString() } };
