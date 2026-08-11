@@ -36,6 +36,7 @@ import { useT, useLocale } from "@/lib/i18n/context";
 import { ActionError } from "@/components/ui/action-error";
 import { BillingPanel } from "@/components/track/billing-panel";
 import type { BillingMode } from "@/lib/invoice-queue";
+import { milestoneProgress } from "@/lib/billing-mode";
 
 interface Project {
   id: string;
@@ -171,11 +172,14 @@ export function ProjectDetail({
   project,
   projectList,
   billing,
+  billingFrom,
   invoiceCount,
 }: {
   project: Project;
   projectList: ProjectSummary[];
   billing: BillingMode;
+  /** Which part of the quote said so, or null when nothing did. */
+  billingFrom: "paymentTerms" | "instructions" | null;
   /** Invoices already raised against this project. */
   invoiceCount: number;
 }) {
@@ -198,6 +202,7 @@ export function ProjectDetail({
     project.deliverables.find((d) => !d.done)?.id ?? project.deliverables[0]?.id ?? null
   );
 
+  const milestones = milestoneProgress(project.deliverables);
   const health = toHealth(project);
   const completion = projectCompletion(health);
   const currentPace = pace(health);
@@ -300,6 +305,16 @@ export function ProjectDetail({
               alert: next?.overdue,
             },
             { label: t.track.hours, value: `${project.hoursLogged} / ${project.hours}` },
+            // Only on a project that bills per milestone. On any other one it
+            // would be a count of deliverables wearing a more important word.
+            ...(billing === "PER_MILESTONE" && milestones.total > 0
+              ? [
+                  {
+                    label: t.track.milestone,
+                    value: `${milestones.current}/${milestones.total}`,
+                  },
+                ]
+              : []),
           ]}
         />
 
@@ -307,6 +322,7 @@ export function ProjectDetail({
             figures: it belongs with "58% done" rather than at the bottom of the
             page under the deliverables. */}
         <BillingPanel
+          billingFrom={billingFrom}
           invoiceCount={invoiceCount}
           project={{
             id: project.id,

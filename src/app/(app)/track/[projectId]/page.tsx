@@ -4,7 +4,7 @@ import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import { deliverableDb, projectSchedule } from "@/lib/track-db";
 import { invoiceDb } from "@/lib/invoice-db";
-import type { BillingMode } from "@/lib/invoice-queue";
+import { detectBillingMode } from "@/lib/billing-mode";
 import { ProjectDetail } from "./project-detail";
 
 // Breaking a deliverable down is a real model call, so give the route the
@@ -16,7 +16,10 @@ export default async function ProjectPage({ params }: { params: { projectId: str
   const scope = teamScopeWhere(user);
 
   const [project, allProjects] = await Promise.all([
-    prisma.project.findFirst({ where: { id: params.projectId, ...scope } }),
+    prisma.project.findFirst({
+      where: { id: params.projectId, ...scope },
+      include: { brief: true },
+    }),
     prisma.project.findMany({
       where: scope,
       select: { id: true, title: true, client: true, status: true },
@@ -44,10 +47,20 @@ export default async function ProjectPage({ params }: { params: { projectId: str
     where: { userId: user.id, projectId: project.id },
   });
 
+  // Read off the quote rather than asked: the freelancer already wrote down how
+  // this bills when they sent it. See lib/billing-mode.
+  const extras = (project.brief?.extras ?? null) as { paymentTerms?: string } | null;
+  const settings = (project.brief?.settings ?? null) as { instructions?: string } | null;
+  const detected = detectBillingMode({
+    paymentTerms: extras?.paymentTerms,
+    instructions: settings?.instructions,
+  });
+
   return (
     <ProjectDetail
       invoiceCount={invoiceCount}
-      billing={((project as unknown as { billing?: BillingMode }).billing ?? "ON_COMPLETION") as BillingMode}
+      billing={detected.mode}
+      billingFrom={detected.from}
       project={{
         id: project.id,
         title: project.title,

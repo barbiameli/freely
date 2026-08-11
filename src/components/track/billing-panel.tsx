@@ -3,13 +3,12 @@
 import { useRouter } from "next/navigation";
 import { FileText } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Chip } from "@/components/ui/chip";
 import { Button } from "@/components/ui/button";
 import { ActionError } from "@/components/ui/action-error";
 import { useAction } from "@/lib/use-action";
 import { currencySymbol } from "@/lib/currencies";
-import { invoiceProjectAction, setBillingModeAction } from "@/actions/invoices";
-import { billable, type BillingMode, type QueueProject } from "@/lib/invoice-queue";
+import { invoiceProjectAction } from "@/actions/invoices";
+import { billable, type QueueProject } from "@/lib/invoice-queue";
 import { useT } from "@/lib/i18n/context";
 import { fill } from "@/lib/i18n";
 
@@ -24,9 +23,12 @@ import { fill } from "@/lib/i18n";
  */
 export function BillingPanel({
   project,
+  billingFrom,
   invoiceCount,
 }: {
   project: QueueProject;
+  /** Which part of the quote decided how this bills. */
+  billingFrom: "paymentTerms" | "instructions" | null;
   invoiceCount: number;
 }) {
   const t = useT();
@@ -48,21 +50,22 @@ export function BillingPanel({
           <div className="text-caption font-bold text-slate uppercase tracking-wide">
             {t.invoices.billing}
           </div>
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            {(
-              [
-                ["ON_COMPLETION", t.invoices.onCompletion],
-                ["PER_MILESTONE", t.invoices.perMilestone],
-              ] as [BillingMode, string][]
-            ).map(([mode, label]) => (
-              <Chip
-                key={mode}
-                active={project.billing === mode}
-                onClick={() => run(() => setBillingModeAction(project.id, mode))}
-              >
-                {label}
-              </Chip>
-            ))}
+          {/* Stated, not asked. This was two chips; the answer is already in the
+              quote the client agreed to, so asking meant asking someone to
+              retype a decision they made weeks ago. The line underneath says
+              where it was read from, so a wrong reading is traceable rather
+              than mysterious. */}
+          <div className="font-body font-semibold text-body text-ink mt-1">
+            {project.billing === "PER_MILESTONE"
+              ? t.invoices.perMilestone
+              : t.invoices.onCompletion}
+          </div>
+          <div className="text-caption text-text-muted mt-0.5">
+            {billingFrom === "paymentTerms"
+              ? t.invoices.fromPaymentTerms
+              : billingFrom === "instructions"
+              ? t.invoices.fromInstructions
+              : t.invoices.fromDefault}
           </div>
         </div>
 

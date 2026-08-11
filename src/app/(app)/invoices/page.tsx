@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import { invoiceDb } from "@/lib/invoice-db";
-import { invoiceQueue, type BillingMode, type QueueProject } from "@/lib/invoice-queue";
+import { invoiceQueue, type QueueProject } from "@/lib/invoice-queue";
+import { detectBillingMode } from "@/lib/billing-mode";
 import { Topbar } from "@/components/topbar";
 import { InvoicesView, type InvoiceRowView } from "./invoices-view";
 
@@ -13,7 +14,10 @@ export default async function InvoicesPage() {
     invoiceDb.findMany({ where: { userId: user.id }, orderBy: { number: "desc" } }),
     prisma.project.findMany({
       where: teamScopeWhere(user),
-      include: { deliverables: { include: { steps: true }, orderBy: { order: "asc" } } },
+      include: {
+        brief: true,
+        deliverables: { include: { steps: true }, orderBy: { order: "asc" } },
+      },
       orderBy: { createdAt: "desc" },
     }),
   ]);
@@ -26,14 +30,22 @@ export default async function InvoicesPage() {
     invoicedProjectIds.set(inv.projectId, (invoicedProjectIds.get(inv.projectId) ?? 0) + 1);
   }
 
-  const queueProjects: QueueProject[] = projects.map((p) => ({
+  const queueProjects: QueueProject[] = projects.map((p) => {
+    const extras = (p.brief?.extras ?? null) as { paymentTerms?: string } | null;
+    const settings = (p.brief?.settings ?? null) as { instructions?: string } | null;
+    return {
     id: p.id,
     title: p.title,
     client: p.client,
     price: p.price,
     hours: p.hours,
     currency: p.currency,
-    billing: ((p as unknown as { billing?: BillingMode }).billing ?? "ON_COMPLETION") as BillingMode,
+    // Read off the quote, the same way the project page reads it, so the two
+    // screens cannot disagree about how a project bills.
+    billing: detectBillingMode({
+      paymentTerms: extras?.paymentTerms,
+      instructions: settings?.instructions,
+    }).mode,
     status: p.status,
     invoiceCount: invoicedProjectIds.get(p.id) ?? 0,
     deliverables: p.deliverables.map((d) => ({
@@ -42,8 +54,9 @@ export default async function InvoicesPage() {
       done: d.done,
       invoicedAt: (d as unknown as { invoicedAt?: Date | null }).invoicedAt ?? null,
       steps: d.steps.map((s) => ({ estimateHours: s.estimateHours })),
-    })),
-  }));
+      })),
+    };
+  });
 
   const queue = invoiceQueue(queueProjects).map((entry) => ({
     projectId: entry.project.id,

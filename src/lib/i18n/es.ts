@@ -199,6 +199,7 @@ export const es: Dictionary = {
   },
 
   track: {
+    milestone: "Hito",
     eyebrow: "Seguimiento",
     allProjects: "Todos los proyectos",
     done: "Hecho",
@@ -295,6 +296,9 @@ export const es: Dictionary = {
   },
 
   invoices: {
+    fromPaymentTerms: "Según las condiciones de pago del presupuesto.",
+    fromInstructions: "Según cómo pediste que se hiciera el presupuesto.",
+    fromDefault: "En el presupuesto no se decía otra cosa.",
     readyToBill: "{count} listos para facturar",
     allBilled: "Ya está facturado todo este proyecto.",
     from: "De",

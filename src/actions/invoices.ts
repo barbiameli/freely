@@ -7,7 +7,8 @@ import { teamScopeWhere } from "@/lib/team-scope";
 import { sanitizeText } from "@/lib/sanitize-text";
 import { invoiceDb, type InvoiceRow } from "@/lib/invoice-db";
 import type { InvoiceLineItem } from "@/lib/invoice-pdf";
-import { billable, type BillingMode } from "@/lib/invoice-queue";
+import { billable } from "@/lib/invoice-queue";
+import { detectBillingMode } from "@/lib/billing-mode";
 import type { ActionResult } from "@/actions/briefs";
 
 /** Invoice numbers are sequential per user, so a client sees 0001, 0002 rather
@@ -153,7 +154,10 @@ export async function invoiceProjectAction(
     price: project.price,
     hours: project.hours,
     currency: project.currency,
-    billing: (project as unknown as { billing: BillingMode }).billing ?? "ON_COMPLETION",
+    billing: detectBillingMode({
+      paymentTerms: (project.brief?.extras as { paymentTerms?: string } | null)?.paymentTerms,
+      instructions: (project.brief?.settings as { instructions?: string } | null)?.instructions,
+    }).mode,
     status: project.status,
     invoiceCount,
     deliverables: project.deliverables.map((d) => ({
@@ -234,26 +238,12 @@ export async function invoiceProjectAction(
   return { ok: true, data: { invoiceId: invoice.id } };
 }
 
-/** How a project bills. Asked rather than inferred: see schema.prisma. */
-export async function setBillingModeAction(
-  projectId: string,
-  mode: BillingMode
-): Promise<ActionResult<undefined>> {
-  const user = await requireFullUser();
-  const project = await prisma.project.findFirst({
-    where: { id: projectId, ...teamScopeWhere(user) },
-    select: { id: true },
-  });
-  if (!project) return { ok: false, error: "Project not found." };
-
-  await prisma.project.update({
-    where: { id: project.id },
-    data: { billing: mode } as unknown as Parameters<typeof prisma.project.update>[0]["data"],
-  });
-  revalidatePath(`/track/${project.id}`);
-  revalidatePath("/invoices");
-  return { ok: true, data: undefined };
-}
+// setBillingModeAction is gone. How a project bills is read from the quote now
+// (see lib/billing-mode), so there is nothing to set: a setter alongside a
+// detector is two answers to one question, and the stored one would win while
+// the detected one was on screen. Project.billing is left in the schema unread
+// rather than dropped, since removing a column costs a migration and buys
+// nothing.
 
 /**
  * Marks a project finished, which is what makes an on-completion project
