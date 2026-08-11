@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { detectBillingMode, milestoneProgress } from "@/lib/billing-mode";
+import { detectBillingMode } from "@/lib/billing-mode";
 
 describe("detectBillingMode", () => {
   it("reads the freelancer's own payment terms", () => {
@@ -74,22 +74,3 @@ describe("detectBillingMode", () => {
   });
 });
 
-describe("milestoneProgress", () => {
-  it("points at the one in hand", () => {
-    expect(milestoneProgress([{ done: true }, { done: true }, { done: false }, { done: false }])).toEqual(
-      { current: 3, total: 4 }
-    );
-  });
-
-  it("starts at the first", () => {
-    expect(milestoneProgress([{ done: false }, { done: false }])).toEqual({ current: 1, total: 2 });
-  });
-
-  it("stops at the last rather than running past it", () => {
-    expect(milestoneProgress([{ done: true }, { done: true }])).toEqual({ current: 2, total: 2 });
-  });
-
-  it("handles a project with no deliverables", () => {
-    expect(milestoneProgress([])).toEqual({ current: 0, total: 0 });
-  });
-});

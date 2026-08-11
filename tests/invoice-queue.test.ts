@@ -159,3 +159,114 @@ describe("invoiceQueue", () => {
     expect(invoiceQueue([done])).toHaveLength(0);
   });
 });
+
+describe("billing a project that has real milestones", () => {
+  /**
+   * A milestone groups deliverables. The old behaviour billed each deliverable
+   * as if it were a milestone, so a six-deliverable project agreed as three
+   * milestones invoiced six times at a sixth each: wrong amount, wrong day.
+   */
+  const milestones = [
+    { id: "m1", name: "Discovery", order: 0, amount: 1200, invoicedAt: null },
+    { id: "m2", name: "Design", order: 1, amount: 1800, invoicedAt: null },
+  ];
+
+  function inMilestone(id: string, milestoneId: string, done: boolean, hours: number[]) {
+    return {
+      id,
+      name: `Deliverable ${id}`,
+      done,
+      invoicedAt: null,
+      milestoneId,
+      steps: hours.map((h) => ({ estimateHours: h })),
+    };
+  }
+
+  it("bills a whole milestone at the amount agreed, not per deliverable", () => {
+    const p = project({
+      billing: "PER_MILESTONE",
+      price: 3000,
+      milestones,
+      deliverables: [
+        inMilestone("a", "m1", true, [10]),
+        inMilestone("b", "m1", true, [5]),
+        inMilestone("c", "m2", false, [15]),
+      ],
+    });
+    const entry = billable(p);
+    expect(entry.lines).toHaveLength(1);
+    expect(entry.lines[0].title).toBe("Discovery");
+    expect(entry.lines[0].amount).toBe(1200);
+    // Both of its deliverables, summed.
+    expect(entry.lines[0].hours).toBe(15);
+    expect(entry.total).toBe(1200);
+  });
+
+  it("offers nothing while a milestone is only half finished", () => {
+    // Half a milestone is not a fraction of an invoice. The client agreed to
+    // pay when the milestone completes.
+    const p = project({
+      billing: "PER_MILESTONE",
+      price: 3000,
+      milestones,
+      deliverables: [
+        inMilestone("a", "m1", true, [10]),
+        inMilestone("b", "m1", false, [5]),
+      ],
+    });
+    const entry = billable(p);
+    expect(entry.lines).toEqual([]);
+    expect(entry.notReady).toBe("nothing-done");
+  });
+
+  it("bills both once the whole project is done", () => {
+    const p = project({
+      billing: "PER_MILESTONE",
+      price: 3000,
+      milestones,
+      deliverables: [
+        inMilestone("a", "m1", true, [10]),
+        inMilestone("b", "m2", true, [20]),
+      ],
+    });
+    const entry = billable(p);
+    expect(entry.lines.map((l) => l.title)).toEqual(["Discovery", "Design"]);
+    expect(entry.total).toBe(3000);
+  });
+
+  it("does not offer a milestone already invoiced", () => {
+    const p = project({
+      billing: "PER_MILESTONE",
+      price: 3000,
+      milestones: [{ ...milestones[0], invoicedAt: new Date() }, milestones[1]],
+      deliverables: [
+        inMilestone("a", "m1", true, [10]),
+        inMilestone("b", "m2", true, [20]),
+      ],
+    });
+    expect(billable(p).lines.map((l) => l.title)).toEqual(["Design"]);
+  });
+
+  it("says everything is billed once all milestones are", () => {
+    const p = project({
+      billing: "PER_MILESTONE",
+      price: 3000,
+      milestones: milestones.map((m) => ({ ...m, invoicedAt: new Date() })),
+      deliverables: [inMilestone("a", "m1", true, [10])],
+    });
+    expect(billable(p).notReady).toBe("already-invoiced");
+  });
+
+  it("falls back to the old per-deliverable split on a project quoted before milestones existed", () => {
+    // Those projects have no milestone rows. Refusing to bill them at all
+    // would be worse than billing them the way they were always billed.
+    const p = project({
+      billing: "PER_MILESTONE",
+      price: 3000,
+      deliverables: [deliverable("a", true, [10]), deliverable("b", false, [20])],
+    });
+    const entry = billable(p);
+    expect(entry.lines).toHaveLength(1);
+    expect(entry.lines[0].deliverableId).toBe("a");
+  });
+});

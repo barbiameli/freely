@@ -79,22 +79,9 @@ export function detectBillingMode(signals: BillingSignals): BillingDetection {
   return { mode: "ON_COMPLETION", from: null };
 }
 
-export interface MilestoneProgress {
-  /** Which milestone the work is on, 1-based. Equals total once all are done. */
-  current: number;
-  total: number;
-}
-
-/**
- * Which milestone a project is on.
- *
- * "Milestone 3/5" means two are finished and the third is the one in hand,
- * which is what someone wants to know mid-project. Once everything is done it
- * reads 5/5 rather than 6/5.
- */
-export function milestoneProgress(deliverables: { done: boolean }[]): MilestoneProgress {
-  const total = deliverables.length;
-  if (total === 0) return { current: 0, total: 0 };
-  const done = deliverables.filter((d) => d.done).length;
-  return { current: Math.min(done + 1, total), total };
-}
+// milestoneProgress moved to lib/milestones.
+//
+// It used to count deliverables, on the assumption that one deliverable was
+// one milestone. That is wrong in the common case: a milestone groups several,
+// so a six-deliverable project agreed as three milestones read "Milestone 4 of
+// 6". The replacement counts the milestones the client actually agreed to.

@@ -1,3 +1,5 @@
+import { billableMilestones } from "@/lib/milestones";
+
 /**
  * What can be invoiced right now, and for how much.
  *
@@ -15,7 +17,18 @@ export interface QueueDeliverable {
   name: string;
   done: boolean;
   invoicedAt: Date | null;
+  /** Which milestone it belongs to, on a project billed that way. */
+  milestoneId?: string | null;
   steps: QueueStep[];
+}
+
+/** A milestone as the queue needs it: what it is worth and whether it is paid. */
+export interface QueueMilestone {
+  id: string;
+  name: string;
+  order: number;
+  amount: number;
+  invoicedAt: Date | null;
 }
 
 export interface QueueProject {
@@ -28,6 +41,15 @@ export interface QueueProject {
   billing: BillingMode;
   status: string;
   deliverables: QueueDeliverable[];
+  /**
+   * The milestones agreed on the quote, empty on a project without them.
+   *
+   * A milestone groups deliverables, so this is the unit that gets billed. It
+   * used to be the deliverable, which meant a six-deliverable project agreed as
+   * three milestones invoiced six times for a sixth each: the wrong amount, and
+   * on a day nothing had actually been completed.
+   */
+  milestones?: QueueMilestone[];
   /** Invoices already raised against this project. */
   invoiceCount: number;
 }
@@ -98,11 +120,39 @@ function round2(n: number): number {
 /**
  * What is billable on one project.
  *
- * Per milestone: every deliverable that is finished and not yet billed.
+ * Per milestone: each milestone whose deliverables are all finished, at the
+ * amount agreed on the quote. A milestone is the billable unit, not a
+ * deliverable: half a milestone is not a fraction of an invoice, it is nothing
+ * yet, because the client agreed to pay on the milestone completing.
+ *
  * On completion: the whole project, once every deliverable is done and nothing
  * has been invoiced against it yet.
+ *
+ * A project marked per-milestone with no milestones on it falls back to
+ * splitting by deliverable, which is what every project quoted before
+ * milestones existed looks like. Refusing to bill those at all would be worse
+ * than billing them the old way.
  */
 export function billable(project: QueueProject): QueueEntry {
+  if (project.billing === "PER_MILESTONE" && project.milestones?.length) {
+    const lines = billableMilestones(project.milestones, project.deliverables).map((ms) => ({
+      deliverableId: null,
+      title: ms.name,
+      hours: project.deliverables
+        .filter((d) => d.milestoneId === ms.id)
+        .reduce((sum, d) => sum + estimatedHours(d), 0),
+      amount: ms.amount,
+    }));
+
+    const anyUnbilled = project.milestones.some((ms) => !ms.invoicedAt);
+    return {
+      project,
+      lines,
+      total: round2(lines.reduce((sum, l) => sum + l.amount, 0)),
+      notReady: lines.length ? null : anyUnbilled ? "nothing-done" : "already-invoiced",
+    };
+  }
+
   if (project.billing === "PER_MILESTONE") {
     const shares = splitPrice(project);
     const lines = project.deliverables

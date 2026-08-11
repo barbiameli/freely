@@ -35,7 +35,7 @@ import { useT, useLocale } from "@/lib/i18n/context";
 import { ActionError } from "@/components/ui/action-error";
 import { BillingPanel } from "@/components/track/billing-panel";
 import type { BillingMode } from "@/lib/invoice-queue";
-import { milestoneProgress } from "@/lib/billing-mode";
+import { milestoneProgress, type MilestoneView } from "@/lib/milestones";
 
 interface Project {
   id: string;
@@ -171,11 +171,20 @@ export function ProjectDetail({
   project,
   projectList,
   billing,
+  milestones: quotedMilestones = [],
   invoiceCount,
 }: {
   project: Project;
   projectList: ProjectSummary[];
   billing: BillingMode;
+  /**
+   * The milestones agreed on the quote, in order.
+   *
+   * Empty on a project billed on completion, and on anything quoted before
+   * milestones existed. Read-only here: the split is part of what the client
+   * agreed to, so the tracker shows it rather than offering to rearrange it.
+   */
+  milestones?: MilestoneView[];
   /** Invoices already raised against this project. */
   invoiceCount: number;
 }) {
@@ -198,7 +207,7 @@ export function ProjectDetail({
     project.deliverables.find((d) => !d.done)?.id ?? project.deliverables[0]?.id ?? null
   );
 
-  const milestones = milestoneProgress(project.deliverables);
+  const milestones = milestoneProgress(quotedMilestones, project.deliverables);
   const health = toHealth(project);
   const completion = projectCompletion(health);
   const currentPace = pace(health);
@@ -402,6 +411,51 @@ export function ProjectDetail({
           <Label>{t.track.deliverables}</Label>
           {project.deliverables.length === 0 ? (
             <div className="text-text-muted text-small mt-1">{t.track.noDeliverables}</div>
+          ) : quotedMilestones.length > 0 ? (
+            /* Grouped under the milestone they were quoted in, so the list on
+               screen matches the document the client signed. Read-only: the
+               grouping is part of what was agreed, so there is nothing to drag
+               and nothing to pick. */
+            <div className="mt-1 flex flex-col gap-1">
+              {quotedMilestones.map((ms) => {
+                const inIt = project.deliverables.filter((d) => d.milestoneId === ms.id);
+                if (inIt.length === 0) return null;
+                const doneCount = inIt.filter((d) => d.done).length;
+                const complete = doneCount === inIt.length;
+
+                return (
+                  <div key={ms.id} className="border-t border-line first:border-t-0 pt-3 first:pt-0">
+                    <div className="flex items-baseline justify-between gap-3 mb-1">
+                      <div className="flex items-baseline gap-2 min-w-0">
+                        <span
+                          className={`font-body font-bold text-caption uppercase tracking-wide ${
+                            ms.invoicedAt ? "text-text-muted" : complete ? "text-success" : "text-slate"
+                          }`}
+                        >
+                          {ms.name}
+                        </span>
+                        <span className="text-caption text-text-muted tabular-nums">
+                          {doneCount}/{inIt.length}
+                        </span>
+                      </div>
+                      <span className="font-body font-semibold text-caption text-ink tabular-nums shrink-0">
+                        {currencySymbol(project.currency)}
+                        {ms.amount.toLocaleString()}
+                      </span>
+                    </div>
+                    {inIt.map((d) => (
+                      <DeliverableItem
+                        key={d.id}
+                        deliverable={d}
+                        projectId={project.id}
+                        expanded={openId === d.id}
+                        onToggleExpanded={() => setOpenId(openId === d.id ? null : d.id)}
+                      />
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
           ) : (
             <div className="mt-1">
               {project.deliverables.map((d) => (

@@ -124,6 +124,17 @@ export const en = {
     experienceNote: "Done this kind of work before?",
 
     addSections: "Add sections",
+    milestonesTitle: "Bill this in milestones",
+    milestonesHint: "A milestone groups several deliverables and gets invoiced when they are all done.",
+    milestonesHowMany: "How many",
+    milestonesDecideForMe: "Work it out from the project",
+    milestonesWhatGoesWhere: "What goes in which one?",
+    milestonesNotesPlaceholder: "e.g. research and the audit first, then all the design, then build and handover",
+    milestonesNotesHint: "Left blank, this gets worked out from the deliverables.",
+    milestonesSection: "Milestones",
+    milestoneOf: "Milestone {current} of {total}",
+    milestoneCovers: "{count} deliverables",
+    milestoneCoversOne: "1 deliverable",
     addSectionsHint:
       "Every quote covers the scope, deliverables and the price. Add anything else this one needs. Where a section asks a question, answering is optional: left blank, it gets worked out from the brief and your past quotes.",
     availabilityPrompt:

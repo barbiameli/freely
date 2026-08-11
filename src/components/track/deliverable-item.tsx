@@ -42,6 +42,8 @@ export interface DeliverableView {
   brokenDown: boolean;
   /** When this milestone was billed, on a per-milestone project. */
   invoicedAt: string | null;
+  /** Which milestone covers it, null when the project has none. */
+  milestoneId?: string | null;
   steps: StepView[];
   flags: FlagView[];
 }

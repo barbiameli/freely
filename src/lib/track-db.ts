@@ -43,6 +43,8 @@ export interface DeliverableRow {
   summary: string | null;
   brokenDownAt: Date | null;
   invoicedAt: Date | null;
+  /** Which milestone covers it, null on a project not billed that way. */
+  milestoneId: string | null;
 }
 
 /** A deliverable with everything hanging off it, which is how Track reads
@@ -96,10 +98,33 @@ type DeliverableUpdate = Partial<
   Pick<DeliverableRow, "name" | "done" | "order" | "dueAt" | "summary" | "brokenDownAt">
 >;
 
+/**
+ * A milestone: a billable chunk grouping deliverables.
+ *
+ * Through the same contained cast as steps and flags, for the same reason: the
+ * generated client in this environment predates the table.
+ */
+export interface MilestoneRow {
+  id: string;
+  projectId: string;
+  name: string;
+  order: number;
+  amount: number;
+  invoicedAt: Date | null;
+}
+type MilestoneCreate = {
+  projectId: string;
+  name: string;
+  order?: number;
+  amount?: number;
+};
+type MilestoneUpdate = Partial<Pick<MilestoneRow, "name" | "order" | "amount" | "invoicedAt">>;
+
 interface TrackClient {
   step: Delegate<StepRow, StepCreate, StepUpdate>;
   flag: Delegate<FlagRow, FlagCreate, FlagUpdate>;
   deliverable: Delegate<DeliverableWithDetail, DeliverableCreate, DeliverableUpdate>;
+  milestone: Delegate<MilestoneRow, MilestoneCreate, MilestoneUpdate>;
 }
 
 const client = prisma as unknown as TrackClient;
@@ -107,6 +132,7 @@ const client = prisma as unknown as TrackClient;
 export const stepDb = client.step;
 export const flagDb = client.flag;
 export const deliverableDb = client.deliverable;
+export const milestoneDb = client.milestone;
 
 /** Project's two new date columns, which the generated client also predates. */
 export interface ProjectSchedule {

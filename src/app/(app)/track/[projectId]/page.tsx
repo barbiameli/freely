@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
-import { deliverableDb, projectSchedule } from "@/lib/track-db";
+import { deliverableDb, milestoneDb, projectSchedule } from "@/lib/track-db";
 import { invoiceDb } from "@/lib/invoice-db";
 import { detectBillingMode } from "@/lib/billing-mode";
 import { ProjectDetail } from "./project-detail";
@@ -39,6 +39,13 @@ export default async function ProjectPage({ params }: { params: { projectId: str
     },
   });
 
+  // The milestones agreed on the quote, if any. Through the cast client for
+  // the same reason the deliverables are.
+  const milestones = await milestoneDb.findMany({
+    where: { projectId: project.id },
+    orderBy: { order: "asc" },
+  });
+
   const schedule = projectSchedule(project);
 
   // Needed to tell an unbilled project from one already through, which is what
@@ -59,7 +66,17 @@ export default async function ProjectPage({ params }: { params: { projectId: str
   return (
     <ProjectDetail
       invoiceCount={invoiceCount}
-      billing={detected.mode}
+      // A project with milestones bills per milestone by definition, so that
+      // wins over reading the payment terms. Detection is the fallback for
+      // everything quoted before milestones existed.
+      billing={milestones.length ? "PER_MILESTONE" : detected.mode}
+      milestones={milestones.map((ms) => ({
+        id: ms.id,
+        name: ms.name,
+        order: ms.order,
+        amount: ms.amount,
+        invoicedAt: ms.invoicedAt ? ms.invoicedAt.toISOString() : null,
+      }))}
       project={{
         id: project.id,
         title: project.title,
@@ -80,6 +97,7 @@ export default async function ProjectPage({ params }: { params: { projectId: str
           summary: d.summary,
           brokenDown: Boolean(d.brokenDownAt),
           invoicedAt: d.invoicedAt?.toISOString() ?? null,
+          milestoneId: d.milestoneId ?? null,
           steps: (d.steps ?? []).map((s) => ({
             id: s.id,
             name: s.name,

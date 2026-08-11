@@ -1034,6 +1034,81 @@ export function QuoteWizard({
             )}
           </Card>
 
+          {/* How this bills. Above the sections list because it changes the
+              shape of the quote rather than adding a paragraph to it, and
+              because the client agrees to the split when they agree to the
+              quote: it cannot be decided later in the tracker. */}
+          <Card>
+            <FieldHeading>{t.quote.milestonesTitle}</FieldHeading>
+            <p className="text-meta text-slate mb-3 leading-relaxed">{t.quote.milestonesHint}</p>
+
+            <button
+              type="button"
+              onClick={() => setDraft((d) => ({ ...d, useMilestones: !d.useMilestones }))}
+              className={`flex items-center gap-3 text-left rounded-lg px-3.5 py-3 cursor-pointer border w-full ${
+                draft.useMilestones ? "border-violet bg-violet-tint" : "border-line bg-paper"
+              }`}
+            >
+              <span
+                className={`w-4 h-4 rounded-[5px] shrink-0 flex items-center justify-center ${
+                  draft.useMilestones ? "bg-violet" : "bg-white border border-line"
+                }`}
+              >
+                {draft.useMilestones && <Check size={11} className="text-white" />}
+              </span>
+              <span className="font-body font-semibold text-small text-ink">
+                {t.quote.milestonesTitle}
+              </span>
+            </button>
+
+            {draft.useMilestones && (
+              <div className="mt-3.5 flex flex-col gap-3.5">
+                <div>
+                  <SubLabel>{t.quote.milestonesHowMany}</SubLabel>
+                  {/* "Work it out" first and selected by default. The natural
+                      number of chunks is a property of the work, and someone
+                      picking a number before seeing the deliverables is
+                      guessing at their own project. */}
+                  <div className="flex flex-wrap gap-1.5">
+                    <Chip
+                      active={!draft.milestoneCount}
+                      onClick={() => setDraft((d) => ({ ...d, milestoneCount: undefined }))}
+                    >
+                      {t.quote.milestonesDecideForMe}
+                    </Chip>
+                    {[2, 3, 4, 5].map((n) => (
+                      <Chip
+                        key={n}
+                        active={draft.milestoneCount === n}
+                        onClick={() => setDraft((d) => ({ ...d, milestoneCount: n }))}
+                      >
+                        {String(n)}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <SubLabel>{t.quote.milestonesWhatGoesWhere}</SubLabel>
+                  {/* Free text rather than a picker. This is a sentence people
+                      already know how to say, and the deliverables do not exist
+                      yet to be dragged around: they are written by the same
+                      generation this feeds. */}
+                  <textarea
+                    value={draft.milestoneNotes ?? ""}
+                    onChange={(e) => setDraft((d) => ({ ...d, milestoneNotes: e.target.value }))}
+                    rows={2}
+                    placeholder={t.quote.milestonesNotesPlaceholder}
+                    className="w-full font-body text-small text-ink leading-relaxed bg-paper border border-line rounded-lg px-3 py-2.5 outline-none focus:border-violet"
+                  />
+                  <p className="text-caption text-text-muted mt-1 mb-0">
+                    {t.quote.milestonesNotesHint}
+                  </p>
+                </div>
+              </div>
+            )}
+          </Card>
+
           <Card>
             <FieldHeading>{t.quote.addSections}</FieldHeading>
             <p className="text-meta text-slate mb-3 leading-relaxed">

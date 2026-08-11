@@ -27,7 +27,18 @@ export async function createProjectFromBrief(
   const brief = await prisma.brief.findUnique({ where: { id: briefId } });
   if (!brief) throw new Error("Brief not found.");
 
-  const deliverables = (brief.deliverables as string[]).map((name, order) => ({ name, order }));
+  const names = brief.deliverables as string[];
+  const deliverables = names.map((name, order) => ({ name, order }));
+
+  // The milestones the client agreed to, stored on the quote when it was
+  // generated. Read back rather than recomputed: this is what was signed, and
+  // working it out again from the deliverables could produce a different split
+  // from the one on the document.
+  const settings = (brief.settings ?? {}) as {
+    useMilestones?: boolean;
+    milestones?: { name: string; deliverableIndexes: number[]; amount: number }[];
+  };
+  const quoted = settings.useMilestones ? settings.milestones ?? [] : [];
 
   const project = await prisma.$transaction(async (tx) => {
     const created = await tx.project.create({
@@ -40,9 +51,43 @@ export async function createProjectFromBrief(
         hours: brief.hours,
         timeline: brief.timeline,
         currency: brief.currency,
+        // A project with milestones bills per milestone, by definition. This
+        // is the one place the two facts are set together, so they cannot
+        // disagree.
+        ...(quoted.length ? { billing: "PER_MILESTONE" as const } : {}),
         deliverables: { create: deliverables },
       },
     });
+
+    // Milestones after the deliverables exist, so each can be pointed at the
+    // rows it covers. The quote stored positions in the deliverables list, and
+    // those rows were created from the same list in the same order.
+    if (quoted.length) {
+      const rows = await tx.deliverable.findMany({
+        where: { projectId: created.id },
+        select: { id: true, order: true },
+        orderBy: { order: "asc" },
+      });
+      const byOrder = new Map(rows.map((r) => [r.order, r.id]));
+
+      // An index loop rather than .entries(): spreading or destructuring an
+      // iterator needs a newer compile target than this project uses.
+      for (let order = 0; order < quoted.length; order++) {
+        const ms = quoted[order];
+        const milestone = await tx.milestone.create({
+          data: { projectId: created.id, name: ms.name, order, amount: ms.amount },
+        });
+        const ids = ms.deliverableIndexes
+          .map((i: number) => byOrder.get(i))
+          .filter((id: string | undefined): id is string => Boolean(id));
+        if (ids.length) {
+          await tx.deliverable.updateMany({
+            where: { id: { in: ids } },
+            data: { milestoneId: milestone.id },
+          });
+        }
+      }
+    }
     await tx.diaryEntry.create({
       data: {
         projectId: created.id,
