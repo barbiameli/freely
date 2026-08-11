@@ -48,3 +48,79 @@ select:focus {
 .animate-spin-slow {
   animation: spin 1s linear infinite;
 }
+
+/* Two soft coloured clouds behind the marketing hero, drifting.
+
+   Very slow and very faint on purpose: the point is that the top of the page
+   isn't quite still, not that anything is happening. At this opacity it reads as
+   warmth behind the headline rather than as a moving object, which is the line
+   between atmosphere and distraction.
+
+   CSS keyframes rather than JavaScript, so it costs nothing to run and holds
+   its frame rate on a phone: only transform and opacity change, both of which
+   the compositor handles without touching layout. */
+@keyframes drift-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(4%, 6%, 0) scale(1.12);
+  }
+}
+@keyframes drift-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.08);
+  }
+  50% {
+    transform: translate3d(-5%, -4%, 0) scale(1);
+  }
+}
+.animate-drift-a {
+  animation: drift-a 22s ease-in-out infinite;
+}
+.animate-drift-b {
+  animation: drift-b 27s ease-in-out infinite;
+}
+
+/* One sweep of light across the headline as the page opens, then never again.
+   A shimmer that loops is a novelty; one that happens once as things arrive is
+   part of the entrance. */
+@keyframes sheen {
+  0% {
+    background-position: -140% 0;
+  }
+  100% {
+    background-position: 240% 0;
+  }
+}
+.animate-sheen {
+  background-image: linear-gradient(
+    100deg,
+    transparent 38%,
+    rgba(244, 91, 105, 0.22) 50%,
+    transparent 62%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: sheen 1.9s cubic-bezier(0.16, 0.84, 0.28, 1) 0.65s 1 both;
+}
+
+/* Nobody who asked for less motion gets any of the above. Written as one block
+   rather than per-component checks so a new decorative animation is covered by
+   default instead of only if someone remembers. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-drift-a,
+  .animate-drift-b,
+  .animate-sheen {
+    animation: none;
+  }
+  /* The sheen also loses its gradient, not just its animation. Stopping the
+     animation alone leaves background-position at its default, which parks the
+     bright part of the gradient at the right-hand edge: a coral smear down the
+     side of the preview, permanently. */
+  .animate-sheen {
+    background-image: none;
+  }
+}

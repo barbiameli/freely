@@ -55,6 +55,16 @@ const config: Config = {
       },
       boxShadow: {
         panel: "0px 20px 40px 0px rgba(0,0,0,0.05)",
+        // For a preview lifting under the cursor on the marketing page. Deeper
+        // and slightly warmer than the resting shadow, which is what makes it
+        // read as rising rather than as growing a bigger shadow.
+        lift: "0px 28px 60px -12px rgba(52,52,52,0.16)",
+      },
+      transitionTimingFunction: {
+        // One easing across the whole marketing page. Decelerating hard at the
+        // end is what separates something arriving from something sliding: a
+        // linear or symmetric ease reads as mechanical at these durations.
+        marketing: "cubic-bezier(0.16, 0.84, 0.28, 1)",
       },
     },
   },
