@@ -107,13 +107,32 @@ select:focus {
   animation: sheen 1.9s cubic-bezier(0.16, 0.84, 0.28, 1) 0.65s 1 both;
 }
 
+/* The next card sliding into a carousel.
+
+   Short and slight: it exists so that answering one question and getting
+   another does not look like the same card changing its own text under you. */
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.animate-card-in {
+  animation: card-in 0.32s cubic-bezier(0.16, 0.84, 0.28, 1) both;
+}
+
 /* Nobody who asked for less motion gets any of the above. Written as one block
    rather than per-component checks so a new decorative animation is covered by
    default instead of only if someone remembers. */
 @media (prefers-reduced-motion: reduce) {
   .animate-drift-a,
   .animate-drift-b,
-  .animate-sheen {
+  .animate-sheen,
+  .animate-card-in {
     animation: none;
   }
   /* The sheen also loses its gradient, not just its animation. Stopping the

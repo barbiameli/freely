@@ -60,6 +60,19 @@ export const en = {
     subtitleStep2: "How the finished quote looks and what it includes.",
 
     newQuote: "New quote",
+    landedTitle: "Have you landed any of these?",
+    landedHint: "Marking one as won puts it straight into Track.",
+    landedWon: "We got it",
+    landedLost: "Not this time",
+    landedClose: "Close this",
+    landedSaving: "One moment...",
+    signedTitle: "{client} signed {title}.",
+    signedBody: "It is already in Track.",
+    signedOpen: "Open the project",
+    signedDismiss: "Got it",
+    outcomeWon: "Won",
+    outcomeLost: "Lost",
+    winRate: "{percent}% of decided quotes won",
     allQuotes: "All quotes",
     // Whole sentences rather than a stitched-together count, since the plural
     // rule and the word order both change between languages.

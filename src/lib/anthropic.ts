@@ -106,6 +106,14 @@ export interface PricingHistoryEntry {
   price: number;
   hours: number;
   impliedHourlyRate: number;
+  /**
+   * Whether the client said yes.
+   *
+   * The difference between a price that worked and one that did not, which is
+   * the only thing that makes a pricing history more useful than an average.
+   * Optional so older callers and tests still compile; treated as undecided.
+   */
+  outcome?: "PENDING" | "WON" | "LOST";
 }
 
 export interface QuoteDraftInput {
@@ -237,17 +245,30 @@ function formatPricingContext(pricing?: PricingContext): string {
   return `\nContext for the research:\n${lines.join("\n")}`;
 }
 
+/**
+ * Past quotes for the prompt, marked with whether they were won.
+ *
+ * The outcome is the point. Without it the model is averaging every number
+ * this freelancer has ever typed, including the ones that lost the job, and
+ * quietly reproducing the prices that did not work.
+ */
 function formatPricingHistory(history: PricingHistoryEntry[], symbol: string): string {
   if (!history.length) return "";
+  const label = (outcome?: string) =>
+    outcome === "WON" ? " [WON]" : outcome === "LOST" ? " [turned down]" : "";
   const rows = history
     .map(
       (h) =>
         `- "${h.title}": ${symbol}${h.price.toLocaleString()} for ${h.hours}h (≈${symbol}${h.impliedHourlyRate.toFixed(
           0
-        )}/hr)`
+        )}/hr)${label(h.outcome)}`
     )
     .join("\n");
-  return `\nPricing history, past projects this freelancer has quoted, use these as the primary anchor for price and hours on similarly-scoped work:\n${rows}`;
+  const anyMarked = history.some((h) => h.outcome === "WON" || h.outcome === "LOST");
+  const guidance = anyMarked
+    ? " Weight the ones marked WON most heavily: those are prices this freelancer actually got paid. Treat the ones marked as turned down as evidence about what did not land, and do not reproduce their pricing without reason."
+    : "";
+  return `\nPricing history, past projects this freelancer has quoted, use these as the primary anchor for price and hours on similarly-scoped work.${guidance}\n${rows}`;
 }
 
 // A big uploaded PDF (a past quote, a lengthy SOW) can extract to tens of

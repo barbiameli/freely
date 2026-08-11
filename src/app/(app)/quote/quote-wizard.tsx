@@ -42,6 +42,8 @@ import {
 import { readPastedText } from "@/lib/paste-text";
 import { extractFileText } from "@/lib/extract-file";
 import { QuoteTabs, type QuoteTab } from "@/components/quote-tabs";
+import { LandedPrompt, type LandedQuote } from "@/components/landed-prompt";
+import { SignedBanner, type SignedQuote } from "@/components/signed-banner";
 import { QuoteList } from "@/components/quote-list";
 import {
   analyzeBrandGuideAction,
@@ -158,6 +160,8 @@ function TemplatePreview({ id }: { id: "classic" | "editorial" | "minimal" }) {
 
 export function QuoteWizard({
   recentBriefs,
+  landedQuotes = [],
+  signed = [],
   initialTab = "new",
   userCurrency,
   hasBrand,
@@ -166,6 +170,10 @@ export function QuoteWizard({
   savedRateUnit,
 }: {
   recentBriefs: BriefSummary[];
+  /** Quotes old enough to have an answer, for the "did you land these?" prompt. */
+  landedQuotes?: LandedQuote[];
+  /** Quotes a client has signed that the freelancer has not been told about. */
+  signed?: SignedQuote[];
   /** Which tab to open on, so /quote?tab=all lands on the list. */
   initialTab?: QuoteTab;
   userCurrency?: string | null;
@@ -471,6 +479,10 @@ export function QuoteWizard({
       {step === 0 && tab === "all" && (
         <>
           <Topbar />
+          {/* Above the tabs, because this is news and a question, and both are
+              worth reading before the list they are about. */}
+          <SignedBanner signed={signed} />
+          <LandedPrompt quotes={landedQuotes} />
           <QuoteTabs value={tab} onChange={setTab} count={recentBriefs.length} />
           <QuoteList briefs={recentBriefs} onStartNew={() => setTab("new")} />
         </>
@@ -479,6 +491,8 @@ export function QuoteWizard({
       {step === 0 && tab === "new" && (
         <>
           <Topbar />
+          <SignedBanner signed={signed} />
+          <LandedPrompt quotes={landedQuotes} />
           <QuoteTabs value={tab} onChange={setTab} count={recentBriefs.length} />
           <div>
             <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { sanitizeText } from "@/lib/sanitize-text";
 import { send, appUrl } from "@/lib/email";
 import { currencySymbol } from "@/lib/currencies";
+import { createProjectFromBrief } from "@/lib/track-from-brief";
 import type { ActionResult } from "@/actions/briefs";
 
 /**
@@ -76,8 +77,27 @@ export async function acceptQuoteAction(
       acceptedName: cleanName,
       acceptedEmail: cleanEmail,
       acceptedIp: ip,
+      // A signature is the answer to "did you land this?", so it is recorded
+      // as one. Without this the quotes list would go on asking about a job
+      // the client has already agreed to in writing.
+      outcome: "WON",
+      outcomeAt: acceptedAt,
     } as unknown as Parameters<typeof prisma.brief.update>[0]["data"],
   });
+
+  // Tracked immediately, rather than waiting for the freelancer to come back
+  // and press a button. The client has signed: the project exists whether or
+  // not anyone has opened the app, and the gap between those two things is
+  // where work was getting lost.
+  //
+  // Failure here is logged and swallowed for the same reason the email below
+  // is: the acceptance is already recorded, and a client pressing "accept"
+  // must not see an error because something on our side went wrong afterwards.
+  try {
+    await createProjectFromBrief(brief.id, brief.userId);
+  } catch (err) {
+    console.error("[acceptQuoteAction] accepted, but tracking failed", err);
+  }
 
   // Telling the freelancer. Until now the only way to find out a quote had been
   // accepted was to open it, which means a client can agree to a job and nobody
@@ -109,5 +129,7 @@ export async function acceptQuoteAction(
   }
 
   revalidatePath(`/q/${publicSlug}`);
+  revalidatePath("/track");
+  revalidatePath("/quote");
   return { ok: true, data: { acceptedAt: acceptedAt.toISOString() } };
 }
