@@ -49,30 +49,32 @@ export function Marketing({ t, locale }: { t: Dictionary; locale: Locale }) {
 }
 
 /**
- * Four things on one row, which does not fit a phone.
+ * Logo left, everything you can do right.
  *
- * It used to be the logo on the left and the switcher, sign-in link and button
- * together on the right, with flex-wrap to cope. On a 390px screen it coped by
- * dropping the switcher onto a second line under everything else, which read as
- * a layout bug.
+ * The switcher belongs with the other controls rather than beside the logo: the
+ * logo is identity, the right side is action, and a language toggle is an
+ * action.
  *
- * The switcher sits with the logo now, so each side has room, and nothing
- * wraps: the row is allowed to be tight rather than allowed to break. The
- * button says "Sign up" on a phone and "Sign up free" from 640px up, because
- * "Crear cuenta gratis" is 19 characters and it is the button that runs out of
- * room first in Spanish.
+ * That is four things on one row, which is what made this wrap on a phone: with
+ * flex-wrap it coped by dropping the switcher onto its own line underneath,
+ * which read as a bug. Two changes make it fit at 390px instead. The button
+ * says "Sign up" below 640px, because "Crear cuenta gratis" is 19 characters
+ * and it is the button that runs out of room first in Spanish. And the Log in
+ * link is hidden on a phone, where it is the least necessary of the four: the
+ * hero underneath has its own Log in button, so nothing is lost.
+ *
+ * Nothing wraps now. The row is allowed to be tight rather than allowed to
+ * break.
  */
 function Header({ t }: { t: Dictionary }) {
   return (
     <header className="max-w-5xl mx-auto flex items-center justify-between gap-3 px-5 sm:px-6 py-5 sm:py-6">
-      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-        <Link href="/" aria-label={t.marketing.home} className="shrink-0">
-          <FreelyLogo size="sm" />
-        </Link>
-        <LanguageSwitcher compact />
-      </div>
+      <Link href="/" aria-label={t.marketing.home} className="shrink-0">
+        <FreelyLogo size="sm" />
+      </Link>
       <nav className="flex items-center gap-3 sm:gap-4 shrink-0">
-        <Link href="/signin" className="font-body font-semibold text-sm text-slate">
+        <LanguageSwitcher compact />
+        <Link href="/signin" className="hidden sm:inline font-body font-semibold text-sm text-slate">
           {t.marketing.logIn}
         </Link>
         <Link
