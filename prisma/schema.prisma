@@ -208,19 +208,19 @@ model Brief {
   // freelance engagements actually run on. Deliberately not a full e-sign
   // provider: that needs a paid account and an envelope lifecycle, and can
   // be layered on later without changing these fields.
-  // Whether this one landed. Set either by answering the prompt on the quotes
-  // list, or automatically when a client signs the quote on its public page.
-  outcome        QuoteOutcome @default(PENDING)
-  outcomeAt      DateTime?
-  // When the freelancer was shown that this quote had been signed. Null while
-  // an acceptance is still unseen, which is what the banner keys off.
-  acceptanceSeenAt DateTime?
-
   acceptedAt     DateTime?
   acceptedName   String?
   acceptedEmail  String?
   // Kept only as evidence of who accepted, alongside the timestamp.
   acceptedIp     String?
+
+  // Whether this one landed. Set either by answering the prompt on the quotes
+  // list, or automatically when a client signs the quote on its public page.
+  outcome          QuoteOutcome @default(PENDING)
+  outcomeAt        DateTime?
+  // When the freelancer was shown that this quote had been signed. Null while
+  // an acceptance is still unseen, which is what the banner keys off.
+  acceptanceSeenAt DateTime?
   // Which color/logo treatment to render with: "freely" (Freely's own look),
   // "own" (this freelancer's saved brand colors/logo from Memory), or a
   // built-in neutral preset not tied to either ("mono-light"/"mono-dark").
@@ -256,18 +256,16 @@ enum BriefStatus {
   TRACKED
 }
 
-/**
- * Whether the work was actually won.
- *
- * Separate from BriefStatus, which is about where the quote is in Freely
- * (drafted, sent to Track). This is about what happened in the world, and the
- * two genuinely differ: a quote can be tracked and then fall through, and a job
- * can be won weeks before anyone remembers to track it.
- *
- * PENDING is the honest default. It means nobody has said, not that it was
- * lost, which matters because the win rate is only meaningful against quotes
- * that have actually been decided.
- */
+// Whether the work was actually won.
+//
+// Separate from BriefStatus, which is about where the quote is in Freely
+// (drafted, sent to Track). This is about what happened in the world, and the
+// two genuinely differ: a quote can be tracked and then fall through, and a job
+// can be won weeks before anyone remembers to track it.
+//
+// PENDING is the honest default. It means nobody has said, not that it was
+// lost, which matters because the win rate is only meaningful against quotes
+// that have actually been decided.
 enum QuoteOutcome {
   PENDING
   WON
