@@ -261,6 +261,7 @@ export const es: Dictionary = {
   },
 
   memory: {
+    followInterface: "El mismo que la app",
     title: "Memoria",
     instructions: "Instrucciones",
     tone: "Tono",

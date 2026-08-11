@@ -33,6 +33,35 @@ export function stripLongDashes(text: string): string {
   );
 }
 
+/**
+ * Drops the "X, not Y" tail the model keeps reaching for.
+ *
+ * It writes "these are best used as visual reference only, not as a foundation
+ * to build on" and "this needs to be addressed in the design phase, not after".
+ * The first half already says it. The tail argues with a position nobody took,
+ * which reads as defensive in a document a client is reading.
+ *
+ * Only the trailing clause goes, and only where the sentence still stands
+ * without it: "visual reference only" carries the point on its own, as does
+ * "in the design phase".
+ *
+ * Deliberately not applied to terms, payment terms or the revisions policy. In
+ * those, "due on delivery, not on acceptance" is the whole point of the
+ * sentence, and cutting it would quietly change what the freelancer is
+ * agreeing to. Use this on prose, and let the prompt handle the rest.
+ */
+export function stripContrastive(text: string): string {
+  return (
+    text
+      // ", not as a foundation to build on." / ", rather than after."
+      .replace(/,\s+(?:not|rather than)\s+[^.;!?]*(?=[.;!?]|$)/gi, "")
+      // A sentence that was only the contrast leaves a dangling space.
+      .replace(/\s+([.;!?])/g, "$1")
+      .replace(/\s{2,}/g, " ")
+      .trim()
+  );
+}
+
 export function sanitizeText(text: string): string {
   // \x00-\x08, \x0B-\x0C, \x0E-\x1F: the C0 controls, minus tab (\x09),
   // newline (\x0A) and carriage return (\x0D).

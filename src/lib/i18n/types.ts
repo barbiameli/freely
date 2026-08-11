@@ -25,6 +25,25 @@ export const LOCALE_NAMES: Record<Locale, string> = {
 export const LOCALE_COOKIE = "locale";
 export const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
+/**
+ * The language a client-facing quote gets written in.
+ *
+ * Asked once in Memory rather than on every quote. It used to be a pair of
+ * chips in the wizard, which put a decision that changes maybe once a year in
+ * front of someone every single time they quoted.
+ *
+ * Unset means follow the interface. That is the right default: someone who
+ * works and sells in the same language never has to think about it, and
+ * changing the interface language moves the quotes with it rather than leaving
+ * them behind on whatever was guessed at signup.
+ */
+export function resolveQuoteLocale(user: {
+  locale?: string | null;
+  quoteLocale?: string | null;
+}): Locale {
+  return parseLocale(user.quoteLocale ?? user.locale);
+}
+
 export function parseLocale(value?: string | null): Locale {
   return value === "es" ? "es" : "en";
 }

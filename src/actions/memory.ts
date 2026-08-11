@@ -12,6 +12,7 @@ import {
 } from "@/lib/anthropic";
 import { extractDominantColor } from "@/lib/png-color";
 import { sanitizeText } from "@/lib/sanitize-text";
+import { parseLocale } from "@/lib/i18n";
 import type { ActionResult } from "@/actions/briefs";
 
 export async function updateMemoryInstructionsAction(
@@ -335,6 +336,33 @@ export async function deleteMemoryAssetAction(assetId: string): Promise<ActionRe
  * both tedious and a chance to fat-finger a digit. Still editable per quote:
  * one job is not always priced like the last.
  */
+/**
+ * The language client-facing quotes get written in.
+ *
+ * `null` means follow the interface language, which is why this takes a
+ * nullable value rather than defaulting to one: an account that has never
+ * touched this should move with the interface rather than sit on whatever was
+ * guessed from the browser at signup.
+ */
+export async function updateQuoteLocaleAction(
+  locale: string | null
+): Promise<ActionResult<undefined>> {
+  const user = await requireFullUser();
+  const value = locale === null ? null : parseLocale(locale);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    // The generated client in this environment predates this column; see
+    // lib/track-db for the same situation.
+    data: { quoteLocale: value } as unknown as Parameters<
+      typeof prisma.user.update
+    >[0]["data"],
+  });
+  revalidatePath("/memory");
+  revalidatePath("/quote");
+  return { ok: true, data: undefined };
+}
+
 export async function updateDefaultRateAction(patch: {
   rate: number;
   unit: "HOUR" | "DAY";

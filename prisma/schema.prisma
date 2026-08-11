@@ -85,6 +85,13 @@ model User {
   // "en" or "es". Guessed from the browser on first sign-in, then whatever
   // they choose, saved on the account so it follows them between devices.
   locale             String   @default("en")
+  // The language client-facing quotes are written in, which is a different
+  // question from the language of the interface: a Spanish freelancer often
+  // has English clients and the reverse. Nullable rather than defaulted, so
+  // "not chosen" is distinguishable from "chosen to match the interface", and
+  // an untouched account follows the interface instead of being stuck on a
+  // guess made at signup.
+  quoteLocale        String?
   defaultRate        Float?
   defaultRateUnit    String   @default("HOUR")
 

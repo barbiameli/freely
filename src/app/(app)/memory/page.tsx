@@ -31,6 +31,7 @@ export default async function MemoryPage() {
       brandHeadingFont={user.brandHeadingFont}
       brandBodyFont={user.brandBodyFont}
       currency={user.currency}
+      quoteLocale={(user as unknown as { quoteLocale: string | null }).quoteLocale ?? null}
       files={assets
         .filter((a) => a.type === "FILE")
         .map((a) => ({ id: a.id, name: a.name, createdAt: a.createdAt.toISOString() }))}

@@ -262,6 +262,7 @@ export const en = {
   },
 
   memory: {
+    followInterface: "Same as the app",
     title: "Memory",
     instructions: "Instructions",
     tone: "Tone",

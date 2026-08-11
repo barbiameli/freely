@@ -868,24 +868,9 @@ export function QuoteWizard({
               {t.quote.outputHint}
             </p>
 
-            {/* Separate from the interface language: a Spanish freelancer
-                often has English clients, and the reverse. */}
-            <div className="text-caption font-bold text-slate uppercase tracking-wide mb-2">
-              {t.quote.quoteLanguage}
-            </div>
-            <div className="flex gap-1.5 mb-1.5">
-              {LOCALES.map((code) => (
-                <Chip
-                  key={code}
-                  active={(draft.language ?? locale) === code}
-                  onClick={() => setDraft((d) => ({ ...d, language: code as Locale }))}
-                >
-                  {LOCALE_NAMES[code]}
-                </Chip>
-              ))}
-            </div>
-            <p className="text-caption text-text-muted mb-5">{t.quote.quoteLanguageHint}</p>
-
+            {/* The quote's language used to be two chips here. It is a Memory
+                preference now: it changes about once a year, so asking on every
+                quote was a decision presented far more often than it is made. */}
             <div className="text-caption font-bold text-slate uppercase tracking-wide mb-2">
               {t.quote.pageFormat}
             </div>

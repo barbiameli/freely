@@ -18,6 +18,7 @@ import {
   generatePersonaAction,
   updatePersonaAction,
   updateBrandingAction,
+  updateQuoteLocaleAction,
   uploadBrandLogoAction,
   analyzeBrandGuideAction,
   analyzeBrandGuideImageAction,
@@ -28,6 +29,7 @@ import { industryLabel } from "@/lib/industries";
 import { MAX_DOCUMENT_UPLOAD_BYTES, documentTooLargeError } from "@/lib/upload-limits";
 import { extractFileText } from "@/lib/extract-file";
 import { CURRENCIES } from "@/lib/currencies";
+import { LOCALES, LOCALE_NAMES } from "@/lib/i18n";
 import { hostnameOf, normalizeUrl } from "@/lib/links";
 import {
   type Preset,
@@ -90,6 +92,7 @@ export function MemoryView({
   brandHeadingFont,
   brandBodyFont,
   currency,
+  quoteLocale,
   files,
   images,
   links,
@@ -108,6 +111,8 @@ export function MemoryView({
   brandHeadingFont: string | null;
   brandBodyFont: string | null;
   currency: string;
+  /** null means quotes follow the interface language. */
+  quoteLocale: string | null;
   files: FileAsset[];
   images: ImageAsset[];
   links: LinkAsset[];
@@ -188,6 +193,7 @@ export function MemoryView({
             headingFont={brandHeadingFont}
             bodyFont={brandBodyFont}
             currency={currency}
+            quoteLocale={quoteLocale}
           />
         </section>
 
@@ -552,6 +558,7 @@ function BrandingCard({
   headingFont,
   bodyFont,
   currency,
+  quoteLocale,
 }: {
   primaryColor: string | null;
   accentColor: string | null;
@@ -559,6 +566,8 @@ function BrandingCard({
   headingFont: string | null;
   bodyFont: string | null;
   currency: string;
+  /** null means follow the interface language. */
+  quoteLocale: string | null;
 }) {
   const t = useT();
   const [primary, setPrimary] = useState(primaryColor ?? "#F45B69");
@@ -566,7 +575,15 @@ function BrandingCard({
   const [logo, setLogo] = useState(logoDataUrl);
   const [logoError, setLogoError] = useState("");
   const [curr, setCurr] = useState(currency);
+  const [quoteLang, setQuoteLang] = useState<string | null>(quoteLocale);
   const [pending, startTransition] = useTransition();
+
+  function saveQuoteLocale(next: string | null) {
+    setQuoteLang(next);
+    startTransition(() => {
+      void updateQuoteLocaleAction(next);
+    });
+  }
 
   const [heading, setHeading] = useState(headingFont);
   const [body, setBody] = useState(bodyFont);
@@ -757,6 +774,26 @@ function BrandingCard({
               ))}
             </select>
           </div>
+        </div>
+      </div>
+
+      {/* The quote's language lives here rather than in the wizard: it changes
+          about once a year, so asking on every quote presented the decision far
+          more often than anyone makes it. */}
+      <div className="mt-4 pt-4 border-t border-line">
+        <div className="text-caption font-semibold text-slate mb-1 uppercase tracking-wide">
+          {t.quote.quoteLanguage}
+        </div>
+        <p className="text-caption text-text-muted mt-0 mb-2">{t.quote.quoteLanguageHint}</p>
+        <div className="flex flex-wrap gap-1.5">
+          <Chip active={quoteLang === null} onClick={() => saveQuoteLocale(null)}>
+            {t.memory.followInterface}
+          </Chip>
+          {LOCALES.map((code) => (
+            <Chip key={code} active={quoteLang === code} onClick={() => saveQuoteLocale(code)}>
+              {LOCALE_NAMES[code]}
+            </Chip>
+          ))}
         </div>
       </div>
       {(heading || body) && (

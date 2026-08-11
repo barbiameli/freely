@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
-import { sanitizeText, stripLongDashes } from "@/lib/sanitize-text";
+import { sanitizeText, stripLongDashes, stripContrastive } from "@/lib/sanitize-text";
+import { resolveQuoteLocale } from "@/lib/i18n";
 import {
   generateBriefFromDraft,
   refineBrief,
@@ -59,6 +60,18 @@ function clean(text: string): string {
   return stripLongDashes(sanitizeText(text));
 }
 
+/**
+ * Cleaning for the prose fields, which additionally drops the "X, not Y" tail.
+ *
+ * Kept separate from clean() on purpose: terms, payment terms and the revisions
+ * policy go through clean() only, because in those a contrast is often the
+ * substance of the clause ("due on delivery, not on acceptance") and removing
+ * it would change what is being agreed.
+ */
+function cleanProse(text: string): string {
+  return stripContrastive(clean(text));
+}
+
 /** Pulls the optional add-on sections off the generated brief into the shape
  * stored in Brief.extras, sanitized. */
 function sanitizeExtras(generated: GeneratedBrief): BriefExtras {
@@ -101,11 +114,11 @@ function hasExtras(generated: GeneratedBrief): boolean {
  * before it's stored. */
 function sanitizeStrategy(strategy: Strategy): Strategy {
   return {
-    goal: clean(strategy.goal),
-    findings: strategy.findings.map(clean),
+    goal: cleanProse(strategy.goal),
+    findings: strategy.findings.map(cleanProse),
     aiWill: strategy.aiWill.map(clean),
     aiWillNot: strategy.aiWillNot.map(clean),
-    openQuestions: strategy.openQuestions.map(clean),
+    openQuestions: strategy.openQuestions.map(cleanProse),
   };
 }
 
@@ -132,9 +145,15 @@ async function buildPricingHistory(user: {
 
 /** Generates a new brief via Claude and stores it as a DRAFT. */
 export async function generateBriefAction(
-  draft: QuoteDraftPayload
+  draftInput: QuoteDraftPayload
 ): Promise<ActionResult<{ briefId: string }>> {
   const user = await requireFullUser();
+
+  // The quote's language is a saved preference, not a wizard field, so it is
+  // resolved here rather than trusted from the client. Overwriting draft means
+  // the prompt and the stored column cannot disagree about it.
+  const quoteLanguage = resolveQuoteLocale(user);
+  const draft: QuoteDraftPayload = { ...draftInput, language: quoteLanguage };
 
   if (!draft.sourceText.trim()) {
     return { ok: false, error: "Add some source material before generating a brief." };
@@ -194,9 +213,9 @@ export async function generateBriefAction(
         // whole insert after the slow generation had already been paid for.
         title: clean(generated.title),
         client: clean(generated.client),
-        scope: clean(generated.scope),
-        deliverables: generated.deliverables.map(clean),
-        timeline: clean(generated.timeline),
+        scope: cleanProse(generated.scope),
+        deliverables: generated.deliverables.map(cleanProse),
+        timeline: cleanProse(generated.timeline),
         // Prisma's Json? columns treat an explicit `null` specially (it wants
         // Prisma.JsonNull, not the JS literal) — so when there's no strategy
         // we just omit the field entirely (undefined) and let the column
@@ -210,7 +229,7 @@ export async function generateBriefAction(
         // the same situation.
         ...({
           rateUnit: draft.rateUnit ?? "HOUR",
-          language: draft.language ?? "en",
+          language: quoteLanguage,
         } as Record<string, string>),
         currency: draft.currency || "USD",
         expertiseLevel: draft.expertiseLevel,
