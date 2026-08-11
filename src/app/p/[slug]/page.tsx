@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { dict, fill } from "@/lib/i18n";
 import { statusLabel } from "@/lib/project-status";
-import { paragraphs } from "@/lib/rich-text";
+import { UpdateBody } from "@/components/update-body";
 import { formatLongDay } from "@/lib/schedule";
 
 export const dynamic = "force-dynamic";
@@ -173,15 +173,10 @@ export default async function PublicProjectPage({ params }: { params: { slug: st
                         <div className="text-caption text-text-muted">
                           {formatLongDay(new Date(entry.date), quoteLanguage)}
                         </div>
-                        {/* One paragraph per paragraph. Every update used to be
-                            rendered as a single block of text however it was
-                            written. */}
-                        <div className="flex flex-col gap-2 mt-1">
-                          {paragraphs(entry.body).map((para, n) => (
-                            <p key={n} className="text-body text-slate leading-relaxed m-0">
-                              {para}
-                            </p>
-                          ))}
+                        {/* Structured, not just paragraphed. A kick-off update
+                            is a week-by-week plan and now looks like one. */}
+                        <div className="mt-1">
+                          <UpdateBody text={entry.body} size="body" />
                         </div>
                       </div>
                     </article>

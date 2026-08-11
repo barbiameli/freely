@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { TimelineBar } from "@/components/track/timeline-bar";
 import { DeliverableItem, type DeliverableView } from "@/components/track/deliverable-item";
-import { FlagsPanel } from "@/components/track/flags-panel";
 import { StatRow } from "@/components/track/stat-row";
 import { ComingUp } from "@/components/track/coming-up";
 import { AutoBreakdown } from "@/components/track/auto-breakdown";
@@ -172,14 +171,11 @@ export function ProjectDetail({
   project,
   projectList,
   billing,
-  billingFrom,
   invoiceCount,
 }: {
   project: Project;
   projectList: ProjectSummary[];
   billing: BillingMode;
-  /** Which part of the quote said so, or null when nothing did. */
-  billingFrom: "paymentTerms" | "instructions" | null;
   /** Invoices already raised against this project. */
   invoiceCount: number;
 }) {
@@ -196,8 +192,8 @@ export function ProjectDetail({
   const [deleting, setDeleting] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
-  // The deliverable in focus. Everything on the right follows it, since the
-  // questions worth asking depend on which piece of work is in hand.
+  // Which deliverable is open. The questions worth raising about it now sit
+  // inside it, so this no longer drives a panel somewhere else on the page.
   const [openId, setOpenId] = useState<string | null>(
     project.deliverables.find((d) => !d.done)?.id ?? project.deliverables[0]?.id ?? null
   );
@@ -207,7 +203,6 @@ export function ProjectDetail({
   const completion = projectCompletion(health);
   const currentPace = pace(health);
   const deadlines = upcomingDeadlines(health);
-  const focused = project.deliverables.find((d) => d.id === openId) ?? null;
   const scheduled = Boolean(health.startDate && health.dueDate);
   const next = deadlines[0] ?? null;
 
@@ -322,7 +317,6 @@ export function ProjectDetail({
             figures: it belongs with "58% done" rather than at the bottom of the
             page under the deliverables. */}
         <BillingPanel
-          billingFrom={billingFrom}
           invoiceCount={invoiceCount}
           project={{
             id: project.id,
@@ -398,48 +392,47 @@ export function ProjectDetail({
 
         <ActionError error={actionError} />
 
-        <div className="flex flex-col lg:flex-row gap-5">
-          <Card className="flex-1 min-w-0">
-            <Label>{t.track.deliverables}</Label>
-            {project.deliverables.length === 0 ? (
-              <div className="text-text-muted text-small mt-1">{t.track.noDeliverables}</div>
-            ) : (
-              <div className="mt-1">
-                {project.deliverables.map((d) => (
-                  <DeliverableItem
-                    key={d.id}
-                    deliverable={d}
-                    projectId={project.id}
-                    expanded={openId === d.id}
-                    onToggleExpanded={() => setOpenId(openId === d.id ? null : d.id)}
-                  />
-                ))}
-              </div>
-            )}
-            <div className="flex gap-2 mt-3">
-              <TextField
-                value={newDeliverable}
-                onChange={setNewDeliverable}
-                placeholder={t.track.addDeliverable}
-              />
-              <Button
-                disabled={!newDeliverable.trim() || isPending}
-                onClick={() => {
-                  const value = newDeliverable;
-                  setNewDeliverable("");
-                  void run(() => addDeliverableAction(project.id, value));
-                }}
-              >
-                {t.common.add}
-              </Button>
-            </div>
-          </Card>
+        {/* Above the work rather than beside it. In a 270px rail every
+            deliverable name was truncated to 34 characters and the questions
+            were a column three words wide, on a page with a thousand pixels
+            going spare. */}
+        <ComingUp deadlines={deadlines} onSelect={setOpenId} />
 
-          <div className="w-full lg:w-[270px] lg:shrink-0 self-start flex flex-col gap-4">
-            <ComingUp deadlines={deadlines} onSelect={setOpenId} />
-            <FlagsPanel deliverable={focused} />
+        <Card>
+          <Label>{t.track.deliverables}</Label>
+          {project.deliverables.length === 0 ? (
+            <div className="text-text-muted text-small mt-1">{t.track.noDeliverables}</div>
+          ) : (
+            <div className="mt-1">
+              {project.deliverables.map((d) => (
+                <DeliverableItem
+                  key={d.id}
+                  deliverable={d}
+                  projectId={project.id}
+                  expanded={openId === d.id}
+                  onToggleExpanded={() => setOpenId(openId === d.id ? null : d.id)}
+                />
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2 mt-3">
+            <TextField
+              value={newDeliverable}
+              onChange={setNewDeliverable}
+              placeholder={t.track.addDeliverable}
+            />
+            <Button
+              disabled={!newDeliverable.trim() || isPending}
+              onClick={() => {
+                const value = newDeliverable;
+                setNewDeliverable("");
+                void run(() => addDeliverableAction(project.id, value));
+              }}
+            >
+              {t.common.add}
+            </Button>
           </div>
-        </div>
+        </Card>
 
         <Card>
           <button

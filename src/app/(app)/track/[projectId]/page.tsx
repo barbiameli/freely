@@ -60,7 +60,6 @@ export default async function ProjectPage({ params }: { params: { projectId: str
     <ProjectDetail
       invoiceCount={invoiceCount}
       billing={detected.mode}
-      billingFrom={detected.from}
       project={{
         id: project.id,
         title: project.title,

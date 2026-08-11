@@ -15,7 +15,7 @@ import { useAction } from "@/lib/use-action";
 import { addDiaryEntryAction, setPublishedAction } from "@/actions/diary";
 import { statusLabel, STATUS_TEXT } from "@/lib/project-status";
 import { formatDay } from "@/lib/schedule";
-import { paragraphs } from "@/lib/rich-text";
+import { UpdateBody } from "@/components/update-body";
 import { useT, useLocale } from "@/lib/i18n/context";
 import { fill } from "@/lib/i18n";
 
@@ -232,14 +232,10 @@ export function DiaryView({
                       <div className="text-caption text-text-muted">
                         {formatDay(new Date(entry.date), locale)}
                       </div>
-                      {/* Paragraphs rather than one block: an update written in
-                          three sentences was rendering as a wall. */}
-                      <div className="flex flex-col gap-2 mt-1">
-                        {paragraphs(entry.body).map((para, n) => (
-                          <p key={n} className="text-small text-slate leading-relaxed m-0">
-                            {para}
-                          </p>
-                        ))}
+                      {/* The same component the client's page uses, so what you
+                          write here and what they read are formatted once. */}
+                      <div className="mt-1">
+                        <UpdateBody text={entry.body} />
                       </div>
                     </div>
                   </div>

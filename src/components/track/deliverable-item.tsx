@@ -13,6 +13,9 @@ import { deliverableCompletion, shortName } from "@/lib/project-health";
 import { formatDay } from "@/lib/schedule";
 import { useAction } from "@/lib/use-action";
 import { ActionError } from "@/components/ui/action-error";
+// Not a cycle: flags-panel only takes the types from here, and a type import is
+// erased before anything runs.
+import { FlagsPanel } from "@/components/track/flags-panel";
 import { useT, useLocale } from "@/lib/i18n/context";
 
 export interface StepView {
@@ -155,12 +158,18 @@ export function DeliverableItem({
             )}
           </span>
           <span className="min-w-0 flex-1">
+            {/* The whole name. It was cut to 56 characters with an ellipsis on a
+                row that is now the width of the page, so "Site audit: review
+                live site against component librar..." was hiding two words
+                behind a truncation with a thousand pixels to spare. Clamped to
+                two lines when closed, uncapped when open, both by CSS, which
+                only truncates when there is actually no room. */}
             <span
-              className={`block font-body font-semibold text-body tracking-[-0.01em] line-clamp-2 ${
-                deliverable.done ? "text-text-muted line-through" : "text-ink"
-              }`}
+              className={`block font-body font-semibold text-body tracking-[-0.01em] ${
+                expanded ? "" : "line-clamp-2"
+              } ${deliverable.done ? "text-text-muted line-through" : "text-ink"}`}
             >
-              {shortName(deliverable.name, 56)}
+              {deliverable.name}
             </span>
           {deliverable.steps.length > 0 && (
             <div className="flex items-center gap-2 mt-1.5">
@@ -209,8 +218,14 @@ export function DeliverableItem({
 
       {expanded && (
         <div className="pb-4 pl-[30px] pr-1">
+          {/* One measure for the description, set in ch so it tracks the font
+              rather than a pixel width that was right at one column width and
+              wrong at the next. It was capped at 62ch inside a column that grew
+              past it, which is what made the text look like it was breaking
+              early for no reason. 78ch is a long line but this is a paragraph
+              read once, not a column of body copy. */}
           {deliverable.summary && !editing && (
-            <p className="text-small text-slate leading-relaxed mt-0 mb-3 max-w-[62ch]">
+            <p className="text-small text-slate leading-[1.6] mt-0 mb-3.5 max-w-[78ch]">
               {deliverable.summary}
             </p>
           )}
@@ -260,7 +275,10 @@ export function DeliverableItem({
             </button>
           ) : (
             <>
-              <div className="flex flex-col gap-0.5">
+              {/* The hours sit in a fixed column at the right rather than
+                  wherever the step text happens to end, so a column of them
+                  lines up and can be read down. */}
+              <div className="flex flex-col gap-0.5 max-w-[92ch]">
                 {deliverable.steps.map((step) => (
                   <div key={step.id} className="flex items-start gap-2.5 py-1">
                     <Checkbox
@@ -270,17 +288,15 @@ export function DeliverableItem({
                       onClick={() => run(() => toggleStepAction(step.id, !step.done))}
                     />
                     <span
-                      className={`flex-1 text-small leading-relaxed ${
+                      className={`flex-1 text-small leading-[1.6] ${
                         step.done ? "text-text-muted line-through" : "text-slate"
                       }`}
                     >
                       {step.name}
                     </span>
-                    {step.estimateHours > 0 && (
-                      <span className="text-caption text-text-muted tabular-nums shrink-0 pt-[3px]">
-                        {step.estimateHours}h
-                      </span>
-                    )}
+                    <span className="text-caption text-text-muted tabular-nums shrink-0 pt-[3px] w-10 text-right">
+                      {step.estimateHours > 0 ? `${step.estimateHours}h` : ""}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -307,6 +323,10 @@ export function DeliverableItem({
           )}
 
           <ActionError error={error} className="mt-2" />
+
+          {/* Last thing in the open deliverable, because it is the thing you act
+              on after reading the work rather than before. */}
+          {!editing && <FlagsPanel deliverable={deliverable} />}
         </div>
       )}
     </div>

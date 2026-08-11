@@ -109,6 +109,84 @@ export function paragraphs(text: string, maxChars = 320, perGroup = 2): string[]
 }
 
 /**
+ * A paragraph that begins with a stage label, split from its prose.
+ *
+ * Kick-off updates come out as "Week 1: Audit and access - you share login
+ * access to the site backend..." and the client reads the whole thing as one
+ * grey slab. The label is doing the work of a heading and should look like one,
+ * so it gets pulled out and set in bold.
+ */
+export interface LabelledBlock {
+  /** "Week 1", "Phase 2", "Semana 2-3", or empty when the block has no label. */
+  label: string;
+  /** The short lead after the label, when there is one worth setting apart. */
+  lead: string;
+  /** Everything else. */
+  body: string;
+}
+
+/**
+ * Both languages, because a Spanish quote produces Spanish updates. Anchored,
+ * capped at three words before the colon, and requiring a digit, so a sentence
+ * that happens to contain a colon is left alone.
+ */
+const STAGE_LABEL =
+  /^((?:week|weeks|phase|stage|month|sprint|day|semana|semanas|fase|etapa|mes|día|dia)\s*\d+(?:\s*(?:-|–|to|a|y|and)\s*\d+)?)\s*[:.]\s*/i;
+
+/**
+ * Splits one paragraph into label, lead and body.
+ *
+ * The lead is only taken when the text after the label reads like a name for
+ * the stage: short, no sentence-ending punctuation, and followed by more. A
+ * paragraph that is one long sentence keeps it all as body, because bolding
+ * half a sentence is worse than bolding none of it.
+ */
+export function splitLabelled(text: string): LabelledBlock {
+  const trimmed = text.trim();
+  const match = trimmed.match(STAGE_LABEL);
+  if (!match) return { label: "", lead: "", body: trimmed };
+
+  const label = match[1].trim();
+  const rest = trimmed.slice(match[0].length).trim();
+
+  const dash = rest.match(/^([^\n]{4,60}?)\s+[-–]\s+([\s\S]+)$/);
+  if (dash && !/[.!?]$/.test(dash[1])) {
+    return { label, lead: dash[1].trim(), body: dash[2].trim() };
+  }
+  return { label, lead: "", body: rest };
+}
+
+/**
+ * Puts each stage on its own line.
+ *
+ * Timelines arrive as one run of text: "...before any design work starts. Week
+ * 2-3: Checkout and mobile fixes - redesign..." Splitting that by sentence count
+ * puts a stage heading halfway down a paragraph, so the breaks are put where the
+ * stages are first.
+ *
+ * Done when rendering rather than when saving, so updates already written come
+ * out right too.
+ */
+function breakAtStages(text: string): string {
+  return text.replace(
+    /(?!^)\s+((?:week|weeks|phase|stage|month|sprint|semana|semanas|fase|etapa|mes)\s*\d+(?:\s*(?:-|–|to|a|y|and)\s*\d+)?\s*[:.])/gi,
+    "\n$1"
+  );
+}
+
+/**
+ * A whole update, as blocks ready to render.
+ *
+ * Stage breaks, then paragraphs, then labels, in one call, since every place
+ * that shows an update wants all three and doing them separately is how the
+ * diary and the client page ended up formatting the same text two different
+ * ways.
+ */
+export function updateBlocks(text: string): LabelledBlock[] {
+  return paragraphs(breakAtStages(text)).map(splitLabelled);
+}
+
+/**
  * Forces a generated title to be a title.
  *
  * The prompt asks for two to five words and the model sometimes returns the

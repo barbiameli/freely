@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { CalendarClock, X } from "lucide-react";
 import { formatDay, relativeDay } from "@/lib/schedule";
-import { shortName, type Deadline } from "@/lib/project-health";
+import type { Deadline } from "@/lib/project-health";
 import { useT, useLocale } from "@/lib/i18n/context";
 
 /**
@@ -11,8 +11,13 @@ import { useT, useLocale } from "@/lib/i18n/context";
  *
  * It used to be a card of rows that looked exactly like the deliverables list
  * right beneath it, so the page read as two lists of the same thing and the
- * dates lost their urgency. This is a tinted, bordered aside pinned to the side
- * on a wide screen: present, glanceable, and out of the way of the work.
+ * dates lost their urgency. A tinted, bordered aside instead, distinct from the
+ * cards around it.
+ *
+ * It runs across the page now rather than down a 270px rail. In the rail three
+ * deadlines were three stacked rows with every name cut to 34 characters, which
+ * is not enough to tell "Checkout flow redesign" from "Checkout flow rebuild".
+ * Across the top they are three columns with room for the whole name.
  *
  * The fade-in is deliberate and slight. Something appearing a beat after the
  * page settles draws the eye once, which is what a deadline reminder is for,
@@ -63,16 +68,21 @@ export function ComingUp({
         </button>
       </div>
 
-      <div className="flex flex-col gap-2">
-        {deadlines.slice(0, 3).map((d) => (
+      {/* Three columns on a wide screen, stacked on a phone. The divider
+          between them is a left border on all but the first, which is one rule
+          instead of a wrapper per item. */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-0">
+        {deadlines.slice(0, 3).map((d, i) => (
           <button
             key={d.deliverableId}
             type="button"
             onClick={() => onSelect(d.deliverableId)}
-            className="text-left bg-none border-none cursor-pointer p-0 group"
+            className={`text-left bg-none border-none cursor-pointer p-0 group min-w-0 ${
+              i > 0 ? "sm:border-l sm:border-line sm:pl-4" : ""
+            } ${i < 2 ? "sm:pr-4" : ""}`}
           >
-            <div className="text-small text-ink leading-snug group-hover:text-violet">
-              {shortName(d.name, 34)}
+            <div className="font-body font-semibold text-small text-ink leading-snug group-hover:text-violet">
+              {d.name}
             </div>
             <div
               className={`text-caption tabular-nums mt-0.5 ${

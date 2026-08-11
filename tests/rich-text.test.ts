@@ -4,6 +4,8 @@ import {
   paragraphs,
   tidyTitle,
   summaryRepeatsTitle,
+  splitLabelled,
+  updateBlocks,
 } from "@/lib/rich-text";
 import { toggleExampleLine } from "@/lib/quote-prompts";
 
@@ -140,6 +142,70 @@ describe("tidyTitle", () => {
 
   it("takes only the first line", () => {
     expect(tidyTitle("Research phase\nand then some other text")).toBe("Research phase");
+  });
+});
+
+describe("splitLabelled", () => {
+  it("pulls a week label off a plan paragraph", () => {
+    const { label, lead, body } = splitLabelled(
+      "Week 1: Audit and access - you share login access to the site backend and analytics, I review every step from landing page to order confirmation."
+    );
+    expect(label).toBe("Week 1");
+    expect(lead).toBe("Audit and access");
+    expect(body).toContain("you share login access");
+  });
+
+  it("handles a week range", () => {
+    const { label } = splitLabelled("Week 2-3: Checkout and mobile fixes - redesign the flow.");
+    expect(label).toBe("Week 2-3");
+  });
+
+  it("handles the Spanish stage words", () => {
+    const { label, lead } = splitLabelled(
+      "Semana 1: Auditoría y acceso - revisamos cada paso del sitio."
+    );
+    expect(label).toBe("Semana 1");
+    expect(lead).toBe("Auditoría y acceso");
+  });
+
+  it("leaves an ordinary paragraph alone", () => {
+    const text = "Kicking off the project, excited to get started.";
+    expect(splitLabelled(text)).toEqual({ label: "", lead: "", body: text });
+  });
+
+  it("does not treat an unrelated colon as a stage label", () => {
+    const text = "Note: this covers phase one only.";
+    expect(splitLabelled(text).label).toBe("");
+  });
+
+  it("keeps the lead in the body when it reads as a full sentence", () => {
+    const { label, lead, body } = splitLabelled(
+      "Week 4: This covers the whole visual refresh across every page in the app."
+    );
+    expect(label).toBe("Week 4");
+    expect(lead).toBe("");
+    expect(body).toContain("visual refresh");
+  });
+});
+
+describe("updateBlocks", () => {
+  it("splits a run-on kick-off update into one block per stage", () => {
+    const text =
+      "Kicking off E-commerce UX Overhaul, excited to get started. Here's what's ahead: " +
+      "Week 1: Audit and access - you share login access to the site backend and analytics, I review every step from landing page to order confirmation, map where people drop off and why, and deliver the audit report for your sign-off before any design work starts. " +
+      "Week 2-3: Checkout and mobile fixes - redesign the checkout flow with early delivery cost visibility, simplify the cart-to-payment path, and rebuild the mobile layouts for home, product, and cart pages. Needs your feedback on the checkout direction before visuals are finalised.";
+    const blocks = updateBlocks(text);
+    expect(blocks.length).toBeGreaterThanOrEqual(3);
+    expect(blocks[0].label).toBe("");
+    expect(blocks[1].label).toBe("Week 1");
+    expect(blocks[1].lead).toBe("Audit and access");
+    expect(blocks[2].label).toBe("Week 2-3");
+    expect(blocks[2].lead).toBe("Checkout and mobile fixes");
+  });
+
+  it("still works on a plain update with no stages", () => {
+    const blocks = updateBlocks("Checkout flow redesigned, ready for your review.");
+    expect(blocks).toEqual([{ label: "", lead: "", body: "Checkout flow redesigned, ready for your review." }]);
   });
 });
 

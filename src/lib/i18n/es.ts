@@ -300,9 +300,6 @@ export const es: Dictionary = {
   },
 
   invoices: {
-    fromPaymentTerms: "Según las condiciones de pago del presupuesto.",
-    fromInstructions: "Según cómo pediste que se hiciera el presupuesto.",
-    fromDefault: "En el presupuesto no se decía otra cosa.",
     readyToBill: "{count} listos para facturar",
     allBilled: "Ya está facturado todo este proyecto.",
     from: "De",
@@ -319,7 +316,7 @@ export const es: Dictionary = {
     deliverablesDone: "{done} de {total} hechos",
     invoiceIt: "Facturar esto",
     markFinished: "Marcar terminado",
-    finishToInvoice: "Se factura de una vez al terminar el proyecto. Márcalo terminado para facturar.",
+    finishToInvoice: "Márcalo terminado para facturar.",
     billing: "Facturación",
     itemised: "Entregables y horas",
     summaryOnly: "Una línea y el total",

@@ -13,22 +13,29 @@ import { useT } from "@/lib/i18n/context";
 import { fill } from "@/lib/i18n";
 
 /**
- * How this project bills, and what is billable on it right now.
+ * What is billable on this project right now.
  *
  * The prompt is a standing panel rather than something that appears when a
  * deliverable is ticked. A prompt at the moment of ticking is easy to miss and
  * gone if you do: you tick three things in a row, dismiss the third, and the
  * money is invisible again. This stays until the work is billed, which is the
  * behaviour that actually stops an invoice being forgotten.
+ *
+ * It says as little as it can. On a project part-way through with nothing
+ * billable yet it used to sit there reading "Billing / Billed on completion /
+ * Nothing on the quote said otherwise", which is a card, a heading and two
+ * lines to tell someone the default happened. It renders nothing in that state
+ * now.
+ *
+ * "Billed per milestone" survives, because that one changes what the numbers
+ * mean: it is why a £2,800 project is offering to invoice £700. "Billed on
+ * completion" does not survive, because it is what everybody assumes anyway.
  */
 export function BillingPanel({
   project,
-  billingFrom,
   invoiceCount,
 }: {
   project: QueueProject;
-  /** Which part of the quote decided how this bills. */
-  billingFrom: "paymentTerms" | "instructions" | null;
   invoiceCount: number;
 }) {
   const t = useT();
@@ -37,11 +44,17 @@ export function BillingPanel({
 
   const entry = billable({ ...project, invoiceCount });
   const ready = entry.lines.length > 0;
+  const perMilestone = project.billing === "PER_MILESTONE";
+  // Nothing to bill, nothing unusual about how it bills, and no hint worth
+  // giving. An empty card is worse than no card.
+  const worthShowing = ready || perMilestone || entry.notReady !== "nothing-done";
 
   async function invoice() {
     const created = await run(() => invoiceProjectAction(project.id), { skipRefresh: true });
     if (created) router.push(`/invoices/${created.invoiceId}`);
   }
+
+  if (!worthShowing) return null;
 
   return (
     <Card className={ready ? "border-violet border-[1.5px]" : undefined}>
@@ -50,23 +63,11 @@ export function BillingPanel({
           <div className="text-caption font-bold text-slate uppercase tracking-wide">
             {t.invoices.billing}
           </div>
-          {/* Stated, not asked. This was two chips; the answer is already in the
-              quote the client agreed to, so asking meant asking someone to
-              retype a decision they made weeks ago. The line underneath says
-              where it was read from, so a wrong reading is traceable rather
-              than mysterious. */}
-          <div className="font-body font-semibold text-body text-ink mt-1">
-            {project.billing === "PER_MILESTONE"
-              ? t.invoices.perMilestone
-              : t.invoices.onCompletion}
-          </div>
-          <div className="text-caption text-text-muted mt-0.5">
-            {billingFrom === "paymentTerms"
-              ? t.invoices.fromPaymentTerms
-              : billingFrom === "instructions"
-              ? t.invoices.fromInstructions
-              : t.invoices.fromDefault}
-          </div>
+          {perMilestone && (
+            <div className="font-body font-semibold text-body text-ink mt-1">
+              {t.invoices.perMilestone}
+            </div>
+          )}
         </div>
 
         {ready && (

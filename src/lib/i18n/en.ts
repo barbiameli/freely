@@ -301,9 +301,6 @@ export const en = {
   },
 
   invoices: {
-    fromPaymentTerms: "Read from the payment terms on the quote.",
-    fromInstructions: "Read from how you asked for this quote to be built.",
-    fromDefault: "Nothing on the quote said otherwise.",
     readyToBill: "{count} ready to bill",
     allBilled: "Everything on this project has been billed.",
     from: "From",
@@ -320,7 +317,7 @@ export const en = {
     deliverablesDone: "{done} of {total} done",
     invoiceIt: "Invoice this",
     markFinished: "Mark finished",
-    finishToInvoice: "Billed in one go when the project is finished. Mark it finished to invoice.",
+    finishToInvoice: "Mark it finished to invoice.",
     billing: "Billing",
     itemised: "Deliverables and hours",
     summaryOnly: "One line and a total",

@@ -3,12 +3,11 @@
 import { resolveFlagAction } from "@/actions/track";
 import { useAction } from "@/lib/use-action";
 import { ActionError } from "@/components/ui/action-error";
-import { shortName } from "@/lib/project-health";
 import type { DeliverableView, FlagView } from "@/components/track/deliverable-item";
 import { useT } from "@/lib/i18n/context";
 
 /**
- * Things worth raising about the deliverable in hand.
+ * Things worth raising about this deliverable.
  *
  * The first version put a card on every deliverable with a question, a
  * paragraph of reasoning and an action, which turned a sidebar into an essay
@@ -16,6 +15,12 @@ import { useT } from "@/lib/i18n/context";
  * and only real risks count, and this shows them plainly: the question, one
  * clause of why, nothing else. No panel at all when there is nothing, since an
  * empty section still costs attention.
+ *
+ * It lives inside the deliverable now rather than in a rail. In the rail it was
+ * a 270px column of eight-word lines that needed its own subtitle to say which
+ * deliverable it was even about, and it changed under you as you opened
+ * different rows. Sitting at the foot of the open one it needs no subtitle, and
+ * a question about a piece of work is next to that piece of work.
  */
 const KIND_KEY: Record<FlagView["kind"], "needsAnAnswer" | "assuming" | "worthAsking"> = {
   BLOCKER: "needsAnAnswer",
@@ -34,18 +39,17 @@ export function FlagsPanel({ deliverable }: { deliverable: DeliverableView | nul
   if (!deliverable || (open.length === 0 && answered.length === 0)) return null;
 
   return (
-    <div className="bg-white border border-line rounded-card p-4">
-      <div className="flex items-baseline justify-between gap-2 mb-3">
-        <span className="font-body font-semibold text-small text-ink">{t.track.worthRaising}</span>
-        <span className="text-caption text-text-muted truncate max-w-[45%]">
-          {shortName(deliverable.name, 24)}
-        </span>
+    <div className="bg-paper border border-line rounded-lg px-4 py-3.5 mt-4">
+      <div className="font-body font-bold text-caption text-slate uppercase tracking-wide mb-3">
+        {t.track.worthRaising}
       </div>
 
       {open.length === 0 ? (
         <p className="text-small text-text-muted m-0">{t.track.allAnswered}</p>
       ) : (
-        <div className="flex flex-col gap-3.5">
+        // Two across on a wide screen. One question per full-width row would put
+        // a six-word question on a line built for eighteen.
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
           {open.map((flag) => (
             <div
               key={flag.id}
@@ -60,7 +64,9 @@ export function FlagsPanel({ deliverable }: { deliverable: DeliverableView | nul
               >
                 {t.track[KIND_KEY[flag.kind]]}
               </div>
-              <div className="text-small text-ink leading-snug mt-1">{flag.question}</div>
+              <div className="font-body font-semibold text-small text-ink leading-snug mt-1">
+                {flag.question}
+              </div>
               {flag.reason && (
                 <div className="text-caption text-text-muted leading-snug mt-1">{flag.reason}</div>
               )}
