@@ -470,7 +470,7 @@ export const es: Dictionary = {
     heroTitle: "Presupuesta y controla tus proyectos,",
     heroTitleAccent: "sin el papeleo.",
     heroBody:
-      "Convierte el proyecto de un cliente en un presupuesto con precio, hazle seguimiento cuando lo ganas y lleva un diario que el cliente puede ver. La IA escribe el primer borrador con tus tarifas y tus trabajos anteriores.",
+      "Pega el proyecto del cliente y te sale un presupuesto con precio. Cuando lo ganas pasa a seguimiento, con un diario que el cliente puede ir viendo. El primer borrador lo escribe la IA a partir de tus tarifas y de lo que ya has hecho.",
 
     aiEyebrow: "Cómo se usa la IA",
     aiTitle: "La IA redacta. Tú decides.",
