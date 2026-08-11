@@ -90,6 +90,21 @@ export const milestoneSchema = z.object({
   name: z.string().min(1),
   /** Positions in the deliverables array, 0-based. */
   deliverableIndexes: z.array(z.number().int().nonnegative()),
+  /**
+   * What has to happen for this milestone to be finished, beyond the
+   * deliverables in it.
+   *
+   * Usually an agreement rather than an artifact: a direction signed off, a
+   * stakeholder review, a decision made. This is what actually makes a
+   * milestone a milestone. Three deliverables that could all have been done in
+   * any order is a batch; a batch that ends in "and then we agree the
+   * direction" is a milestone, because the next one cannot start without it.
+   *
+   * It also tells the client what they have to do, which is the part of a
+   * schedule freelancers most often fail to make explicit and then get delayed
+   * by.
+   */
+  gate: z.string().optional(),
   amount: z.number().nonnegative(),
 });
 export type GeneratedMilestoneShape = z.infer<typeof milestoneSchema>;
@@ -417,7 +432,19 @@ Use web search to find the going ${unitNoun(unit, promptWords)} rate, and the ty
       : "";
 
   const milestoneInstruction = draft.paymentPlan === "MILESTONE"
-    ? `\nInclude a "milestones" array. A milestone is a billable chunk of the project that groups one or more deliverables, it is NOT one deliverable renamed: a six-deliverable project is usually three or four milestones, not six. Each entry has "name" (2-5 words, what this chunk of work is), "deliverableIndexes" (0-based positions in the deliverables array you produced, listed in order) and "amount" (this milestone's share of the total price). Rules: every deliverable must appear in exactly one milestone, never two and never none. The amounts must sum to exactly the total price. Weight each amount by how much of the work it actually represents, not by dividing equally, unless the chunks genuinely are equal.${
+    ? `\nInclude a "milestones" array.
+
+A milestone is a billable chunk of the project, and it is NOT one deliverable renamed: a six-deliverable project is usually three or four milestones, not six.
+
+Decide the split by dependency, not by cutting the list into equal pieces. Ask what genuinely cannot start until something earlier is settled. Work that needs a direction agreed, a stakeholder decision, data access, or a technical choice made belongs AFTER the milestone where that gets settled, and the settling itself belongs INSIDE the earlier one. A milestone boundary is a point where the client has to do something before you can carry on, so put the boundary where that is actually true.
+
+Each entry has:
+- "name": 2-5 words for this chunk of work.
+- "deliverableIndexes": 0-based positions in the deliverables array you produced, in order.
+- "gate": what closes this milestone beyond its deliverables, when there is one. Usually an agreement rather than an artifact, phrased as a short concrete event: "Direction agreed with stakeholders", "Analytics access confirmed", "Content signed off". Omit it on a milestone that genuinely ends when the work is simply done.
+- "amount": this milestone's share of the total price.
+
+Rules: every deliverable appears in exactly one milestone, never two and never none. The amounts sum to exactly the total price. Weight each amount by how much work it represents, not by dividing equally, unless the chunks genuinely are equal.${
         draft.milestoneCount
           ? ` Use exactly ${draft.milestoneCount} milestones.`
           : " Choose the number of milestones yourself from the natural shape of the work, usually between two and four."

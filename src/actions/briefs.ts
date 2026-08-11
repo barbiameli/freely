@@ -284,6 +284,9 @@ export async function generateBriefAction(
                 // a declared interface, even a structurally identical one.
                 name: ms.name,
                 deliverableIndexes: ms.deliverableIndexes,
+                // The agreement that closes it, which is what makes the split
+                // a dependency boundary rather than an arbitrary cut.
+                ...(ms.gate ? { gate: clean(ms.gate) } : {}),
                 amount: ms.amount,
               }))
             : undefined,

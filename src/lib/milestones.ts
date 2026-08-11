@@ -15,6 +15,16 @@
 export interface GeneratedMilestone {
   name: string;
   /**
+   * What closes this milestone beyond its deliverables.
+   *
+   * Usually an agreement rather than an artifact: a direction signed off, a
+   * decision made, access granted. This is what makes a milestone a milestone
+   * rather than a batch, because it is the thing the next chunk of work cannot
+   * start without, and it is usually the client's move rather than the
+   * freelancer's.
+   */
+  gate?: string;
+  /**
    * Which deliverables it covers, by their position in the deliverables list.
    *
    * Indices rather than names: the model reliably repeats a name back with a
@@ -31,6 +41,8 @@ export interface MilestoneView {
   name: string;
   order: number;
   amount: number;
+  /** What closes it beyond the deliverables, when there is such a thing. */
+  gate?: string | null;
   invoicedAt?: Date | string | null;
 }
 

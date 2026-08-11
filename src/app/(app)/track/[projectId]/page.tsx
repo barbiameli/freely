@@ -74,6 +74,7 @@ export default async function ProjectPage({ params }: { params: { projectId: str
         id: ms.id,
         name: ms.name,
         order: ms.order,
+        gate: ms.gate,
         amount: ms.amount,
         invoicedAt: ms.invoicedAt ? ms.invoicedAt.toISOString() : null,
       }))}

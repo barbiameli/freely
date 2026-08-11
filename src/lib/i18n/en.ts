@@ -143,6 +143,7 @@ export const en = {
     milestonesNotesPlaceholder: "e.g. research and the audit first, then all the design, then build and handover",
     milestonesNotesHint: "Left blank, this gets worked out from the deliverables.",
     milestonesSection: "Milestones",
+    milestoneEndsWith: "Ends with",
     milestoneOf: "Milestone {current} of {total}",
     milestoneCovers: "{count} deliverables",
     milestoneCoversOne: "1 deliverable",

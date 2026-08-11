@@ -168,3 +168,57 @@ describe("billableMilestones", () => {
     ]);
   });
 });
+
+describe("the gate survives reconciliation", () => {
+  /**
+   * A milestone is a dependency boundary, not a bag of deliverables. What
+   * makes it one is the thing that has to be agreed before the next chunk can
+   * start, and that has to reach the quote intact: dropping it while fixing
+   * the arithmetic would leave a split whose reason had been erased.
+   */
+  it("keeps the gate when the split is already clean", () => {
+    const out = reconcileMilestones(
+      [
+        { name: "Discovery", deliverableIndexes: [0, 1], gate: "Direction agreed", amount: 1000 },
+        { name: "Design", deliverableIndexes: [2], amount: 1000 },
+      ],
+      3,
+      2000
+    );
+    expect(out[0].gate).toBe("Direction agreed");
+    expect(out[1].gate).toBeUndefined();
+  });
+
+  it("keeps it while dropping a duplicated deliverable", () => {
+    const out = reconcileMilestones(
+      [
+        { name: "A", deliverableIndexes: [0, 1], gate: "Stakeholders sign off", amount: 500 },
+        { name: "B", deliverableIndexes: [1, 2], gate: "Content approved", amount: 500 },
+      ],
+      3,
+      1000
+    );
+    expect(out.map((m) => m.gate)).toEqual(["Stakeholders sign off", "Content approved"]);
+  });
+
+  it("keeps it while absorbing a deliverable the model forgot", () => {
+    const out = reconcileMilestones(
+      [{ name: "Only one", deliverableIndexes: [0], gate: "Access confirmed", amount: 800 }],
+      3,
+      800
+    );
+    expect(out[0].gate).toBe("Access confirmed");
+    expect(out[0].deliverableIndexes).toEqual([0, 1, 2]);
+  });
+
+  it("keeps it through rebalancing the amounts", () => {
+    const out = balanceAmounts(
+      [
+        { name: "A", deliverableIndexes: [0], gate: "Kick-off held", amount: 0 },
+        { name: "B", deliverableIndexes: [1], amount: 0 },
+      ],
+      100
+    );
+    expect(out[0].gate).toBe("Kick-off held");
+  });
+});

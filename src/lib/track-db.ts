@@ -109,6 +109,8 @@ export interface MilestoneRow {
   projectId: string;
   name: string;
   order: number;
+  /** What closes it beyond the deliverables, when there is such a thing. */
+  gate: string | null;
   amount: number;
   invoicedAt: Date | null;
 }
@@ -116,9 +118,12 @@ type MilestoneCreate = {
   projectId: string;
   name: string;
   order?: number;
+  gate?: string | null;
   amount?: number;
 };
-type MilestoneUpdate = Partial<Pick<MilestoneRow, "name" | "order" | "amount" | "invoicedAt">>;
+type MilestoneUpdate = Partial<
+  Pick<MilestoneRow, "name" | "order" | "gate" | "amount" | "invoicedAt">
+>;
 
 interface TrackClient {
   step: Delegate<StepRow, StepCreate, StepUpdate>;

@@ -56,7 +56,14 @@ export default async function BriefPage({ params }: { params: { briefId: string 
         milestones:
           (brief.settings as { useMilestones?: boolean; milestones?: unknown } | null)
             ?.useMilestones
-            ? ((brief.settings as { milestones?: { name: string; deliverableIndexes: number[]; amount: number }[] })
+            ? ((brief.settings as {
+                milestones?: {
+                  name: string;
+                  deliverableIndexes: number[];
+                  gate?: string;
+                  amount: number;
+                }[];
+              })
                 .milestones ?? [])
             : [],
         accepted: acceptance.acceptedAt

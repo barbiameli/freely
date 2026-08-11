@@ -36,7 +36,12 @@ export async function createProjectFromBrief(
   // from the one on the document.
   const settings = (brief.settings ?? {}) as {
     useMilestones?: boolean;
-    milestones?: { name: string; deliverableIndexes: number[]; amount: number }[];
+    milestones?: {
+      name: string;
+      deliverableIndexes: number[];
+      gate?: string;
+      amount: number;
+    }[];
   };
   const quoted = settings.useMilestones ? settings.milestones ?? [] : [];
 
@@ -75,7 +80,15 @@ export async function createProjectFromBrief(
       for (let order = 0; order < quoted.length; order++) {
         const ms = quoted[order];
         const milestone = await tx.milestone.create({
-          data: { projectId: created.id, name: ms.name, order, amount: ms.amount },
+          data: {
+            projectId: created.id,
+            name: ms.name,
+            order,
+            amount: ms.amount,
+            // The generated client here predates this column; see lib/track-db
+            // for the same situation.
+            ...({ gate: ms.gate ?? null } as Record<string, unknown>),
+          },
         });
         const ids = ms.deliverableIndexes
           .map((i: number) => byOrder.get(i))

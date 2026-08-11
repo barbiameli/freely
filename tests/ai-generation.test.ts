@@ -339,3 +339,35 @@ describe("payment terms come from the payment choice", () => {
     expect(prompt).toContain("Never present an hourly or daily rate");
   });
 });
+
+describe("milestones are split by dependency, not by cutting the list up", () => {
+  /**
+   * The first version said "group deliverables", which invites an even chop.
+   * Some work genuinely cannot start until something is agreed, and the
+   * agreement belongs inside the earlier milestone: that is what makes the
+   * boundary a boundary rather than an arbitrary cut.
+   */
+  const prompt = buildGenerateUserPrompt({ ...draft, paymentPlan: "MILESTONE" });
+
+  it("asks the model to reason about what cannot start yet", () => {
+    expect(prompt).toContain("dependency");
+    expect(prompt).toContain("cannot start until something earlier is settled");
+  });
+
+  it("puts the settling inside the earlier milestone", () => {
+    expect(prompt).toContain("belongs INSIDE the earlier one");
+  });
+
+  it("asks for the gate, with concrete examples of what one looks like", () => {
+    expect(prompt).toContain('"gate"');
+    expect(prompt).toContain("Direction agreed with stakeholders");
+  });
+
+  it("still forbids a deliverable landing in two milestones or none", () => {
+    expect(prompt).toContain("exactly one milestone, never two and never none");
+  });
+
+  it("says a milestone is not one deliverable renamed", () => {
+    expect(prompt).toContain("NOT one deliverable renamed");
+  });
+});

@@ -87,7 +87,13 @@ interface Brief {
    * part of what the client agrees to, and changing it afterwards means
    * changing the agreement.
    */
-  milestones?: { name: string; deliverableIndexes: number[]; amount: number }[];
+  milestones?: {
+    name: string;
+    deliverableIndexes: number[];
+    /** The agreement that closes it, which is why the split falls here. */
+    gate?: string;
+    amount: number;
+  }[];
   sourceText?: string | null;
   accepted?: { name: string; email: string; at: string } | null;
   examples: Example[];
@@ -467,6 +473,15 @@ export function BriefView({
                           .filter(Boolean)
                           .join(", ")}
                       </div>
+                      {/* The gate, which is the reason the split falls here.
+                          Set apart because it is usually the client's move,
+                          and a schedule that does not say so gets blamed on
+                          the freelancer when it slips. */}
+                      {ms.gate && (
+                        <div className="text-caption text-violet mt-1 font-semibold">
+                          {t.quote.milestoneEndsWith}: {ms.gate}
+                        </div>
+                      )}
                     </div>
                     <div className="font-body font-bold text-small text-ink tabular-nums shrink-0">
                       {currencySymbol(brief.currency)}

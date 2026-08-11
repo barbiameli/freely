@@ -337,6 +337,10 @@ model Milestone {
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   name      String
   order     Int     @default(0)
+  // What closes this milestone beyond its deliverables: a direction agreed, a
+  // decision made, access granted. Usually the client's move, and usually the
+  // reason the next milestone cannot start yet.
+  gate      String?
   // This milestone's share of the project price, as quoted.
   amount    Float   @default(0)
   // When this milestone was billed. Null means it is still outstanding, which

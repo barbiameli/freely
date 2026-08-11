@@ -443,6 +443,14 @@ export function ProjectDetail({
                         {ms.amount.toLocaleString()}
                       </span>
                     </div>
+                    {/* What closes it, which is usually the client's move and
+                        the reason the next milestone cannot start yet. Worth
+                        having in front of you when chasing. */}
+                    {ms.gate && (
+                      <div className="text-caption text-violet mb-1.5">
+                        {t.quote.milestoneEndsWith}: {ms.gate}
+                      </div>
+                    )}
                     {inIt.map((d) => (
                       <DeliverableItem
                         key={d.id}

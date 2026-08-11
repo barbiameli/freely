@@ -148,6 +148,7 @@ export const es: Dictionary = {
     milestonesNotesPlaceholder: "p. ej. primero la investigación y la auditoría, luego todo el diseño, y al final desarrollo y entrega",
     milestonesNotesHint: "Si lo dejas vacío, lo deducimos de los entregables.",
     milestonesSection: "Hitos",
+    milestoneEndsWith: "Termina con",
     milestoneOf: "Hito {current} de {total}",
     milestoneCovers: "{count} entregables",
     milestoneCoversOne: "1 entregable",
