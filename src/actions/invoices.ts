@@ -7,6 +7,7 @@ import { teamScopeWhere } from "@/lib/team-scope";
 import { sanitizeText } from "@/lib/sanitize-text";
 import { invoiceDb, type InvoiceRow } from "@/lib/invoice-db";
 import type { InvoiceLineItem } from "@/lib/invoice-pdf";
+import { billable, type BillingMode } from "@/lib/invoice-queue";
 import type { ActionResult } from "@/actions/briefs";
 
 /** Invoice numbers are sequential per user, so a client sees 0001, 0002 rather
@@ -103,6 +104,7 @@ export async function createInvoiceAction(
       fromAddress: "",
       fromTagline: "",
       lineItems: seed.lineItems,
+      itemised: true,
       currency: seed.currency,
       taxRate: 0,
       notes: "Payment within 30 days of the issue date.",
@@ -116,6 +118,171 @@ export async function createInvoiceAction(
 
   revalidatePath("/invoices");
   return { ok: true, data: { invoiceId: invoice.id } };
+}
+
+/**
+ * Raises the invoice for whatever is currently billable on a project.
+ *
+ * The difference from createInvoiceAction is that this one knows the billing
+ * rules: on a per-milestone project it bills the finished, unbilled
+ * deliverables as separate lines and marks them billed in the same
+ * transaction, so the same milestone cannot go out twice. On an
+ * on-completion project it bills the project once.
+ *
+ * The line items are filled in from the work itself, which is the point: the
+ * hours come from the step estimates and the amounts from the split, so an
+ * invoice starts as a document to check rather than a form to complete.
+ */
+export async function invoiceProjectAction(
+  projectId: string
+): Promise<ActionResult<{ invoiceId: string }>> {
+  const user = await requireFullUser();
+
+  const project = await prisma.project.findFirst({
+    where: { id: projectId, ...teamScopeWhere(user) },
+    include: { brief: true, deliverables: { include: { steps: true }, orderBy: { order: "asc" } } },
+  });
+  if (!project) return { ok: false, error: "Project not found." };
+
+  const invoiceCount = await invoiceDb.count({ where: { userId: user.id, projectId: project.id } });
+
+  const entry = billable({
+    id: project.id,
+    title: project.title,
+    client: project.client,
+    price: project.price,
+    hours: project.hours,
+    currency: project.currency,
+    billing: (project as unknown as { billing: BillingMode }).billing ?? "ON_COMPLETION",
+    status: project.status,
+    invoiceCount,
+    deliverables: project.deliverables.map((d) => ({
+      id: d.id,
+      name: d.name,
+      done: d.done,
+      invoicedAt: (d as unknown as { invoicedAt: Date | null }).invoicedAt ?? null,
+      steps: d.steps.map((s) => ({ estimateHours: s.estimateHours })),
+    })),
+  });
+
+  if (!entry.lines.length) {
+    return {
+      ok: false,
+      error:
+        entry.notReady === "already-invoiced"
+          ? "Everything on this project has been invoiced."
+          : "Nothing is finished on this project yet.",
+    };
+  }
+
+  const rate = project.brief?.hourlyRate ?? null;
+  const issuedAt = new Date();
+  const dueAt = new Date(issuedAt);
+  dueAt.setDate(dueAt.getDate() + 30);
+
+  const invoice = await invoiceDb.create({
+    data: {
+      userId: user.id,
+      number: await nextInvoiceNumber(user.id),
+      issuedAt,
+      dueAt,
+      reference: project.title,
+      clientName: project.client,
+      clientCompany: "",
+      clientWebsite: "",
+      clientEmail: "",
+      fromName: user.studioName || user.name || "",
+      fromWebsite: "",
+      fromEmail: user.email,
+      fromAddress: "",
+      fromTagline: "",
+      lineItems: sanitizeLineItems(
+        entry.lines.map((line) => ({
+          title: line.title,
+          description: "",
+          rate,
+          hours: line.hours || null,
+          amount: line.amount,
+        }))
+      ),
+      itemised: entry.lines.length > 1,
+      currency: project.currency,
+      taxRate: 0,
+      notes: "Payment within 30 days of the issue date.",
+      branding: project.brief?.branding || "freely",
+      template: project.brief?.template || "classic",
+      paid: false,
+      projectId: project.id,
+      briefId: project.briefId,
+    },
+  });
+
+  // Marked billed only after the invoice exists, so a failure above leaves the
+  // milestones outstanding rather than silently swallowing them.
+  const billedIds = entry.lines.map((l) => l.deliverableId).filter((id): id is string => Boolean(id));
+  if (billedIds.length) {
+    await prisma.deliverable.updateMany({
+      where: { id: { in: billedIds } },
+      data: { invoicedAt: issuedAt } as unknown as Parameters<
+        typeof prisma.deliverable.updateMany
+      >[0]["data"],
+    });
+  }
+
+  revalidatePath("/invoices");
+  revalidatePath(`/track/${project.id}`);
+  return { ok: true, data: { invoiceId: invoice.id } };
+}
+
+/** How a project bills. Asked rather than inferred: see schema.prisma. */
+export async function setBillingModeAction(
+  projectId: string,
+  mode: BillingMode
+): Promise<ActionResult<undefined>> {
+  const user = await requireFullUser();
+  const project = await prisma.project.findFirst({
+    where: { id: projectId, ...teamScopeWhere(user) },
+    select: { id: true },
+  });
+  if (!project) return { ok: false, error: "Project not found." };
+
+  await prisma.project.update({
+    where: { id: project.id },
+    data: { billing: mode } as unknown as Parameters<typeof prisma.project.update>[0]["data"],
+  });
+  revalidatePath(`/track/${project.id}`);
+  revalidatePath("/invoices");
+  return { ok: true, data: undefined };
+}
+
+/**
+ * Marks a project finished, which is what makes an on-completion project
+ * billable. Ticks off any remaining deliverables at the same time: a project
+ * that is done cannot have unfinished work in it, and leaving them unticked
+ * would keep it out of the invoice queue by the deliverable rule.
+ */
+export async function markProjectDoneAction(
+  projectId: string
+): Promise<ActionResult<undefined>> {
+  const user = await requireFullUser();
+  const project = await prisma.project.findFirst({
+    where: { id: projectId, ...teamScopeWhere(user) },
+    select: { id: true },
+  });
+  if (!project) return { ok: false, error: "Project not found." };
+
+  await prisma.$transaction([
+    prisma.deliverable.updateMany({
+      where: { projectId: project.id, done: false },
+      data: { done: true },
+    }),
+    prisma.project.update({ where: { id: project.id }, data: { status: "DONE" } }),
+  ]);
+
+  revalidatePath("/invoices");
+  revalidatePath(`/track/${project.id}`);
+  revalidatePath("/track");
+  return { ok: true, data: undefined };
 }
 
 export type InvoicePatch = Partial<

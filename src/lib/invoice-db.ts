@@ -32,6 +32,8 @@ export interface InvoiceRow {
   fromAddress: string;
   fromTagline: string;
   lineItems: InvoiceLineItem[];
+  /** Deliverables and hours, or one line and a total. */
+  itemised: boolean;
   currency: string;
   taxRate: number;
   notes: string;
@@ -69,6 +71,7 @@ interface InvoiceDelegate {
     where: Record<string, unknown>;
     _max: { number: true };
   }): Promise<{ _max: { number: number | null } }>;
+  count(args: { where: Record<string, unknown> }): Promise<number>;
 }
 
 export const invoiceDb = (prisma as unknown as { invoice: InvoiceDelegate }).invoice;

@@ -1,104 +1,82 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import { invoiceDb } from "@/lib/invoice-db";
-import { currencySymbol } from "@/lib/currencies";
+import { invoiceQueue, type BillingMode, type QueueProject } from "@/lib/invoice-queue";
 import { Topbar } from "@/components/topbar";
-import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { NewInvoiceButton } from "./new-invoice-button";
-import { serverDict } from "@/lib/i18n/server";
+import { InvoicesView, type InvoiceRowView } from "./invoices-view";
 
 export default async function InvoicesPage() {
-  const t = await serverDict();
   const user = await requireFullUser();
 
   const [invoices, projects] = await Promise.all([
     invoiceDb.findMany({ where: { userId: user.id }, orderBy: { number: "desc" } }),
     prisma.project.findMany({
       where: teamScopeWhere(user),
-      select: { id: true, title: true, client: true },
+      include: { deliverables: { include: { steps: true }, orderBy: { order: "asc" } } },
       orderBy: { createdAt: "desc" },
     }),
   ]);
 
+  // How many invoices exist per project, so the queue can tell an unbilled
+  // project from one that has already been through.
+  const invoicedProjectIds = new Map<string, number>();
+  for (const inv of invoices) {
+    if (!inv.projectId) continue;
+    invoicedProjectIds.set(inv.projectId, (invoicedProjectIds.get(inv.projectId) ?? 0) + 1);
+  }
+
+  const queueProjects: QueueProject[] = projects.map((p) => ({
+    id: p.id,
+    title: p.title,
+    client: p.client,
+    price: p.price,
+    hours: p.hours,
+    currency: p.currency,
+    billing: ((p as unknown as { billing?: BillingMode }).billing ?? "ON_COMPLETION") as BillingMode,
+    status: p.status,
+    invoiceCount: invoicedProjectIds.get(p.id) ?? 0,
+    deliverables: p.deliverables.map((d) => ({
+      id: d.id,
+      name: d.name,
+      done: d.done,
+      invoicedAt: (d as unknown as { invoicedAt?: Date | null }).invoicedAt ?? null,
+      steps: d.steps.map((s) => ({ estimateHours: s.estimateHours })),
+    })),
+  }));
+
+  const queue = invoiceQueue(queueProjects).map((entry) => ({
+    projectId: entry.project.id,
+    title: entry.project.title,
+    client: entry.project.client,
+    currency: entry.project.currency,
+    perMilestone: entry.project.billing === "PER_MILESTONE",
+    lines: entry.lines.map((l) => ({ title: l.title, hours: l.hours, amount: l.amount })),
+    total: entry.total,
+    notReady: entry.notReady,
+    doneCount: entry.project.deliverables.filter((d) => d.done).length,
+    totalCount: entry.project.deliverables.length,
+  }));
+
+  const invoiceRows: InvoiceRowView[] = invoices.map((inv) => ({
+    id: inv.id,
+    number: inv.number,
+    clientName: inv.clientName,
+    issuedAt: inv.issuedAt.toISOString(),
+    dueAt: inv.dueAt.toISOString(),
+    total: inv.lineItems.reduce((sum, i) => sum + i.amount, 0) * (1 + inv.taxRate / 100),
+    currency: inv.currency,
+    paid: inv.paid,
+  }));
+
   return (
     <>
       <Topbar eyebrow="Invoices" />
-      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
-        <div>
-          <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">{t.invoices.title}</h1>
-          <p className="text-slate text-lead mt-2">
-            Built from a tracked project, in the same branding as its quote.
-          </p>
-        </div>
-        <NewInvoiceButton projects={projects} />
-      </div>
-
-      {invoices.length === 0 ? (
-        <Card>
-          <div className="text-slate text-body">
-            No invoices yet. Start one from a tracked project, or from scratch.
-          </div>
-        </Card>
-      ) : (
-        <div className="flex flex-col gap-2.5">
-          {invoices.map((inv) => {
-            const total = inv.lineItems.reduce((sum, i) => sum + i.amount, 0) * (1 + inv.taxRate / 100);
-            const overdue = !inv.paid && inv.dueAt.getTime() < Date.now();
-            return (
-              <Link key={inv.id} href={`/invoices/${inv.id}`} className="no-underline">
-                <Card className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 cursor-pointer">
-                  <div>
-                    <div className="flex items-center gap-2.5">
-                      <span className="font-body font-bold text-lead text-ink">
-                        #{String(inv.number).padStart(4, "0")}
-                      </span>
-                      <span className="text-body text-slate">
-                        {inv.clientName || "No client yet"}
-                      </span>
-                    </div>
-                    <div className="text-meta text-text-muted mt-1">
-                      Issued {inv.issuedAt.toLocaleDateString("en-GB")} · due{" "}
-                      {inv.dueAt.toLocaleDateString("en-GB")}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 shrink-0">
-                    <span className="font-body font-bold text-lead text-ink">
-                      {currencySymbol(inv.currency)}
-                      {total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </span>
-                    <span
-                      className={`font-body font-semibold text-caption uppercase tracking-wide rounded-full px-2.5 py-1 ${
-                        inv.paid
-                          ? "text-success bg-mint-solid"
-                          : overdue
-                          ? "text-overdue bg-coral-tint"
-                          : "text-slate bg-paper border border-line"
-                      }`}
-                    >
-                      {inv.paid ? "Paid" : overdue ? "Overdue" : "Unpaid"}
-                    </span>
-                  </div>
-                </Card>
-              </Link>
-            );
-          })}
-        </div>
-      )}
-
-      <Card>
-        <Label>{t.invoices.paymentDetails}</Label>
-        <p className="text-meta text-text-muted mt-1 mb-0">
-          Freely does not store your bank details. You add them when you download an invoice, and
-          they go into the PDF only. See the{" "}
-          <Link href="/terms" className="text-violet font-semibold">
-            terms
-          </Link>{" "}
-          for what is stored.
-        </p>
-      </Card>
+      <InvoicesView
+        invoices={invoiceRows}
+        queue={queue}
+        projects={projects.map((p) => ({ id: p.id, title: p.title, client: p.client }))}
+      />
     </>
   );
 }

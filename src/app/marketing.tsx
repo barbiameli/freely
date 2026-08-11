@@ -47,22 +47,39 @@ export function Marketing({ t, locale }: { t: Dictionary; locale: Locale }) {
   );
 }
 
+/**
+ * Four things on one row, which does not fit a phone.
+ *
+ * It used to be the logo on the left and the switcher, sign-in link and button
+ * together on the right, with flex-wrap to cope. On a 390px screen it coped by
+ * dropping the switcher onto a second line under everything else, which read as
+ * a layout bug.
+ *
+ * The switcher sits with the logo now, so each side has room, and nothing
+ * wraps: the row is allowed to be tight rather than allowed to break. The
+ * button says "Sign up" on a phone and "Sign up free" from 640px up, because
+ * "Crear cuenta gratis" is 19 characters and it is the button that runs out of
+ * room first in Spanish.
+ */
 function Header({ t }: { t: Dictionary }) {
   return (
-    <header className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-4 px-5 sm:px-6 py-6">
-      <Link href="/" aria-label={t.marketing.home}>
-        <FreelyLogo size="sm" />
-      </Link>
-      <nav className="flex items-center gap-3 sm:gap-4">
+    <header className="max-w-5xl mx-auto flex items-center justify-between gap-3 px-5 sm:px-6 py-5 sm:py-6">
+      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+        <Link href="/" aria-label={t.marketing.home} className="shrink-0">
+          <FreelyLogo size="sm" />
+        </Link>
         <LanguageSwitcher compact />
+      </div>
+      <nav className="flex items-center gap-3 sm:gap-4 shrink-0">
         <Link href="/signin" className="font-body font-semibold text-sm text-slate">
           {t.marketing.logIn}
         </Link>
         <Link
           href="/signup"
-          className="font-body font-bold text-sm text-white bg-violet px-4 py-2.5 rounded-lg"
+          className="font-body font-bold text-sm text-white bg-violet px-3.5 sm:px-4 py-2.5 rounded-lg whitespace-nowrap"
         >
-          {t.marketing.signUpFree}
+          <span className="sm:hidden">{t.marketing.signUp}</span>
+          <span className="hidden sm:inline">{t.marketing.signUpFree}</span>
         </Link>
       </nav>
     </header>
