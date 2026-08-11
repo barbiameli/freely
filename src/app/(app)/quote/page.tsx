@@ -113,6 +113,7 @@ export default async function QuotePage({
         published: b.published,
         createdAt: b.createdAt.toISOString(),
       }))}
+      industry={user.industry}
       userCurrency={user.currency}
       hasBrand={hasOwnBranding(user)}
       savedLocation={(user as unknown as { location: string | null }).location ?? ""}

@@ -271,7 +271,9 @@ export async function generateBriefAction(
           // How this bills, as agreed with the client. Kept on the brief
           // rather than only on the project, because the milestones are part
           // of what the client signed and the project is created from this.
-          useMilestones: draft.useMilestones ?? false,
+          useMilestones: draft.paymentPlan === "MILESTONE",
+          paymentPlan: draft.paymentPlan ?? "SPLIT",
+          upfrontPercent: draft.upfrontPercent ?? 50,
           milestones: generated.milestones?.length
             ? reconcileMilestones(
                 generated.milestones.map((ms) => ({ ...ms, name: clean(ms.name) })),

@@ -288,3 +288,54 @@ describe("section notes", () => {
     expect(prompt).toContain("Never include bank account details");
   });
 });
+
+describe("payment terms come from the payment choice", () => {
+  /**
+   * Payment used to be asked in four places: the rate card, a milestone
+   * toggle, a "how do you want to be paid?" question on the Statement of Work
+   * section, and a "price this fixed" preset. Four answers, nothing
+   * reconciling them, and quotes whose terms contradicted their own milestones.
+   */
+  function withPayment(over: Partial<typeof draft>) {
+    return buildGenerateUserPrompt({ ...draft, ...over });
+  }
+
+  it("says the whole amount is due before starting, when that is the choice", () => {
+    const prompt = withPayment({ paymentPlan: "UPFRONT" });
+    expect(prompt).toContain("due before the work starts");
+  });
+
+  it("uses the percentage that was actually picked", () => {
+    const prompt = withPayment({ paymentPlan: "SPLIT", upfrontPercent: 40 });
+    expect(prompt).toContain("40%");
+    expect(prompt).toContain("60%");
+  });
+
+  it("defaults a split to half and half rather than leaving it open", () => {
+    const prompt = withPayment({ paymentPlan: "SPLIT" });
+    expect(prompt).toContain("50%");
+  });
+
+  it("ties the terms to the milestones when billing that way", () => {
+    const prompt = withPayment({ paymentPlan: "MILESTONE" });
+    expect(prompt).toContain("Each milestone is invoiced");
+    // And the milestones themselves are asked for, from the same choice.
+    expect(prompt).toContain("milestones");
+  });
+
+  it("tells the model not to invent a different schedule", () => {
+    const prompt = withPayment({ paymentPlan: "UPFRONT" });
+    expect(prompt).toContain("Do not invent a different schedule");
+  });
+
+  it("says nothing about payment when nothing was chosen", () => {
+    const prompt = withPayment({ paymentPlan: undefined });
+    expect(prompt).not.toContain("Do not invent a different schedule");
+  });
+
+  it("never shows a rate on a fixed-price quote", () => {
+    const prompt = withPayment({ rateUnit: "FIXED" });
+    expect(prompt).toContain("fixed price for the whole project");
+    expect(prompt).toContain("Never present an hourly or daily rate");
+  });
+});

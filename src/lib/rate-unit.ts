@@ -11,14 +11,30 @@
  * converted at the length below only where an hours figure is genuinely
  * needed, and never shown as an hourly price.
  */
-export type RateUnit = "HOUR" | "DAY";
+/**
+ * How the work is priced.
+ *
+ * FIXED is a whole-project price rather than a rate: the hours estimate still
+ * exists underneath, because that is what the model reasons in and what past
+ * quotes are compared on, but it is never shown to the client as a rate. A
+ * fixed price that displays "£65/hr" beside it invites a negotiation about
+ * hours, which is the thing quoting fixed is meant to avoid.
+ */
+export type RateUnit = "HOUR" | "DAY" | "FIXED";
 
 /** A working day. Used only to translate between an estimate in hours and a
  * price in days, never to present a day rate as an hourly one. */
 export const HOURS_PER_DAY = 8;
 
 export function parseRateUnit(value?: string | null): RateUnit {
-  return value === "DAY" ? "DAY" : "HOUR";
+  if (value === "DAY") return "DAY";
+  if (value === "FIXED") return "FIXED";
+  return "HOUR";
+}
+
+/** Whether the price is a whole-project figure rather than a rate times time. */
+export function isFixedPrice(unit: RateUnit): boolean {
+  return unit === "FIXED";
 }
 
 /**
@@ -44,6 +60,7 @@ export interface RateWords {
 }
 
 export function rateSuffix(unit: RateUnit, words: RateWords): string {
+  if (unit === "FIXED") return "";
   return unit === "DAY" ? words.perDayShort : words.perHourShort;
 }
 

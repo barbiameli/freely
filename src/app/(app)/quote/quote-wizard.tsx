@@ -31,7 +31,7 @@ import { useT, useLocale } from "@/lib/i18n/context";
 import { MAX_DOCUMENT_UPLOAD_BYTES, documentTooLargeError } from "@/lib/upload-limits";
 import { BRANDING_OPTIONS } from "@/lib/branding";
 import {
-  PROJECT_PREFERENCE_KEYS,
+  projectPresetKeys,
   QUOTE_INCLUSIONS,
   SECTION_QUESTIONS,
   sectionNoteLines,
@@ -168,6 +168,7 @@ export function QuoteWizard({
   savedLocation,
   savedRate,
   savedRateUnit,
+  industry,
 }: {
   recentBriefs: BriefSummary[];
   /** Quotes old enough to have an answer, for the "did you land these?" prompt. */
@@ -182,6 +183,8 @@ export function QuoteWizard({
   /** The rate saved in Memory, prefilled so it is not retyped each time. */
   savedRate?: number;
   savedRateUnit?: string;
+  /** The field chosen at onboarding, so the examples match the actual work. */
+  industry?: string | null;
 }) {
   const router = useRouter();
   const t = useT();
@@ -313,10 +316,14 @@ export function QuoteWizard({
       };
       // Not awaited: failing to remember a rate is no reason to hold up
       // someone's quote.
-      if (rememberRate && draft.hourlyRate > 0) {
+      // Never for a fixed price: that is the total for this one project, not
+      // a rate to reuse, and saving it would prefill the next quote with this
+      // job's price.
+      const unitForMemory = draft.rateUnit ?? "HOUR";
+      if (rememberRate && draft.hourlyRate > 0 && unitForMemory !== "FIXED") {
         void updateDefaultRateAction({
           rate: draft.hourlyRate,
-          unit: (draft.rateUnit ?? "HOUR") as RateUnit,
+          unit: unitForMemory,
           currency: draft.currency,
         });
       }
@@ -657,7 +664,7 @@ export function QuoteWizard({
             <div className="mt-3">
               <div className="text-caption text-text-muted mb-1.5">{t.common.commonOnes}</div>
               <div className="flex flex-wrap gap-1.5">
-                {PROJECT_PREFERENCE_KEYS.map((exampleKey) => {
+                {projectPresetKeys(industry).map((exampleKey) => {
                   const example = t.quote[exampleKey];
                   const picked = pickedExamples.includes(example);
                   return (
@@ -687,14 +694,20 @@ export function QuoteWizard({
 
           <div className="flex flex-col md:flex-row gap-4 md:gap-5">
             <Card className="flex-1">
-              <FieldHeading>{t.quote.yourRate}</FieldHeading>
+              <FieldHeading required>{t.quote.ratePayment}</FieldHeading>
+              <p className="text-meta text-slate mb-3 leading-relaxed">
+                {t.quote.ratePaymentHint}
+              </p>
               {/* Plenty of freelancers price in days, and converting to an
-                  hourly figure to fit the form means inventing a day length. */}
-              <div className="flex gap-1.5 mb-2.5">
+                  hourly figure to fit the form means inventing a day length.
+                  Fixed is a third thing again: a whole-project price, with no
+                  rate shown to the client at all. */}
+              <div className="flex flex-wrap gap-1.5 mb-2.5">
                 {(
                   [
                     ["HOUR", t.quote.perHour],
                     ["DAY", t.quote.perDay],
+                    ["FIXED", t.quote.rateFixed],
                   ] as const
                 ).map(([unit, label]) => (
                   <Chip
@@ -725,7 +738,13 @@ export function QuoteWizard({
                   step={5}
                   value={draft.hourlyRate || ""}
                   onChange={(e) => setDraft((d) => ({ ...d, hourlyRate: Number(e.target.value) }))}
-                  placeholder={(draft.rateUnit ?? "HOUR") === "DAY" ? "e.g. 520" : "e.g. 65"}
+                  placeholder={
+                    (draft.rateUnit ?? "HOUR") === "FIXED"
+                      ? "e.g. 2400"
+                      : (draft.rateUnit ?? "HOUR") === "DAY"
+                      ? "e.g. 520"
+                      : "e.g. 65"
+                  }
                   className="w-full bg-paper rounded-lg border-none px-3 py-2.5 text-sm text-ink outline-none"
                 />
                 <span className="text-slate text-sm">
@@ -734,7 +753,11 @@ export function QuoteWizard({
               </div>
               <div className="flex flex-wrap items-center justify-between gap-2 mt-2.5">
                 <span className="text-meta text-text-muted">
-                  {draft.hourlyRate > 0 ? t.quote.usedAsTyped : t.quote.orResearched}
+                  {(draft.rateUnit ?? "HOUR") === "FIXED"
+                    ? t.quote.rateFixedHint
+                    : draft.hourlyRate > 0
+                    ? t.quote.usedAsTyped
+                    : t.quote.orResearched}
                 </span>
                 <button
                   type="button"
@@ -747,7 +770,101 @@ export function QuoteWizard({
                   {showRateHelp ? t.quote.iKnowMyRate : t.quote.notSureWhatToCharge}
                 </button>
               </div>
-              {draft.hourlyRate > 0 && draft.hourlyRate !== savedRate && (
+              {/* When the money arrives. Inside the same card as the rate,
+                  because they are one decision: what you charge and when you
+                  get it. It used to be asked in four places, which is how a
+                  quote ended up with payment terms that disagreed with its own
+                  milestones. */}
+              <div className="mt-4 pt-4 border-t border-line">
+                <SubLabel>{t.quote.paymentWhen}</SubLabel>
+                <div className="flex flex-wrap gap-1.5">
+                  {(
+                    [
+                      ["UPFRONT", t.quote.paymentUpfront],
+                      ["SPLIT", t.quote.paymentSplit],
+                      ["MILESTONE", t.quote.paymentMilestone],
+                    ] as const
+                  ).map(([plan, label]) => (
+                    <Chip
+                      key={plan}
+                      active={(draft.paymentPlan ?? "SPLIT") === plan}
+                      onClick={() => setDraft((d) => ({ ...d, paymentPlan: plan }))}
+                    >
+                      {label}
+                    </Chip>
+                  ))}
+                </div>
+
+                {(draft.paymentPlan ?? "SPLIT") === "SPLIT" && (
+                  <div className="mt-3">
+                    <SubLabel>{t.quote.paymentHowMuchUpfront}</SubLabel>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[25, 40, 50].map((pct) => (
+                        <Chip
+                          key={pct}
+                          active={(draft.upfrontPercent ?? 50) === pct}
+                          onClick={() => setDraft((d) => ({ ...d, upfrontPercent: pct }))}
+                        >
+                          {`${pct}%`}
+                        </Chip>
+                      ))}
+                    </div>
+                    <p className="text-caption text-text-muted mt-1.5 mb-0">
+                      {t.quote.paymentRest}
+                    </p>
+                  </div>
+                )}
+
+                {draft.paymentPlan === "MILESTONE" && (
+                  <div className="mt-3 flex flex-col gap-3">
+                    <p className="text-caption text-text-muted m-0">
+                      {t.quote.paymentMilestoneHint}
+                    </p>
+                    <div>
+                      <SubLabel>{t.quote.milestonesHowMany}</SubLabel>
+                      {/* "Work it out" first and default: the natural number of
+                          chunks is a property of the work, and picking one
+                          before seeing the deliverables is guessing. */}
+                      <div className="flex flex-wrap gap-1.5">
+                        <Chip
+                          active={!draft.milestoneCount}
+                          onClick={() => setDraft((d) => ({ ...d, milestoneCount: undefined }))}
+                        >
+                          {t.quote.milestonesDecideForMe}
+                        </Chip>
+                        {[2, 3, 4, 5].map((n) => (
+                          <Chip
+                            key={n}
+                            active={draft.milestoneCount === n}
+                            onClick={() => setDraft((d) => ({ ...d, milestoneCount: n }))}
+                          >
+                            {String(n)}
+                          </Chip>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <SubLabel>{t.quote.milestonesWhatGoesWhere}</SubLabel>
+                      <textarea
+                        value={draft.milestoneNotes ?? ""}
+                        onChange={(e) =>
+                          setDraft((d) => ({ ...d, milestoneNotes: e.target.value }))
+                        }
+                        rows={2}
+                        placeholder={t.quote.milestonesNotesPlaceholder}
+                        className="w-full font-body text-small text-ink leading-relaxed bg-paper border border-line rounded-lg px-3 py-2.5 outline-none focus:border-violet"
+                      />
+                      <p className="text-caption text-text-muted mt-1 mb-0">
+                        {t.quote.milestonesNotesHint}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {draft.hourlyRate > 0 &&
+                draft.hourlyRate !== savedRate &&
+                (draft.rateUnit ?? "HOUR") !== "FIXED" && (
                 <label className="flex items-center gap-2 mt-2.5 cursor-pointer">
                   <input
                     type="checkbox"
@@ -1031,81 +1148,6 @@ export function QuoteWizard({
                   ))}
                 </div>
               </>
-            )}
-          </Card>
-
-          {/* How this bills. Above the sections list because it changes the
-              shape of the quote rather than adding a paragraph to it, and
-              because the client agrees to the split when they agree to the
-              quote: it cannot be decided later in the tracker. */}
-          <Card>
-            <FieldHeading>{t.quote.milestonesTitle}</FieldHeading>
-            <p className="text-meta text-slate mb-3 leading-relaxed">{t.quote.milestonesHint}</p>
-
-            <button
-              type="button"
-              onClick={() => setDraft((d) => ({ ...d, useMilestones: !d.useMilestones }))}
-              className={`flex items-center gap-3 text-left rounded-lg px-3.5 py-3 cursor-pointer border w-full ${
-                draft.useMilestones ? "border-violet bg-violet-tint" : "border-line bg-paper"
-              }`}
-            >
-              <span
-                className={`w-4 h-4 rounded-[5px] shrink-0 flex items-center justify-center ${
-                  draft.useMilestones ? "bg-violet" : "bg-white border border-line"
-                }`}
-              >
-                {draft.useMilestones && <Check size={11} className="text-white" />}
-              </span>
-              <span className="font-body font-semibold text-small text-ink">
-                {t.quote.milestonesTitle}
-              </span>
-            </button>
-
-            {draft.useMilestones && (
-              <div className="mt-3.5 flex flex-col gap-3.5">
-                <div>
-                  <SubLabel>{t.quote.milestonesHowMany}</SubLabel>
-                  {/* "Work it out" first and selected by default. The natural
-                      number of chunks is a property of the work, and someone
-                      picking a number before seeing the deliverables is
-                      guessing at their own project. */}
-                  <div className="flex flex-wrap gap-1.5">
-                    <Chip
-                      active={!draft.milestoneCount}
-                      onClick={() => setDraft((d) => ({ ...d, milestoneCount: undefined }))}
-                    >
-                      {t.quote.milestonesDecideForMe}
-                    </Chip>
-                    {[2, 3, 4, 5].map((n) => (
-                      <Chip
-                        key={n}
-                        active={draft.milestoneCount === n}
-                        onClick={() => setDraft((d) => ({ ...d, milestoneCount: n }))}
-                      >
-                        {String(n)}
-                      </Chip>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <SubLabel>{t.quote.milestonesWhatGoesWhere}</SubLabel>
-                  {/* Free text rather than a picker. This is a sentence people
-                      already know how to say, and the deliverables do not exist
-                      yet to be dragged around: they are written by the same
-                      generation this feeds. */}
-                  <textarea
-                    value={draft.milestoneNotes ?? ""}
-                    onChange={(e) => setDraft((d) => ({ ...d, milestoneNotes: e.target.value }))}
-                    rows={2}
-                    placeholder={t.quote.milestonesNotesPlaceholder}
-                    className="w-full font-body text-small text-ink leading-relaxed bg-paper border border-line rounded-lg px-3 py-2.5 outline-none focus:border-violet"
-                  />
-                  <p className="text-caption text-text-muted mt-1 mb-0">
-                    {t.quote.milestonesNotesHint}
-                  </p>
-                </div>
-              </div>
             )}
           </Card>
 

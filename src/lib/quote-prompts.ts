@@ -31,14 +31,57 @@ export interface QuotePromptPreset {
  * design starts. So the free text is the input and these are four examples of
  * the kind of thing that belongs in it.
  */
-/** Keys into the dictionary rather than the text itself, so the examples are
- * translated with everything else. */
-export const PROJECT_PREFERENCE_KEYS = [
-  "exampleFixedPrice",
-  "exampleMilestones",
-  "exampleDirectionFirst",
-  "exampleResearchFirst",
-] as const;
+/**
+ * Example steers, chosen for the work the freelancer actually does.
+ *
+ * These were four design examples shown to everyone, so a data scientist was
+ * offered "Agree the visual direction before any design starts", which is not
+ * a sentence about their job. Two of the four were about money and are gone
+ * entirely: rate and payment answer those now, in one place.
+ *
+ * Grouped into families rather than written per role. Thirteen roles times
+ * three examples times two languages is seventy-eight strings nobody would
+ * keep good, and the sequencing question is genuinely the same across, say,
+ * frontend and backend work.
+ *
+ * Keys into the dictionary rather than the text itself, so they are translated
+ * with everything else.
+ */
+export type ProjectPresetKey =
+  | "presetSignOffDesign"
+  | "presetSignOffBuild"
+  | "presetSignOffData"
+  | "presetSignOffWords"
+  | "presetResearchFirst"
+  | "presetSmallFirstPhase";
+
+const PRESETS_BY_FAMILY: Record<string, ProjectPresetKey> = {
+  "ux-designer": "presetSignOffDesign",
+  "product-designer": "presetSignOffDesign",
+  "brand-designer": "presetSignOffDesign",
+  "frontend-developer": "presetSignOffBuild",
+  "backend-developer": "presetSignOffBuild",
+  "fullstack-developer": "presetSignOffBuild",
+  "mobile-developer": "presetSignOffBuild",
+  "data-engineer": "presetSignOffData",
+  "data-scientist": "presetSignOffData",
+  marketing: "presetSignOffWords",
+  "content-creator": "presetSignOffWords",
+  consultant: "presetSignOffWords",
+};
+
+/**
+ * The examples to offer this freelancer.
+ *
+ * The first is the one that depends on their field; the other two are true of
+ * any project. An unrecognised industry, including the free text someone typed
+ * under "other", gets the two general ones rather than a guess.
+ */
+export function projectPresetKeys(industry?: string | null): ProjectPresetKey[] {
+  const specific = industry ? PRESETS_BY_FAMILY[industry] : undefined;
+  const general: ProjectPresetKey[] = ["presetResearchFirst", "presetSmallFirstPhase"];
+  return specific ? [specific, ...general] : general;
+}
 
 export interface QuoteInclusion {
   key:
@@ -146,13 +189,17 @@ export interface SectionQuestion {
     | "askAiUsagePlaceholder";
 }
 
+/**
+ * The questions a section asks, where the answer rests on a decision only the
+ * freelancer can make.
+ *
+ * "How do you want to be paid?" used to be one of these, on the Statement of
+ * Work section. It is gone: payment is asked once, in the rate block, and the
+ * terms are written from that answer. Asking again here produced quotes whose
+ * payment terms contradicted their own milestone schedule, because the two
+ * answers came from different boxes and nothing reconciled them.
+ */
 export const SECTION_QUESTIONS: SectionQuestion[] = [
-  {
-    key: "payment",
-    inclusion: "includeSOW",
-    promptKey: "askPayment",
-    placeholderKey: "askPaymentPlaceholder",
-  },
   {
     key: "terms",
     inclusion: "includeTerms",

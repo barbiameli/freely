@@ -171,12 +171,21 @@ export interface QuoteDraftInput {
    * purely a presentation choice, doesn't affect generation. */
   branding?: "freely" | "own" | "mono-light" | "mono-dark";
   /**
-   * Whether this project is split into billable milestones.
+   * When the money arrives.
    *
-   * Off by default. Most jobs are one piece of work billed on completion, and
-   * a milestone structure on a two-week project is ceremony.
+   * One question with three answers, replacing four places that each asked
+   * part of it: the rate card, a milestone toggle, a "how do you want to be
+   * paid?" question on the Statement of Work section, and a "price this fixed"
+   * preset in the project notes. Asking the same thing four ways produced
+   * quotes whose payment terms disagreed with their own milestones.
+   *
+   * MILESTONE is what creates milestones. There is no separate toggle for
+   * them: choosing to be paid per milestone is choosing to have milestones,
+   * and a project can no longer be billed per milestone without having any.
    */
-  useMilestones?: boolean;
+  paymentPlan?: "UPFRONT" | "SPLIT" | "MILESTONE";
+  /** For SPLIT: how much is due before the work starts. */
+  upfrontPercent?: number;
   /**
    * How many milestones the freelancer wants.
    *
@@ -382,7 +391,32 @@ Use web search to find the going ${unitNoun(unit, promptWords)} rate, and the ty
   // are both optional: saying neither means the model reads the natural shape
   // of the work, which is usually a better answer than a number picked before
   // anyone knew what the deliverables were.
-  const milestoneInstruction = draft.useMilestones
+  // Payment terms written from the choice, not asked for separately. This is
+  // the single source: whatever is said here is what appears on the quote, so
+  // the terms and the milestones cannot contradict each other.
+  const paymentInstruction = (() => {
+    const plan = draft.paymentPlan;
+    if (!plan) return "";
+    const opening = `\nWrite "paymentTerms" from this and nothing else, in one or two plain sentences, as the freelancer's own terms to their client. Do not invent a different schedule.`;
+    if (plan === "UPFRONT") {
+      return `${opening} The whole amount is due before the work starts.`;
+    }
+    if (plan === "SPLIT") {
+      const up = draft.upfrontPercent ?? 50;
+      return `${opening} ${up}% is due before the work starts and the remaining ${
+        100 - up
+      }% on delivery.`;
+    }
+    return `${opening} Each milestone is invoiced when it is completed, at the amount set out for it.`;
+  })();
+
+  // Fixed price changes what the numbers mean, so the model is told plainly.
+  const fixedPriceInstruction =
+    (draft.rateUnit ?? "HOUR") === "FIXED"
+      ? `\nThis is quoted as a fixed price for the whole project, not as a rate. Still estimate hours honestly, since they inform the timeline, but the client is agreeing to the total. Never present an hourly or daily rate anywhere in the output.`
+      : "";
+
+  const milestoneInstruction = draft.paymentPlan === "MILESTONE"
     ? `\nInclude a "milestones" array. A milestone is a billable chunk of the project that groups one or more deliverables, it is NOT one deliverable renamed: a six-deliverable project is usually three or four milestones, not six. Each entry has "name" (2-5 words, what this chunk of work is), "deliverableIndexes" (0-based positions in the deliverables array you produced, listed in order) and "amount" (this milestone's share of the total price). Rules: every deliverable must appear in exactly one milestone, never two and never none. The amounts must sum to exactly the total price. Weight each amount by how much of the work it actually represents, not by dividing equally, unless the chunks genuinely are equal.${
         draft.milestoneCount
           ? ` Use exactly ${draft.milestoneCount} milestones.`
@@ -482,6 +516,8 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
     formatPricingHistory(pricingHistory, symbol),
     strategyInstruction,
     timelineInstruction,
+    fixedPriceInstruction,
+    paymentInstruction,
     milestoneInstruction,
     extraSectionsInstruction,
     `\nWrite a project quote based on this. Keep deliverables as a list of short, concrete items (4-7 items), name actual artifacts, not phases. Give a realistic timeline, a price in ${currencyCode}, and estimated hours that are consistent with the pricing approach above.`,
