@@ -3,8 +3,8 @@
 import { useRouter } from "next/navigation";
 import { Check, FileText } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { ProjectCard, ProjectCardGrid } from "@/components/project-card";
 import { Button } from "@/components/ui/button";
-import { Stamp, type StampStatus } from "@/components/ui/stamp";
 import { ActionError } from "@/components/ui/action-error";
 import { useAction } from "@/lib/use-action";
 import { currencySymbol } from "@/lib/currencies";
@@ -30,13 +30,6 @@ export interface QueueRow {
   totalCount: number;
 }
 
-const STATUS_FG: Record<string, string> = {
-  ACTIVE: "bg-violet",
-  DUE: "bg-coral",
-  OVERDUE: "bg-overdue",
-  DONE: "bg-success",
-};
-
 /**
  * Work that has been done and not yet billed.
  *
@@ -61,11 +54,11 @@ export function InvoiceQueueList({ rows }: { rows: QueueRow[] }) {
   }
 
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-[18px]">
+    <ProjectCardGrid>
       {rows.map((row) => (
         <QueueCard key={row.projectId} row={row} />
       ))}
-    </div>
+    </ProjectCardGrid>
   );
 }
 
@@ -82,63 +75,49 @@ function QueueCard({ row }: { row: QueueRow }) {
   }
 
   return (
-    <Card
-      onClick={() => router.push(`/track/${row.projectId}`)}
-      className={`cursor-pointer flex flex-col gap-3 ${
-        ready ? "border-violet border-[1.5px]" : ""
-      }`}
+    <ProjectCard
+      href={`/track/${row.projectId}`}
+      highlight={ready}
+      project={{
+        id: row.projectId,
+        title: row.title,
+        client: row.client,
+        status: row.status,
+        progress,
+        meta: `${currencySymbol(row.currency)}${row.price.toLocaleString()} · ${row.hours}h · ${fill(
+          t.invoices.deliverablesDone,
+          { done: row.doneCount, total: row.totalCount }
+        )}`,
+      }}
     >
-      <Stamp status={row.status as StampStatus} size={52} />
-      <div className="font-body font-bold text-lead text-ink">{row.title}</div>
-      <div className="text-slate text-small">{row.client}</div>
-      <div className="font-body text-meta text-text-muted">
-        {currencySymbol(row.currency)}
-        {row.price.toLocaleString()} · {row.hours}h ·{" "}
-        {fill(t.invoices.deliverablesDone, { done: row.doneCount, total: row.totalCount })}
-      </div>
-      <div className="h-1.5 bg-paper rounded-full">
-        <div
-          className={`h-1.5 rounded-full ${STATUS_FG[row.status] ?? "bg-violet"}`}
-          style={{ width: `${Math.max(6, progress * 100)}%` }}
-        />
-      </div>
-
-      <div className="mt-auto pt-1">
-        {ready ? (
-          <>
-            <div className="flex items-baseline justify-between gap-2 mb-2">
-              <span className="text-caption text-text-muted">
-                {row.perMilestone ? t.invoices.perMilestone : t.invoices.onCompletion}
-              </span>
-              <span className="font-body font-bold text-lead text-ink tabular-nums">
-                {currencySymbol(row.currency)}
-                {row.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-              </span>
-            </div>
-            {/* Stops the card's own navigation: the button bills, the card
-                opens the project. */}
-            <div onClick={(e) => e.stopPropagation()}>
-              <Button icon={FileText} onClick={invoice} disabled={pending} className="w-full justify-center">
-                {pending ? t.common.working : t.invoices.invoiceIt}
-              </Button>
-            </div>
-          </>
-        ) : row.notReady === "in-progress" || row.notReady === "nothing-done" ? (
-          <div onClick={(e) => e.stopPropagation()}>
-            <Button
-              variant="outline"
-              icon={Check}
-              disabled={pending}
-              className="w-full justify-center"
-              onClick={() => run(() => markProjectDoneAction(row.projectId))}
-            >
-              {pending ? t.common.working : t.invoices.markFinished}
-            </Button>
+      {ready ? (
+        <>
+          <div className="flex items-baseline justify-between gap-2 mb-2">
+            <span className="text-caption text-text-muted">
+              {row.perMilestone ? t.invoices.perMilestone : t.invoices.onCompletion}
+            </span>
+            <span className="font-body font-bold text-lead text-ink tabular-nums">
+              {currencySymbol(row.currency)}
+              {row.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </span>
           </div>
-        ) : null}
-      </div>
+          <Button icon={FileText} onClick={invoice} disabled={pending} className="w-full justify-center">
+            {pending ? t.common.working : t.invoices.invoiceIt}
+          </Button>
+        </>
+      ) : row.notReady === "in-progress" || row.notReady === "nothing-done" ? (
+        <Button
+          variant="outline"
+          icon={Check}
+          disabled={pending}
+          className="w-full justify-center"
+          onClick={() => run(() => markProjectDoneAction(row.projectId))}
+        >
+          {pending ? t.common.working : t.invoices.markFinished}
+        </Button>
+      ) : null}
 
       <ActionError error={error} />
-    </Card>
+    </ProjectCard>
   );
 }

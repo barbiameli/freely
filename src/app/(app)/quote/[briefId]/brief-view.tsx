@@ -20,7 +20,6 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
-import type { StampStatus } from "@/components/ui/stamp";
 import {
   refineBriefAction,
   addBriefToTrackAction,
@@ -77,7 +76,7 @@ interface Brief {
   hours: number;
   hourlyRate?: number | null;
   rateUnit?: string | null;
-  status: StampStatus;
+  status: string;
   createdAt: string;
   published: boolean;
   publicSlug: string;

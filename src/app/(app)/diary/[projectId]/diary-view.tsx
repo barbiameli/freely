@@ -1,18 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAction } from "@/lib/use-action";
-import { Plus, Copy, Check as CheckIcon, Trash2 } from "lucide-react";
+import { Plus, Copy, Check as CheckIcon, ExternalLink, Globe } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
-import { ActionError } from "@/components/ui/action-error";
 import { Label } from "@/components/ui/label";
-import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
+import { ActionError } from "@/components/ui/action-error";
+import { StatRow } from "@/components/track/stat-row";
+import { DeliverableItem, type DeliverableView } from "@/components/track/deliverable-item";
+import { useAction } from "@/lib/use-action";
 import { addDiaryEntryAction, setPublishedAction } from "@/actions/diary";
-import { deleteProjectAction } from "@/actions/projects";
-import { useT } from "@/lib/i18n/context";
+import { statusLabel, STATUS_TEXT } from "@/lib/project-status";
+import { formatDay } from "@/lib/schedule";
+import { paragraphs } from "@/lib/rich-text";
+import { useT, useLocale } from "@/lib/i18n/context";
+import { fill } from "@/lib/i18n";
 
 interface Entry {
   id: string;
@@ -24,197 +29,254 @@ interface Entry {
 interface Project {
   id: string;
   title: string;
-  status: "ACTIVE" | "DUE" | "OVERDUE" | "DONE";
-  timeline: string;
+  client: string;
+  status: string;
   published: boolean;
   publicSlug: string;
-  deliverables: { id: string; name: string; done: boolean }[];
+  deliverables: DeliverableView[];
   diaryEntries: Entry[];
 }
 
-const STATUS_COLOR: Record<string, string> = {
-  ACTIVE: "text-violet",
-  DUE: "text-coral",
-  OVERDUE: "text-overdue",
-  DONE: "text-success",
-};
-
+/**
+ * The diary for one project.
+ *
+ * Rebuilt around two things it was missing. The client's page was a fake
+ * browser mockup in a sidebar, which showed a rough impression of the real page
+ * while burying the actual link: the thing you came here to do was the hardest
+ * thing to find. It is a panel at the top now, saying plainly whether the client
+ * can see anything, with the link and a way to open the real page.
+ *
+ * And the deliverables were a read-only list of names. They are the same
+ * component Track uses now, so the steps, dates, progress and editing are all
+ * here, and a tick in either place is a tick in both. There is no reason to make
+ * someone leave the diary to mark off the work they are writing an update about.
+ */
 export function DiaryView({
   project,
   allProjects,
 }: {
   project: Project;
-  allProjects: { id: string; title: string }[];
+  allProjects: { id: string; title: string; status: string }[];
 }) {
   const router = useRouter();
   const t = useT();
-  const { run, pending: isPending, error } = useAction();
+  const locale = useLocale();
+  const { run, pending, error } = useAction();
   const [newEntry, setNewEntry] = useState("");
   const [copied, setCopied] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+
   const publicUrl =
     typeof window !== "undefined"
       ? `${window.location.origin}/p/${project.publicSlug}`
       : `/p/${project.publicSlug}`;
 
-  async function handleDeleteProject(e: React.MouseEvent, projectId: string, projectTitle: string) {
-    e.stopPropagation();
-    if (
-      !window.confirm(
-        `Delete "${projectTitle}"? This removes its deliverables and diary entries too, this can't be undone.`
-      )
-    ) {
-      return;
-    }
-    setDeletingId(projectId);
-    const result = await deleteProjectAction(projectId);
-    setDeletingId(null);
-    if (!result.ok) return;
-    if (projectId === project.id) {
-      router.push("/diary");
-    } else {
-      router.refresh();
-    }
-  }
+  const doneCount = project.deliverables.filter((d) => d.done).length;
+  const total = project.deliverables.length;
 
   return (
-    <>
-      <Topbar eyebrow="Diary" />
-      <div>
-        <h1 className="font-display italic text-[32px] text-coral m-0">
-          Client updates, written for you.
-        </h1>
-        <p className="text-slate text-small mt-2">
-          Auto-generated from your project tracker, edit anything before it goes out.
-        </p>
-      </div>
-      <div className="flex gap-2 flex-wrap">
-        {allProjects.map((p) => {
-          const active = p.id === project.id;
-          return (
-            <div
+    <div className="flex flex-col lg:flex-row gap-5 lg:gap-6 flex-1 min-h-0">
+      <Card className="w-full lg:w-[172px] lg:shrink-0 lg:overflow-y-auto px-3.5 py-4">
+        <Label>{t.track.allProjects}</Label>
+        <div className="flex flex-col gap-1 mt-1">
+          {allProjects.map((p) => (
+            <button
               key={p.id}
-              className={`flex items-center gap-1 rounded-full pl-3.5 pr-1.5 py-1 ${
-                active ? "bg-violet text-white" : "bg-paper text-slate border border-line"
+              onClick={() => router.push(`/diary/${p.id}`)}
+              className={`flex items-center gap-2 text-left px-2.5 py-2 rounded-lg cursor-pointer border-none ${
+                p.id === project.id ? "bg-violet-tint" : "bg-transparent hover:bg-paper"
               }`}
             >
-              <button
-                type="button"
-                onClick={() => router.push(`/diary/${p.id}`)}
-                className="font-body font-medium text-xs bg-none border-none cursor-pointer p-0"
-              >
-                {p.title}
-              </button>
-              <button
-                type="button"
-                aria-label={`Delete ${p.title}`}
-                disabled={deletingId === p.id}
-                onClick={(e) => handleDeleteProject(e, p.id, p.title)}
-                className={`flex items-center justify-center rounded-full p-1 border-none cursor-pointer ${
-                  active ? "text-white/70 hover:text-white hover:bg-white/15" : "text-slate hover:text-overdue hover:bg-line"
+              <span
+                className={`text-small truncate ${
+                  p.id === project.id ? "font-bold text-violet" : "font-medium text-slate"
                 }`}
               >
-                <Trash2 size={11} />
-              </button>
-            </div>
-          );
-        })}
-      </div>
-      <div className="flex flex-col md:flex-row gap-5 flex-1 min-h-0">
-        <div className="flex-1 flex flex-col gap-3.5 overflow-y-auto">
-          <div className="flex justify-between items-center">
-            <Label>{t.diary.entries}</Label>
-            <div className="flex-1 mx-3">
-              <TextField value={newEntry} onChange={setNewEntry} placeholder={t.diary.writeUpdate} />
-            </div>
-            <Button
-              variant="ghost"
-              icon={Plus}
-              disabled={!newEntry.trim() || isPending}
-              onClick={() => {
-                const value = newEntry;
-                setNewEntry("");
-                void run(() => addDiaryEntryAction(project.id, "New update", value));
-              }}
-            >
-              {t.diary.addEntry}
-            </Button>
-          </div>
-          <ActionError error={error} />
-          {project.diaryEntries.map((e) => (
-            <Card key={e.id}>
-              <div className="flex gap-2.5 items-center mb-1.5">
-                <span className="font-body font-semibold text-caption text-text-muted">
-                  {new Date(e.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                </span>
-                <span className="font-body font-bold text-sm text-ink">{e.title}</span>
-              </div>
-              <p className="text-small text-slate m-0 leading-relaxed">{e.body}</p>
-            </Card>
+                {p.title}
+              </span>
+            </button>
           ))}
-          {project.diaryEntries.length === 0 && (
-            <div className="text-text-muted text-small">{t.diary.noEntries}</div>
-          )}
         </div>
-        <div className="w-full md:w-[340px]">
-          <div className="flex justify-between items-center mb-3">
-            <Label>{t.diary.clientSite}</Label>
+      </Card>
+
+      <div className="flex flex-col gap-5 md:gap-6 flex-1 min-w-0">
+        <Topbar eyebrow={`Diary - ${project.title}`} />
+
+        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3">
+          <div className="min-w-0">
+            <h1 className="font-display italic text-[28px] md:text-[30px] text-coral m-0">
+              {project.title}
+            </h1>
+            <p className="text-slate text-small mt-1.5">
+              {project.client} ·{" "}
+              <span className={STATUS_TEXT[project.status]}>
+                {statusLabel(project.status, t)}
+              </span>
+            </p>
+          </div>
+        </div>
+
+        {/* The client's page, first rather than tucked in a sidebar: publishing
+            is the point of this screen, and whether the client can see anything
+            is the one fact worth stating outright. */}
+        <Card className={project.published ? "border-violet border-[1.5px]" : undefined}>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <Globe size={14} className={project.published ? "text-violet" : "text-text-muted"} />
+                <Label>{t.diary.publicLink}</Label>
+              </div>
+              <p className="text-caption text-text-muted mt-1 mb-0">
+                {project.published ? t.diary.liveNow : t.diary.notPublishedYet}
+              </p>
+            </div>
             <Button
-              disabled={isPending}
+              variant={project.published ? "outline" : undefined}
+              disabled={pending}
               onClick={() => run(() => setPublishedAction(project.id, !project.published))}
             >
-              {project.published ? t.diary.published : t.diary.publish}
+              {pending
+                ? t.common.working
+                : project.published
+                ? t.diary.unpublish
+                : t.diary.publish}
             </Button>
           </div>
+
           {project.published && (
-            <div className="flex items-center gap-2 mb-3 bg-paper rounded-lg px-3 py-2">
-              <span className="text-xs text-slate truncate flex-1">{publicUrl}</span>
+            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-line">
+              <span className="text-small text-slate truncate flex-1 font-mono">{publicUrl}</span>
               <button
                 type="button"
+                title={t.diary.copyLink}
                 onClick={() => {
                   navigator.clipboard.writeText(publicUrl);
                   setCopied(true);
                   setTimeout(() => setCopied(false), 1500);
                 }}
-                className="text-violet"
-                title="Copy link"
+                className="flex items-center gap-1.5 text-caption font-semibold text-violet bg-none border-none cursor-pointer p-0 shrink-0"
               >
-                {copied ? <CheckIcon size={14} /> : <Copy size={14} />}
+                {copied ? <CheckIcon size={13} /> : <Copy size={13} />}
+                {copied ? t.diary.linkCopied : t.diary.copyLink}
               </button>
+              <Link
+                href={`/p/${project.publicSlug}`}
+                target="_blank"
+                className="flex items-center gap-1.5 text-caption font-semibold text-violet no-underline shrink-0"
+              >
+                <ExternalLink size={13} />
+                {t.diary.openPage}
+              </Link>
             </div>
           )}
-          <Card className="p-0 overflow-hidden">
-            <div className="bg-paper px-3.5 py-2.5 flex gap-1.5">
-              {[0, 1, 2].map((i) => (
-                <div key={i} className="w-1.5 h-1.5 rounded-full bg-line" />
-              ))}
+        </Card>
+
+        <StatRow
+          stats={[
+            { label: t.track.done, value: total > 0 ? `${Math.round((doneCount / total) * 100)}%` : "0%" },
+            { label: t.track.deliverables, value: `${doneCount}/${total}` },
+            { label: t.diary.entries, value: String(project.diaryEntries.length) },
+          ]}
+        />
+
+        <div className="flex flex-col lg:flex-row gap-5">
+          <Card className="flex-1 min-w-0">
+            <Label>{t.diary.entries}</Label>
+            <p className="text-caption text-text-muted mt-1 mb-3">{t.diary.writeUpdate}</p>
+
+            <div className="flex flex-col gap-2">
+              <textarea
+                value={newEntry}
+                onChange={(e) => setNewEntry(e.target.value)}
+                rows={3}
+                placeholder={t.diary.writeUpdate}
+                className="w-full font-body text-small text-ink leading-relaxed bg-paper border border-line rounded-lg px-3 py-2.5 outline-none focus:border-violet"
+              />
+              <div className="flex justify-end">
+                <Button
+                  icon={Plus}
+                  disabled={!newEntry.trim() || pending}
+                  onClick={() => {
+                    const value = newEntry;
+                    setNewEntry("");
+                    void run(() => addDiaryEntryAction(project.id, t.diary.entryTitle, value));
+                  }}
+                >
+                  {pending ? t.common.working : t.diary.addEntry}
+                </Button>
+              </div>
             </div>
-            <div className="p-5 flex flex-col gap-3">
-              <div className="font-display italic text-lg text-coral">{project.title}</div>
-              {project.status === "DONE" ? (
-                <div className="bg-mint-solid rounded-md px-3 py-2 font-label text-small text-success">
-                  Milestone sign-off received
-                </div>
+
+            <ActionError error={error} className="mt-2" />
+
+            <div className="flex flex-col mt-4">
+              {project.diaryEntries.length === 0 ? (
+                <p className="text-small text-text-muted m-0">{t.diary.noEntries}</p>
               ) : (
-                <div className={`font-body font-semibold text-xs ${STATUS_COLOR[project.status]}`}>
-                  Status: {project.status}
-                  {project.timeline ? ` · ${project.timeline}` : ""}
-                </div>
+                project.diaryEntries.map((entry, i) => (
+                  <div
+                    key={entry.id}
+                    className={`flex gap-3 py-3 ${
+                      i < project.diaryEntries.length - 1 ? "border-b border-line" : ""
+                    }`}
+                  >
+                    <div className="flex flex-col items-center shrink-0 pt-1.5">
+                      <span
+                        className={`w-2 h-2 rounded-full ${i === 0 ? "bg-violet" : "bg-line"}`}
+                      />
+                      {i < project.diaryEntries.length - 1 && (
+                        <span className="w-px flex-1 bg-line mt-1.5" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-caption text-text-muted">
+                        {formatDay(new Date(entry.date), locale)}
+                      </div>
+                      {/* Paragraphs rather than one block: an update written in
+                          three sentences was rendering as a wall. */}
+                      <div className="flex flex-col gap-2 mt-1">
+                        {paragraphs(entry.body).map((para, n) => (
+                          <p key={n} className="text-small text-slate leading-relaxed m-0">
+                            {para}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))
               )}
-              <Label>{t.diary.latestUpdate}</Label>
-              <p className="text-small text-slate m-0">
-                {project.diaryEntries[0]?.body || "No updates yet."}
-              </p>
-              <Label>{t.track.deliverables}</Label>
-              {project.deliverables.map((d) => (
-                <div key={d.id} className={`text-small ${d.done ? "text-success" : "text-slate"}`}>
-                  {d.done ? "✓" : "○"} {d.name}
-                </div>
-              ))}
             </div>
+          </Card>
+
+          {/* The tracker's deliverables, not a copy of them. Same component, so
+              the steps, dates and editing come with it. */}
+          <Card className="w-full lg:w-[380px] lg:shrink-0">
+            <Label>{t.diary.fromTracker}</Label>
+            <p className="text-caption text-text-muted mt-1 mb-2">{t.diary.fromTrackerHint}</p>
+            {total === 0 ? (
+              <p className="text-small text-text-muted m-0">{t.track.nothingDated}</p>
+            ) : (
+              <div className="flex flex-col">
+                {project.deliverables.map((d) => (
+                  <DeliverableItem
+                    key={d.id}
+                    deliverable={d}
+                    projectId={project.id}
+                    expanded={openId === d.id}
+                    onToggleExpanded={() => setOpenId(openId === d.id ? null : d.id)}
+                  />
+                ))}
+              </div>
+            )}
+            <Link
+              href={`/track/${project.id}`}
+              className="inline-block text-caption font-semibold text-violet no-underline mt-3"
+            >
+              {fill(t.diary.openInTracker, { name: t.nav.track })}
+            </Link>
           </Card>
         </div>
       </div>
-    </>
+    </div>
   );
 }

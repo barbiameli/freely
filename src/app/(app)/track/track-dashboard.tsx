@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, X, Upload, Trash2 } from "lucide-react";
+import { Plus, X, Upload } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
+import { ProjectCard, ProjectCardGrid } from "@/components/project-card";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
-import { Stamp, type StampStatus } from "@/components/ui/stamp";
 import {
   createManualProjectAction,
   createProjectFromDocumentAction,
@@ -18,25 +18,18 @@ import { extractFileText } from "@/lib/extract-file";
 import { currencySymbol } from "@/lib/currencies";
 import { useT } from "@/lib/i18n/context";
 
-interface ProjectCard {
+interface TrackProject {
   id: string;
   title: string;
   client: string;
-  status: StampStatus;
+  status: string;
   price: number;
   hours: number;
   currency?: string | null;
   deliverables: { id: string; done: boolean }[];
 }
 
-const STATUS_FG: Record<string, string> = {
-  ACTIVE: "bg-violet",
-  DUE: "bg-coral",
-  OVERDUE: "bg-overdue",
-  DONE: "bg-success",
-};
-
-export function TrackDashboard({ projects }: { projects: ProjectCard[] }) {
+export function TrackDashboard({ projects }: { projects: TrackProject[] }) {
   const router = useRouter();
   const t = useT();
   const [showAdd, setShowAdd] = useState(false);
@@ -191,46 +184,33 @@ export function TrackDashboard({ projects }: { projects: ProjectCard[] }) {
           Nothing tracked yet. Generate a quote and add it to Track, or add a project directly.
         </Card>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-[18px]">
+        <ProjectCardGrid>
           {visibleProjects.map((p) => {
             const progress = deliverableProgress(p.deliverables);
             const doneCount = p.deliverables.filter((d) => d.done).length;
             return (
-              <Card
+              <ProjectCard
                 key={p.id}
-                // The card navigates on click rather than being a link, so
-                // there is no href for the screenshot script to read. This
-                // gives it something stable to find.
-                data-project={p.id}
-                onClick={() => router.push(`/track/${p.id}`)}
-                className="cursor-pointer flex flex-col gap-3 relative group"
-              >
-                <button
-                  type="button"
-                  onClick={(e) => handleDelete(e, p.id, p.title)}
-                  disabled={deletingId === p.id}
-                  aria-label={t.track.deleteProjectLabel}
-                  className="absolute top-3 right-3 bg-none border-none cursor-pointer p-1 text-slate opacity-0 group-hover:opacity-100 hover:text-overdue transition-opacity"
-                >
-                  <Trash2 size={14} />
-                </button>
-                <Stamp status={p.status} size={52} />
-                <div className="font-body font-bold text-lead text-ink pr-5">{p.title}</div>
-                <div className="text-slate text-small">{p.client}</div>
-                <div className="font-body text-meta text-text-muted">
-                  {currencySymbol(p.currency)}
-                  {p.price.toLocaleString()} · {p.hours}h · {doneCount}/{p.deliverables.length} done
-                </div>
-                <div className="h-1.5 bg-paper rounded-full">
-                  <div
-                    className={`h-1.5 rounded-full ${STATUS_FG[p.status] ?? "bg-violet"}`}
-                    style={{ width: `${Math.max(6, progress * 100)}%` }}
-                  />
-                </div>
-              </Card>
+                href={`/track/${p.id}`}
+                deleting={deletingId === p.id}
+                deleteLabel={t.track.deleteProjectLabel}
+                onDelete={() => handleDelete(
+                  { stopPropagation: () => {} } as React.MouseEvent,
+                  p.id,
+                  p.title
+                )}
+                project={{
+                  id: p.id,
+                  title: p.title,
+                  client: p.client,
+                  status: p.status,
+                  progress,
+                  meta: `${currencySymbol(p.currency)}${p.price.toLocaleString()} · ${p.hours}h · ${doneCount}/${p.deliverables.length}`,
+                }}
+              />
             );
           })}
-        </div>
+        </ProjectCardGrid>
       )}
     </>
   );

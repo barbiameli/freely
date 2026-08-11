@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Download, Trash2, Check, Plus, ShieldOff } from "lucide-react";
@@ -125,6 +125,7 @@ export function InvoiceEditor({
   const [error, setError] = useState("");
   const [downloading, setDownloading] = useState(false);
   const [showFrom, setShowFrom] = useState(!invoice.fromName);
+  const errorRef = useRef<HTMLDivElement>(null);
 
   // Never sent to the server except in the body of the download request, and
   // never stored there.
@@ -145,6 +146,14 @@ export function InvoiceEditor({
       // A malformed or unavailable store just means an empty form.
     }
   }, []);
+
+  // Any failure, from any of the buttons, scrolls itself into view. Without
+  // this, clicking Download PDF at the top of the page with no payment details
+  // filled in looked like nothing happened at all.
+  useEffect(() => {
+    if (!error) return;
+    errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [error]);
 
   function set<K extends keyof EditorInvoice>(key: K, value: EditorInvoice[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -616,7 +625,17 @@ export function InvoiceEditor({
         </div>
       </Card>
 
-      {error && <div className="text-overdue text-small">{error}</div>}
+      {/* role=alert so a screen reader hears it, and the effect above brings it
+          into view: the Download button is at the top of a long form and this
+          sits at the bottom, so a failure was invisible from where the click
+          happened. */}
+      <div ref={errorRef}>
+        {error && (
+          <div role="alert" className="text-overdue text-small">
+            {error}
+          </div>
+        )}
+      </div>
 
       <div className="flex flex-col-reverse md:flex-row md:justify-between md:items-center gap-4">
         <button

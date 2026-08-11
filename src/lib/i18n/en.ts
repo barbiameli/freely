@@ -198,6 +198,10 @@ export const en = {
   },
 
   track: {
+    statusActive: "In progress",
+    statusDue: "Due soon",
+    statusOverdue: "Past the date",
+    statusDone: "Finished",
     milestone: "Milestone",
     eyebrow: "Track",
     allProjects: "All projects",
@@ -353,6 +357,22 @@ export const en = {
   },
 
   diary: {
+    entryCount: "{count} updates",
+    openInTracker: "Open in {name}",
+    heading: "What the client sees.",
+    subtitle: "Built from your tracker. Edit anything before it goes out.",
+    activeProjects: "Current",
+    pastProjects: "Finished",
+    noProjects: "Nothing to report on yet. Diary entries come from a tracked project.",
+    fromTracker: "Progress",
+    fromTrackerHint: "The same deliverables as your tracker. Tick or edit here and it changes in both.",
+    publicLink: "The client's page",
+    notPublishedYet: "Not published. The client cannot see anything yet.",
+    liveNow: "Live. Anyone with this link can read it.",
+    copyLink: "Copy link",
+    linkCopied: "Copied",
+    unpublish: "Unpublish",
+    entryTitle: "Update",
     title: "Diary",
     addEntry: "Add entry",
     noEntries: "No entries yet.",
@@ -516,6 +536,10 @@ export const en = {
   },
 
   publicPage: {
+    deliverables: "Deliverables",
+    updates: "Updates",
+    signedOff: "Finished and signed off.",
+    progress: "{done} of {total} done",
     latestUpdate: "Latest update",
     noUpdates: "No updates yet.",
     projectUpdate: "Project update",

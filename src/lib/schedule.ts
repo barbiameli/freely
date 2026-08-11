@@ -140,3 +140,18 @@ export function formatDay(date: Date, locale: string = "en-GB"): string {
     month: "short",
   });
 }
+
+/**
+ * The same date with the month spelled out and the year.
+ *
+ * For the client's page, where an update is read once and the year matters,
+ * rather than the app's own screens where "12 Mar" among a run of dates is
+ * enough.
+ */
+export function formatLongDay(date: Date, locale: string = "en-GB"): string {
+  return date.toLocaleDateString(locale === "es" ? "es-ES" : "en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}

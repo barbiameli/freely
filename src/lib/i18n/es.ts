@@ -199,6 +199,10 @@ export const es: Dictionary = {
   },
 
   track: {
+    statusActive: "En marcha",
+    statusDue: "Toca pronto",
+    statusOverdue: "Fuera de fecha",
+    statusDone: "Terminado",
     milestone: "Hito",
     eyebrow: "Seguimiento",
     allProjects: "Todos los proyectos",
@@ -352,6 +356,22 @@ export const es: Dictionary = {
   },
 
   diary: {
+    entryCount: "{count} novedades",
+    openInTracker: "Abrir en {name}",
+    heading: "Lo que ve el cliente.",
+    subtitle: "Sale de tu seguimiento. Edita lo que quieras antes de que lo vea.",
+    activeProjects: "En marcha",
+    pastProjects: "Terminados",
+    noProjects: "Todavía no hay nada que contar. El diario sale de un proyecto en seguimiento.",
+    fromTracker: "Avance",
+    fromTrackerHint: "Los mismos entregables que en seguimiento. Márcalos o edítalos aquí y cambian en los dos.",
+    publicLink: "La página del cliente",
+    notPublishedYet: "Sin publicar. El cliente todavía no ve nada.",
+    liveNow: "Publicada. Cualquiera con el enlace puede leerla.",
+    copyLink: "Copiar enlace",
+    linkCopied: "Copiado",
+    unpublish: "Dejar de publicar",
+    entryTitle: "Novedad",
     title: "Diario",
     addEntry: "Añadir entrada",
     noEntries: "Todavía no hay entradas.",
@@ -515,6 +535,10 @@ export const es: Dictionary = {
   },
 
   publicPage: {
+    deliverables: "Entregables",
+    updates: "Novedades",
+    signedOff: "Terminado y aprobado.",
+    progress: "{done} de {total} hechos",
     latestUpdate: "Última actualización",
     noUpdates: "Todavía no hay novedades.",
     projectUpdate: "Novedades del proyecto",
