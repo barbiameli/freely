@@ -580,7 +580,7 @@ export function QuoteWizard({
           <Card>
             <FieldHeading>{t.quote.visualReferences}</FieldHeading>
             <p className="text-meta text-text-muted mb-3">
-              Screenshots, moodboards, or examples of the kind of thing you mean. Attached to the quote so the client can see the direction.
+              {t.quote.referencesHint}
             </p>
             <DropZone
               onFile={handleReferenceImage}
@@ -879,7 +879,7 @@ export function QuoteWizard({
                       </div>
                       {disabled && (
                         <span className="font-body font-semibold text-caption uppercase tracking-wide text-text-muted bg-paper border border-line rounded-full px-2 py-0.5">
-                          Coming soon
+                          {t.memory.comingSoon}
                         </span>
                       )}
                     </div>
@@ -898,7 +898,7 @@ export function QuoteWizard({
             {(draft.format === "HTML" || draft.format === "PDF") && (
               <>
                 <div className="text-caption font-bold text-slate uppercase tracking-wide mb-2">
-                  Branding
+                  {t.quote.branding}
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
                   {BRANDING_OPTIONS.map((opt) => {
@@ -924,7 +924,7 @@ export function QuoteWizard({
                             }}
                             className="text-violet text-caption font-bold mt-1.5 bg-none border-none cursor-pointer p-0"
                           >
-                            Add your branding
+                            {t.quote.addYourBranding}
                           </button>
                         )}
                       </Card>
@@ -937,10 +937,10 @@ export function QuoteWizard({
                     <div className="flex justify-between items-start gap-3">
                       <div>
                         <div className="font-body font-semibold text-small text-ink">
-                          Add your branding
+                          {t.quote.addYourBranding}
                         </div>
                         <div className="text-slate text-meta mt-0.5">
-                          A logo, a brand guide, or both. Saved to Memory and applied here.
+                          {t.quote.addYourBrandingHint}
                         </div>
                       </div>
                       <button
@@ -948,7 +948,7 @@ export function QuoteWizard({
                         onClick={() => setShowBrandUpload(false)}
                         className="text-meta text-text-muted bg-none border-none cursor-pointer p-0"
                       >
-                        Close
+                        {t.common.close}
                       </button>
                     </div>
 
@@ -964,7 +964,7 @@ export function QuoteWizard({
                           {brandBusy === "guide" ? "Reading..." : "Brand guidelines"}
                         </span>
                         <span className="text-caption text-text-muted">
-                          PDF, DOCX, TXT, MD, PNG or JPG.
+                          {t.quote.fileTypes}
                         </span>
                       </DropZone>
 
@@ -992,7 +992,7 @@ export function QuoteWizard({
                 )}
 
                 <div className="text-caption font-bold text-slate uppercase tracking-wide mb-2">
-                  Style
+                  {t.quote.style}
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {(

@@ -2,7 +2,7 @@
 
 import { FreelyLogo } from "@/components/freely-logo";
 import { useInView, Tally, GrowBar, StaggerItem } from "./reveal";
-import type { Dictionary } from "@/lib/i18n";
+import { fill, type Dictionary } from "@/lib/i18n";
 
 /**
  * The product, on the marketing page, drawn rather than photographed.
@@ -29,6 +29,9 @@ import type { Dictionary } from "@/lib/i18n";
  * One invented studio runs through all four, so the page reads as one
  * freelancer's week rather than four unrelated mockups.
  */
+/** Invented, and not a word in any language, so it needs no translation. */
+const INVOICE_NUMBER = "INV-014";
+
 const CLIENTS = {
   aurora: "Aurora Café",
   meridian: "Meridian",
@@ -354,7 +357,7 @@ export function InvoicePreview({ t }: { t: Dictionary }) {
         <div className="px-5 py-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <div className="font-display italic text-xl text-ink">INV-014</div>
+              <div className="font-display italic text-xl text-ink">{INVOICE_NUMBER}</div>
               <div className="text-[9px] text-text-muted mt-0.5">{CLIENTS.northwind}</div>
             </div>
             <span className="text-[9px] font-bold uppercase tracking-wide text-violet bg-violet-tint rounded-full px-2 py-1">
@@ -382,7 +385,7 @@ export function InvoicePreview({ t }: { t: Dictionary }) {
                 <span className="font-body font-bold text-small text-ink tabular-nums">
                   <Tally value={2220} prefix="£" start={inView} />
                 </span>
-                <span className="text-[9px] text-text-muted">14 days</span>
+                <span className="text-[9px] text-text-muted">{fill(t.invoices.dueInDays, { days: 14 })}</span>
               </div>
             </StaggerItem>
           </div>

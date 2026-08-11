@@ -124,10 +124,11 @@ export function MemoryView({
       <Topbar />
       <div>
         <h1 className="font-display italic text-[32px] text-coral m-0">
-          What it knows about your studio.
+          {t.memory.whatItKnows}
         </h1>
         <p className="text-slate text-small mt-2">
-          This context shapes quote generation. Working as: <span className="font-semibold text-slate">{industryLabel(industry)}</span>.
+          {t.memory.shapesGeneration}
+          <span className="font-semibold text-slate">{industryLabel(industry)}</span>.
         </p>
       </div>
       <div className="flex gap-2 flex-wrap">
@@ -156,7 +157,7 @@ export function MemoryView({
             field="toneNotes"
             initial={initialTone}
             label={t.memory.toneNotes}
-            placeholder="e.g. warm but efficient, no exclamation points, avoid jargon..."
+            placeholder={t.memory.tonePlaceholder}
             presets={TONE_PRESETS}
             rows={4}
           />
@@ -241,7 +242,7 @@ function PersonaCard({ initial, updatedAt }: { initial: string | null; updatedAt
         </span>
       </div>
       <p className="text-caption text-text-muted mb-3">
-        Built from your Story, Tone, Context, saved files, and past projects. Correct it any time.
+        {t.memory.personaBuiltFrom}
       </p>
       {editing ? (
         <TextField value={value} onChange={setValue} multiline rows={4} />
@@ -257,11 +258,11 @@ function PersonaCard({ initial, updatedAt }: { initial: string | null; updatedAt
         </Button>
         {editing ? (
           <Button variant="outline" disabled={pending} onClick={saveEdit}>
-            Save edit
+            {t.memory.saveEdit}
           </Button>
         ) : (
           <Button variant="ghost" icon={Pencil} disabled={pending} onClick={() => setEditing(true)}>
-            Correct it
+            {t.memory.correctIt}
           </Button>
         )}
       </div>
@@ -286,6 +287,7 @@ function AutosaveNotes({
   presets?: Preset[];
   rows?: number;
 }) {
+  const t = useT();
   const [value, setValue] = useState(initial);
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
   const timer = useRef<ReturnType<typeof setTimeout>>();
@@ -319,7 +321,7 @@ function AutosaveNotes({
       {presets && presets.length > 0 && (
         <div className="mb-3">
           <div className="text-caption text-text-muted mb-1.5">
-            Start from a preset, one click sets the text below, then edit as you like.
+            {t.memory.presetHint}
           </div>
           <div className="flex flex-wrap gap-2">
             {presets.map((p) => (
@@ -675,7 +677,7 @@ function BrandingCard({
 
       <div className="bg-paper rounded-lg p-3.5 mb-4">
         <div className="flex items-center gap-1.5 text-caption font-semibold text-slate mb-1.5 uppercase tracking-wide">
-          <FileText size={12} /> Brand guidelines
+          <FileText size={12} /> {t.memory.brandGuidelines}
         </div>
         <p className="text-meta text-text-muted mb-2">
           The AI pulls out colors and typeface names. Colors apply immediately; fonts are shown for reference.
@@ -712,7 +714,7 @@ function BrandingCard({
 
       <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 items-start">
         <div>
-          <div className="text-caption font-semibold text-slate mb-2 uppercase tracking-wide">Logo</div>
+          <div className="text-caption font-semibold text-slate mb-2 uppercase tracking-wide">{t.memory.logo}</div>
           {logo ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={logo} alt="Logo" className="h-10 mb-2" />
@@ -728,7 +730,7 @@ function BrandingCard({
             <span className="font-body font-bold text-small text-violet">{t.memory.uploadLogo}</span>
           </DropZone>
           <div className="text-caption text-text-muted mt-1 max-w-[160px]">
-            PNG with a transparent background, at least 200×200px.
+            {t.memory.logoRequirements}
           </div>
           {logoError && <div className="text-overdue text-caption mt-1 max-w-[180px]">{logoError}</div>}
         </div>
@@ -801,7 +803,7 @@ function BrandingCard({
           {heading && (
             <div>
               <div className="text-caption font-semibold text-slate mb-1 uppercase tracking-wide">
-                Heading font
+                {t.memory.headingFont}
               </div>
               <div className="text-sm text-ink">{heading}</div>
             </div>
@@ -809,7 +811,7 @@ function BrandingCard({
           {body && (
             <div>
               <div className="text-caption font-semibold text-slate mb-1 uppercase tracking-wide">
-                Body font
+                {t.memory.bodyFont}
               </div>
               <div className="text-sm text-ink">{body}</div>
             </div>
@@ -817,8 +819,7 @@ function BrandingCard({
         </div>
       )}
       <p className="text-caption text-text-muted mt-2.5">
-        Default currency for new quotes, each quote can still be changed individually in the
-        wizard.
+        {t.memory.currencyHint}
       </p>
       {pending && <div className="text-xs text-text-muted mt-2">{t.common.saving}</div>}
     </Card>
@@ -856,6 +857,7 @@ function ConnectorRow({
   icon: React.ReactNode;
   info?: ConnectionInfo;
 }) {
+  const t = useT();
   const [working, setWorking] = useState(false);
 
   return (
@@ -869,7 +871,7 @@ function ConnectorRow({
             <span className="font-body font-semibold text-sm text-ink">{PROVIDER_LABEL[provider]}</span>
             {!info && (
               <span className="font-body font-semibold text-caption uppercase tracking-wide text-text-muted bg-white border border-line rounded-full px-2 py-0.5">
-                Coming soon
+                {t.memory.comingSoon}
               </span>
             )}
           </div>
@@ -889,11 +891,11 @@ function ConnectorRow({
             window.location.reload();
           }}
         >
-          Disconnect
+          {t.memory.disconnect}
         </Button>
       ) : (
         <Button variant="ghost" disabled>
-          Coming soon
+          {t.memory.comingSoon}
         </Button>
       )}
     </div>

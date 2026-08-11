@@ -83,23 +83,33 @@ describe("the pages outside the app shell read every string from the dictionary"
    * this covers all four areas. It reads the text out of the JSX and fails on
    * any of it that is a literal.
    *
-   * The rest of the app is not covered yet: those screens sit behind the
-   * language switcher and are translated, but they have not been swept, so
-   * turning this on for src/ wholesale would fail on a backlog rather than on
-   * a regression.
+   * It covers the whole of src/ now. It used to check only marketing, auth and
+   * onboarding, on the grounds that the rest was a backlog rather than a
+   * regression. The backlog was 154 strings, including every heading on the
+   * quote PDF and the public quote page, so a Spanish quote reached the client
+   * with English headings and nothing anywhere said so. It has been swept, and
+   * this is what stops it coming back.
    */
-  const areas = [
-    "src/app/marketing.tsx",
-    "src/app/(auth)",
-    "src/app/(onboarding)",
-  ];
+  const areas = ["src"];
 
-  const files = areas.flatMap((area) =>
-    area.endsWith(".tsx") ? [area] : sourceFiles(area).filter((f) => f.endsWith(".tsx")),
-  );
+  /**
+   * What is allowed to stay in English, and why.
+   *
+   * "Freely" is a brand name. The terms page is a legal document, and a
+   * mistranslated liability clause is worse than an English one, so it is
+   * deliberately left until it can be translated by someone qualified to.
+   */
+  const exemptFiles = ["src/app/terms/page.tsx"];
+  const exemptText = ["Freely"];
+
+  const files = areas
+    .flatMap((area) =>
+      area.endsWith(".tsx") ? [area] : sourceFiles(area).filter((f) => f.endsWith(".tsx")),
+    )
+    .filter((f) => !exemptFiles.includes(f));
 
   it("finds the files to check", () => {
-    expect(files.length).toBeGreaterThanOrEqual(6);
+    expect(files.length).toBeGreaterThanOrEqual(40);
   });
 
   for (const path of files) {
@@ -121,7 +131,7 @@ describe("the pages outside the app shell read every string from the dictionary"
         // one-word label like "Files" is still caught.
         const looksLikeCode =
           /[;{}|]/.test(text) || text.startsWith(")") || text.endsWith("(");
-        if (text && !looksLikeCode) literals.push(text);
+        if (text && !looksLikeCode && !exemptText.includes(text)) literals.push(text);
       }
 
       expect(

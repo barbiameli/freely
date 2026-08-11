@@ -33,7 +33,7 @@ export default async function InvoicePage({ params }: { params: { projectId: str
             ? "Send this for real payment via Stripe's hosted checkout, Freely never touches card details."
             : "A computed summary, connect Stripe (STRIPE_SECRET_KEY in .env) to accept real payment."}{" "}
           <Link href={`/track/${project.id}`} className="text-violet font-semibold">
-            Back to project
+            {t.invoices.backToProject}
           </Link>
         </p>
       </div>
@@ -58,7 +58,7 @@ export default async function InvoicePage({ params }: { params: { projectId: str
           <Row label="Payment status" value={project.invoiceStatus} />
         </div>
         <div className="flex justify-between items-center pt-4">
-          <Label>Total</Label>
+          <Label>{t.publicQuote.total}</Label>
           <span className="font-body font-bold text-2xl text-violet">
             {currencySymbol(project.currency)}
             {project.price.toLocaleString()}

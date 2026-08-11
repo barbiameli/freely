@@ -257,7 +257,7 @@ export function InvoiceEditor({
           <p className="text-slate text-lead mt-2">
             {form.paid ? "Marked as paid." : "Not paid yet."}{" "}
             <Link href="/invoices" className="text-violet font-semibold">
-              All invoices
+              {t.invoices.allInvoices}
             </Link>
           </p>
         </div>
@@ -359,7 +359,7 @@ export function InvoiceEditor({
           </div>
           <label className="block flex-1">
             <span className="block text-caption font-bold text-slate uppercase tracking-wide mb-1">
-              Currency
+              {t.invoices.currency}
             </span>
             <select
               value={form.currency}
@@ -529,7 +529,7 @@ export function InvoiceEditor({
             }
             className="flex items-center gap-1.5 font-body font-bold text-small text-violet bg-none border-none cursor-pointer p-0 self-start"
           >
-            <Plus size={13} /> Add a line
+            <Plus size={13} /> {t.invoices.addALine}
           </button>
         </div>
 
@@ -548,7 +548,7 @@ export function InvoiceEditor({
       <Card>
         <SectionHeading>{t.memory.branding}</SectionHeading>
         <p className="text-meta text-text-muted mb-3">
-          Defaults to whatever the matching quote used.
+          {t.invoices.currencyDefault}
         </p>
         <div className="flex gap-2.5 flex-wrap">
           {BRANDING_OPTIONS.map((opt) => {
@@ -586,7 +586,7 @@ export function InvoiceEditor({
           <div>
             <SectionHeading required>{t.invoices.paymentDetails}</SectionHeading>
             <p className="text-meta text-text-muted mt-1 mb-0">
-              These go into the PDF and are not saved to your Freely account.
+              {t.invoices.paymentNotStored}
             </p>
           </div>
         </div>
@@ -602,10 +602,7 @@ export function InvoiceEditor({
               differs by country, so any fixed set of inputs would be wrong for
               most people. */}
           <p className="text-meta text-text-muted m-0 -mt-1">
-            Whatever your bank actually needs, typed exactly as it should print. IBAN and BIC or
-            SWIFT across the EU, sort code and account number in the UK, routing and account number
-            in the US, CLABE in Mexico, and so on. Include the account name, since some banks
-            reject a transfer without it.
+            {t.invoices.paymentBlockHint}
           </p>
           <Field
             label={t.invoices.extraLine}
@@ -647,7 +644,7 @@ export function InvoiceEditor({
           }}
           className="text-small text-text-muted hover:text-overdue underline bg-none border-none cursor-pointer p-0"
         >
-          Delete this invoice
+          {t.invoices.deleteThisInvoice}
         </button>
         <div className="flex flex-wrap items-center gap-3">
           <Button variant="outline" disabled={saving} onClick={() => save()}>

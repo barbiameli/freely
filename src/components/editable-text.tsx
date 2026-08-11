@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Pencil } from "lucide-react";
+import { useT } from "@/lib/i18n/context";
 
 /**
  * A block of generated text with an explicit Edit link and a Save button.
@@ -39,6 +40,7 @@ export function EditableBlock({
    * contrast. */
   tone?: "light" | "dark";
 }) {
+  const t = useT();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const [saving, setSaving] = useState(false);
@@ -114,7 +116,7 @@ export function EditableBlock({
             disabled={saving}
             className="font-body font-bold text-meta text-white bg-violet rounded-lg px-3.5 py-1.5 border-none cursor-pointer disabled:opacity-50"
           >
-            {saving ? "Saving..." : "Save"}
+            {saving ? t.common.saving : t.common.save}
           </button>
           <button
             type="button"
@@ -122,7 +124,7 @@ export function EditableBlock({
             disabled={saving}
             className="text-meta text-text-muted bg-none border-none cursor-pointer p-0"
           >
-            Cancel
+            {t.common.cancel}
           </button>
         </div>
       </div>
@@ -139,7 +141,7 @@ export function EditableBlock({
           tone === "dark" ? "text-white/70 hover:text-white" : "text-violet"
         }`}
       >
-        <Pencil size={11} /> Edit
+        <Pencil size={11} /> {t.common.edit}
       </button>
     </div>
   );
@@ -176,6 +178,7 @@ export function EditableSection({
   tone?: "light" | "dark";
   editLabel?: string;
 }) {
+  const t = useT();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -260,7 +263,7 @@ export function EditableSection({
           disabled={saving}
           className="font-body font-bold text-meta text-white bg-violet rounded-lg px-3.5 py-1.5 border-none cursor-pointer disabled:opacity-50"
         >
-          {saving ? "Saving..." : "Save"}
+          {saving ? t.common.saving : t.common.save}
         </button>
         <button
           type="button"
@@ -270,7 +273,7 @@ export function EditableSection({
             tone === "dark" ? "text-white/60" : "text-text-muted"
           }`}
         >
-          Cancel
+          {t.common.cancel}
         </button>
       </div>
     </div>

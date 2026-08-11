@@ -66,8 +66,7 @@ export function TeamView({
           {teamName ?? "Your studio"}
         </h1>
         <p className="text-slate text-small mt-2">
-          Everyone on your team sees the same Quotes, Projects, and Diary, invite a teammate to
-          share the work.
+          {t.team.sharedWorkspace}
         </p>
       </div>
 
@@ -81,7 +80,7 @@ export function TeamView({
               placeholder={t.team.invitePlaceholder}
             />
             <Button icon={UserPlus} disabled={working} onClick={handleInvite}>
-              Create invite
+              {t.team.createInvite}
             </Button>
           </div>
           {error && <div className="text-overdue text-xs mt-2">{error}</div>}

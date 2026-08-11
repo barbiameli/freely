@@ -1,4 +1,7 @@
+"use client";
+
 import { formatDay, relativeDay, daysBetween } from "@/lib/schedule";
+import { useT } from "@/lib/i18n/context";
 
 export interface TimelineMarker {
   id: string;
@@ -25,6 +28,7 @@ export function TimelineBar({
   markers: TimelineMarker[];
   now?: Date;
 }) {
+  const t = useT();
   const span = Math.max(1, daysBetween(startDate, dueDate));
   const at = (date: Date) => Math.min(100, Math.max(0, (daysBetween(startDate, date) / span) * 100));
   const todayAt = at(now);
@@ -68,13 +72,13 @@ export function TimelineBar({
 
       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-caption text-text-muted">
         <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-coral" /> Due
+          <span className="w-2 h-2 rounded-full bg-coral" /> {t.track.due}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-success" /> Done
+          <span className="w-2 h-2 rounded-full bg-success" /> {t.track.done}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-overdue" /> Past the date
+          <span className="w-2 h-2 rounded-full bg-overdue" /> {t.track.pastTheDate}
         </span>
       </div>
     </div>

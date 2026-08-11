@@ -36,7 +36,7 @@ export function NewInvoiceButton({
   if (!open) {
     return (
       <Button icon={Plus} disabled={pending} onClick={() => setOpen(true)}>
-        New invoice
+        {t.invoices.newInvoice}
       </Button>
     );
   }
@@ -44,7 +44,7 @@ export function NewInvoiceButton({
   return (
     <div className="bg-white border border-line rounded-card shadow-panel p-4 w-full md:w-[320px]">
       <div className="text-caption font-bold text-slate uppercase tracking-wide mb-2.5">
-        Start from
+        {t.invoices.startFrom}
       </div>
       <div className="flex flex-col gap-1.5 max-h-[240px] overflow-y-auto">
         {projects.map((p) => (
@@ -78,7 +78,7 @@ export function NewInvoiceButton({
           onClick={() => setOpen(false)}
           className="text-small text-text-muted bg-none border-none cursor-pointer p-0"
         >
-          Cancel
+          {t.common.cancel}
         </button>
       </div>
     </div>

@@ -488,7 +488,7 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
 
         <div className="flex justify-between items-center pt-6">
           <span className="text-small" style={{ color: muted }}>
-            Total
+            {q.total}
           </span>
           <span className="text-[22px] font-bold">
             {currencySymbol(brief.currency)}{brief.price.toLocaleString()}

@@ -58,6 +58,12 @@ export const es: Dictionary = {
   },
 
   quote: {
+    referencesHint: "Capturas, moodboards o ejemplos de lo que tienes en la cabeza. Van en el presupuesto para que el cliente vea por dónde vas.",
+    branding: "Marca",
+    addYourBranding: "Añade tu marca",
+    addYourBrandingHint: "Un logo, un manual de marca, o los dos. Se guardan en Memoria y se aplican aquí.",
+    fileTypes: "PDF, DOCX, TXT, MD, PNG o JPG.",
+    style: "Estilo",
     titleStep1: "¿Qué vamos a presupuestar?",
     subtitleStep1: "De aquí sale el presupuesto. Solo hacen falta el proyecto y tu tarifa.",
     titleStep2: "¿Cómo se lo enviamos?",
@@ -199,6 +205,8 @@ export const es: Dictionary = {
   },
 
   track: {
+    due: "Entrega",
+    pastTheDate: "Fuera de plazo",
     statusActive: "En marcha",
     statusDue: "Toca pronto",
     statusOverdue: "Fuera de fecha",
@@ -279,6 +287,20 @@ export const es: Dictionary = {
   memory: {
     followInterface: "El mismo que la app",
     title: "Memoria",
+    whatItKnows: "Lo que sabe de tu estudio.",
+    shapesGeneration: "Esto marca cada presupuesto. Trabajas en: ",
+    personaBuiltFrom: "Sale de tu Historia, tu Tono, tu Contexto, los archivos guardados y los proyectos anteriores. Corrígelo cuando quieras.",
+    saveEdit: "Guardar",
+    correctIt: "Corregirlo",
+    presetHint: "Empieza por una plantilla y edítala a tu gusto.",
+    brandGuidelines: "Manual de marca",
+    logo: "Logo",
+    logoRequirements: "PNG con fondo transparente, mínimo 200x200px.",
+    headingFont: "Tipografía de titulares",
+    bodyFont: "Tipografía de texto",
+    currencyHint: "La que se usa por defecto en los presupuestos nuevos. Cada uno se puede cambiar aparte.",
+    disconnect: "Desconectar",
+    tonePlaceholder: "p. ej. cercana pero directa, sin exclamaciones, nada de jerga...",
     instructions: "Instrucciones",
     tone: "Tono",
     story: "Trayectoria y contexto",
@@ -311,6 +333,17 @@ export const es: Dictionary = {
   },
 
   invoices: {
+    allInvoices: "Todas las facturas",
+    dueInDays: "{days} días",
+    currency: "Moneda",
+    addALine: "Añadir línea",
+    currencyDefault: "Por defecto, la del presupuesto correspondiente.",
+    paymentBlockHint: "Lo que pida tu banco, tal cual tiene que salir impreso. Pon el nombre del titular: algunos bancos rechazan la transferencia sin él.",
+    deleteThisInvoice: "Eliminar esta factura",
+    startFrom: "Partir de",
+    openPaymentLink: "Abrir enlace de pago",
+    stripeMissing: "Añade STRIPE_SECRET_KEY a .env para activarlo.",
+    backToProject: "Volver al proyecto",
     readyToBill: "{count} listos para facturar",
     allBilled: "Ya está facturado todo este proyecto.",
     from: "De",
@@ -393,6 +426,9 @@ export const es: Dictionary = {
   },
 
   account: {
+    basicInfoOnly: "Nada de esto se comparte con los clientes. La marca y las preferencias de presupuesto están en Memoria.",
+    updated: "Actualizado",
+    deleteWarning: "Elimina para siempre tu cuenta, tus presupuestos, tus proyectos y todo lo guardado en Memoria.",
     title: "Cuenta",
     name: "Nombre",
     studioName: "Nombre del estudio",
@@ -411,6 +447,8 @@ export const es: Dictionary = {
   },
 
   team: {
+    sharedWorkspace: "Todo tu equipo ve los mismos Presupuestos, Proyectos y Diario.",
+    createInvite: "Crear invitación",
     title: "Equipo",
     members: "Miembros",
     justYou: "Por ahora solo estás tú, invita a alguien arriba.",

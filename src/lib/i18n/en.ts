@@ -48,6 +48,12 @@ export const en = {
   },
 
   quote: {
+    referencesHint: "Screenshots, moodboards or examples of the kind of thing you mean. They go on the quote so the client sees the direction.",
+    branding: "Branding",
+    addYourBranding: "Add your branding",
+    addYourBrandingHint: "A logo, a brand guide, or both. Saved to Memory and applied here.",
+    fileTypes: "PDF, DOCX, TXT, MD, PNG or JPG.",
+    style: "Style",
     titleStep1: "What are we quoting?",
     subtitleStep1: "Everything the quote gets built from. Only the brief and your rate are needed.",
     titleStep2: "How should we package it?",
@@ -198,6 +204,8 @@ export const en = {
   },
 
   track: {
+    due: "Due",
+    pastTheDate: "Past the date",
     statusActive: "In progress",
     statusDue: "Due soon",
     statusOverdue: "Past the date",
@@ -280,6 +288,20 @@ export const en = {
   memory: {
     followInterface: "Same as the app",
     title: "Memory",
+    whatItKnows: "What it knows about your studio.",
+    shapesGeneration: "This shapes every quote. Working as: ",
+    personaBuiltFrom: "Built from your Story, Tone, Context, saved files and past projects. Correct it any time.",
+    saveEdit: "Save edit",
+    correctIt: "Correct it",
+    presetHint: "Start from a preset, then edit as you like.",
+    brandGuidelines: "Brand guidelines",
+    logo: "Logo",
+    logoRequirements: "PNG with a transparent background, at least 200x200px.",
+    headingFont: "Heading font",
+    bodyFont: "Body font",
+    currencyHint: "The default for new quotes. Each quote can still be changed on its own.",
+    disconnect: "Disconnect",
+    tonePlaceholder: "e.g. warm but efficient, no exclamation points, avoid jargon...",
     instructions: "Instructions",
     tone: "Tone",
     story: "Story and context",
@@ -312,6 +334,17 @@ export const en = {
   },
 
   invoices: {
+    allInvoices: "All invoices",
+    dueInDays: "{days} days",
+    currency: "Currency",
+    addALine: "Add a line",
+    currencyDefault: "Defaults to whatever the matching quote used.",
+    paymentBlockHint: "Whatever your bank needs, typed exactly as it should print. Include the account name, since some banks reject a transfer without it.",
+    deleteThisInvoice: "Delete this invoice",
+    startFrom: "Start from",
+    openPaymentLink: "Open payment link",
+    stripeMissing: "Add STRIPE_SECRET_KEY to .env to enable this.",
+    backToProject: "Back to project",
     readyToBill: "{count} ready to bill",
     allBilled: "Everything on this project has been billed.",
     from: "From",
@@ -394,6 +427,9 @@ export const en = {
   },
 
   account: {
+    basicInfoOnly: "Nothing here is shared with clients. Branding and quoting preferences live in Memory.",
+    updated: "Updated",
+    deleteWarning: "Permanently deletes your account, quotes, projects and everything saved to Memory.",
     title: "Account",
     name: "Name",
     studioName: "Studio name",
@@ -412,6 +448,8 @@ export const en = {
   },
 
   team: {
+    sharedWorkspace: "Everyone on your team sees the same Quotes, Projects and Diary.",
+    createInvite: "Create invite",
     title: "Team",
     members: "Members",
     justYou: "Just you for now, invite a teammate above.",

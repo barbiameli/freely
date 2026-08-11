@@ -29,8 +29,7 @@ export function AccountView({
       <div>
         <h1 className="font-display italic text-[32px] text-coral m-0">{t.account.yourAccount}</h1>
         <p className="text-slate text-small mt-2">
-          Basic info only, nothing here is shared with clients. Branding and quoting preferences
-          live in Memory.
+          {t.account.basicInfoOnly}
         </p>
       </div>
       <div className="flex flex-col gap-5 max-w-lg">
@@ -77,7 +76,7 @@ function BasicInfoCard({
       <Label>{t.account.basicInfo}</Label>
       <div className="flex flex-col gap-2.5 mt-2.5">
         <div>
-          <div className="text-caption text-text-muted mb-1">Name</div>
+          <div className="text-caption text-text-muted mb-1">{t.account.name}</div>
           <TextField value={nameValue} onChange={setNameValue} placeholder={t.onboarding.yourName} />
         </div>
         <div>
@@ -186,7 +185,7 @@ function PasswordCard({ hasPassword }: { hasPassword: boolean }) {
         >
           {saving ? "Updating..." : hasPassword ? "Update password" : "Set password"}
         </Button>
-        {saved && <span className="text-xs text-success font-semibold">Updated</span>}
+        {saved && <span className="text-xs text-success font-semibold">{t.account.updated}</span>}
       </div>
     </Card>
   );
@@ -223,7 +222,7 @@ function DangerZoneCard() {
     <Card className="border-overdue/30">
       <Label>{t.account.dangerZone}</Label>
       <p className="text-caption text-text-muted mt-1 mb-2.5">
-        Permanently deletes your account, quotes, projects, and everything saved to Memory.
+        {t.account.deleteWarning}
       </p>
       {error && <div className="text-overdue text-xs mb-2.5">{error}</div>}
       <Button

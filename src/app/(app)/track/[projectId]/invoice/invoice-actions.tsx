@@ -46,12 +46,12 @@ export function InvoiceActions({
       </Button>
       {!stripeConfigured && (
         <div className="text-xs text-text-muted">
-          Add STRIPE_SECRET_KEY to .env to enable this.
+          {t.invoices.stripeMissing}
         </div>
       )}
       {checkoutUrl && (
         <a href={checkoutUrl} target="_blank" rel="noreferrer" className="text-xs text-violet font-semibold">
-          Open payment link
+          {t.invoices.openPaymentLink}
         </a>
       )}
       {error && <div className="text-overdue text-xs">{error}</div>}
