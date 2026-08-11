@@ -63,6 +63,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     fromEmail: invoice.fromEmail,
     fromAddress: invoice.fromAddress,
     lineItems: invoice.lineItems,
+    itemised: invoice.itemised,
     currency: invoice.currency,
     taxRate: invoice.taxRate,
     notes: invoice.notes,

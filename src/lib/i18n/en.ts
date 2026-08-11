@@ -296,6 +296,9 @@ export const en = {
   },
 
   invoices: {
+    from: "From",
+    location: "Location",
+    addYourDetails: "Add your name and email",
     paidShort: "Paid",
     overdue: "Overdue",
     unpaid: "Unpaid",

@@ -29,6 +29,7 @@ export default async function InvoicePage({ params }: { params: { invoiceId: str
         fromEmail: invoice.fromEmail,
         fromAddress: invoice.fromAddress,
         lineItems: invoice.lineItems,
+        itemised: invoice.itemised,
         currency: invoice.currency,
         taxRate: invoice.taxRate,
         notes: invoice.notes,

@@ -31,6 +31,8 @@ interface EditorInvoice {
   fromEmail: string;
   fromAddress: string;
   lineItems: InvoiceLineItem[];
+  /** Deliverables and hours, or one line and a total. */
+  itemised: boolean;
   currency: string;
   taxRate: number;
   notes: string;
@@ -122,6 +124,7 @@ export function InvoiceEditor({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [downloading, setDownloading] = useState(false);
+  const [showFrom, setShowFrom] = useState(!invoice.fromName);
 
   // Never sent to the server except in the body of the download request, and
   // never stored there.
@@ -267,10 +270,30 @@ export function InvoiceEditor({
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 md:gap-5">
-        <Card className="flex-1">
-          <SectionHeading required>From</SectionHeading>
-          <div className="flex flex-col gap-2.5 mt-1">
+      {/* Your own details are the same on every invoice you will ever send, so
+          they sit behind a summary line rather than being five fields to scroll
+          past each time. Open by default only when they are not filled in. */}
+      <Card>
+        <button
+          type="button"
+          onClick={() => setShowFrom((v) => !v)}
+          className="w-full flex items-center justify-between gap-3 bg-none border-none cursor-pointer p-0 text-left"
+        >
+          <span className="min-w-0">
+            <span className="block text-caption font-bold text-slate uppercase tracking-wide">
+              {t.invoices.from}
+            </span>
+            <span className="block text-small text-ink truncate mt-0.5">
+              {[form.fromName, form.fromEmail].filter(Boolean).join(" · ") || t.invoices.addYourDetails}
+            </span>
+          </span>
+          <span className="text-caption font-semibold text-violet shrink-0">
+            {showFrom ? t.common.close : t.common.edit}
+          </span>
+        </button>
+
+        {showFrom && (
+          <div className="flex flex-col gap-2.5 mt-3 pt-3 border-t border-line">
             <Field label={t.invoices.name} value={form.fromName} onChange={(v) => set("fromName", v)} />
             <Field
               label={t.invoices.disciplines}
@@ -281,14 +304,16 @@ export function InvoiceEditor({
             <Field label={t.invoices.website} value={form.fromWebsite} onChange={(v) => set("fromWebsite", v)} />
             <Field label={t.invoices.email} value={form.fromEmail} onChange={(v) => set("fromEmail", v)} />
             <Field
-              label="Location"
+              label={t.invoices.location}
               value={form.fromAddress}
               onChange={(v) => set("fromAddress", v)}
               placeholder={t.onboarding.locationPlaceholder}
             />
           </div>
-        </Card>
+        )}
+      </Card>
 
+      <div className="flex flex-col md:flex-row gap-4 md:gap-5">
         <Card className="flex-1">
           <SectionHeading required>{t.invoices.billedTo}</SectionHeading>
           <div className="flex flex-col gap-2.5 mt-1">
@@ -352,6 +377,28 @@ export function InvoiceEditor({
 
       <Card>
         <SectionHeading required>{t.invoices.lineItems}</SectionHeading>
+
+        {/* What the client sees. Two real options rather than a checkbox called
+            something like "show detail": one bills a finished project as a
+            figure, the other shows the deliverables and the time each took. */}
+        <div className="flex flex-wrap gap-1.5 mt-1 mb-3">
+          {[
+            { value: true, label: t.invoices.itemised },
+            { value: false, label: t.invoices.summaryOnly },
+          ].map((option) => (
+            <Chip
+              key={String(option.value)}
+              active={form.itemised === option.value}
+              onClick={async () => {
+                set("itemised", option.value);
+                await save({ itemised: option.value });
+              }}
+            >
+              {option.label}
+            </Chip>
+          ))}
+        </div>
+
         <div className="flex flex-col gap-3 mt-1">
           {form.lineItems.map((item, i) => (
             <div key={i} className="bg-paper rounded-lg p-3">

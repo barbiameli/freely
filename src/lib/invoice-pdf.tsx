@@ -46,6 +46,8 @@ export interface InvoicePaymentDetails {
 }
 
 export interface InvoicePdfData {
+  /** Deliverables with hours, or one line and a total. */
+  itemised?: boolean;
   number: number;
   issuedAt: string;
   dueAt: string;
@@ -208,6 +210,9 @@ export async function renderInvoicePdf(invoice: InvoicePdfData): Promise<Buffer>
   });
 
   const subtotal = invoice.lineItems.reduce((sum, item) => sum + item.amount, 0);
+  // Defaults to itemised: an older invoice with no flag stored was written
+  // when every invoice showed the breakdown, so that is what it showed.
+  const itemised = invoice.itemised !== false;
   const tax = invoice.taxRate > 0 ? (subtotal * invoice.taxRate) / 100 : 0;
   const total = subtotal + tax;
 
@@ -252,10 +257,14 @@ export async function renderInvoicePdf(invoice: InvoicePdfData): Promise<Buffer>
           </View>
         </View>
 
+        {/* Summary invoices drop the rate and hours columns rather than
+            filling them with dashes: a client being billed one figure for a
+            finished project does not need two empty columns explaining that
+            the breakdown was withheld. */}
         <View style={styles.tableHead}>
           <Text style={styles.thDesc}>Description</Text>
-          <Text style={styles.thNum}>Rate</Text>
-          <Text style={styles.thNum}>Hrs</Text>
+          {itemised ? <Text style={styles.thNum}>Rate</Text> : null}
+          {itemised ? <Text style={styles.thNum}>Hrs</Text> : null}
           <Text style={styles.thAmount}>Amount</Text>
         </View>
 
@@ -274,10 +283,12 @@ export async function renderInvoicePdf(invoice: InvoicePdfData): Promise<Buffer>
               <Text style={styles.itemTitle}>{item.title}</Text>
               {item.description ? <Text style={styles.itemDesc}>{item.description}</Text> : null}
             </View>
-            <Text style={styles.cellNum}>
-              {item.rate ? `${currencySymbol(invoice.currency)}${item.rate}/hr` : "-"}
-            </Text>
-            <Text style={styles.cellNum}>{item.hours ? item.hours : "-"}</Text>
+            {itemised ? (
+              <Text style={styles.cellNum}>
+                {item.rate ? `${currencySymbol(invoice.currency)}${item.rate}/hr` : "-"}
+              </Text>
+            ) : null}
+            {itemised ? <Text style={styles.cellNum}>{item.hours ? item.hours : "-"}</Text> : null}
             <Text style={styles.cellAmount}>{money(item.amount, invoice.currency)}</Text>
           </View>
         ))}

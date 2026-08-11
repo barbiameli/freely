@@ -295,6 +295,9 @@ export const es: Dictionary = {
   },
 
   invoices: {
+    from: "De",
+    location: "Ubicación",
+    addYourDetails: "Pon tu nombre y tu email",
     paidShort: "Pagada",
     overdue: "Vencida",
     unpaid: "Sin pagar",

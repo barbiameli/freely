@@ -304,6 +304,7 @@ export type InvoicePatch = Partial<
     | "branding"
     | "template"
     | "paid"
+    | "itemised"
   >
 > & {
   issuedAt?: string;
