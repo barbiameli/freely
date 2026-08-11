@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Check, ChevronDown, ChevronRight, Pencil, Sparkles } from "lucide-react";
 import {
   breakDownDeliverableAction,
@@ -12,6 +13,7 @@ import { toggleDeliverableAction } from "@/actions/projects";
 import { deliverableCompletion, shortName } from "@/lib/project-health";
 import { formatDay } from "@/lib/schedule";
 import { useAction } from "@/lib/use-action";
+import { useOptimisticFlag } from "@/lib/use-optimistic-flag";
 import { ActionError } from "@/components/ui/action-error";
 // Not a cycle: flags-panel only takes the types from here, and a type import is
 // erased before anything runs.
@@ -76,6 +78,43 @@ function Checkbox({
 }
 
 /**
+ * One step, ticking immediately.
+ *
+ * Its own component because each row needs its own optimistic state, and a
+ * hook cannot be called inside a map.
+ */
+function StepRow({ step }: { step: StepView }) {
+  const router = useRouter();
+  const [done, toggle] = useOptimisticFlag(step.done, (next) =>
+    toggleStepAction(step.id, next).then((r) => {
+      if (r.ok) router.refresh();
+      return r;
+    })
+  );
+
+  return (
+    <div className="flex items-start gap-2.5 py-1">
+      <Checkbox
+        size={15}
+        done={done}
+        label={`Mark step ${done ? "not done" : "done"}`}
+        onClick={toggle}
+      />
+      <span
+        className={`flex-1 text-small leading-[1.6] ${
+          done ? "text-text-muted line-through" : "text-slate"
+        }`}
+      >
+        {step.name}
+      </span>
+      <span className="text-caption text-text-muted tabular-nums shrink-0 pt-[3px] w-10 text-right">
+        {step.estimateHours > 0 ? `${step.estimateHours}h` : ""}
+      </span>
+    </div>
+  );
+}
+
+/**
  * One deliverable, with its steps.
  *
  * Editing used to be per step: click the text, change it, blur to save, with a
@@ -98,6 +137,7 @@ export function DeliverableItem({
 }) {
   const t = useT();
   const locale = useLocale();
+  const router = useRouter();
   const { run, pending, error } = useAction();
   const [breaking, setBreaking] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -113,6 +153,15 @@ export function DeliverableItem({
     dueAt,
     steps: deliverable.steps,
   });
+  // Ticked locally first, written behind it. See lib/use-optimistic-flag.
+  // The action flips whatever the row currently is, so it takes no argument.
+  const [done, toggleDone] = useOptimisticFlag(deliverable.done, () =>
+    toggleDeliverableAction(projectId, deliverable.id).then((r) => {
+      if (r.ok) router.refresh();
+      return r;
+    })
+  );
+
   const doneCount = deliverable.steps.filter((s) => s.done).length;
 
   function openEditor() {
@@ -139,9 +188,9 @@ export function DeliverableItem({
     <div className="border-b border-line last:border-b-0">
       <div className="flex items-start gap-3 py-3">
         <Checkbox
-          done={deliverable.done}
-          label={`Mark ${shortName(deliverable.name, 40)} ${deliverable.done ? "not done" : "done"}`}
-          onClick={() => run(() => toggleDeliverableAction(projectId, deliverable.id))}
+          done={done}
+          label={`Mark ${shortName(deliverable.name, 40)} ${done ? "not done" : "done"}`}
+          onClick={toggleDone}
         />
 
         <button
@@ -169,7 +218,7 @@ export function DeliverableItem({
             <span
               className={`block font-body font-semibold text-body tracking-[-0.01em] ${
                 expanded ? "" : "line-clamp-2"
-              } ${deliverable.done ? "text-text-muted line-through" : "text-ink"}`}
+              } ${done ? "text-text-muted line-through" : "text-ink"}`}
             >
               {deliverable.name}
             </span>
@@ -282,24 +331,7 @@ export function DeliverableItem({
                   lines up and can be read down. */}
               <div className="flex flex-col gap-0.5 max-w-[92ch]">
                 {deliverable.steps.map((step) => (
-                  <div key={step.id} className="flex items-start gap-2.5 py-1">
-                    <Checkbox
-                      size={15}
-                      done={step.done}
-                      label={`Mark step ${step.done ? "not done" : "done"}`}
-                      onClick={() => run(() => toggleStepAction(step.id, !step.done))}
-                    />
-                    <span
-                      className={`flex-1 text-small leading-[1.6] ${
-                        step.done ? "text-text-muted line-through" : "text-slate"
-                      }`}
-                    >
-                      {step.name}
-                    </span>
-                    <span className="text-caption text-text-muted tabular-nums shrink-0 pt-[3px] w-10 text-right">
-                      {step.estimateHours > 0 ? `${step.estimateHours}h` : ""}
-                    </span>
-                  </div>
+                  <StepRow key={step.id} step={step} />
                 ))}
               </div>
 

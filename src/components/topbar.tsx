@@ -88,7 +88,7 @@ export function Topbar() {
 
             <button
               type="button"
-              onClick={() => signOut({ callbackUrl: "/signin" })}
+              onClick={() => signOut({ callbackUrl: "/" })}
               className="flex items-center gap-2.5 px-3.5 py-2.5 text-small text-overdue hover:bg-paper w-full text-left bg-none border-none cursor-pointer border-t border-line mt-1"
             >
               <LogOut size={14} />

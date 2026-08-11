@@ -215,7 +215,7 @@ function DangerZoneCard() {
       setError(result.error);
       return;
     }
-    await signOut({ callbackUrl: "/signin" });
+    await signOut({ callbackUrl: "/" });
   }
 
   return (
