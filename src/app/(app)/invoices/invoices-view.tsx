@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { currencySymbol } from "@/lib/currencies";
 import { useT } from "@/lib/i18n/context";
 import { InvoiceQueueList, type QueueRow } from "./invoice-queue-list";
@@ -142,10 +141,6 @@ export function InvoicesView({
         </div>
       )}
 
-      <Card>
-        <Label>{t.invoices.paymentDetails}</Label>
-        <p className="text-meta text-text-muted mt-1 mb-0">{t.invoices.paymentNotStored}</p>
-      </Card>
     </>
   );
 }

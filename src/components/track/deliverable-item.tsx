@@ -37,6 +37,8 @@ export interface DeliverableView {
   dueAt: string | null;
   summary: string | null;
   brokenDown: boolean;
+  /** When this milestone was billed, on a per-milestone project. */
+  invoicedAt: string | null;
   steps: StepView[];
   flags: FlagView[];
 }

@@ -295,6 +295,8 @@ export const es: Dictionary = {
   },
 
   invoices: {
+    readyToBill: "{count} listos para facturar",
+    allBilled: "Ya está facturado todo este proyecto.",
     from: "De",
     location: "Ubicación",
     addYourDetails: "Pon tu nombre y tu email",

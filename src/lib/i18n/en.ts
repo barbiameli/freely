@@ -296,6 +296,8 @@ export const en = {
   },
 
   invoices: {
+    readyToBill: "{count} ready to bill",
+    allBilled: "Everything on this project has been billed.",
     from: "From",
     location: "Location",
     addYourDetails: "Add your name and email",

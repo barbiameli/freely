@@ -42,6 +42,7 @@ export interface DeliverableRow {
   dueAt: Date | null;
   summary: string | null;
   brokenDownAt: Date | null;
+  invoicedAt: Date | null;
 }
 
 /** A deliverable with everything hanging off it, which is how Track reads

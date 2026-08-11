@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Check, FileText } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Stamp, type StampStatus } from "@/components/ui/stamp";
 import { ActionError } from "@/components/ui/action-error";
 import { useAction } from "@/lib/use-action";
 import { currencySymbol } from "@/lib/currencies";
@@ -17,6 +18,9 @@ export interface QueueRow {
   title: string;
   client: string;
   currency: string;
+  status: string;
+  price: number;
+  hours: number;
   perMilestone: boolean;
   /** What can be billed right now. */
   lines: { title: string; hours: number; amount: number }[];
@@ -26,16 +30,24 @@ export interface QueueRow {
   totalCount: number;
 }
 
+const STATUS_FG: Record<string, string> = {
+  ACTIVE: "bg-violet",
+  DUE: "bg-coral",
+  OVERDUE: "bg-overdue",
+  DONE: "bg-success",
+};
+
 /**
  * Work that has been done and not yet billed.
  *
- * The point of this list is that invoicing should not require remembering. A
- * project appears here as soon as there is something to bill, with the amount
- * already worked out, and leaves once it is billed.
+ * Same cards as Track, and clicking one goes there. These are the same
+ * projects, so two different shapes for them would be two things to learn, and
+ * the question this list raises ("what is left on that?") is answered on the
+ * project page.
  *
- * Projects with nothing ready stay visible rather than being hidden, because
- * knowing three projects are running and none is billable yet is the same
- * question answered.
+ * Projects with nothing ready stay visible rather than being hidden: knowing
+ * three projects are running and none is billable yet is the same question
+ * answered.
  */
 export function InvoiceQueueList({ rows }: { rows: QueueRow[] }) {
   const t = useT();
@@ -49,7 +61,7 @@ export function InvoiceQueueList({ rows }: { rows: QueueRow[] }) {
   }
 
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-[18px]">
       {rows.map((row) => (
         <QueueCard key={row.projectId} row={row} />
       ))}
@@ -62,79 +74,71 @@ function QueueCard({ row }: { row: QueueRow }) {
   const router = useRouter();
   const { run, pending, error } = useAction();
   const ready = row.lines.length > 0;
+  const progress = row.totalCount > 0 ? row.doneCount / row.totalCount : 0;
 
   async function invoice() {
-    // Straight into the new invoice: the point of prefilling it is that the
-    // next thing you do is read it, not go looking for it.
     const created = await run(() => invoiceProjectAction(row.projectId), { skipRefresh: true });
     if (created) router.push(`/invoices/${created.invoiceId}`);
   }
 
   return (
-    <Card className={ready ? "border-violet border-[1.5px]" : undefined}>
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-        <div className="min-w-0">
-          <div className="font-body font-bold text-lead text-ink">{row.title}</div>
-          <div className="text-meta text-text-muted mt-0.5">
-            {row.client} ·{" "}
-            {row.perMilestone ? t.invoices.perMilestone : t.invoices.onCompletion} ·{" "}
-            {fill(t.invoices.deliverablesDone, {
-              done: row.doneCount,
-              total: row.totalCount,
-            })}
-          </div>
-        </div>
+    <Card
+      onClick={() => router.push(`/track/${row.projectId}`)}
+      className={`cursor-pointer flex flex-col gap-3 ${
+        ready ? "border-violet border-[1.5px]" : ""
+      }`}
+    >
+      <Stamp status={row.status as StampStatus} size={52} />
+      <div className="font-body font-bold text-lead text-ink">{row.title}</div>
+      <div className="text-slate text-small">{row.client}</div>
+      <div className="font-body text-meta text-text-muted">
+        {currencySymbol(row.currency)}
+        {row.price.toLocaleString()} · {row.hours}h ·{" "}
+        {fill(t.invoices.deliverablesDone, { done: row.doneCount, total: row.totalCount })}
+      </div>
+      <div className="h-1.5 bg-paper rounded-full">
+        <div
+          className={`h-1.5 rounded-full ${STATUS_FG[row.status] ?? "bg-violet"}`}
+          style={{ width: `${Math.max(6, progress * 100)}%` }}
+        />
+      </div>
 
-        <div className="flex items-center gap-3 shrink-0">
-          {ready ? (
-            <>
+      <div className="mt-auto pt-1">
+        {ready ? (
+          <>
+            <div className="flex items-baseline justify-between gap-2 mb-2">
+              <span className="text-caption text-text-muted">
+                {row.perMilestone ? t.invoices.perMilestone : t.invoices.onCompletion}
+              </span>
               <span className="font-body font-bold text-lead text-ink tabular-nums">
                 {currencySymbol(row.currency)}
                 {row.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </span>
-              <Button icon={FileText} onClick={invoice} disabled={pending}>
+            </div>
+            {/* Stops the card's own navigation: the button bills, the card
+                opens the project. */}
+            <div onClick={(e) => e.stopPropagation()}>
+              <Button icon={FileText} onClick={invoice} disabled={pending} className="w-full justify-center">
                 {pending ? t.common.working : t.invoices.invoiceIt}
               </Button>
-            </>
-          ) : row.notReady === "in-progress" || row.notReady === "nothing-done" ? (
+            </div>
+          </>
+        ) : row.notReady === "in-progress" || row.notReady === "nothing-done" ? (
+          <div onClick={(e) => e.stopPropagation()}>
             <Button
               variant="outline"
               icon={Check}
               disabled={pending}
+              className="w-full justify-center"
               onClick={() => run(() => markProjectDoneAction(row.projectId))}
             >
               {pending ? t.common.working : t.invoices.markFinished}
             </Button>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
       </div>
 
-      {/* The lines that will go on the invoice, so it is clear what is being
-          billed before anything is created. */}
-      {ready && (
-        <div className="mt-3 pt-3 border-t border-line flex flex-col gap-1.5">
-          {row.lines.map((line) => (
-            <div key={line.title} className="flex items-baseline justify-between gap-3">
-              <span className="text-small text-slate min-w-0 truncate">{line.title}</span>
-              <span className="flex items-baseline gap-3 shrink-0">
-                {line.hours > 0 && (
-                  <span className="text-caption text-text-muted tabular-nums">{line.hours}h</span>
-                )}
-                <span className="text-caption text-ink tabular-nums">
-                  {currencySymbol(row.currency)}
-                  {line.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </span>
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {!ready && row.notReady === "in-progress" && (
-        <p className="text-caption text-text-muted mt-2 mb-0">{t.invoices.finishToInvoice}</p>
-      )}
-
-      <ActionError error={error} className="mt-2" />
+      <ActionError error={error} />
     </Card>
   );
 }

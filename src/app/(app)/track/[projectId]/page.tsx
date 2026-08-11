@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import { deliverableDb, projectSchedule } from "@/lib/track-db";
+import { invoiceDb } from "@/lib/invoice-db";
+import type { BillingMode } from "@/lib/invoice-queue";
 import { ProjectDetail } from "./project-detail";
 
 // Breaking a deliverable down is a real model call, so give the route the
@@ -36,8 +38,16 @@ export default async function ProjectPage({ params }: { params: { projectId: str
 
   const schedule = projectSchedule(project);
 
+  // Needed to tell an unbilled project from one already through, which is what
+  // decides whether the billing panel offers an invoice.
+  const invoiceCount = await invoiceDb.count({
+    where: { userId: user.id, projectId: project.id },
+  });
+
   return (
     <ProjectDetail
+      invoiceCount={invoiceCount}
+      billing={((project as unknown as { billing?: BillingMode }).billing ?? "ON_COMPLETION") as BillingMode}
       project={{
         id: project.id,
         title: project.title,
@@ -57,6 +67,7 @@ export default async function ProjectPage({ params }: { params: { projectId: str
           dueAt: d.dueAt?.toISOString() ?? null,
           summary: d.summary,
           brokenDown: Boolean(d.brokenDownAt),
+          invoicedAt: d.invoicedAt?.toISOString() ?? null,
           steps: (d.steps ?? []).map((s) => ({
             id: s.id,
             name: s.name,
