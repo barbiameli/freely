@@ -45,6 +45,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     price: brief.price,
     hours: brief.hours,
     rateUnit: (brief as unknown as { rateUnit?: string }).rateUnit ?? "HOUR",
+    // Cast for the same reason rateUnit above is: the column is newer than the
+    // generated client. Without this the document renders in English however
+    // the quote was written.
+    language: (brief as unknown as { language?: string }).language ?? "en",
     hourlyRate: brief.hourlyRate,
     currency: brief.currency,
     createdAt: brief.createdAt.toISOString(),

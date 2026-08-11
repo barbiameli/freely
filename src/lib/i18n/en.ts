@@ -417,6 +417,7 @@ export const en = {
 
   publicQuote: {
     quotation: "Quotation",
+    quote: "Quote",
     scope: "Scope",
     deliverables: "Deliverables",
     timeline: "Timeline",
@@ -431,6 +432,52 @@ export const en = {
     estimatedDays: "Estimated days",
     perHour: "Per hour",
     perDay: "Per day",
+    // Lowercase on purpose: these sit under a figure as "£2,400 total".
+    totalLower: "total",
+    estimatedLower: "estimated",
+    forClient: "For",
+    hour: "hour",
+    hours: "hours",
+    day: "day",
+    days: "days",
+    perHourShort: "/hr",
+    perDayShort: "/day",
+    pageOf: "{page} of {total}",
+    statementOfWork: "Statement of Work",
+    sowBody:
+      "This quote constitutes a Statement of Work for the deliverables listed above, to be completed within the stated timeline for the stated price.",
+    aiNote:
+      "Portions of this quote were drafted with AI assistance and reviewed before sending.",
+    paymentTerms: "Payment terms",
+    revisions: "Revisions",
+    availability: "Availability",
+    cancellation: "Cancellation",
+    ownership: "Ownership",
+    confidentiality: "Confidentiality",
+    aiWhereUsed: "Where AI is used",
+    aiWhereNot: "Where it is not",
+  },
+
+  // The invoice PDF. Its own section rather than reusing the invoices screen,
+  // because these are column headings on a document a client reads, and a
+  // heading that has to fit a table column is a different string from the same
+  // word in the editor.
+  invoicePdf: {
+    invoice: "Invoice",
+    from: "From",
+    billedTo: "Billed to",
+    description: "Description",
+    rate: "Rate",
+    units: "Hrs",
+    unitsDays: "Days",
+    amount: "Amount",
+    subtotal: "Subtotal",
+    tax: "Tax",
+    totalDue: "Total due",
+    paymentDetails: "Payment details",
+    reference: "Reference",
+    issued: "Issued",
+    due: "Due",
   },
 
   auth: {

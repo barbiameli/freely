@@ -12,6 +12,7 @@ import {
   HOURS_PER_DAY,
 } from "@/lib/rate-unit";
 import { applyHourlyRate } from "@/lib/anthropic";
+import { dict } from "@/lib/i18n";
 import { repriceForHours, effectiveRate } from "@/lib/repricing";
 
 describe("rate unit", () => {
@@ -34,10 +35,21 @@ describe("rate unit", () => {
   });
 
   it("reads the effort in the unit it was quoted in", () => {
-    expect(describeEffort(40, "DAY")).toBe("5 days");
-    expect(describeEffort(8, "DAY")).toBe("1 day");
-    expect(describeEffort(40, "HOUR")).toBe("40 hours");
-    expect(rateSuffix("DAY")).toBe("/day");
+    expect(describeEffort(40, "DAY", EN)).toBe("5 days");
+    expect(describeEffort(8, "DAY", EN)).toBe("1 day");
+    expect(describeEffort(40, "HOUR", EN)).toBe("40 hours");
+    expect(rateSuffix("DAY", EN)).toBe("/day");
+  });
+
+  it("reads it in the client's language, since the client is who reads it", () => {
+    // The bug: a quote written in Spanish arrived at the client saying
+    // "40 hours" and "Per hour" under Spanish headings, because every word
+    // in here was an English literal.
+    expect(describeEffort(40, "DAY", ES)).toBe("5 días");
+    expect(describeEffort(8, "DAY", ES)).toBe("1 día");
+    expect(describeEffort(40, "HOUR", ES)).toBe("40 horas");
+    expect(rateSuffix("DAY", ES)).toBe("/día");
+    expect(rateSuffix("HOUR", ES)).toBe("/h");
   });
 });
 
@@ -66,18 +78,21 @@ describe("day rates through the pricing rules", () => {
   });
 });
 
+const EN = dict("en").publicQuote;
+const ES = dict("es").publicQuote;
+
 describe("labels never disagree with the numbers", () => {
   it("labels a day-rate quote in days", () => {
     // The bug: a 400/day quote showed "40h" and "PER HOUR" beside a 2,000
     // total, which only makes sense as days and reads as a mistake.
-    expect(effortLabel("DAY")).toBe("Estimated days");
-    expect(rateLabel("DAY")).toBe("Per day");
+    expect(effortLabel("DAY", EN)).toBe("Estimated days");
+    expect(rateLabel("DAY", EN)).toBe("Per day");
     expect(effortShort(40, "DAY")).toBe("5d");
   });
 
   it("still labels an hourly quote in hours", () => {
-    expect(effortLabel("HOUR")).toBe("Estimated hours");
-    expect(rateLabel("HOUR")).toBe("Per hour");
+    expect(effortLabel("HOUR", EN)).toBe("Estimated hours");
+    expect(rateLabel("HOUR", EN)).toBe("Per hour");
     expect(effortShort(40, "HOUR")).toBe("40h");
   });
 

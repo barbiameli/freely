@@ -21,13 +21,35 @@ export function parseRateUnit(value?: string | null): RateUnit {
   return value === "DAY" ? "DAY" : "HOUR";
 }
 
-export function rateSuffix(unit: RateUnit): string {
-  return unit === "DAY" ? "/day" : "/hr";
+/**
+ * The words, in the reader's language.
+ *
+ * These end up on the quote a client reads, so they cannot be English
+ * literals: a Spanish quote was printing "155 hours" and "Per hour" under
+ * Spanish headings. The dictionary is passed in rather than read from a hook,
+ * because the same functions run in the PDF renderer, on the server, and in
+ * components, and only one of those three can call a hook.
+ */
+export interface RateWords {
+  hour: string;
+  hours: string;
+  day: string;
+  days: string;
+  perHourShort: string;
+  perDayShort: string;
+  estimatedHours: string;
+  estimatedDays: string;
+  perHour: string;
+  perDay: string;
 }
 
-export function unitNoun(unit: RateUnit, plural = false): string {
-  if (unit === "DAY") return plural ? "days" : "day";
-  return plural ? "hours" : "hour";
+export function rateSuffix(unit: RateUnit, words: RateWords): string {
+  return unit === "DAY" ? words.perDayShort : words.perHourShort;
+}
+
+export function unitNoun(unit: RateUnit, words: RateWords, plural = false): string {
+  if (unit === "DAY") return plural ? words.days : words.day;
+  return plural ? words.hours : words.hour;
 }
 
 /** How many billable units an estimate in hours comes to. */
@@ -47,21 +69,20 @@ export function priceFor(hours: number, rate: number, unit: RateUnit): number {
   return Math.round(unitsFromHours(hours, unit) * rate);
 }
 
-/** How the estimate reads on the quote: "155 hours" or "19.5 days". */
-export function describeEffort(hours: number, unit: RateUnit): string {
+/** How the estimate reads on the quote: "155 hours" or "19.5 días". */
+export function describeEffort(hours: number, unit: RateUnit, words: RateWords): string {
   const units = unitsFromHours(hours, unit);
-  return `${units} ${unitNoun(unit, units !== 1)}`;
+  return `${units} ${unitNoun(unit, words, units !== 1)}`;
 }
 
-
 /** "Estimated days" or "Estimated hours". */
-export function effortLabel(unit: RateUnit): string {
-  return unit === "DAY" ? "Estimated days" : "Estimated hours";
+export function effortLabel(unit: RateUnit, words: RateWords): string {
+  return unit === "DAY" ? words.estimatedDays : words.estimatedHours;
 }
 
 /** "Per day" or "Per hour". */
-export function rateLabel(unit: RateUnit): string {
-  return unit === "DAY" ? "Per day" : "Per hour";
+export function rateLabel(unit: RateUnit, words: RateWords): string {
+  return unit === "DAY" ? words.perDay : words.perHour;
 }
 
 /** The effort as a short figure with its unit: "5d" or "40h". */

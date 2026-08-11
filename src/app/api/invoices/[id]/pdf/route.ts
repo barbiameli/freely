@@ -5,6 +5,7 @@ import { invoiceDb } from "@/lib/invoice-db";
 import { renderInvoicePdf } from "@/lib/invoice-pdf";
 import { resolveBrand } from "@/lib/branding";
 import { sanitizeText } from "@/lib/sanitize-text";
+import { resolveQuoteLocale } from "@/lib/i18n/types";
 
 export const runtime = "nodejs";
 
@@ -49,6 +50,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const resolved = resolveBrand(invoice.branding, user);
 
   const pdf = await renderInvoicePdf({
+    // The client's language, not the freelancer's interface. An invoice is
+    // read by whoever pays it.
+    language: resolveQuoteLocale(user),
     number: invoice.number,
     issuedAt: invoice.issuedAt.toISOString(),
     dueAt: invoice.dueAt.toISOString(),

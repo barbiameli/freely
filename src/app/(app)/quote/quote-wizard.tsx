@@ -718,7 +718,7 @@ export function QuoteWizard({
                   className="w-full bg-paper rounded-lg border-none px-3 py-2.5 text-sm text-ink outline-none"
                 />
                 <span className="text-slate text-sm">
-                  {rateSuffix((draft.rateUnit ?? "HOUR") as RateUnit)}
+                  {rateSuffix((draft.rateUnit ?? "HOUR") as RateUnit, t.publicQuote)}
                 </span>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-2 mt-2.5">

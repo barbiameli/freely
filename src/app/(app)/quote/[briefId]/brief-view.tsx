@@ -334,7 +334,7 @@ export function BriefView({
                   {effortShort(content.hours, parseRateUnit(brief.rateUnit))}
                 </div>
                 <div className="text-caption uppercase tracking-[0.06em] text-white/50">
-                  {effortLabel(parseRateUnit(brief.rateUnit))}
+                  {effortLabel(parseRateUnit(brief.rateUnit), t.publicQuote)}
                 </div>
               </div>
               {brief.hourlyRate && (
@@ -344,7 +344,7 @@ export function BriefView({
                     {brief.hourlyRate}
                   </div>
                   <div className="text-caption uppercase tracking-[0.06em] text-white/50">
-                    {rateLabel(parseRateUnit(brief.rateUnit))}
+                    {rateLabel(parseRateUnit(brief.rateUnit), t.publicQuote)}
                   </div>
                 </div>
               )}
@@ -624,7 +624,7 @@ export function BriefView({
                             brief.hourlyRate,
                             parseRateUnit(brief.rateUnit)
                           )
-                        )}${rateSuffix(parseRateUnit(brief.rateUnit))}.`
+                        )}${rateSuffix(parseRateUnit(brief.rateUnit), t.publicQuote)}.`
                       : undefined
                   }
                   ariaLabel="Estimated hours"
@@ -632,7 +632,7 @@ export function BriefView({
                   singleLine
                 >
                   <span>
-                    {describeEffort(content.hours, parseRateUnit(brief.rateUnit))}
+                    {describeEffort(content.hours, parseRateUnit(brief.rateUnit), t.publicQuote)}
                     {effectiveRate(
                       content.price,
                       content.hours,
@@ -646,7 +646,7 @@ export function BriefView({
                             brief.hourlyRate,
                             parseRateUnit(brief.rateUnit)
                           )
-                        )}${rateSuffix(parseRateUnit(brief.rateUnit))}`
+                        )}${rateSuffix(parseRateUnit(brief.rateUnit), t.publicQuote)}`
                       : ""}
                   </span>
                 </EditableBlock>

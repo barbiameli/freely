@@ -19,6 +19,7 @@ import {
   rateLabel,
 } from "@/lib/rate-unit";
 import { parseTimelineStages, isRoadmapWorthy, stageTick } from "@/lib/timeline";
+import { dict, fill } from "@/lib/i18n";
 import type { BriefExtras } from "@/lib/anthropic";
 
 export interface StrategyPdfData {
@@ -66,6 +67,21 @@ export interface BriefPdfData {
   mono?: boolean;
   /** Only meaningful when mono is true: light vs. dark background. */
   dark?: boolean;
+  /**
+   * The language the quote was written in.
+   *
+   * Every heading in this file used to be an English literal, so a quote
+   * generated in Spanish arrived at the client with Spanish prose under
+   * "Strategy", "Scope", "Deliverables" and "Statement of Work", and a total
+   * labelled "Per hour". The document is the thing the client actually reads,
+   * so it is the last place that should have been left in one language.
+   */
+  language?: string | null;
+}
+
+/** The words for one quote. Read once per document and passed down. */
+function words(brief: BriefPdfData) {
+  return dict(brief.language).publicQuote;
 }
 
 Font.registerHyphenationCallback((word) => [word]);
@@ -341,9 +357,10 @@ function BrandMark({ brief, dark }: { brief: BriefPdfData; dark?: boolean }) {
  * end of the document look cluttered, so it's the contact line and the page
  * number now. */
 /** Spelled-out date. "8/8/2026" is ambiguous internationally, and this
- * document goes to clients. */
-function formatQuoteDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", {
+ * document goes to clients. In the quote's language, since the client reads
+ * it: a Spanish quote was dated "8 August 2026". */
+function formatQuoteDate(iso: string, language?: string | null): string {
+  return new Date(iso).toLocaleDateString(language === "es" ? "es-ES" : "en-GB", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -376,10 +393,10 @@ function Footer({
       <Text
         style={[styles.footerMeta, metaColor ? { color: metaColor } : {}]}
         render={({ pageNumber, totalPages }) =>
-          `${new Date(brief.createdAt).toLocaleDateString("en-US", {
-            month: "long",
-            year: "numeric",
-          })}  ·  ${pageNumber} of ${totalPages}`
+          `${new Date(brief.createdAt).toLocaleDateString(
+            brief.language === "es" ? "es-ES" : "en-GB",
+            { month: "long", year: "numeric" }
+          )}  ·  ${fill(words(brief).pageOf, { page: pageNumber, total: totalPages })}`
         }
       />
     </View>
@@ -390,30 +407,32 @@ function Footer({
  * material a client reads once, not something to art-direct. */
 function ExtraSections({
   extras,
+  w,
   labelStyle,
   bodyStyle,
   wrapStyle,
 }: {
   extras?: BriefExtras | null;
+  w: ReturnType<typeof words>;
   labelStyle: Style;
   bodyStyle: Style;
   wrapStyle: Style;
 }) {
   if (!extras) return null;
   const blocks: [string, string][] = [];
-  if (extras.paymentTerms) blocks.push(["Payment terms", extras.paymentTerms]);
-  if (extras.revisions) blocks.push(["Revisions", extras.revisions]);
-  if (extras.availability) blocks.push(["Availability", extras.availability]);
+  if (extras.paymentTerms) blocks.push([w.paymentTerms, extras.paymentTerms]);
+  if (extras.revisions) blocks.push([w.revisions, extras.revisions]);
+  if (extras.availability) blocks.push([w.availability, extras.availability]);
   if (extras.terms) {
-    blocks.push(["Cancellation", extras.terms.cancellation]);
-    blocks.push(["Ownership", extras.terms.ownership]);
-    blocks.push(["Confidentiality", extras.terms.confidentiality]);
+    blocks.push([w.cancellation, extras.terms.cancellation]);
+    blocks.push([w.ownership, extras.terms.ownership]);
+    blocks.push([w.confidentiality, extras.terms.confidentiality]);
   }
   if (extras.aiUsage?.will.length) {
-    blocks.push(["Where AI is used", extras.aiUsage.will.map((t) => `- ${t}`).join("\n")]);
+    blocks.push([w.aiWhereUsed, extras.aiUsage.will.map((t) => `- ${t}`).join("\n")]);
   }
   if (extras.aiUsage?.willNot.length) {
-    blocks.push(["Where it is not", extras.aiUsage.willNot.map((t) => `- ${t}`).join("\n")]);
+    blocks.push([w.aiWhereNot, extras.aiUsage.willNot.map((t) => `- ${t}`).join("\n")]);
   }
   if (!blocks.length) return null;
 
@@ -453,6 +472,7 @@ function Examples({ examples }: { examples?: BriefExamplePdfData[] }) {
 /** Classic — dark cover band with a 3-up stat row (total / hours / rate),
  * pill-badge section eyebrows, and tinted-background section cards. */
 function ClassicDocument({ brief }: { brief: BriefPdfData }) {
+  const w = words(brief);
   const accent = brief.brandAccentColor || FREELY_VIOLET;
   const symbol = currencySymbol(brief.currency);
   return (
@@ -460,7 +480,7 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
       <Page size="A4" style={styles.page}>
         <View style={styles.cover}>
           <BrandMark brief={brief} />
-          <Text style={styles.coverEyebrow}>Quotation</Text>
+          <Text style={styles.coverEyebrow}>{w.quotation}</Text>
           <Text style={styles.coverTitle}>{brief.title}</Text>
           <Text style={styles.coverMeta}>
             <Text style={styles.coverMetaBold}>{brief.client}</Text>
@@ -474,7 +494,7 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
                 {symbol}
                 {brief.price.toLocaleString()}
               </Text>
-              <Text style={styles.coverStatLabel}>Total</Text>
+              <Text style={styles.coverStatLabel}>{w.total}</Text>
             </View>
             <View style={styles.coverStat}>
               <Text style={styles.coverStatValue}>
@@ -491,7 +511,7 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
                   {symbol}
                   {brief.hourlyRate}
                 </Text>
-                <Text style={styles.coverStatLabel}>{rateLabel(parseRateUnit(brief.rateUnit))}</Text>
+                <Text style={styles.coverStatLabel}>{rateLabel(parseRateUnit(brief.rateUnit), w)}</Text>
               </View>
             )}
           </View>
@@ -500,11 +520,11 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
         <View style={styles.content}>
           {brief.strategy && (
             <View style={[styles.section, styles.sectionViolet]}>
-              <Pill text="Strategy" tint="rgba(99,32,238,0.12)" color={FREELY_VIOLET} />
+              <Pill text={w.strategy} tint="rgba(99,32,238,0.12)" color={FREELY_VIOLET} />
               <Text style={[styles.body, styles.semibold]}>{brief.strategy.goal}</Text>
               {brief.strategy.findings.length > 0 && (
                 <>
-                  <Text style={[styles.subLabel, { color: "#565656" }]}>Findings</Text>
+                  <Text style={[styles.subLabel, { color: "#565656" }]}>{w.findings}</Text>
                   <Bullets items={brief.strategy.findings} />
                 </>
               )}
@@ -513,29 +533,29 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
           )}
 
           <View style={[styles.section, styles.sectionPaper]}>
-            <Pill text="Scope" tint="#EFEFEF" color="#565656" />
+            <Pill text={w.scope} tint="#EFEFEF" color="#565656" />
             <Prose text={brief.scope} />
           </View>
 
           <View style={[styles.section, styles.sectionCoral]}>
-            <Pill text="Deliverables" tint="rgba(244,91,105,0.14)" color={FREELY_CORAL} />
+            <Pill text={w.deliverables} tint="rgba(244,91,105,0.14)" color={FREELY_CORAL} />
             {brief.deliverables.map((d, i) => (
               <DeliverableLine key={i} text={d} />
             ))}
           </View>
 
           <View style={[styles.section, styles.sectionPaper]} wrap={false} minPresenceAhead={SECTION_ROOM}>
-            <Pill text="Timeline" tint="#EFEFEF" color="#565656" />
+            <Pill text={w.timeline} tint="#EFEFEF" color="#565656" />
             <TimelineVisual timeline={brief.timeline} dotColor={accent} />
           </View>
 
           <View style={styles.investmentRow} wrap={false} minPresenceAhead={SECTION_ROOM}>
             <View>
-              <Text style={styles.investmentLabel}>Investment</Text>
+              <Text style={styles.investmentLabel}>{w.investment}</Text>
               <Text style={styles.investmentMeta}>
-                {describeEffort(brief.hours, parseRateUnit(brief.rateUnit))}
+                {describeEffort(brief.hours, parseRateUnit(brief.rateUnit), w)}
                 {brief.hourlyRate
-                  ? ` · ${symbol}${brief.hourlyRate}${rateSuffix(parseRateUnit(brief.rateUnit))}`
+                  ? ` · ${symbol}${brief.hourlyRate}${rateSuffix(parseRateUnit(brief.rateUnit), w)}`
                   : ""}
               </Text>
             </View>
@@ -547,12 +567,13 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
 
           {brief.examples && brief.examples.length > 0 && (
             <View style={[styles.section, styles.sectionPaper]}>
-              <Pill text="Examples" tint="#EFEFEF" color="#565656" />
+              <Pill text={w.examples} tint="#EFEFEF" color="#565656" />
               <Examples examples={brief.examples} />
             </View>
           )}
 
           <ExtraSections
+            w={w}
             extras={brief.extras}
             wrapStyle={{ ...styles.section, ...styles.sectionPaper }}
             labelStyle={{ ...styles.subLabel, marginTop: 0, color: "#565656" }}
@@ -561,10 +582,9 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
 
           {brief.includeSOW && (
             <View style={[styles.section, styles.sectionPaper]}>
-              <Pill text="Statement of Work" tint="#EFEFEF" color="#565656" />
+              <Pill text={w.statementOfWork} tint="#EFEFEF" color="#565656" />
               <Text style={styles.body}>
-                This quote constitutes a Statement of Work for the deliverables listed above, to
-                be completed within the stated timeline for the stated price.
+                {w.sowBody}
               </Text>
             </View>
           )}
@@ -572,7 +592,7 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
           {brief.includeAI && !brief.extras?.aiUsage && (
             <View>
               <Text style={styles.disclosure}>
-                Portions of this quote were drafted with AI assistance and reviewed before sending.
+                {w.aiNote}
               </Text>
             </View>
           )}
@@ -589,6 +609,7 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
  * heavy rule, then sections separated by thin hairlines instead of tinted
  * backgrounds — a plainer, magazine-style read. */
 function EditorialDocument({ brief }: { brief: BriefPdfData }) {
+  const w = words(brief);
   const primary = brief.brandPrimaryColor || FREELY_CORAL;
   const symbol = currencySymbol(brief.currency);
   return (
@@ -597,7 +618,7 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
         <View style={styles.edHeader}>
           <BrandMark brief={brief} dark />
           <Text style={[styles.edEyebrow, { color: primary }]}>
-            For <Text style={styles.bold}>{brief.client}</Text>
+            {w.forClient} <Text style={styles.bold}>{brief.client}</Text>
           </Text>
           <Text style={styles.edTitle}>{brief.title}</Text>
           <View style={[styles.edStatRow, { borderBottomColor: primary }]}>
@@ -606,7 +627,7 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
                 {symbol}
                 {brief.price.toLocaleString()}
               </Text>
-              <Text style={styles.edStatLabel}>Total</Text>
+              <Text style={styles.edStatLabel}>{w.total}</Text>
             </View>
             <View style={styles.edStat}>
               <Text style={styles.edStatValue}>
@@ -623,7 +644,7 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
                   {symbol}
                   {brief.hourlyRate}
                 </Text>
-                <Text style={styles.edStatLabel}>{rateLabel(parseRateUnit(brief.rateUnit))}</Text>
+                <Text style={styles.edStatLabel}>{rateLabel(parseRateUnit(brief.rateUnit), w)}</Text>
               </View>
             )}
           </View>
@@ -633,12 +654,12 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
           {brief.strategy && (
             <View style={styles.edSection}>
               <SectionHeading>
-              <Text style={[styles.edSectionTitle, { color: primary }]}>Strategy</Text>
+              <Text style={[styles.edSectionTitle, { color: primary }]}>{w.strategy}</Text>
             </SectionHeading>
               <Text style={[styles.body, styles.semibold]}>{brief.strategy.goal}</Text>
               {brief.strategy.findings.length > 0 && (
                 <>
-                  <Text style={[styles.subLabel, { color: "#565656" }]}>Findings</Text>
+                  <Text style={[styles.subLabel, { color: "#565656" }]}>{w.findings}</Text>
                   <Bullets items={brief.strategy.findings} />
                 </>
               )}
@@ -647,14 +668,14 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
 
           <View style={styles.edSection}>
             <SectionHeading>
-              <Text style={[styles.edSectionTitle, { color: primary }]}>Scope</Text>
+              <Text style={[styles.edSectionTitle, { color: primary }]}>{w.scope}</Text>
             </SectionHeading>
             <Prose text={brief.scope} />
           </View>
 
           <View style={styles.edSection}>
             <SectionHeading>
-              <Text style={[styles.edSectionTitle, { color: primary }]}>Deliverables</Text>
+              <Text style={[styles.edSectionTitle, { color: primary }]}>{w.deliverables}</Text>
             </SectionHeading>
             {brief.deliverables.map((d, i) => (
               <DeliverableLine key={i} text={d} markColor={primary} />
@@ -663,7 +684,7 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
 
           <View style={styles.edSection} wrap={false} minPresenceAhead={SECTION_ROOM}>
             <SectionHeading>
-              <Text style={[styles.edSectionTitle, { color: primary }]}>Timeline</Text>
+              <Text style={[styles.edSectionTitle, { color: primary }]}>{w.timeline}</Text>
             </SectionHeading>
             <TimelineVisual timeline={brief.timeline} dotColor={primary} />
           </View>
@@ -671,13 +692,14 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
           {brief.examples && brief.examples.length > 0 && (
             <View style={styles.edSection}>
               <SectionHeading>
-              <Text style={[styles.edSectionTitle, { color: primary }]}>Examples</Text>
+              <Text style={[styles.edSectionTitle, { color: primary }]}>{w.examples}</Text>
             </SectionHeading>
               <Examples examples={brief.examples} />
             </View>
           )}
 
           <ExtraSections
+            w={w}
             extras={brief.extras}
             wrapStyle={styles.edSection}
             labelStyle={{ ...styles.edSectionTitle, fontSize: 13, color: primary }}
@@ -687,11 +709,10 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
           {brief.includeSOW && (
             <View style={styles.edSection}>
               <SectionHeading>
-              <Text style={[styles.edSectionTitle, { color: primary }]}>Statement of Work</Text>
+              <Text style={[styles.edSectionTitle, { color: primary }]}>{w.statementOfWork}</Text>
             </SectionHeading>
               <Text style={styles.body}>
-                This quote constitutes a Statement of Work for the deliverables listed above, to
-                be completed within the stated timeline for the stated price.
+                {w.sowBody}
               </Text>
             </View>
           )}
@@ -699,7 +720,7 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
           {brief.includeAI && !brief.extras?.aiUsage && (
             <View>
               <Text style={styles.disclosure}>
-                Portions of this quote were drafted with AI assistance and reviewed before sending.
+                {w.aiNote}
               </Text>
             </View>
           )}
@@ -715,13 +736,14 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
 /** Minimal — plain, high-contrast, no color blocks; a heavy top rule and
  * hairline section dividers do the separating instead of backgrounds. */
 function MinimalDocument({ brief }: { brief: BriefPdfData }) {
+  const w = words(brief);
   const symbol = currencySymbol(brief.currency);
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         <View style={styles.minHeader}>
           <BrandMark brief={brief} dark />
-          <Text style={styles.minEyebrow}>Quote</Text>
+          <Text style={styles.minEyebrow}>{w.quote}</Text>
           <Text style={styles.minTitle}>{brief.title}</Text>
           <Text style={styles.minMeta}>
             <Text style={styles.bold}>{brief.client}</Text>
@@ -734,7 +756,7 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
               {brief.price.toLocaleString()} total
             </Text>
             <Text style={styles.minStat}>
-              {describeEffort(brief.hours, parseRateUnit(brief.rateUnit))} estimated
+              {describeEffort(brief.hours, parseRateUnit(brief.rateUnit), w)} {w.estimatedLower}
             </Text>
             {brief.hourlyRate && (
               <Text style={styles.minStat}>
@@ -749,7 +771,7 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
           {brief.strategy && (
             <View style={styles.minSection}>
               <SectionHeading>
-              <Text style={styles.minLabel}>Strategy</Text>
+              <Text style={styles.minLabel}>{w.strategy}</Text>
             </SectionHeading>
               <Text style={[styles.body, styles.semibold]}>{brief.strategy.goal}</Text>
               {brief.strategy.findings.length > 0 && (
@@ -762,14 +784,14 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
 
           <View style={styles.minSection}>
             <SectionHeading>
-              <Text style={styles.minLabel}>Scope</Text>
+              <Text style={styles.minLabel}>{w.scope}</Text>
             </SectionHeading>
             <Prose text={brief.scope} />
           </View>
 
           <View style={styles.minSection}>
             <SectionHeading>
-                <Text style={styles.minLabel}>Deliverables</Text>
+                <Text style={styles.minLabel}>{w.deliverables}</Text>
               </SectionHeading>
             {brief.deliverables.map((d, i) => (
               <DeliverableLine key={i} text={d} />
@@ -778,7 +800,7 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
 
           <View style={styles.minSection} wrap={false} minPresenceAhead={SECTION_ROOM}>
             <SectionHeading>
-              <Text style={styles.minLabel}>Timeline</Text>
+              <Text style={styles.minLabel}>{w.timeline}</Text>
             </SectionHeading>
             <TimelineVisual timeline={brief.timeline} dotColor={FREELY_INK} />
           </View>
@@ -786,13 +808,14 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
           {brief.examples && brief.examples.length > 0 && (
             <View style={styles.minSection}>
               <SectionHeading>
-              <Text style={styles.minLabel}>Examples</Text>
+              <Text style={styles.minLabel}>{w.examples}</Text>
             </SectionHeading>
               <Examples examples={brief.examples} />
             </View>
           )}
 
           <ExtraSections
+            w={w}
             extras={brief.extras}
             wrapStyle={styles.minSection}
             labelStyle={styles.minLabel}
@@ -802,11 +825,10 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
           {brief.includeSOW && (
             <View style={styles.minSection}>
               <SectionHeading>
-              <Text style={styles.minLabel}>Statement of Work</Text>
+              <Text style={styles.minLabel}>{w.statementOfWork}</Text>
             </SectionHeading>
               <Text style={styles.body}>
-                This quote constitutes a Statement of Work for the deliverables listed above, to
-                be completed within the stated timeline for the stated price.
+                {w.sowBody}
               </Text>
             </View>
           )}
@@ -814,7 +836,7 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
           {brief.includeAI && !brief.extras?.aiUsage && (
             <View>
               <Text style={styles.disclosure}>
-                Portions of this quote were drafted with AI assistance and reviewed before sending.
+                {w.aiNote}
               </Text>
             </View>
           )}
@@ -833,6 +855,7 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
  * but with every color computed from `dark` instead of pulled from brand
  * fields, and no logo/wordmark shown at all. */
 function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
+  const w = words(brief);
   const symbol = currencySymbol(brief.currency);
   const bg = dark ? "#0B0B0C" : "#FFFFFF";
   const ink = dark ? "#FFFFFF" : "#111111";
@@ -846,7 +869,7 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
       <Page size="A4" style={page}>
         <View style={{ paddingHorizontal: 44, paddingTop: 36, paddingBottom: 18, borderBottomWidth: 1.5, borderBottomColor: ink }}>
           <Text style={{ fontSize: 8.5, textTransform: "uppercase", letterSpacing: 2, color: muted, marginTop: 18 }}>
-            Quote
+            {w.quote}
           </Text>
           <Text style={{ fontSize: 20, fontFamily: "Helvetica-Bold", marginTop: 8, color: ink }}>{brief.title}</Text>
           <Text style={{ fontSize: 9.5, color: muted, marginTop: 4 }}>
@@ -860,7 +883,7 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
               {brief.price.toLocaleString()} total
             </Text>
             <Text style={{ fontSize: 10.5, marginRight: 22, fontFamily: "Helvetica-Bold", color: ink }}>
-              {describeEffort(brief.hours, parseRateUnit(brief.rateUnit))} estimated
+              {describeEffort(brief.hours, parseRateUnit(brief.rateUnit), w)} {w.estimatedLower}
             </Text>
             {brief.hourlyRate && (
               <Text style={{ fontSize: 10.5, fontFamily: "Helvetica-Bold", color: ink }}>
@@ -876,7 +899,7 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
             <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }}>
               <SectionHeading>
                   <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
-                    Strategy
+                    {w.strategy}
                   </Text>
                 </SectionHeading>
               <Text style={[body, styles.semibold]}>{brief.strategy.goal}</Text>
@@ -896,7 +919,7 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
           <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }}>
             <SectionHeading>
                 <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
-                  Scope
+                  {w.scope}
                 </Text>
               </SectionHeading>
             <Prose text={brief.scope} style={body} />
@@ -907,7 +930,7 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
               minPresenceAhead={HEADING_ROOM}
               style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}
             >
-              Deliverables
+              {w.deliverables}
             </Text>
             {brief.deliverables.map((d, i) => (
               <DeliverableLine key={i} text={d} markColor={ink} textColor={ink} detailColor={muted} />
@@ -917,7 +940,7 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
           <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }} wrap={false} minPresenceAhead={SECTION_ROOM}>
             <SectionHeading>
                 <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
-                  Timeline
+                  {w.timeline}
                 </Text>
               </SectionHeading>
             <TimelineVisual
@@ -932,7 +955,7 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
             <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }}>
               <SectionHeading>
                   <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
-                    Examples
+                    {w.examples}
                   </Text>
                 </SectionHeading>
               <Examples examples={brief.examples} />
@@ -940,6 +963,7 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
           )}
 
           <ExtraSections
+            w={w}
             extras={brief.extras}
             wrapStyle={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }}
             labelStyle={{
@@ -957,12 +981,11 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
             <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }}>
               <SectionHeading>
                   <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>
-                    Statement of Work
+                    {w.statementOfWork}
                   </Text>
                 </SectionHeading>
               <Text style={body}>
-                This quote constitutes a Statement of Work for the deliverables listed above, to
-                be completed within the stated timeline for the stated price.
+                {w.sowBody}
               </Text>
             </View>
           )}
@@ -970,7 +993,7 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
           {brief.includeAI && !brief.extras?.aiUsage && (
             <View>
               <Text style={{ ...styles.disclosure, color: muted }}>
-                Portions of this quote were drafted with AI assistance and reviewed before sending.
+                {w.aiNote}
               </Text>
             </View>
           )}

@@ -9,7 +9,7 @@ import {
 import { TimelineView } from "@/components/timeline-view";
 import type { BriefExtras } from "@/lib/anthropic";
 import { AcceptBlock } from "./accept-block";
-import { dict } from "@/lib/i18n";
+import { dict, type Dictionary } from "@/lib/i18n";
 
 interface Strategy {
   goal: string;
@@ -58,26 +58,29 @@ export interface BrandProps {
 /** Turns the optional add-on sections into label/body pairs, so each
  * template can render them in its own style without duplicating the logic
  * that decides which ones are present. */
-function extraBlocks(extras?: BriefExtras | null): [string, string][] {
+function extraBlocks(
+  extras: BriefExtras | null | undefined,
+  q: Dictionary["publicQuote"]
+): [string, string][] {
   if (!extras) return [];
   const blocks: [string, string][] = [];
-  if (extras.paymentTerms) blocks.push(["Payment terms", extras.paymentTerms]);
-  if (extras.revisions) blocks.push(["Revisions", extras.revisions]);
-  if (extras.availability) blocks.push(["Availability", extras.availability]);
+  if (extras.paymentTerms) blocks.push([q.paymentTerms, extras.paymentTerms]);
+  if (extras.revisions) blocks.push([q.revisions, extras.revisions]);
+  if (extras.availability) blocks.push([q.availability, extras.availability]);
   if (extras.terms) {
-    blocks.push(["Cancellation", extras.terms.cancellation]);
-    blocks.push(["Ownership", extras.terms.ownership]);
-    blocks.push(["Confidentiality", extras.terms.confidentiality]);
+    blocks.push([q.cancellation, extras.terms.cancellation]);
+    blocks.push([q.ownership, extras.terms.ownership]);
+    blocks.push([q.confidentiality, extras.terms.confidentiality]);
   }
   if (extras.aiUsage) {
     // Two lists rather than a paragraph: a client scanning this wants to see
     // the line between what a machine touches and what it does not.
     if (extras.aiUsage.will.length) {
-      blocks.push(["Where AI is used", extras.aiUsage.will.map((t) => `- ${t}`).join("\n")]);
+      blocks.push([q.aiWhereUsed, extras.aiUsage.will.map((t) => `- ${t}`).join("\n")]);
     }
     if (extras.aiUsage.willNot.length) {
       blocks.push([
-        "Where it is not",
+        q.aiWhereNot,
         extras.aiUsage.willNot.map((t) => `- ${t}`).join("\n"),
       ]);
     }
@@ -141,7 +144,7 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
               Freely
             </span>
           )}
-          <span className="font-label text-xs text-slate uppercase">Quote</span>
+          <span className="font-label text-xs text-slate uppercase">{q.quote}</span>
         </div>
         <div className="p-5 sm:p-9 flex flex-col gap-4">
           <div>
@@ -208,7 +211,7 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
             </div>
           )}
 
-          {extraBlocks(brief.extras).map(([label, text]) => (
+          {extraBlocks(brief.extras, q).map(([label, text]) => (
             <div key={label} className="rounded-lg p-4 bg-paper">
               <div className="font-label text-xs text-slate uppercase mb-2">{label}</div>
               <p className="text-body text-ink m-0 leading-relaxed whitespace-pre-line">{text}</p>
@@ -217,10 +220,11 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
 
           <div className="rounded-lg p-4 bg-ink flex justify-between items-center">
             <span className="text-body text-white/70">
-              {describeEffort(brief.hours, parseRateUnit(brief.rateUnit))}
+              {describeEffort(brief.hours, parseRateUnit(brief.rateUnit), q)}
               {brief.hourlyRate
                 ? ` · ${currencySymbol(brief.currency)}${brief.hourlyRate}${rateSuffix(
-                    parseRateUnit(brief.rateUnit)
+                    parseRateUnit(brief.rateUnit),
+                    q
                   )}`
                 : ""}
             </span>
@@ -295,7 +299,7 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
         {brief.strategy && (
           <div className="py-10 border-b" style={{ borderColor: "#E8EAEF" }}>
             <h2 className="font-display italic text-2xl m-0 mb-4" style={{ color: brand.primary }}>
-              Strategy
+              {q.strategy}
             </h2>
             <p className="text-lead leading-relaxed text-ink">{brief.strategy.goal}</p>
             {brief.strategy.findings.length > 0 && (
@@ -316,14 +320,14 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
 
         <div className="py-10 border-b" style={{ borderColor: "#E8EAEF" }}>
           <h2 className="font-display italic text-2xl m-0 mb-4" style={{ color: brand.primary }}>
-            Scope
+            {q.scope}
           </h2>
           <Prose text={brief.scope} className="text-lead leading-[1.7] text-ink" />
         </div>
 
         <div className="py-10 border-b" style={{ borderColor: "#E8EAEF" }}>
           <h2 className="font-display italic text-2xl m-0 mb-4" style={{ color: brand.primary }}>
-            Deliverables
+            {q.deliverables}
           </h2>
           <div className="flex flex-col gap-2.5">
             {brief.deliverables.map((d, i) => {
@@ -347,7 +351,7 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
 
         <div className="py-10 border-b" style={{ borderColor: "#E8EAEF" }}>
           <h2 className="font-display italic text-2xl m-0 mb-4" style={{ color: brand.primary }}>
-            Timeline
+            {q.timeline}
           </h2>
           <TimelineView timeline={brief.timeline} accent={brand.primary} className="text-ink" />
         </div>
@@ -355,13 +359,13 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
         {brief.examples.length > 0 && (
           <div className="py-10 border-b" style={{ borderColor: "#E8EAEF" }}>
             <h2 className="font-display italic text-2xl m-0 mb-4" style={{ color: brand.primary }}>
-              Examples
+              {q.examples}
             </h2>
             <ExampleGallery examples={brief.examples} />
           </div>
         )}
 
-        {extraBlocks(brief.extras).map(([label, text]) => (
+        {extraBlocks(brief.extras, q).map(([label, text]) => (
           <div key={label} className="py-10 border-b" style={{ borderColor: "#E8EAEF" }}>
             <h2 className="font-display italic text-2xl m-0 mb-4" style={{ color: brand.primary }}>
               {label}
@@ -398,7 +402,7 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
     <div className="min-h-screen" style={{ background: bg, color: ink }}>
       <div className="max-w-xl mx-auto px-5 sm:px-8 py-10 sm:py-14">
         <div className="flex items-center justify-between pb-6" style={{ borderBottom: `1.5px solid ${ink}` }}>
-          <span className="text-sm font-bold tracking-[0.08em] uppercase">Quote</span>
+          <span className="text-sm font-bold tracking-[0.08em] uppercase">{q.quote}</span>
           <span className="text-caption tracking-[0.15em] uppercase" style={{ color: muted }}>
             {brief.client}
           </span>
@@ -408,10 +412,10 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
 
         <div className="flex flex-wrap gap-4 sm:gap-8 mt-6 pb-6 text-small" style={{ borderBottom: `1px solid ${line}` }}>
           <span>
-            <strong>{currencySymbol(brief.currency)}{brief.price.toLocaleString()}</strong> total
+            <strong>{currencySymbol(brief.currency)}{brief.price.toLocaleString()}</strong> {q.totalLower}
           </span>
           <span>
-            <strong>{brief.hours}h</strong> estimated
+            <strong>{brief.hours}h</strong> {q.estimatedLower}
           </span>
           {brief.hourlyRate && (
             <span>
@@ -475,7 +479,7 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
           </div>
         )}
 
-        {extraBlocks(brief.extras).map(([label, text]) => (
+        {extraBlocks(brief.extras, q).map(([label, text]) => (
           <div key={label} className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
             <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{label}</div>
             <p className="text-body leading-relaxed m-0 whitespace-pre-line">{text}</p>
@@ -519,7 +523,7 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
           ) : (
             <span className="text-sm font-bold tracking-[0.08em] uppercase">Freely</span>
           )}
-          <span className="text-caption tracking-[0.15em] uppercase text-slate">Quote</span>
+          <span className="text-caption tracking-[0.15em] uppercase text-slate">{q.quote}</span>
         </div>
 
         <h1 className="text-[24px] font-bold m-0 mt-8">{brief.title}</h1>
@@ -527,10 +531,10 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
 
         <div className="flex flex-wrap gap-4 sm:gap-8 mt-6 pb-6 border-b border-line text-small">
           <span>
-            <strong>{currencySymbol(brief.currency)}{brief.price.toLocaleString()}</strong> total
+            <strong>{currencySymbol(brief.currency)}{brief.price.toLocaleString()}</strong> {q.totalLower}
           </span>
           <span>
-            <strong>{brief.hours}h</strong> estimated
+            <strong>{brief.hours}h</strong> {q.estimatedLower}
           </span>
           {brief.hourlyRate && (
             <span>
@@ -588,7 +592,7 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
           </div>
         )}
 
-        {extraBlocks(brief.extras).map(([label, text]) => (
+        {extraBlocks(brief.extras, q).map(([label, text]) => (
           <div key={label} className="py-6 border-b border-line">
             <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{label}</div>
             <p className="text-body leading-relaxed m-0 whitespace-pre-line">{text}</p>

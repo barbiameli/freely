@@ -9,6 +9,7 @@ import {
   renderToBuffer,
 } from "@react-pdf/renderer";
 import { currencySymbol } from "@/lib/currencies";
+import { dict } from "@/lib/i18n";
 
 /**
  * Invoice PDF.
@@ -74,6 +75,14 @@ export interface InvoicePdfData {
   logoDataUrl?: string | null;
   mono?: boolean;
   dark?: boolean;
+  /**
+   * The language of the quote this invoice came from.
+   *
+   * Same fix as the quote PDF: every column heading here was an English
+   * literal, so a Spanish project produced an invoice headed "Description",
+   * "Amount" and "Total due".
+   */
+  language?: string | null;
 }
 
 Font.registerHyphenationCallback((word) => [word]);
@@ -88,17 +97,17 @@ const S7 = 44;
 
 const BOLD = "Helvetica-Bold";
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", {
+function formatDate(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale, {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
 }
 
-function formatShortDate(iso: string): string {
+function formatShortDate(iso: string, locale: string): string {
   return new Date(iso)
-    .toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+    .toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" })
     .toUpperCase();
 }
 
@@ -110,6 +119,8 @@ function money(amount: number, currency: string): string {
 }
 
 export async function renderInvoicePdf(invoice: InvoicePdfData): Promise<Buffer> {
+  const w = dict(invoice.language).invoicePdf;
+  const locale = invoice.language === "es" ? "es-ES" : "en-GB";
   const ink = invoice.dark ? "#FFFFFF" : "#111111";
   const bg = invoice.dark ? "#0B0B0C" : "#FFFFFF";
   const muted = invoice.dark ? "#9A9AA0" : "#8A8990";
@@ -221,7 +232,7 @@ export async function renderInvoicePdf(invoice: InvoicePdfData): Promise<Buffer>
       <Page size="A4" style={styles.page}>
         <View style={styles.topRow}>
           <Text style={styles.eyebrow}>{invoice.fromRole || " "}</Text>
-          <Text style={styles.invoiceWord}>Invoice</Text>
+          <Text style={styles.invoiceWord}>{w.invoice}</Text>
         </View>
 
         <View style={styles.identityRow}>
@@ -235,21 +246,21 @@ export async function renderInvoicePdf(invoice: InvoicePdfData): Promise<Buffer>
           </View>
           <View style={styles.metaBlock}>
             <Text style={styles.metaNumber}>#{String(invoice.number).padStart(4, "0")}</Text>
-            <Text style={styles.metaLine}>Issued {formatDate(invoice.issuedAt)}</Text>
-            <Text style={styles.metaLine}>Due {formatDate(invoice.dueAt)}</Text>
+            <Text style={styles.metaLine}>{w.issued} {formatDate(invoice.issuedAt, locale)}</Text>
+            <Text style={styles.metaLine}>{w.due} {formatDate(invoice.dueAt, locale)}</Text>
           </View>
         </View>
 
         <View style={styles.partiesRow}>
           <View style={styles.partyCol}>
-            <Text style={styles.partyLabel}>From</Text>
+            <Text style={styles.partyLabel}>{w.from}</Text>
             <Text style={styles.partyName}>{invoice.fromName}</Text>
             {invoice.fromWebsite ? <Text style={styles.partyLine}>{invoice.fromWebsite}</Text> : null}
             {invoice.fromAddress ? <Text style={styles.partyLine}>{invoice.fromAddress}</Text> : null}
             {invoice.fromEmail ? <Text style={styles.partyLine}>{invoice.fromEmail}</Text> : null}
           </View>
           <View style={styles.partyCol}>
-            <Text style={styles.partyLabel}>Billed to</Text>
+            <Text style={styles.partyLabel}>{w.billedTo}</Text>
             <Text style={styles.partyName}>{invoice.clientName}</Text>
             {invoice.clientCompany ? <Text style={styles.partyLine}>{invoice.clientCompany}</Text> : null}
             {invoice.clientWebsite ? <Text style={styles.partyLine}>{invoice.clientWebsite}</Text> : null}
@@ -262,10 +273,10 @@ export async function renderInvoicePdf(invoice: InvoicePdfData): Promise<Buffer>
             finished project does not need two empty columns explaining that
             the breakdown was withheld. */}
         <View style={styles.tableHead}>
-          <Text style={styles.thDesc}>Description</Text>
-          {itemised ? <Text style={styles.thNum}>Rate</Text> : null}
-          {itemised ? <Text style={styles.thNum}>Hrs</Text> : null}
-          <Text style={styles.thAmount}>Amount</Text>
+          <Text style={styles.thDesc}>{w.description}</Text>
+          {itemised ? <Text style={styles.thNum}>{w.rate}</Text> : null}
+          {itemised ? <Text style={styles.thNum}>{w.units}</Text> : null}
+          <Text style={styles.thAmount}>{w.amount}</Text>
         </View>
 
         {invoice.lineItems.map((item, i) => (
@@ -296,38 +307,38 @@ export async function renderInvoicePdf(invoice: InvoicePdfData): Promise<Buffer>
         <View style={styles.totalsWrap}>
           <View style={styles.totalsRule} />
           <View style={styles.totalsRow}>
-            <Text style={styles.totalsLabel}>Subtotal</Text>
+            <Text style={styles.totalsLabel}>{w.subtotal}</Text>
             <Text style={styles.totalsValue}>{money(subtotal, invoice.currency)}</Text>
           </View>
           {invoice.taxRate > 0 && (
             <View style={styles.totalsRow}>
-              <Text style={styles.totalsLabel}>Tax ({invoice.taxRate}%)</Text>
+              <Text style={styles.totalsLabel}>{w.tax} ({invoice.taxRate}%)</Text>
               <Text style={styles.totalsValue}>{money(tax, invoice.currency)}</Text>
             </View>
           )}
           <View style={styles.totalsRule} />
           <View style={styles.totalsRow}>
-            <Text style={styles.dueLabel}>Total due</Text>
+            <Text style={styles.dueLabel}>{w.totalDue}</Text>
             <Text style={styles.dueValue}>{money(total, invoice.currency)}</Text>
           </View>
         </View>
 
         <View style={styles.payRow}>
           <View style={styles.payBox}>
-            <Text style={styles.payLabel}>Payment details</Text>
+            <Text style={styles.payLabel}>{w.paymentDetails}</Text>
             <Text style={styles.payText}>{invoice.payment.block}</Text>
             {invoice.payment.note ? <Text style={styles.payNote}>{invoice.payment.note}</Text> : null}
           </View>
           <View style={{ flex: 1, paddingTop: S4 }}>
             {invoice.reference ? (
               <>
-                <Text style={styles.payLabel}>Reference</Text>
+                <Text style={styles.payLabel}>{w.reference}</Text>
                 <Text style={styles.payText}>{invoice.reference}</Text>
               </>
             ) : null}
             <View style={{ marginTop: S4 }}>
               <View style={styles.dueBadge}>
-                <Text style={styles.dueBadgeText}>Due {formatShortDate(invoice.dueAt)}</Text>
+                <Text style={styles.dueBadgeText}>{w.due} {formatShortDate(invoice.dueAt, locale)}</Text>
               </View>
             </View>
           </View>

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { currencySymbol } from "@/lib/currencies";
 import type { SectionNotes } from "@/lib/quote-prompts";
 import type { Locale } from "@/lib/i18n/types";
+import { dict } from "@/lib/i18n";
 import {
   priceFor,
   rateSuffix,
@@ -290,7 +291,13 @@ export function buildGenerateUserPrompt(
   // multiply will sometimes quietly price to what it thinks the market bears.
   const hasRate = draft.hourlyRate > 0;
   const unit: RateUnit = draft.rateUnit ?? "HOUR";
-  const rateLine = `${symbol}${draft.hourlyRate}${rateSuffix(unit)} (currency: ${currencyCode})`;
+  // English on purpose, and the only place in the app where that is true of a
+  // rate word. This string goes into the prompt, not onto the quote: the
+  // instructions are written in English whatever language the output is asked
+  // for, and translating the word "hour" inside them would make the prompt
+  // harder for the model to follow, not easier for the client to read.
+  const promptWords = dict("en").publicQuote;
+  const rateLine = `${symbol}${draft.hourlyRate}${rateSuffix(unit, promptWords)} (currency: ${currencyCode})`;
   // "hours" stays the field the model fills in either case, since that is what
   // past quotes are compared on. Days are a pricing unit, not a second
   // estimate to keep in step.
@@ -308,7 +315,7 @@ export function buildGenerateUserPrompt(
     pricingInstruction = `Pricing approach: this freelancer has not given an hourly rate, so you set one from market research.${formatPricingContext(
       draft.pricing
     )}
-Use web search to find the going ${unitNoun(unit)} rate, and the typical hours, for this kind of project for a "${draft.expertiseLevel}"-level freelancer. Price against the client's market where one is given, since that is what sets what can be charged, and use the freelancer's own location as a cross-check. Then set hours, and price = hours x the rate you landed on. State the rate you used, and where it came from, in the open questions so they can check it.`;
+Use web search to find the going ${unitNoun(unit, promptWords)} rate, and the typical hours, for this kind of project for a "${draft.expertiseLevel}"-level freelancer. Price against the client's market where one is given, since that is what sets what can be charged, and use the freelancer's own location as a cross-check. Then set hours, and price = hours x the rate you landed on. State the rate you used, and where it came from, in the open questions so they can check it.`;
   }
 
   const strategyInstruction = draft.includeStrategy
