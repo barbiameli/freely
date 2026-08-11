@@ -26,7 +26,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           behind a menu. */}
       <div className="flex flex-col md:flex-row min-h-screen bg-white">
         <Sidebar />
-        <div className="flex-1 min-w-0 px-5 py-6 pb-24 md:px-14 md:py-12 md:pb-12 flex flex-col gap-5 md:gap-7">
+        {/* 56px each side was a lot of nothing next to a nav rail that already
+            separates the content from the edge, and the project tracker is the
+            screen that felt it: two columns, a timeline and a flags panel all
+            competing for the same width. */}
+        <div className="flex-1 min-w-0 px-5 py-6 pb-24 md:px-8 md:py-10 md:pb-12 xl:px-12 flex flex-col gap-5 md:gap-7">
           {children}
         </div>
       </div>

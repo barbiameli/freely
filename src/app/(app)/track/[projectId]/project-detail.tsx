@@ -230,7 +230,7 @@ export function ProjectDetail({
 
   return (
     <div className="flex flex-col lg:flex-row gap-5 lg:gap-6 flex-1 min-h-0">
-      <Card className="w-full lg:w-[200px] lg:shrink-0 lg:overflow-y-auto">
+      <Card className="w-full lg:w-[172px] lg:shrink-0 lg:overflow-y-auto px-3.5 py-4">
         <Label>{t.track.allProjects}</Label>
         <div className="flex flex-col gap-1 mt-1">
           {projectList.map((p) => (
@@ -258,13 +258,13 @@ export function ProjectDetail({
         <Topbar eyebrow={`Track - ${project.title}`} />
 
         <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3">
-          <div>
-            <h1 className="font-display italic text-[28px] md:text-[30px] text-coral m-0">
+          <div className="min-w-0">
+            <h1 className="font-display italic text-[28px] md:text-[30px] text-coral m-0 max-w-[26ch] lg:max-w-none">
               {project.title}
             </h1>
             <p className="text-slate text-small mt-1.5">{project.client}</p>
           </div>
-          <div className="flex flex-wrap gap-2.5">
+          <div className="flex items-center gap-2.5 shrink-0">
             <Button
               variant="ghost"
               icon={Send}
