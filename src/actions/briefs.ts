@@ -239,7 +239,6 @@ export async function generateBriefAction(
         settings: {
           instructions: sanitizeText(draft.instructions),
           memoryProjectTitles: draft.memoryProjectTitles.map(sanitizeText),
-          detailLevel: draft.detailLevel,
           format: draft.format,
           includeSOW: draft.includeSOW,
           includeAI: draft.includeAI,

@@ -184,7 +184,6 @@ export function QuoteWizard({
     sourceText: "",
     instructions: "",
     memoryProjectTitles: [],
-    detailLevel: "Detailed",
     format: "HTML",
     includeSOW: false,
     includeAI: false,

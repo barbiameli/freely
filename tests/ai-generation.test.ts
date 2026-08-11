@@ -14,7 +14,6 @@ const draft: QuoteDraftInput = {
   sourceText: "Client wants a rebrand of their marketing site.",
   instructions: "Focus on discovery phase.",
   memoryProjectTitles: ["Acme Rebrand"],
-  detailLevel: "Detailed",
   format: "HTML",
   includeSOW: true,
   includeAI: true,
@@ -70,7 +69,6 @@ describe("buildGenerateUserPrompt", () => {
     const prompt = buildGenerateUserPrompt(draft);
     expect(prompt).toContain(draft.sourceText);
     expect(prompt).toContain(draft.instructions);
-    expect(prompt).toContain("Detailed");
     expect(prompt).toContain("Acme Rebrand");
     expect(prompt).toContain("Include Statement of Work: true");
   });

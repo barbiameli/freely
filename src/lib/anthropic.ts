@@ -112,7 +112,6 @@ export interface QuoteDraftInput {
   sourceText: string;
   instructions: string;
   memoryProjectTitles: string[];
-  detailLevel: "Generic" | "Detailed";
   format: "HTML" | "PDF" | "Figma";
   includeSOW: boolean;
   includeAI: boolean;
@@ -398,7 +397,6 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
       draft.sourceText ? truncateSourceText(draft.sourceText) : "(no source text provided)"
     }`,
     `\nInstructions for this quote: ${draft.instructions || "none given"}`,
-    `Detail level: ${draft.detailLevel}`,
     `Reference past projects to draw style from: ${
       draft.memoryProjectTitles.length ? draft.memoryProjectTitles.join(", ") : "none"
     }`,

@@ -637,6 +637,46 @@ export const es: Dictionary = {
     projectUpdate: "Novedades del proyecto",
   },
 
+  terms: {
+    title: "Condiciones y datos",
+    intro: "Qué guarda Freely, qué no, y las condiciones de uso.",
+    backToFreely: "Volver a Freely",
+
+    storeTitle: "Qué guardamos",
+    storeAccount:
+      "Los datos de tu cuenta (nombre, nombre del estudio, email), todo lo que añades a Memoria (instrucciones, tono, trayectoria, contexto, archivos, imágenes y enlaces), los presupuestos y proyectos que creas, y las facturas que haces.",
+    storeFiles:
+      "Los archivos que subes se guardan como texto extraído para que los presupuestos puedan usarlos. Las imágenes y los logos se guardan como datos en tu cuenta.",
+
+    notStoredTitle: "Qué no guardamos",
+    notStoredPayment:
+      "Números de cuenta, IBAN, datos de tarjeta ni ninguna otra credencial de pago. Las facturas no tienen campos en la base de datos para eso. Los escribes en el momento de descargar la factura, se imprimen en ese PDF y se descartan.",
+    notStoredRemembered:
+      "Si marcas \"recordar en este dispositivo\", se quedan en el almacenamiento de tu navegador y no llegan hasta nosotros. Si borras los datos del navegador, desaparecen.",
+
+    publicTitle: "Los presupuestos publicados son públicos",
+    publicBody:
+      "Publicar un presupuesto lo pone en una dirección web que puede abrir cualquiera que tenga el enlace. La dirección es larga e imposible de adivinar, y no está listada en ningún sitio, pero no hay que iniciar sesión para verla. Despublica el presupuesto para retirarlo.",
+
+    aiTitle: "Generación con IA",
+    aiBody:
+      "Los presupuestos los redacta un modelo de IA a partir del proyecto que le das y del contexto de tu Memoria. Ese contenido se envía al proveedor del modelo para producir el borrador.",
+    aiDrafts:
+      "Los borradores pueden equivocarse. Los precios, las horas y los plazos son estimaciones, y cada presupuesto es tuyo para revisarlo y editarlo antes de enviarlo.",
+
+    acceptTitle: "Aceptar un presupuesto",
+    acceptBody:
+      "Cuando un cliente acepta un presupuesto publicado, guardamos el nombre y el email que ha escrito, la hora y la dirección IP desde la que llegó la aceptación, como constancia de que ocurrió. Es una firma electrónica simple. Si necesitas un registro de auditoría formal, usa un servicio de firma electrónica dedicado.",
+
+    yourDataTitle: "Tus datos",
+    yourDataBody:
+      "Puedes editar o eliminar presupuestos, proyectos, facturas y elementos de Memoria cuando quieras. Al eliminar tu cuenta se eliminan los datos asociados.",
+
+    liabilityTitle: "Responsabilidad",
+    liabilityBody:
+      "Freely es una herramienta para producir documentos. No da asesoramiento legal, fiscal ni financiero, y lo que redacta, incluidas las condiciones, es un punto de partida para que lo revises tú.",
+  },
+
   errors: {
     pageTitle: "Esta página no ha cargado.",
     pageBody: "Ha fallado algo nuestro, no tuyo. Tu trabajo está a salvo.",

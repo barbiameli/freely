@@ -643,6 +643,46 @@ export const en = {
     projectUpdate: "Project update",
   },
 
+  terms: {
+    title: "Terms and data",
+    intro: "What Freely stores, what it does not, and the terms of using it.",
+    backToFreely: "Back to Freely",
+
+    storeTitle: "What we store",
+    storeAccount:
+      "Your account details (name, studio name, email), everything you add to Memory (instructions, tone, story, context, uploaded files, images and links), the quotes and projects you create, and the invoices you build.",
+    storeFiles:
+      "Uploaded files are stored as extracted text so quotes can draw on them. Images and logos are stored as data on your account.",
+
+    notStoredTitle: "What we do not store",
+    notStoredPayment:
+      "Bank account numbers, sort codes, IBANs, card details and any other payment credentials. Invoices have no database fields for them. You enter them at the moment you download an invoice, they are written into that PDF, and they are discarded.",
+    notStoredRemembered:
+      "If you tick \"remember these on this device\", they are kept in your own browser storage and are not sent to us. Clearing your browser data removes them.",
+
+    publicTitle: "Published quotes are public",
+    publicBody:
+      "Publishing a quote puts it at a web address that anyone with the link can open. The address is long and unguessable, and it is not listed anywhere, but it is not behind a login. Unpublish a quote to take it offline.",
+
+    aiTitle: "AI generation",
+    aiBody:
+      "Quotes are drafted by an AI model from the brief you provide and the context in your Memory. That content is sent to the model provider to produce the draft.",
+    aiDrafts:
+      "Drafts can be wrong. Prices, hours and timelines are estimates and every quote is yours to check and edit before you send it.",
+
+    acceptTitle: "Accepting a quote",
+    acceptBody:
+      "When a client accepts a published quote, we record the name and email they typed, the time, and the IP address the acceptance came from, as a record that it happened. This is a simple electronic signature. For agreements where you need a formal audit trail, use a dedicated e-signature service.",
+
+    yourDataTitle: "Your data",
+    yourDataBody:
+      "You can edit or delete quotes, projects, invoices and Memory items at any time. Deleting your account removes the data associated with it.",
+
+    liabilityTitle: "Liability",
+    liabilityBody:
+      "Freely is a tool for producing documents. It does not provide legal, tax or financial advice, and the wording it generates, including any terms, is a starting point for you to review.",
+  },
+
   errors: {
     pageTitle: "That page didn't load.",
     pageBody: "Something went wrong on our side rather than yours. Your work is saved.",
