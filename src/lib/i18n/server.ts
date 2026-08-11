@@ -1,5 +1,6 @@
 import { headers, cookies } from "next/headers";
 import { getCurrentUser } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
 import {
   dict,
   localeFromHeader,
@@ -31,9 +32,26 @@ export async function currentLocale(): Promise<Locale> {
   // getCurrentUser rather than requireUser: signed out is the normal case on
   // the marketing and auth screens, and requireUser signals that by throwing a
   // redirect, which a catch here would swallow.
-  const user = await getCurrentUser();
-  const saved = (user as unknown as { locale?: string } | null)?.locale;
-  if (saved) return parseLocale(saved);
+  //
+  // The column has to be read from the database, not off the session. The
+  // session user carries id, name, studioName and email and nothing else, so
+  // reading `locale` from it was always undefined and this branch never fired:
+  // a signed-in user's saved language silently never travelled between
+  // devices, which is the one thing it exists to do. Wrapped because this runs
+  // in the root layout, where a database hiccup must not take down every page
+  // in the app to decide which language to render.
+  const sessionUser = await getCurrentUser();
+  if (sessionUser?.id) {
+    try {
+      const account = await prisma.user.findUnique({
+        where: { id: sessionUser.id },
+        select: { locale: true },
+      });
+      if (account?.locale) return parseLocale(account.locale);
+    } catch (err) {
+      console.error("[currentLocale] could not read the saved language", err);
+    }
+  }
 
   const header = (await headers()).get("accept-language");
   return localeFromHeader(header);

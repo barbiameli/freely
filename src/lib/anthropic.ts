@@ -79,6 +79,21 @@ export const briefExtrasSchema = z.object({
 });
 export type BriefExtras = z.infer<typeof briefExtrasSchema>;
 
+/**
+ * How the work splits into billable chunks.
+ *
+ * A milestone groups deliverables; it is not one deliverable renamed. The
+ * client agrees to this split when they agree to the quote, which is why it is
+ * generated here rather than assembled later in the tracker.
+ */
+export const milestoneSchema = z.object({
+  name: z.string().min(1),
+  /** Positions in the deliverables array, 0-based. */
+  deliverableIndexes: z.array(z.number().int().nonnegative()),
+  amount: z.number().nonnegative(),
+});
+export type GeneratedMilestoneShape = z.infer<typeof milestoneSchema>;
+
 export const briefSchema = z.object({
   title: z.string().min(1),
   client: z.string().min(1),
@@ -90,6 +105,8 @@ export const briefSchema = z.object({
   strategy: strategySchema.optional(),
   price: z.number().nonnegative(),
   hours: z.number().nonnegative(),
+  /** Only present when the quote is being billed in milestones. */
+  milestones: z.array(milestoneSchema).optional(),
   terms: briefExtrasSchema.shape.terms,
   revisions: briefExtrasSchema.shape.revisions,
   availability: briefExtrasSchema.shape.availability,
@@ -153,6 +170,29 @@ export interface QuoteDraftInput {
   /** Which color/logo treatment to render with — see lib/branding.ts. Also
    * purely a presentation choice, doesn't affect generation. */
   branding?: "freely" | "own" | "mono-light" | "mono-dark";
+  /**
+   * Whether this project is split into billable milestones.
+   *
+   * Off by default. Most jobs are one piece of work billed on completion, and
+   * a milestone structure on a two-week project is ceremony.
+   */
+  useMilestones?: boolean;
+  /**
+   * How many milestones the freelancer wants.
+   *
+   * Undefined means they have not said, and the model decides from the shape
+   * of the work, which is usually the better answer: the natural number of
+   * chunks is a property of the project, not a preference.
+   */
+  milestoneCount?: number;
+  /**
+   * What the freelancer said should go in which milestone.
+   *
+   * Free text, because this is a sentence people already know how to say
+   * ("research and audit first, then all the design, then build") and a
+   * structured picker would be slower than typing it.
+   */
+  milestoneNotes?: string;
   /** Cancellation, ownership and confidentiality terms. */
   includeTerms?: boolean;
   /** How many revision rounds are included. */
@@ -338,6 +378,22 @@ export function buildGenerateUserPrompt(
 Use web search to find the going ${unitNoun(unit, promptWords)} rate, and the typical hours, for this kind of project for a "${draft.expertiseLevel}"-level freelancer. Price against the client's market where one is given, since that is what sets what can be charged, and use the freelancer's own location as a cross-check. Then set hours, and price = hours x the rate you landed on. State the rate you used, and where it came from, in the open questions so they can check it.`;
   }
 
+  // Milestones, when the freelancer asked for them. The count and the grouping
+  // are both optional: saying neither means the model reads the natural shape
+  // of the work, which is usually a better answer than a number picked before
+  // anyone knew what the deliverables were.
+  const milestoneInstruction = draft.useMilestones
+    ? `\nInclude a "milestones" array. A milestone is a billable chunk of the project that groups one or more deliverables, it is NOT one deliverable renamed: a six-deliverable project is usually three or four milestones, not six. Each entry has "name" (2-5 words, what this chunk of work is), "deliverableIndexes" (0-based positions in the deliverables array you produced, listed in order) and "amount" (this milestone's share of the total price). Rules: every deliverable must appear in exactly one milestone, never two and never none. The amounts must sum to exactly the total price. Weight each amount by how much of the work it actually represents, not by dividing equally, unless the chunks genuinely are equal.${
+        draft.milestoneCount
+          ? ` Use exactly ${draft.milestoneCount} milestones.`
+          : " Choose the number of milestones yourself from the natural shape of the work, usually between two and four."
+      }${
+        draft.milestoneNotes?.trim()
+          ? ` The freelancer has said how they want it split, follow this: "${draft.milestoneNotes.trim()}"`
+          : ""
+      }`
+    : "";
+
   const strategyInstruction = draft.includeStrategy
     ? `\nInclude a "strategy" object, written the way a senior consultant frames a proposal's approach: "goal" is one sentence naming the outcome this project is actually for. "findings" is 2-4 concrete, standalone observations drawn from the source material (what's currently true / what's missing / what was asked for), each its own bullet, not one merged sentence. "openQuestions" is 2-4 notes for the freelancer only, never shown to the client: things worth confirming before starting, risks the brief glosses over, or a suggestion about how to approach the work that they may not have considered. Do not mention AI usage anywhere in this object, that's handled separately.`
     : "";
@@ -426,6 +482,7 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
     formatPricingHistory(pricingHistory, symbol),
     strategyInstruction,
     timelineInstruction,
+    milestoneInstruction,
     extraSectionsInstruction,
     `\nWrite a project quote based on this. Keep deliverables as a list of short, concrete items (4-7 items), name actual artifacts, not phases. Give a realistic timeline, a price in ${currencyCode}, and estimated hours that are consistent with the pricing approach above.`,
   ]

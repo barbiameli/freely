@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import { createProjectFromBrief } from "@/lib/track-from-brief";
+import { reconcileMilestones } from "@/lib/milestones";
 import { sanitizeText, stripLongDashes, stripContrastive } from "@/lib/sanitize-text";
 import { resolveQuoteLocale } from "@/lib/i18n";
 import {
@@ -267,6 +268,23 @@ export async function generateBriefAction(
           includeAI: draft.includeAI,
           includeStrategy: draft.includeStrategy,
           includeTimeline: draft.includeTimeline,
+          // How this bills, as agreed with the client. Kept on the brief
+          // rather than only on the project, because the milestones are part
+          // of what the client signed and the project is created from this.
+          useMilestones: draft.useMilestones ?? false,
+          milestones: generated.milestones?.length
+            ? reconcileMilestones(
+                generated.milestones.map((ms) => ({ ...ms, name: clean(ms.name) })),
+                generated.deliverables.length,
+                generated.price
+              ).map((ms) => ({
+                // Spread into a plain object: Prisma's Json input type rejects
+                // a declared interface, even a structurally identical one.
+                name: ms.name,
+                deliverableIndexes: ms.deliverableIndexes,
+                amount: ms.amount,
+              }))
+            : undefined,
           includeTerms: draft.includeTerms ?? false,
           includeRevisions: draft.includeRevisions ?? false,
           includeAvailability: draft.includeAvailability ?? false,

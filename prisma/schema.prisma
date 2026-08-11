@@ -310,9 +310,42 @@ model Project {
   stripePaymentIntentId String?
 
   deliverables Deliverable[]
+  milestones   Milestone[]
   diaryEntries DiaryEntry[]
 
   @@index([userId])
+}
+
+// A billable chunk of the work, grouping one or more deliverables.
+//
+// Not the same thing as a deliverable, which is what this used to assume: a
+// six-deliverable project billed in three milestones was invoicing in six
+// pieces, each a sixth of the price, which is simply the wrong number on the
+// wrong day.
+//
+// Decided when the quote is written, not in the tracker. The freelancer says
+// how the work splits (or lets it be worked out), the client agrees to that
+// split, and Track displays what was agreed rather than offering to rearrange
+// it afterwards.
+//
+// amount is stored rather than derived. A milestone's share is agreed with the
+// client at quote time, and recomputing it later from hours would silently
+// change what someone signed for when a deliverable is edited.
+model Milestone {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  order     Int     @default(0)
+  // This milestone's share of the project price, as quoted.
+  amount    Float   @default(0)
+  // When this milestone was billed. Null means it is still outstanding, which
+  // is what puts it in the invoice queue.
+  invoicedAt DateTime?
+
+  deliverables Deliverable[]
+
+  @@index([projectId])
 }
 
 /// An invoice. Note what is NOT here: no bank account, sort code, IBAN or any
@@ -400,6 +433,10 @@ model Deliverable {
   id        String  @id @default(cuid())
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  // Which milestone this belongs to. Null on a project that is not billed in
+  // milestones, which is most of them.
+  milestoneId String?
+  milestone   Milestone? @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
   name      String
   done      Boolean @default(false)
   order     Int     @default(0)
@@ -422,6 +459,7 @@ model Deliverable {
   flags Flag[]
 
   @@index([projectId])
+  @@index([milestoneId])
 }
 
 // One concrete action inside a deliverable. "Foundations in Figma" is not a
