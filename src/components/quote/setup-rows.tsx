@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { useEffect, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronRight, Check, RotateCcw } from "lucide-react";
 import { Chip } from "@/components/ui/chip";
@@ -47,9 +47,10 @@ import type { QuoteDraftPayload } from "@/actions/briefs";
  * offers both ways out. Without that, one oddly-priced job either rewrites the
  * setup for every quote after it or leaves no way to say "actually, keep this".
  *
- * Rows that have never been decided open by default, because there is nothing
- * to summarise yet: on a first quote this reads as the form it replaced, which
- * is the point at which the answers get learned.
+ * Every row starts closed, including on a first quote. Four closed lines are a
+ * summary; four open ones are the form this replaced. The one exception is a
+ * generate refused for want of a rate, where the message would otherwise point
+ * at a control nobody can see.
  */
 export function SetupRows({
   draft,
@@ -97,11 +98,17 @@ export function SetupRows({
   const words = setupWords(t);
   const symbol = currencySymbol(draft.currency);
 
-  // Undecided rows start open. Set once rather than derived, so opening and
-  // closing during a quote is not undone by a re-render.
-  const [open, setOpen] = useState<SetupRowKey[]>(() =>
-    SETUP_ROWS.filter((row) => !decided.includes(row))
-  );
+  // Everything starts closed, including on a first quote where nothing has been
+  // decided. Four closed lines read as a summary you can skim; four open ones
+  // read as the form this replaced, and the values are stated on the closed row
+  // anyway, so opening them by default bought nothing.
+  const [open, setOpen] = useState<SetupRowKey[]>([]);
+
+  // Except when generating was refused for want of a rate. The message would
+  // otherwise point at a control inside a closed row.
+  useEffect(() => {
+    if (rateHelpOpen) setOpen((rows) => (rows.includes("rate") ? rows : [...rows, "rate"]));
+  }, [rateHelpOpen]);
 
   function toggle(row: SetupRowKey) {
     setOpen((rows) => (rows.includes(row) ? rows.filter((r) => r !== row) : [...rows, row]));
