@@ -745,16 +745,38 @@ export interface PersonaInput {
   pastProjectTitles?: string[];
 }
 
+export const personaSchema = z.object({
+  summary: z.string(),
+  /**
+   * A seniority read, or null when the material does not support one.
+   *
+   * Read here rather than asked in the wizard. Seniority only moves a number
+   * when there is no rate to anchor to, so asking on every quote was a
+   * question whose answer usually changed nothing; and the same material this
+   * persona is built from says it anyway.
+   *
+   * Nullable and it means it: no signal is a better answer than a guess, since
+   * a wrong level quietly shifts a researched price.
+   */
+  expertise: z.enum(["Junior", "Mid-level", "Senior", "Expert"]).nullable().default(null),
+});
+export type PersonaResult = z.infer<typeof personaSchema>;
+
 /** Synthesizes a short, editable persona summary from everything saved to
  * Memory plus past project titles — "who this freelancer is and how they
  * work," inferred rather than manually filled in. Always presented to the
- * user as a starting point they can correct, never as a locked-in fact. */
-export async function generatePersona(input: PersonaInput): Promise<string> {
+ * user as a starting point they can correct, never as a locked-in fact.
+ *
+ * Also returns a seniority read, used only when the freelancer has not stated
+ * one and only when a rate has to be researched. See lib/quote-defaults. */
+export async function generatePersona(input: PersonaInput): Promise<PersonaResult> {
   const system = [
     "You write short, third-person persona summaries for freelancers using a quoting tool called Freely.",
     "The summary should read like a colleague's honest one-paragraph description of how this person works, specific, not generic corporate-bio language.",
     "Base it only on the material given. If material is thin, keep the summary short and hedge lightly (e.g. 'appears to' / 'so far') rather than inventing detail.",
-    "Respond with plain text only: 2-4 sentences, no headers, no markdown, no quotes around it.",
+    "summary is plain text: 2-4 sentences, no headers, no markdown, no quotes around it.",
+    'expertise is your read of their seniority from the material: one of "Junior", "Mid-level", "Senior", "Expert". Judge it on evidence of scope and responsibility, years of work, the kind of client, and how they describe their own role. If the material does not really support a read, use null. Null is the right answer more often than a guess: this affects the rate researched for them when they have not given one.',
+    'Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly: {"summary": string, "expertise": "Junior"|"Mid-level"|"Senior"|"Expert"|null}',
   ].join(" ");
 
   const sections = [
@@ -773,14 +795,33 @@ export async function generatePersona(input: PersonaInput): Promise<string> {
   ].filter(Boolean);
 
   if (sections.length === 0) {
-    return "Not enough saved in Memory yet to build a persona, add a bit of Story, Tone, or a reference file first.";
+    return {
+      summary:
+        "Not enough saved in Memory yet to build a persona, add a bit of Story, Tone, or a reference file first.",
+      expertise: null,
+    };
   }
 
   const user = `Here's what's saved about this freelancer:\n\n${sections.join(
     "\n\n"
-  )}\n\nWrite the persona summary.`;
+  )}\n\nWrite the persona summary and read their seniority.`;
 
-  return callClaude(system, user);
+  const text = await callClaude(system, user);
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  const cleaned = (jsonMatch ? jsonMatch[0] : text)
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
+  try {
+    const result = personaSchema.safeParse(JSON.parse(cleaned));
+    if (result.success) return result.data;
+  } catch {
+    // Falls through.
+  }
+  // A persona that came back as prose rather than JSON is still a usable
+  // persona, and losing it over its wrapper would be a worse outcome than
+  // going without the seniority read.
+  return { summary: text.trim(), expertise: null };
 }
 
 export const brandGuideSchema = z.object({

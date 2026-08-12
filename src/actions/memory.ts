@@ -122,7 +122,7 @@ export async function generatePersonaAction(): Promise<ActionResult<{ persona: s
     }),
   ]);
 
-  let persona: string;
+  let persona: Awaited<ReturnType<typeof generatePersona>>;
   try {
     persona = await generatePersona({
       industry: user.industry,
@@ -143,10 +143,22 @@ export async function generatePersonaAction(): Promise<ActionResult<{ persona: s
 
   await prisma.user.update({
     where: { id: user.id },
-    data: { aiPersona: persona, personaUpdatedAt: new Date() },
+    data: {
+      aiPersona: persona.summary,
+      personaUpdatedAt: new Date(),
+      // Stored apart from expertiseLevel, which is what the freelancer said.
+      // An inference must never overwrite a correction, so it is written to
+      // its own column and only read when nothing was stated.
+      ...(persona.expertise
+        ? ({
+            inferredExpertise: persona.expertise,
+            inferredExpertiseAt: new Date(),
+          } as Record<string, unknown>)
+        : {}),
+    },
   });
   revalidatePath("/memory");
-  return { ok: true, data: { persona } };
+  return { ok: true, data: { persona: persona.summary } };
 }
 
 /** Lets the user hand-correct the AI-synthesized persona directly. */

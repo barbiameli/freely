@@ -103,6 +103,47 @@ model User {
   defaultRate        Float?
   defaultRateUnit    String   @default("HOUR")
 
+  // The quote setup: everything the wizard used to ask on every quote that is
+  // actually a property of the freelancer rather than of the job. Asking for
+  // it once and remembering it is what took the first screen from fourteen
+  // fields to four lines.
+  //
+  // All nullable, and null means "never said", which is different from any
+  // particular value. A null section set is why the first quote still shows
+  // the full choice and the second one shows a summary: there is nothing to
+  // summarise until something has been chosen.
+  //
+  // How you usually split payment, and how much is due before you start.
+  defaultPaymentPlan String?
+  defaultUpfrontPercent Int?
+  // Which sections you usually send, as the inclusion keys. Json rather than
+  // seven booleans: the set of sections has changed twice already and each
+  // change would otherwise be a migration.
+  defaultSections    Json?
+  // The answers to the questions each section rests on. Same text every time
+  // for most people, which is why retyping them was the worst of it.
+  defaultTermsNote   String   @default("") @db.Text
+  defaultRevisionsNote String @default("") @db.Text
+  defaultAiUsageNote String   @default("") @db.Text
+  defaultAvailabilityNote String @default("") @db.Text
+  // How it comes out and how it looks.
+  defaultFormat      String?
+  defaultTemplate    String?
+  defaultBranding    String?
+
+  // Seniority, which only moves a number when there is no rate to anchor to:
+  // if you say £65/hour, the level adds nothing that figure does not already
+  // say. So it is not a question on the wizard any more.
+  //
+  // Two columns, because a guess and a statement are not the same fact.
+  // expertiseLevel is what you said, and it always wins. inferredExpertise is
+  // read off your persona, files and past quotes, and is only used when you
+  // have not said. Collapsing them into one column would mean an inference
+  // overwriting a correction, which is the one thing it must never do.
+  expertiseLevel     String?
+  inferredExpertise  String?
+  inferredExpertiseAt DateTime?
+
   // A user either owns a team (TeamOwner) or belongs to one as a member
   // (TeamMember, via teamId). Solo users have neither set.
   ownedTeam Team?   @relation("TeamOwner")

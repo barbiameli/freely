@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   Upload,
   FileText,
-  ChevronLeft,
-  ArrowRight,
   Sparkles,
   CircleStop,
   ImagePlus,
@@ -25,15 +23,11 @@ import {
   addBriefExampleAction,
   type QuoteDraftPayload,
 } from "@/actions/briefs";
-import { CURRENCIES, currencySymbol } from "@/lib/currencies";
-import { rateSuffix, parseRateUnit, type RateUnit } from "@/lib/rate-unit";
+import { parseRateUnit } from "@/lib/rate-unit";
 import { useT, useLocale } from "@/lib/i18n/context";
 import { MAX_DOCUMENT_UPLOAD_BYTES, documentTooLargeError } from "@/lib/upload-limits";
-import { BRANDING_OPTIONS } from "@/lib/branding";
 import {
   projectPresetKeys,
-  QUOTE_INCLUSIONS,
-  SECTION_QUESTIONS,
   sectionNoteLines,
   toggleExampleLine,
   availabilityFacts,
@@ -49,8 +43,13 @@ import {
   analyzeBrandGuideAction,
   analyzeBrandGuideImageAction,
   uploadBrandLogoAction,
-  updateDefaultRateAction,
 } from "@/actions/memory";
+import { SetupRows, setupFromDraft } from "@/components/quote/setup-rows";
+import {
+  learnQuoteDefaultsAction,
+  keepQuoteDefaultAction,
+} from "@/actions/quote-defaults";
+import { resolveSetup, type AccountDefaults, type SetupRowKey } from "@/lib/quote-defaults";
 
 import type { BriefSummary } from "@/components/brief-card";
 
@@ -120,44 +119,6 @@ function FieldHeading({ children, required }: { children: ReactNode; required?: 
   );
 }
 
-/** A tiny mocked-up page thumbnail so users can see roughly what each
- * template looks like, instead of just reading a name and description. */
-function TemplatePreview({ id }: { id: "classic" | "editorial" | "minimal" }) {
-  if (id === "classic") {
-    return (
-      <div className="w-full h-20 rounded-md bg-white border border-line overflow-hidden flex flex-col">
-        <div className="bg-ink h-8 px-2.5 flex flex-col justify-center gap-1">
-          <div className="w-8 h-[3px] bg-coral rounded-full" />
-          <div className="w-14 h-[5px] bg-white/90 rounded-full" />
-        </div>
-        <div className="flex-1 px-2.5 py-2 flex flex-col gap-1.5">
-          <div className="w-full h-2 rounded bg-violet-tint" />
-          <div className="w-4/5 h-2 rounded bg-coral-tint" />
-        </div>
-      </div>
-    );
-  }
-  if (id === "editorial") {
-    return (
-      <div className="w-full h-20 rounded-md bg-white border border-line overflow-hidden px-2.5 py-2.5 flex flex-col gap-1.5">
-        <div className="w-10 h-[3px] bg-coral rounded-full" />
-        <div className="w-16 h-3 bg-ink/80 rounded-sm" />
-        <div className="w-full h-[2px] bg-coral mt-0.5" />
-        <div className="w-full h-1.5 rounded bg-line mt-1" />
-        <div className="w-3/5 h-1.5 rounded bg-line" />
-      </div>
-    );
-  }
-  return (
-    <div className="w-full h-20 rounded-md bg-white border border-line overflow-hidden px-2.5 py-2.5 flex flex-col gap-1.5">
-      <div className="w-full h-[3px] bg-ink" />
-      <div className="w-12 h-2 bg-ink/70 rounded-sm mt-1" />
-      <div className="w-full h-1 rounded bg-line mt-1.5" />
-      <div className="w-2/3 h-1 rounded bg-line" />
-    </div>
-  );
-}
-
 export function QuoteWizard({
   recentBriefs,
   landedQuotes = [],
@@ -169,6 +130,7 @@ export function QuoteWizard({
   savedRate,
   savedRateUnit,
   industry,
+  saved = {},
 }: {
   recentBriefs: BriefSummary[];
   /** Quotes old enough to have an answer, for the "did you land these?" prompt. */
@@ -185,39 +147,59 @@ export function QuoteWizard({
   savedRateUnit?: string;
   /** The field chosen at onboarding, so the examples match the actual work. */
   industry?: string | null;
+  /** The quote setup remembered on the account, prefilled into the draft and
+   * used to tell a per-quote change from simply the answer. */
+  saved?: AccountDefaults;
 }) {
   const router = useRouter();
   const t = useT();
   const locale = useLocale();
-  const [step, setStep] = useState(0);
   const [tab, setTab] = useState<QuoteTab>(initialTab);
-  const [draft, setDraft] = useState<QuoteDraftPayload>({
-    sourceText: "",
-    instructions: "",
-    memoryProjectTitles: [],
-    format: "HTML",
-    includeSOW: false,
-    includeAI: false,
-    includeStrategy: false,
-    includeTimeline: false,
-    hourlyRate: savedRate ?? 0,
-    rateUnit: parseRateUnit(savedRateUnit),
-    currency: userCurrency || "USD",
-    expertiseLevel: "Senior",
-    template: "classic",
-    // Someone who has set up their own branding almost always wants to send
-    // a quote under it, so that's the default whenever it's available.
-    branding: hasBrand ? "own" : "freely",
-    pricing: { yourLocation: savedLocation || "" },
-    // Defaults to the interface language, since most quotes go out in the
-    // language the freelancer works in, and is changed per quote when they do
-    // not match.
-    language: locale,
+  // The draft starts as whatever the account remembers, so a second quote opens
+  // already answered. resolveSetup fills every gap, so nothing here is null
+  // and the wizard never has to reason about "not set".
+  const [draft, setDraft] = useState<QuoteDraftPayload>(() => {
+    const usual = resolveSetup(saved);
+    return {
+      sourceText: "",
+      instructions: "",
+      memoryProjectTitles: [],
+      format: usual.format,
+      includeStrategy: usual.sections.includes("includeStrategy"),
+      includeTimeline: usual.sections.includes("includeTimeline"),
+      includeSOW: usual.sections.includes("includeSOW"),
+      includeTerms: usual.sections.includes("includeTerms"),
+      includeRevisions: usual.sections.includes("includeRevisions"),
+      includeAvailability: usual.sections.includes("includeAvailability"),
+      includeAI: usual.sections.includes("includeAI"),
+      hourlyRate: savedRate ?? usual.rate,
+      rateUnit: savedRateUnit ? parseRateUnit(savedRateUnit) : usual.rateUnit,
+      currency: userCurrency || usual.currency,
+      paymentPlan: usual.paymentPlan,
+      upfrontPercent: usual.upfrontPercent,
+      // Not a question any more. Given a rate the level changes nothing, so it
+      // is read off Memory and only editable where it can matter, inside the
+      // rate helper. See lib/quote-defaults.
+      expertiseLevel: usual.expertise,
+      template: usual.template,
+      // Someone who has set up their own branding almost always wants to send
+      // a quote under it, so that's the default whenever it's available.
+      branding: saved.defaultBranding ? usual.branding : hasBrand ? "own" : "freely",
+      pricing: { yourLocation: savedLocation || "" },
+      // Defaults to the interface language, since most quotes go out in the
+      // language the freelancer works in, and is changed per quote when they do
+      // not match.
+      language: locale,
+    };
   });
-  const [availabilityNote, setAvailabilityNote] = useState("");
+  const [availabilityNote, setAvailabilityNote] = useState(saved.defaultAvailabilityNote ?? "");
   // One optional question per section that rests on a decision only the
   // freelancer can make. See SECTION_QUESTIONS.
-  const [sectionNotes, setSectionNotes] = useState<SectionNotes>({});
+  const [sectionNotes, setSectionNotes] = useState<SectionNotes>(() => ({
+    terms: saved.defaultTermsNote ?? "",
+    revisions: saved.defaultRevisionsNote ?? "",
+    aiUsage: saved.defaultAiUsageNote ?? "",
+  }));
   // Which examples are currently in the text, so a chip can show as selected
   // and be clicked again to take it back out.
   const [pickedExamples, setPickedExamples] = useState<string[]>([]);
@@ -235,7 +217,8 @@ export function QuoteWizard({
   // The location questions exist only to research a rate, so they stay hidden
   // unless someone says they are unsure.
   const [showRateHelp, setShowRateHelp] = useState(false);
-  const [rememberRate, setRememberRate] = useState(false);
+  // Rows kept as the usual during this quote, so the offer is not repeated.
+  const [keptRows, setKeptRows] = useState<SetupRowKey[]>([]);
   // Branding can be added without leaving the wizard, so a half-filled brief
   // isn't lost to a trip to Memory.
   const [showBrandUpload, setShowBrandUpload] = useState(false);
@@ -281,6 +264,14 @@ export function QuoteWizard({
   }
 
   async function handleGenerate() {
+    const missing = whatIsMissing();
+    if (missing) {
+      // The rate is the likely offender, and it is the one row that may be
+      // closed, so open the helper along with the message.
+      if (missing === t.quote.addRateOrLocationLong) setShowRateHelp(true);
+      setError(missing);
+      return;
+    }
     setGenerating(true);
     setError("");
     setProgress(0);
@@ -314,19 +305,13 @@ export function QuoteWizard({
         availability: { facts: availabilityFacts(availabilityNote) },
         sectionNotes: sectionNoteLines(sectionNotes),
       };
-      // Not awaited: failing to remember a rate is no reason to hold up
-      // someone's quote.
-      // Never for a fixed price: that is the total for this one project, not
-      // a rate to reuse, and saving it would prefill the next quote with this
-      // job's price.
-      const unitForMemory = draft.rateUnit ?? "HOUR";
-      if (rememberRate && draft.hourlyRate > 0 && unitForMemory !== "FIXED") {
-        void updateDefaultRateAction({
-          rate: draft.hourlyRate,
-          unit: unitForMemory,
-          currency: draft.currency,
-        });
-      }
+      // Not awaited: failing to remember a preference is no reason to hold up
+      // someone's quote. This only fills rows that have never been decided, so
+      // pricing one job as a fixed fee cannot make every later quote fixed. A
+      // fixed price is a total for one project rather than a rate to reuse,
+      // which lib/quote-defaults handles by only learning a rate above zero
+      // alongside its unit.
+      void learnQuoteDefaultsAction(setupFromDraft(draft, sectionNotes, availabilityNote));
       const result = await Promise.race([generateBriefAction(payload), timeout]);
       if (cancelledRef.current) return;
       clearGenerationTimers();
@@ -454,25 +439,150 @@ export function QuoteWizard({
     reader.readAsDataURL(file);
   }
 
-  // Step navigation validates and explains, rather than leaving Continue
-  // disabled with no indication of what's missing. A greyed-out button that
-  // won't say why is the least helpful possible failure state.
-  function goToOutputStep() {
-    // Either they price the work, or they say where it is being priced for.
+  /**
+   * What has to be true before anything can be generated.
+   *
+   * Validates and says what is missing, rather than greying out the button
+   * and refusing to explain. This used to run on Continue between the two
+   * steps; with one screen it runs here, which is the only moment left.
+   */
+  function whatIsMissing(): string {
+    if (!draft.sourceText.trim()) return t.quote.addSource;
+    // Either they price the work, or they say where it is being priced for,
+    // since a rate cannot be researched without a market.
     if (
       (!draft.hourlyRate || draft.hourlyRate <= 0) &&
       !draft.pricing?.yourLocation?.trim() &&
       !draft.pricing?.clientLocation?.trim()
     ) {
-      setShowRateHelp(true);
-      setError(
-        t.quote.addRateOrLocationLong
-      );
-      return;
+      return t.quote.addRateOrLocationLong;
     }
-    setError("");
-    setStep(1);
+    return "";
   }
+
+  /** "Make this my usual", for the row that was changed. */
+  async function handleKeepRow(row: SetupRowKey) {
+    setKeptRows((rows) => (rows.includes(row) ? rows : [...rows, row]));
+    const result = await keepQuoteDefaultAction(
+      row,
+      setupFromDraft(draft, sectionNotes, availabilityNote)
+    );
+    // Put the offer back if it did not save, rather than showing a tick for
+    // something that is not stored.
+    if (!result.ok) setKeptRows((rows) => rows.filter((r) => r !== row));
+  }
+
+  /**
+   * The market questions, shown under the rate only when there is no rate.
+   *
+   * Six fields, cut to four. Where you are based comes from Memory, since it
+   * is asked at onboarding and does not change; and "done this kind of work
+   * before?" was asking about seniority twice, which is what the level covers.
+   * What is left is all about this client rather than about you.
+   */
+  const pricedForFields = (
+    <div className="mt-4">
+      <SubLabel>{t.quote.pricedFor}</SubLabel>
+      <p className="text-caption text-text-muted mt-0 mb-2.5">{t.quote.pricedForHint}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        {(
+          [
+            // Only asked when Memory has nothing. Otherwise it is stated below
+            // rather than being a field to fill in again.
+            ...(savedLocation
+              ? []
+              : [{ key: "yourLocation" as const, label: t.quote.yourLocation }]),
+            { key: "clientLocation" as const, label: t.quote.clientLocation },
+            { key: "clientType" as const, label: t.quote.clientType },
+            { key: "budgetHint" as const, label: t.quote.budgetHint },
+            { key: "urgency" as const, label: t.quote.urgency },
+          ]
+        ).map((field) => (
+          <label key={field.key} className="block">
+            <SubLabel className="mb-1">{field.label}</SubLabel>
+            <input
+              value={draft.pricing?.[field.key] || ""}
+              onChange={(e) =>
+                setDraft((d) => ({
+                  ...d,
+                  pricing: { ...d.pricing, [field.key]: e.target.value },
+                }))
+              }
+              className="w-full font-body text-small text-ink bg-paper border border-line rounded-lg px-2.5 py-2 outline-none"
+            />
+          </label>
+        ))}
+      </div>
+      <p className="text-caption text-text-muted mt-2 mb-0">
+        {savedLocation ? t.quote.pricedFrom.replace("{place}", savedLocation) : t.quote.pricedForFooter}
+      </p>
+    </div>
+  );
+
+  /** Adding branding without leaving the wizard, so a pasted brief is not lost
+   * to a trip to Memory. */
+  const brandUpload = showBrandUpload ? (
+    <div className="bg-paper border border-line rounded-lg p-3.5">
+      <div className="flex justify-between items-start gap-3">
+        <div className="min-w-0">
+          <div className="font-body font-semibold text-small text-ink">
+            {t.quote.addYourBranding}
+          </div>
+          <div className="text-caption text-slate mt-0.5">{t.quote.addYourBrandingHint}</div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowBrandUpload(false)}
+          className="shrink-0 text-caption text-text-muted bg-none border-none cursor-pointer p-0 tap"
+        >
+          {t.common.close}
+        </button>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3 mt-3">
+        <DropZone
+          onFile={handleBrandGuide}
+          accept=".pdf,.docx,.txt,.md,image/png,image/jpeg"
+          disabled={brandBusy !== null}
+          className="flex-1 flex flex-col gap-1 cursor-pointer bg-white border border-dashed border-line rounded-lg px-3 py-2.5"
+        >
+          <span className="flex items-center gap-1.5 font-body font-bold text-small text-violet">
+            <FileText size={12} />
+            {brandBusy === "guide" ? t.quote.reading : t.memory.brandGuidelines}
+          </span>
+          <span className="text-caption text-text-muted">{t.quote.fileTypes}</span>
+        </DropZone>
+
+        <DropZone
+          onFile={handleBrandLogo}
+          accept="image/png"
+          disabled={brandBusy !== null}
+          className="flex-1 flex flex-col gap-1 cursor-pointer bg-white border border-dashed border-line rounded-lg px-3 py-2.5"
+        >
+          <span className="flex items-center gap-1.5 font-body font-bold text-small text-violet">
+            <ImagePlus size={12} />
+            {brandBusy === "logo" ? t.quote.uploading : t.quote.logo}
+          </span>
+          <span className="text-caption text-text-muted">{t.quote.transparentPng}</span>
+        </DropZone>
+      </div>
+
+      {brandError && <div className="text-overdue text-caption mt-2">{brandError}</div>}
+      {brandSaved && (
+        <div className="flex items-center gap-1.5 text-success text-caption mt-2">
+          <Check size={12} /> {t.quote.brandingSaved}
+        </div>
+      )}
+    </div>
+  ) : (
+    <button
+      type="button"
+      onClick={() => setShowBrandUpload(true)}
+      className="text-caption font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
+    >
+      {t.quote.addYourBranding}
+    </button>
+  );
 
   function handleStopGenerating() {
     cancelledRef.current = true;
@@ -483,7 +593,7 @@ export function QuoteWizard({
 
   return (
     <>
-      {step === 0 && tab === "all" && (
+      {tab === "all" && (
         <>
           <Topbar />
           {/* Above the tabs, because this is news and a question, and both are
@@ -495,7 +605,7 @@ export function QuoteWizard({
         </>
       )}
 
-      {step === 0 && tab === "new" && (
+      {tab === "new" && (
         <>
           <Topbar />
           <SignedBanner signed={signed} />
@@ -692,548 +802,26 @@ export function QuoteWizard({
             </p>
           </Card>
 
-          <div className="flex flex-col md:flex-row gap-4 md:gap-5">
-            <Card className="flex-1">
-              <FieldHeading required>{t.quote.ratePayment}</FieldHeading>
-              <p className="text-meta text-slate mb-3 leading-relaxed">
-                {t.quote.ratePaymentHint}
-              </p>
-              {/* Plenty of freelancers price in days, and converting to an
-                  hourly figure to fit the form means inventing a day length.
-                  Fixed is a third thing again: a whole-project price, with no
-                  rate shown to the client at all. */}
-              <div className="flex flex-wrap gap-1.5 mb-2.5">
-                {(
-                  [
-                    ["HOUR", t.quote.perHour],
-                    ["DAY", t.quote.perDay],
-                    ["FIXED", t.quote.rateFixed],
-                  ] as const
-                ).map(([unit, label]) => (
-                  <Chip
-                    key={unit}
-                    active={(draft.rateUnit ?? "HOUR") === unit}
-                    onClick={() => setDraft((d) => ({ ...d, rateUnit: unit }))}
-                  >
-                    {label}
-                  </Chip>
-                ))}
-              </div>
-              <div className="flex items-center gap-2">
-                <select
-                  value={draft.currency}
-                  onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value }))}
-                  className="bg-paper rounded-lg border-none px-2 py-2.5 text-sm text-ink outline-none cursor-pointer"
-                >
-                  {CURRENCIES.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.code}
-                    </option>
-                  ))}
-                </select>
-                <span className="text-slate text-sm">{currencySymbol(draft.currency)}</span>
-                <input
-                  type="number"
-                  min={0}
-                  step={5}
-                  value={draft.hourlyRate || ""}
-                  onChange={(e) => setDraft((d) => ({ ...d, hourlyRate: Number(e.target.value) }))}
-                  placeholder={
-                    (draft.rateUnit ?? "HOUR") === "FIXED"
-                      ? "e.g. 2400"
-                      : (draft.rateUnit ?? "HOUR") === "DAY"
-                      ? "e.g. 520"
-                      : "e.g. 65"
-                  }
-                  className="w-full bg-paper rounded-lg border-none px-3 py-2.5 text-sm text-ink outline-none"
-                />
-                <span className="text-slate text-sm">
-                  {rateSuffix((draft.rateUnit ?? "HOUR") as RateUnit, t.publicQuote)}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-2 mt-2.5">
-                <span className="text-meta text-text-muted">
-                  {(draft.rateUnit ?? "HOUR") === "FIXED"
-                    ? t.quote.rateFixedHint
-                    : draft.hourlyRate > 0
-                    ? t.quote.usedAsTyped
-                    : t.quote.orResearched}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowRateHelp((v) => !v);
-                    if (!showRateHelp) setDraft((d) => ({ ...d, hourlyRate: 0 }));
-                  }}
-                  className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
-                >
-                  {showRateHelp ? t.quote.iKnowMyRate : t.quote.notSureWhatToCharge}
-                </button>
-              </div>
-              {/* When the money arrives. Inside the same card as the rate,
-                  because they are one decision: what you charge and when you
-                  get it. It used to be asked in four places, which is how a
-                  quote ended up with payment terms that disagreed with its own
-                  milestones. */}
-              <div className="mt-4 pt-4 border-t border-line">
-                <SubLabel>{t.quote.paymentWhen}</SubLabel>
-                <div className="flex flex-wrap gap-1.5">
-                  {(
-                    [
-                      ["UPFRONT", t.quote.paymentUpfront],
-                      ["SPLIT", t.quote.paymentSplit],
-                      ["MILESTONE", t.quote.paymentMilestone],
-                    ] as const
-                  ).map(([plan, label]) => (
-                    <Chip
-                      key={plan}
-                      active={(draft.paymentPlan ?? "SPLIT") === plan}
-                      onClick={() => setDraft((d) => ({ ...d, paymentPlan: plan }))}
-                    >
-                      {label}
-                    </Chip>
-                  ))}
-                </div>
-
-                {(draft.paymentPlan ?? "SPLIT") === "SPLIT" && (
-                  <div className="mt-3">
-                    <SubLabel>{t.quote.paymentHowMuchUpfront}</SubLabel>
-                    <div className="flex flex-wrap gap-1.5">
-                      {[25, 40, 50].map((pct) => (
-                        <Chip
-                          key={pct}
-                          active={(draft.upfrontPercent ?? 50) === pct}
-                          onClick={() => setDraft((d) => ({ ...d, upfrontPercent: pct }))}
-                        >
-                          {`${pct}%`}
-                        </Chip>
-                      ))}
-                    </div>
-                    <p className="text-caption text-text-muted mt-1.5 mb-0">
-                      {t.quote.paymentRest}
-                    </p>
-                  </div>
-                )}
-
-                {draft.paymentPlan === "MILESTONE" && (
-                  <div className="mt-3 flex flex-col gap-3">
-                    <p className="text-caption text-text-muted m-0">
-                      {t.quote.paymentMilestoneHint}
-                    </p>
-                    <div>
-                      <SubLabel>{t.quote.milestonesHowMany}</SubLabel>
-                      {/* "Work it out" first and default: the natural number of
-                          chunks is a property of the work, and picking one
-                          before seeing the deliverables is guessing. */}
-                      <div className="flex flex-wrap gap-1.5">
-                        <Chip
-                          active={!draft.milestoneCount}
-                          onClick={() => setDraft((d) => ({ ...d, milestoneCount: undefined }))}
-                        >
-                          {t.quote.milestonesDecideForMe}
-                        </Chip>
-                        {[2, 3, 4, 5].map((n) => (
-                          <Chip
-                            key={n}
-                            active={draft.milestoneCount === n}
-                            onClick={() => setDraft((d) => ({ ...d, milestoneCount: n }))}
-                          >
-                            {String(n)}
-                          </Chip>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <SubLabel>{t.quote.milestonesWhatGoesWhere}</SubLabel>
-                      <textarea
-                        value={draft.milestoneNotes ?? ""}
-                        onChange={(e) =>
-                          setDraft((d) => ({ ...d, milestoneNotes: e.target.value }))
-                        }
-                        rows={2}
-                        placeholder={t.quote.milestonesNotesPlaceholder}
-                        className="w-full font-body text-small text-ink leading-relaxed bg-paper border border-line rounded-lg px-3 py-2.5 outline-none focus:border-violet"
-                      />
-                      <p className="text-caption text-text-muted mt-1 mb-0">
-                        {t.quote.milestonesNotesHint}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {draft.hourlyRate > 0 &&
-                draft.hourlyRate !== savedRate &&
-                (draft.rateUnit ?? "HOUR") !== "FIXED" && (
-                <label className="flex items-center gap-2 mt-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={rememberRate}
-                    onChange={(e) => setRememberRate(e.target.checked)}
-                    className="accent-violet"
-                  />
-                  <span className="text-meta text-slate">{t.quote.rememberThisRate}</span>
-                </label>
-              )}
-            </Card>
-            <Card className="flex-1">
-              <FieldHeading>{t.quote.expertise}</FieldHeading>
-              <div className="flex flex-wrap gap-2">
-                {(["Junior", "Mid-level", "Senior", "Expert"] as const).map((lvl) => (
-                  <Chip
-                    key={lvl}
-                    active={draft.expertiseLevel === lvl}
-                    onClick={() => setDraft((d) => ({ ...d, expertiseLevel: lvl }))}
-                  >
-                    {lvl}
-                  </Chip>
-                ))}
-              </div>
-              <div className="text-meta text-text-muted mt-2.5">
-                {t.quote.expertiseHint}
-              </div>
-            </Card>
-          </div>
-
-          {showRateHelp && (
-            <Card>
-              <FieldHeading required>{t.quote.pricedFor}</FieldHeading>
-              <p className="text-meta text-text-muted mb-3">
-                {t.quote.pricedForHint}
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {(
-                  [
-                    {
-                      key: "yourLocation" as const,
-                      label: t.quote.yourLocation,
-                      placeholder: "e.g. Buenos Aires, Argentina",
-                    },
-                    {
-                      key: "clientLocation" as const,
-                      label: t.quote.clientLocation,
-                      placeholder: "e.g. London, UK",
-                    },
-                    {
-                      key: "clientType" as const,
-                      label: t.quote.clientType,
-                      placeholder: "e.g. seed-stage startup",
-                    },
-                    {
-                      key: "budgetHint" as const,
-                      label: t.quote.budgetHint,
-                      placeholder: "e.g. mentioned around 5k",
-                    },
-                    {
-                      key: "urgency" as const,
-                      label: t.quote.urgency,
-                      placeholder: "e.g. needs it in three weeks",
-                    },
-                    {
-                      key: "experienceNote" as const,
-                      label: t.quote.experienceNote,
-                      placeholder: "e.g. twice, unpaid, for friends",
-                    },
-                  ]
-                ).map((field) => (
-                  <label key={field.key} className="block">
-                    <SubLabel className="mb-1">
-                      {field.label}
-                    </SubLabel>
-                    <input
-                      value={draft.pricing?.[field.key] || ""}
-                      onChange={(e) =>
-                        setDraft((d) => ({
-                          ...d,
-                          pricing: { ...d.pricing, [field.key]: e.target.value },
-                        }))
-                      }
-                      placeholder={field.placeholder}
-                      className="w-full font-body text-small text-ink bg-paper border border-line rounded-lg px-2.5 py-2 outline-none"
-                    />
-                  </label>
-                ))}
-              </div>
-              <p className="text-meta text-text-muted mt-3">
-                {t.quote.pricedForFooter}
-              </p>
-            </Card>
-          )}
-
-          {error && <div className="text-overdue text-small">{error}</div>}
-          <div className="flex justify-end mt-auto pt-2">
-            <Button icon={ArrowRight} onClick={goToOutputStep}>
-              {t.common.continue}
-            </Button>
-          </div>
-        </>
-      )}
-
-      {step === 1 && (
-        <>
-          <Topbar />
-          <div>
-            <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">
-              {t.quote.titleStep2}
-            </h1>
-            <p className="text-slate text-lead mt-2">
-              {t.quote.subtitleStep2}
-            </p>
-          </div>
-          <Card>
-            <FieldHeading required>{t.quote.output}</FieldHeading>
-            <p className="text-meta text-text-muted mb-3">
-              {t.quote.outputHint}
-            </p>
-
-            {/* The quote's language used to be two chips here. It is a Memory
-                preference now: it changes about once a year, so asking on every
-                quote was a decision presented far more often than it is made. */}
-            <SubLabel>
-              {t.quote.pageFormat}
-            </SubLabel>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
-              {(["HTML", "PDF", "Figma"] as const).map((fmt) => {
-                const disabled = fmt === "Figma";
-                return (
-                  <Card
-                    key={fmt}
-                    onClick={disabled ? undefined : () => setDraft((d) => ({ ...d, format: fmt }))}
-                    className={`flex-1 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"} ${
-                      draft.format === fmt ? "border-violet border-[1.5px]" : ""
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="font-body font-semibold text-body text-ink">
-                        {fmt === "HTML" ? "HTML page" : fmt === "PDF" ? "PDF" : "Figma file"}
-                      </div>
-                      {disabled && (
-                        <span className="font-body font-semibold text-caption uppercase tracking-wide text-text-muted bg-paper border border-line rounded-full px-2 py-0.5">
-                          {t.memory.comingSoon}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-slate text-meta mt-1">
-                      {fmt === "HTML"
-                        ? "A hosted link the client opens in any browser."
-                        : fmt === "PDF"
-                        ? "A downloadable document for print or email."
-                        : "Pushed to your Figma account, not yet built."}
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-
-            {(draft.format === "HTML" || draft.format === "PDF") && (
-              <>
-                <SubLabel>
-                  {t.quote.branding}
-                </SubLabel>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
-                  {BRANDING_OPTIONS.map((opt) => {
-                    const disabled = opt.id === "own" && !hasBrand;
-                    return (
-                      <Card
-                        key={opt.id}
-                        onClick={
-                          disabled ? undefined : () => setDraft((d) => ({ ...d, branding: opt.id }))
-                        }
-                        className={`flex-1 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"} ${
-                          draft.branding === opt.id ? "border-violet border-[1.5px]" : ""
-                        }`}
-                      >
-                        <div className="font-body font-semibold text-small text-ink">{opt.name}</div>
-                        <div className="text-slate text-caption mt-1">{opt.desc}</div>
-                        {disabled && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setShowBrandUpload(true);
-                            }}
-                            className="text-violet text-caption font-bold mt-1.5 bg-none border-none cursor-pointer p-0 tap"
-                          >
-                            {t.quote.addYourBranding}
-                          </button>
-                        )}
-                      </Card>
-                    );
-                  })}
-                </div>
-
-                {showBrandUpload && (
-                  <div className="bg-paper border border-line rounded-lg p-4 mb-5">
-                    <div className="flex justify-between items-start gap-3">
-                      <div>
-                        <div className="font-body font-semibold text-small text-ink">
-                          {t.quote.addYourBranding}
-                        </div>
-                        <div className="text-slate text-meta mt-0.5">
-                          {t.quote.addYourBrandingHint}
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowBrandUpload(false)}
-                        className="text-meta text-text-muted bg-none border-none cursor-pointer p-0 tap"
-                      >
-                        {t.common.close}
-                      </button>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row gap-4 mt-3">
-                      <DropZone
-                        onFile={handleBrandGuide}
-                        accept=".pdf,.docx,.txt,.md,image/png,image/jpeg"
-                        disabled={brandBusy !== null}
-                        className="flex-1 flex flex-col gap-1.5 cursor-pointer bg-white border border-dashed border-line rounded-lg px-3.5 py-3"
-                      >
-                        <span className="flex items-center gap-1.5 font-body font-bold text-small text-violet">
-                          <FileText size={12} />
-                          {brandBusy === "guide" ? "Reading..." : "Brand guidelines"}
-                        </span>
-                        <span className="text-caption text-text-muted">
-                          {t.quote.fileTypes}
-                        </span>
-                      </DropZone>
-
-                      <DropZone
-                        onFile={handleBrandLogo}
-                        accept="image/png"
-                        disabled={brandBusy !== null}
-                        className="flex-1 flex flex-col gap-1.5 cursor-pointer bg-white border border-dashed border-line rounded-lg px-3.5 py-3"
-                      >
-                        <span className="flex items-center gap-1.5 font-body font-bold text-small text-violet">
-                          <ImagePlus size={12} />
-                          {brandBusy === "logo" ? t.quote.uploading : t.quote.logo}
-                        </span>
-                        <span className="text-caption text-text-muted">{t.quote.transparentPng}</span>
-                      </DropZone>
-                    </div>
-
-                    {brandError && <div className="text-overdue text-meta mt-2">{brandError}</div>}
-                    {brandSaved && (
-                      <div className="flex items-center gap-1.5 text-success text-meta mt-2">
-                        <Check size={12} /> Saved. &quot;Your brand&quot; is ready to pick.
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <SubLabel>
-                  {t.quote.style}
-                </SubLabel>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {(
-                    [
-                      { id: "classic", name: "Classic", desc: "Dark cover, tinted sections." },
-                      { id: "editorial", name: "Editorial", desc: "Large headline, lots of air." },
-                      { id: "minimal", name: "Minimal", desc: "Plain, hairline rules only." },
-                    ] as const
-                  ).map((tpl) => (
-                    <Card
-                      key={tpl.id}
-                      onClick={() => setDraft((d) => ({ ...d, template: tpl.id }))}
-                      className={`flex-1 cursor-pointer ${
-                        draft.template === tpl.id ? "border-violet border-[1.5px]" : ""
-                      }`}
-                    >
-                      <TemplatePreview id={tpl.id} />
-                      <div className="font-body font-semibold text-small text-ink mt-2.5">
-                        {tpl.name}
-                      </div>
-                      <div className="text-slate text-caption mt-1">{tpl.desc}</div>
-                    </Card>
-                  ))}
-                </div>
-              </>
-            )}
-          </Card>
-
-          <Card>
-            <FieldHeading>{t.quote.addSections}</FieldHeading>
-            <p className="text-meta text-slate mb-3 leading-relaxed">
-              {t.quote.addSectionsHint}
-            </p>
-            <div className="flex flex-col gap-2">
-              {QUOTE_INCLUSIONS.map((inc) => {
-                const on = Boolean(draft[inc.key]);
-                const toggle = (
-                  <button
-                    key={inc.key}
-                    type="button"
-                    onClick={() => setDraft((d) => ({ ...d, [inc.key]: !d[inc.key] }))}
-                    className={`flex items-start gap-3 text-left rounded-lg px-3.5 py-3 cursor-pointer border ${
-                      on ? "border-violet bg-violet-tint" : "border-line bg-paper"
-                    }`}
-                  >
-                    <span
-                      className={`w-4 h-4 rounded-[5px] shrink-0 mt-0.5 flex items-center justify-center ${
-                        on ? "bg-violet" : "bg-white border border-line"
-                      }`}
-                    >
-                      {on && <Check size={11} className="text-white" />}
-                    </span>
-                    <span>
-                      <span className="font-body font-semibold text-body text-ink block">
-                        {t.quote[inc.labelKey]}
-                      </span>
-                      <span className="text-meta text-slate">{t.quote[inc.hintKey]}</span>
-                    </span>
-                  </button>
-                );
-
-                // Nothing in the brief can answer this, so it asks. One field
-                // rather than a form about your own calendar.
-                if (inc.key === "includeAvailability" && on) {
-                  return (
-                    <div key={inc.key} className="flex flex-col gap-2">
-                      {toggle}
-                      <div className="rounded-lg border border-line bg-white px-3.5 py-3 sm:ml-7">
-                        <p className="text-meta text-slate mt-0 mb-2 leading-relaxed">
-                          {t.quote.availabilityPrompt}
-                        </p>
-                        <TextField
-                          value={availabilityNote}
-                          onChange={setAvailabilityNote}
-                          placeholder={t.quote.availabilityPlaceholder}
-                          multiline
-                          rows={2}
-                        />
-                        <p className="text-caption text-text-muted mt-2 mb-0">
-                          {t.quote.availabilitySkipped}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                }
-
-                // Sections that rest on a decision the model cannot read out
-                // of the brief get one question each.
-                const question = SECTION_QUESTIONS.find((q) => q.inclusion === inc.key);
-                if (question && on) {
-                  return (
-                    <div key={inc.key} className="flex flex-col gap-2">
-                      {toggle}
-                      <div className="rounded-lg border border-line bg-white px-3.5 py-3 sm:ml-7">
-                        <p className="text-meta text-slate mt-0 mb-2">{t.quote[question.promptKey]}</p>
-                        <TextField
-                          value={sectionNotes[question.key] ?? ""}
-                          onChange={(v) =>
-                            setSectionNotes((n) => ({ ...n, [question.key]: v }))
-                          }
-                          placeholder={t.quote[question.placeholderKey]}
-                        />
-                      </div>
-                    </div>
-                  );
-                }
-
-                return toggle;
-              })}
-            </div>
-          </Card>
+          {/* Everything that used to be asked on every quote and is actually
+              a property of the freelancer rather than of the job. Four
+              readable lines, remembered after the first quote. See
+              components/quote/setup-rows and lib/quote-defaults. */}
+          <SetupRows
+            draft={draft}
+            setDraft={setDraft}
+            sectionNotes={sectionNotes}
+            setSectionNotes={setSectionNotes}
+            availabilityNote={availabilityNote}
+            setAvailabilityNote={setAvailabilityNote}
+            saved={saved}
+            hasBrand={hasBrand}
+            rateHelpOpen={showRateHelp}
+            setRateHelpOpen={setShowRateHelp}
+            onKeep={handleKeepRow}
+            keptRows={keptRows}
+            brandUpload={brandUpload}
+            pricedFor={pricedForFields}
+          />
 
           {generating && (
             <div className="flex flex-col gap-2">
@@ -1249,22 +837,9 @@ export function QuoteWizard({
               </div>
             </div>
           )}
+
           {error && <div className="text-overdue text-small">{error}</div>}
-          <div className="flex flex-wrap justify-between items-center gap-3 mt-auto">
-            <Button
-              variant="ghost"
-              icon={ChevronLeft}
-              onClick={() => {
-                if (generating) handleStopGenerating();
-                // Step 0 is the brief. This said setStep(1) when the wizard
-                // had three steps and step 1 was the middle one, so after the
-                // condensation Back set the step it was already on.
-                setError("");
-                setStep(0);
-              }}
-            >
-              {t.common.back}
-            </Button>
+          <div className="flex justify-end mt-auto pt-2">
             {generating ? (
               <Button variant="ghost" icon={CircleStop} onClick={handleStopGenerating}>
                 {t.quote.stop}

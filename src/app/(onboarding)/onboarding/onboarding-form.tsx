@@ -37,6 +37,7 @@ import {
 import { DropZone } from "@/components/ui/drop-zone";
 import { useT } from "@/lib/i18n/context";
 import { SubLabel } from "@/components/ui/label";
+import { CURRENCIES, currencySymbol } from "@/lib/currencies";
 
 type StepId = "industry" | "instructions" | "toneNotes" | "storyNotes" | "contextNotes";
 
@@ -71,8 +72,8 @@ const MEMORY_STEPS: {
   {
     id: "contextNotes",
     title: "Anything else worth knowing?",
-    subtitle: "Rates, engagement length, specialties, anything that shapes pricing.",
-    placeholder: "Anything else the AI should know, rates, typical engagement length, industries you specialize in...",
+    subtitle: "Engagement length, specialties, anything else that shapes a quote.",
+    placeholder: "Anything else worth knowing, typical engagement length, industries you specialize in...",
     presets: CONTEXT_PRESETS,
   },
 ];
@@ -98,17 +99,28 @@ export function OnboardingForm() {
   // this locally meant stepping Back and forward again showed an empty list
   // for material that had in fact been saved. Keeping it at this level makes
   // the whole flow survive navigation in both directions.
+  // What they charge and how they get paid. Asked once here so the first quote
+  // opens already answered rather than as the form this replaced.
+  const [rate, setRate] = useState(0);
+  const [rateUnit, setRateUnit] = useState<"HOUR" | "DAY" | "FIXED">("HOUR");
+  const [currency, setCurrency] = useState("USD");
+  const [paymentPlan, setPaymentPlan] = useState<"UPFRONT" | "SPLIT" | "MILESTONE">("SPLIT");
+  const [upfrontPercent, setUpfrontPercent] = useState(50);
+  const [expertise, setExpertise] = useState<string | null>(null);
   const [refFiles, setRefFiles] = useState<RefFile[]>([]);
   const [refLinks, setRefLinks] = useState<RefLink[]>([]);
   const [brandLogo, setBrandLogo] = useState<string | null>(null);
   const [brandGuide, setBrandGuide] = useState<BrandGuideSummary | null>(null);
 
-  const totalSteps = 3 + MEMORY_STEPS.length;
+  const totalSteps = 4 + MEMORY_STEPS.length;
   const onIndustryStep = step === 0;
-  const onReferencesStep = step === 1;
-  const onBrandingStep = step === 2;
+  const onPricingStep = step === 1;
+  const onReferencesStep = step === 2;
+  const onBrandingStep = step === 3;
   const memoryStep =
-    onIndustryStep || onReferencesStep || onBrandingStep ? null : MEMORY_STEPS[step - 3];
+    onIndustryStep || onPricingStep || onReferencesStep || onBrandingStep
+      ? null
+      : MEMORY_STEPS[step - 4];
   const industryValue = industry === "other" ? customIndustry.trim() : industry;
 
   function finish() {
@@ -122,6 +134,14 @@ export function OnboardingForm() {
           toneNotes: values.toneNotes,
           storyNotes: values.storyNotes,
           contextNotes: values.contextNotes,
+          rate,
+          rateUnit,
+          currency,
+          paymentPlan,
+          upfrontPercent,
+          // Only sent when they chose one, which only happens on the branch
+          // where they said they do not know their rate.
+          ...(expertise ? { expertiseLevel: expertise } : {}),
         });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -178,6 +198,23 @@ export function OnboardingForm() {
             {t.common.continue}
           </Button>
         </>
+      ) : onPricingStep ? (
+        <PricingStep
+          onBack={goBack}
+          onContinue={goNext}
+          rate={rate}
+          setRate={setRate}
+          rateUnit={rateUnit}
+          setRateUnit={setRateUnit}
+          currency={currency}
+          setCurrency={setCurrency}
+          paymentPlan={paymentPlan}
+          setPaymentPlan={setPaymentPlan}
+          upfrontPercent={upfrontPercent}
+          setUpfrontPercent={setUpfrontPercent}
+          expertise={expertise}
+          setExpertise={setExpertise}
+        />
       ) : onReferencesStep ? (
         <ReferencesStep
           onBack={goBack}
@@ -217,6 +254,177 @@ export function OnboardingForm() {
         )
       )}
     </div>
+  );
+}
+
+/**
+ * What you charge, and how you usually get paid.
+ *
+ * Here rather than on every quote. Both answers are properties of the
+ * freelancer, and the wizard reads them as its usual setup, so a second quote
+ * is four readable lines instead of fourteen fields.
+ *
+ * Skippable, and the skip is the interesting branch: somebody who does not know
+ * their rate is asked their seniority instead, which is the one thing that lets
+ * a rate be researched. Asked here it is a question with a purpose; asked on
+ * every quote alongside a rate, as it used to be, it changed nothing.
+ */
+function PricingStep({
+  onBack,
+  onContinue,
+  rate,
+  setRate,
+  rateUnit,
+  setRateUnit,
+  currency,
+  setCurrency,
+  paymentPlan,
+  setPaymentPlan,
+  upfrontPercent,
+  setUpfrontPercent,
+  expertise,
+  setExpertise,
+}: {
+  onBack: () => void;
+  onContinue: () => void;
+  rate: number;
+  setRate: (n: number) => void;
+  rateUnit: "HOUR" | "DAY" | "FIXED";
+  setRateUnit: (u: "HOUR" | "DAY" | "FIXED") => void;
+  currency: string;
+  setCurrency: (c: string) => void;
+  paymentPlan: "UPFRONT" | "SPLIT" | "MILESTONE";
+  setPaymentPlan: (p: "UPFRONT" | "SPLIT" | "MILESTONE") => void;
+  upfrontPercent: number;
+  setUpfrontPercent: (n: number) => void;
+  expertise: string | null;
+  setExpertise: (level: string | null) => void;
+}) {
+  const t = useT();
+  const [unsure, setUnsure] = useState(false);
+
+  return (
+    <>
+      <div>
+        <h2 className="font-body font-bold text-lead text-ink m-0">{t.onboarding.pricingTitle}</h2>
+        <p className="text-small text-slate mt-1 mb-0">{t.onboarding.pricingSubtitle}</p>
+      </div>
+
+      {!unsure && (
+        <div>
+          <SubLabel>{t.quote.setupRate}</SubLabel>
+          <div className="flex flex-wrap gap-1.5 mb-2.5">
+            {(
+              [
+                ["HOUR", t.quote.perHour],
+                ["DAY", t.quote.perDay],
+                ["FIXED", t.quote.rateFixed],
+              ] as const
+            ).map(([value, label]) => (
+              <Chip key={value} active={rateUnit === value} onClick={() => setRateUnit(value)}>
+                {label}
+              </Chip>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <select
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+              className="bg-paper rounded-lg border-none px-2 py-2.5 text-sm text-ink outline-none cursor-pointer"
+            >
+              {CURRENCIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code}
+                </option>
+              ))}
+            </select>
+            <span className="text-slate text-sm">{currencySymbol(currency)}</span>
+            <input
+              type="number"
+              min={0}
+              step={5}
+              value={rate || ""}
+              onChange={(e) => setRate(Number(e.target.value))}
+              placeholder={rateUnit === "FIXED" ? "2400" : rateUnit === "DAY" ? "520" : "65"}
+              className="w-full bg-paper rounded-lg border-none px-3 py-2.5 text-sm text-ink outline-none"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* The branch where the level matters. */}
+      {unsure && (
+        <div>
+          <SubLabel>{t.quote.expertise}</SubLabel>
+          <div className="flex flex-wrap gap-1.5">
+            {(["Junior", "Mid-level", "Senior", "Expert"] as const).map((level) => (
+              <Chip key={level} active={expertise === level} onClick={() => setExpertise(level)}>
+                {level}
+              </Chip>
+            ))}
+          </div>
+          <p className="text-caption text-text-muted mt-1.5 mb-0">
+            {t.onboarding.pricingResearched}
+          </p>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={() => {
+          setUnsure(!unsure);
+          if (!unsure) setRate(0);
+          else setExpertise(null);
+        }}
+        className="self-start text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
+      >
+        {unsure ? t.quote.iKnowMyRate : t.quote.notSureWhatToCharge}
+      </button>
+
+      <div>
+        <SubLabel>{t.quote.paymentWhen}</SubLabel>
+        <div className="flex flex-wrap gap-1.5">
+          {(
+            [
+              ["UPFRONT", t.quote.paymentUpfront],
+              ["SPLIT", t.quote.paymentSplit],
+              ["MILESTONE", t.quote.paymentMilestone],
+            ] as const
+          ).map(([value, label]) => (
+            <Chip key={value} active={paymentPlan === value} onClick={() => setPaymentPlan(value)}>
+              {label}
+            </Chip>
+          ))}
+        </div>
+        {paymentPlan === "SPLIT" && (
+          <div className="mt-3">
+            <SubLabel>{t.quote.paymentHowMuchUpfront}</SubLabel>
+            <div className="flex flex-wrap gap-1.5">
+              {[25, 40, 50].map((pct) => (
+                <Chip
+                  key={pct}
+                  active={upfrontPercent === pct}
+                  onClick={() => setUpfrontPercent(pct)}
+                >
+                  {`${pct}%`}
+                </Chip>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <p className="text-caption text-text-muted m-0">{t.onboarding.pricingChangeable}</p>
+
+      <div className="flex items-center justify-between gap-3">
+        <Button variant="ghost" icon={ChevronLeft} onClick={onBack}>
+          {t.common.back}
+        </Button>
+        <Button icon={ArrowRight} onClick={onContinue}>
+          {t.common.continue}
+        </Button>
+      </div>
+    </>
   );
 }
 

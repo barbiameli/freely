@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireFullUser } from "@/lib/session";
+import { hasOwnBranding } from "@/lib/branding";
+import type { AccountDefaults } from "@/lib/quote-defaults";
 import { MemoryView } from "./memory-view";
 
 export default async function MemoryPage() {
@@ -32,6 +34,11 @@ export default async function MemoryPage() {
       brandBodyFont={user.brandBodyFont}
       currency={user.currency}
       quoteLocale={(user as unknown as { quoteLocale: string | null }).quoteLocale ?? null}
+      hasBrand={hasOwnBranding(user)}
+      // Cast rather than selected: the quote setup columns are newer than the
+      // generated Prisma client here, so narrowing would return them undefined
+      // and the page would show an empty setup over saved values.
+      saved={user as unknown as AccountDefaults}
       files={assets
         .filter((a) => a.type === "FILE")
         .map((a) => ({ id: a.id, name: a.name, createdAt: a.createdAt.toISOString() }))}

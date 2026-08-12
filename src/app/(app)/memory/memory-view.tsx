@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { Trash2, PenTool, Link2, Sparkles, Pencil, Upload, FileText, CheckCircle2 } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { Label, SubLabel } from "@/components/ui/label";
 import { Chip } from "@/components/ui/chip";
 import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
@@ -39,21 +39,29 @@ import {
   CONTEXT_PRESETS,
 } from "@/lib/memory-presets";
 import { useT } from "@/lib/i18n/context";
+import { QuoteSetupCard } from "@/components/memory/quote-setup-card";
+import type { AccountDefaults } from "@/lib/quote-defaults";
 
 /**
- * Memory used to be seven separate tabs. It's now one scrollable, modular
- * page — everything the AI draws on (persona, voice, story, context, files,
- * images, links, branding, connectors) lives together, closer to how a
- * memory/context page works elsewhere. The chip row below is just an anchor
- * nav for quick jumping, not a tab switcher — nothing is hidden.
+ * Memory, in three groups.
+ *
+ * It was six flat sections and, in the middle of them, four near-identical
+ * boxes of free text: instructions, tone, story, context. Nothing on the page
+ * said how those four differed, so the honest answer to "which box does this
+ * go in" was that it did not much matter, which is not a thing an interface
+ * should leave you guessing about.
+ *
+ * Grouped by what each thing affects instead. Who you are, how your quotes
+ * read, what it learns from. The four boxes are still four boxes, but two of
+ * them are now under a heading about your quotes and two under a heading about
+ * you, which is the distinction that was missing.
+ *
+ * The chip row is an anchor nav, not tabs. Nothing here is hidden.
  */
-const SECTIONS = [
-  ["persona", "Persona"],
-  ["voice", "Voice"],
-  ["story", "Story & context"],
-  ["references", "Files, images & links"],
-  ["branding", "Branding"],
-  ["connectors", "Connectors"],
+const GROUPS = [
+  ["you", "groupYou", "groupYouHint"],
+  ["quotes", "groupQuotes", "groupQuotesHint"],
+  ["sources", "groupSources", "groupSourcesHint"],
 ] as const;
 
 interface FileAsset {
@@ -93,6 +101,8 @@ export function MemoryView({
   brandBodyFont,
   currency,
   quoteLocale,
+  hasBrand,
+  saved,
   files,
   images,
   links,
@@ -113,6 +123,10 @@ export function MemoryView({
   currency: string;
   /** null means quotes follow the interface language. */
   quoteLocale: string | null;
+  /** Whether there is a logo or brand color saved, so "Your brand" is pickable. */
+  hasBrand?: boolean;
+  /** The quote setup: what the wizard stopped asking on every quote. */
+  saved: AccountDefaults;
   files: FileAsset[];
   images: ImageAsset[];
   links: LinkAsset[];
@@ -132,61 +146,64 @@ export function MemoryView({
         </p>
       </div>
       <div className="flex gap-2 flex-wrap">
-        {SECTIONS.map(([id, label]) => (
+        {GROUPS.map(([id, labelKey]) => (
           <a key={id} href={`#${id}`}>
-            <Chip>{label}</Chip>
+            <Chip>{t.memory[labelKey]}</Chip>
           </a>
         ))}
       </div>
 
-      <div className="flex flex-col gap-7">
-        <section id="persona" className="scroll-mt-6">
+      <div className="flex flex-col gap-10">
+        {/* Who you are. The persona is read off everything else here, and the
+            story is what it is mostly read off, so they sit together. */}
+        <section id="you" className="scroll-mt-6 flex flex-col gap-5">
+          <GroupHeading title={t.memory.groupYou} hint={t.memory.groupYouHint} />
           <PersonaCard initial={aiPersona} updatedAt={personaUpdatedAt} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <AutosaveNotes
+              field="storyNotes"
+              initial={initialStory}
+              label={t.memory.studioStory}
+              placeholder={t.onboarding.storyPlaceholder}
+              presets={STORY_PRESETS}
+              rows={4}
+            />
+            <AutosaveNotes
+              field="contextNotes"
+              initial={initialContext}
+              label={t.memory.additionalContext}
+              placeholder={t.memory.contextPlaceholder}
+              presets={CONTEXT_PRESETS}
+              rows={4}
+            />
+          </div>
         </section>
 
-        <section id="voice" className="scroll-mt-6 grid grid-cols-1 md:grid-cols-2 gap-5">
-          <AutosaveNotes
-            field={null}
-            initial={initialInstructions}
-            isInstructions
-            label={t.memory.instructions_label}
-            presets={INSTRUCTIONS_PRESETS}
-            rows={4}
-          />
-          <AutosaveNotes
-            field="toneNotes"
-            initial={initialTone}
-            label={t.memory.toneNotes}
-            placeholder={t.memory.tonePlaceholder}
-            presets={TONE_PRESETS}
-            rows={4}
-          />
-        </section>
-
-        <section id="story" className="scroll-mt-6 grid grid-cols-1 md:grid-cols-2 gap-5">
-          <AutosaveNotes
-            field="storyNotes"
-            initial={initialStory}
-            label={t.memory.studioStory}
-            placeholder={t.onboarding.storyPlaceholder}
-            presets={STORY_PRESETS}
-            rows={4}
-          />
-          <AutosaveNotes
-            field="contextNotes"
-            initial={initialContext}
-            label={t.memory.additionalContext}
-            placeholder={t.memory.contextPlaceholder}
-            presets={CONTEXT_PRESETS}
-            rows={4}
-          />
-        </section>
-
-        <section id="references" className="scroll-mt-6">
-          <ReferencesCard files={files} images={images} links={links} />
-        </section>
-
-        <section id="branding" className="scroll-mt-6">
+        {/* How quotes read. Voice and the setup the wizard stopped asking for
+            are the same subject: what comes out when you generate one. */}
+        <section id="quotes" className="scroll-mt-6 flex flex-col gap-5">
+          <GroupHeading title={t.memory.groupQuotes} hint={t.memory.groupQuotesHint} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <AutosaveNotes
+              field={null}
+              initial={initialInstructions}
+              isInstructions
+              label={t.memory.instructions_label}
+              presets={INSTRUCTIONS_PRESETS}
+              rows={4}
+            />
+            <AutosaveNotes
+              field="toneNotes"
+              initial={initialTone}
+              label={t.memory.toneNotes}
+              placeholder={t.memory.tonePlaceholder}
+              presets={TONE_PRESETS}
+              rows={4}
+            />
+          </div>
+          <QuoteSetupCard saved={saved} hasBrand={hasBrand}>
+            <QuoteLanguage initial={quoteLocale} />
+          </QuoteSetupCard>
           <BrandingCard
             primaryColor={brandPrimaryColor}
             accentColor={brandAccentColor}
@@ -194,15 +211,68 @@ export function MemoryView({
             headingFont={brandHeadingFont}
             bodyFont={brandBodyFont}
             currency={currency}
-            quoteLocale={quoteLocale}
           />
         </section>
 
-        <section id="connectors" className="scroll-mt-6">
+        {/* What it learns from. */}
+        <section id="sources" className="scroll-mt-6 flex flex-col gap-5">
+          <GroupHeading title={t.memory.groupSources} hint={t.memory.groupSourcesHint} />
+          <ReferencesCard files={files} images={images} links={links} />
           <ConnectorsCard connections={connections} />
         </section>
       </div>
     </>
+  );
+}
+
+/** A group's heading. Says what the things under it affect, once, rather than
+ * every card repeating it. */
+function GroupHeading({ title, hint }: { title: string; hint: string }) {
+  return (
+    <div>
+      <h2 className="font-body font-bold text-lead text-ink m-0">{title}</h2>
+      <p className="text-small text-slate mt-1 mb-0">{hint}</p>
+    </div>
+  );
+}
+
+/**
+ * The language quotes are written in.
+ *
+ * Moved out of Branding, where it had ended up next to the colors. A language
+ * is not a look, and it belongs with the rest of what a quote is made of.
+ */
+function QuoteLanguage({ initial }: { initial: string | null }) {
+  const t = useT();
+  const [locale, setLocale] = useState<string | null>(initial);
+  return (
+    <div>
+      <SubLabel>{t.quote.quoteLanguage}</SubLabel>
+      <p className="text-caption text-text-muted mt-0 mb-2">{t.quote.quoteLanguageHint}</p>
+      <div className="flex flex-wrap gap-1.5">
+        <Chip
+          active={locale === null}
+          onClick={() => {
+            setLocale(null);
+            void updateQuoteLocaleAction(null);
+          }}
+        >
+          {t.memory.followInterface}
+        </Chip>
+        {LOCALES.map((code) => (
+          <Chip
+            key={code}
+            active={locale === code}
+            onClick={() => {
+              setLocale(code);
+              void updateQuoteLocaleAction(code);
+            }}
+          >
+            {LOCALE_NAMES[code]}
+          </Chip>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -560,7 +630,6 @@ function BrandingCard({
   headingFont,
   bodyFont,
   currency,
-  quoteLocale,
 }: {
   primaryColor: string | null;
   accentColor: string | null;
@@ -569,7 +638,6 @@ function BrandingCard({
   bodyFont: string | null;
   currency: string;
   /** null means follow the interface language. */
-  quoteLocale: string | null;
 }) {
   const t = useT();
   const [primary, setPrimary] = useState(primaryColor ?? "#F45B69");
@@ -577,15 +645,7 @@ function BrandingCard({
   const [logo, setLogo] = useState(logoDataUrl);
   const [logoError, setLogoError] = useState("");
   const [curr, setCurr] = useState(currency);
-  const [quoteLang, setQuoteLang] = useState<string | null>(quoteLocale);
   const [pending, startTransition] = useTransition();
-
-  function saveQuoteLocale(next: string | null) {
-    setQuoteLang(next);
-    startTransition(() => {
-      void updateQuoteLocaleAction(next);
-    });
-  }
 
   const [heading, setHeading] = useState(headingFont);
   const [body, setBody] = useState(bodyFont);
@@ -779,25 +839,6 @@ function BrandingCard({
         </div>
       </div>
 
-      {/* The quote's language lives here rather than in the wizard: it changes
-          about once a year, so asking on every quote presented the decision far
-          more often than anyone makes it. */}
-      <div className="mt-4 pt-4 border-t border-line">
-        <div className="text-caption font-semibold text-slate mb-1 uppercase tracking-wide">
-          {t.quote.quoteLanguage}
-        </div>
-        <p className="text-caption text-text-muted mt-0 mb-2">{t.quote.quoteLanguageHint}</p>
-        <div className="flex flex-wrap gap-1.5">
-          <Chip active={quoteLang === null} onClick={() => saveQuoteLocale(null)}>
-            {t.memory.followInterface}
-          </Chip>
-          {LOCALES.map((code) => (
-            <Chip key={code} active={quoteLang === code} onClick={() => saveQuoteLocale(code)}>
-              {LOCALE_NAMES[code]}
-            </Chip>
-          ))}
-        </div>
-      </div>
       {(heading || body) && (
         <div className="flex gap-6 mt-4 pt-4 border-t border-line">
           {heading && (

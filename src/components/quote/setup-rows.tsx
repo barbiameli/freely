@@ -1,0 +1,753 @@
+"use client";
+
+import { useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import Link from "next/link";
+import { ChevronDown, ChevronRight, Check, RotateCcw } from "lucide-react";
+import { Chip } from "@/components/ui/chip";
+import { SubLabel } from "@/components/ui/label";
+import { CURRENCIES, currencySymbol } from "@/lib/currencies";
+import { rateSuffix, type RateUnit } from "@/lib/rate-unit";
+import { TemplatePreview } from "@/components/quote/template-preview";
+import { SECTION_QUESTIONS, type SectionNotes } from "@/lib/quote-prompts";
+import {
+  ALL_SECTIONS,
+  SETUP_ROWS,
+  changedRows,
+  decidedRows,
+  describeRow,
+  resolveSetup,
+  type AccountDefaults,
+  type QuoteSetup,
+  type SectionKey,
+  type SetupRowKey,
+  type SetupWords,
+} from "@/lib/quote-defaults";
+import { useT } from "@/lib/i18n/context";
+import type { Dictionary } from "@/lib/i18n";
+import type { QuoteDraftPayload } from "@/actions/briefs";
+
+/**
+ * The quote setup, as four readable lines.
+ *
+ * This replaced most of a two-screen wizard. Fourteen fields were being filled
+ * in on every quote and about four of them were about the job; the rest were
+ * about the freelancer, and are remembered now (see lib/quote-defaults).
+ *
+ * The shape is deliberate in three ways.
+ *
+ * Every value is stated in words on the closed row. The failure of remembered
+ * settings is sending last month's terms without noticing, and a row that only
+ * says "Sections" prevents nothing. "Strategy, Timeline and Statement of work"
+ * is read in two seconds without opening anything.
+ *
+ * A row opens into the real controls rather than a copy of them, so there is
+ * one place each of these is edited.
+ *
+ * And a row that differs from the usual says so, says what the usual is, and
+ * offers both ways out. Without that, one oddly-priced job either rewrites the
+ * setup for every quote after it or leaves no way to say "actually, keep this".
+ *
+ * Rows that have never been decided open by default, because there is nothing
+ * to summarise yet: on a first quote this reads as the form it replaced, which
+ * is the point at which the answers get learned.
+ */
+export function SetupRows({
+  draft,
+  setDraft,
+  sectionNotes,
+  setSectionNotes,
+  availabilityNote,
+  setAvailabilityNote,
+  saved,
+  hasBrand,
+  rateHelpOpen,
+  setRateHelpOpen,
+  onKeep,
+  keptRows,
+  brandUpload,
+  pricedFor,
+}: {
+  draft: QuoteDraftPayload;
+  setDraft: Dispatch<SetStateAction<QuoteDraftPayload>>;
+  sectionNotes: SectionNotes;
+  setSectionNotes: Dispatch<SetStateAction<SectionNotes>>;
+  availabilityNote: string;
+  setAvailabilityNote: Dispatch<SetStateAction<string>>;
+  /** The account's saved usuals, for deciding what is a change and what is
+   * simply the answer. */
+  saved: AccountDefaults;
+  hasBrand?: boolean;
+  /** The rate helper, held by the wizard because it also clears the rate. */
+  rateHelpOpen: boolean;
+  setRateHelpOpen: (open: boolean) => void;
+  /** "Make this my usual", per row. */
+  onKeep: (row: SetupRowKey) => void;
+  /** Rows already kept in this session, so the offer is not made twice. */
+  keptRows: SetupRowKey[];
+  /** The brand upload panel, which lives in the wizard with its handlers. */
+  brandUpload?: ReactNode;
+  /** The market questions, shown under the rate when there is no rate. */
+  pricedFor?: ReactNode;
+}) {
+  const t = useT();
+  const decided = decidedRows(saved);
+  const setup = setupFromDraft(draft, sectionNotes, availabilityNote);
+  const changed = changedRows(setup, saved);
+  const usual = resolveSetup(saved);
+  const words = setupWords(t);
+  const symbol = currencySymbol(draft.currency);
+
+  // Undecided rows start open. Set once rather than derived, so opening and
+  // closing during a quote is not undone by a re-render.
+  const [open, setOpen] = useState<SetupRowKey[]>(() =>
+    SETUP_ROWS.filter((row) => !decided.includes(row))
+  );
+
+  function toggle(row: SetupRowKey) {
+    setOpen((rows) => (rows.includes(row) ? rows.filter((r) => r !== row) : [...rows, row]));
+  }
+
+  function putBack(row: SetupRowKey) {
+    setDraft((d) => {
+      switch (row) {
+        case "rate":
+          return { ...d, hourlyRate: usual.rate, rateUnit: usual.rateUnit };
+        case "payment":
+          return { ...d, paymentPlan: usual.paymentPlan, upfrontPercent: usual.upfrontPercent };
+        case "sections":
+          return { ...d, ...sectionFlags(usual.sections) };
+        case "presentation":
+          return {
+            ...d,
+            format: usual.format,
+            template: usual.template,
+            branding: usual.branding,
+          };
+      }
+    });
+  }
+
+  const anyDecided = decided.length > 0;
+
+  return (
+    <div className="bg-white border border-line rounded-card overflow-hidden">
+      <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-3">
+        <div className="min-w-0">
+          <div className="font-body font-bold text-body text-ink">
+            {anyDecided ? t.quote.setupTitle : t.quote.setupFirstTitle}
+          </div>
+          <p className="text-caption text-slate mt-0.5 mb-0">
+            {anyDecided ? t.quote.setupRemembered : t.quote.setupFirstHint}
+          </p>
+        </div>
+        {/* Memory, reachable without abandoning the brief already pasted in.
+            A new tab rather than a navigation for exactly that reason. */}
+        <Link
+          href="/memory#quotes"
+          target="_blank"
+          className="shrink-0 text-caption text-slate hover:text-ink no-underline tap"
+        >
+          {t.quote.setupEditInMemory}
+        </Link>
+      </div>
+
+      {SETUP_ROWS.map((row) => {
+        const isOpen = open.includes(row);
+        const isChanged = changed.includes(row);
+        const kept = keptRows.includes(row);
+        return (
+          <div key={row} className="border-t border-line">
+            <button
+              type="button"
+              onClick={() => toggle(row)}
+              aria-expanded={isOpen}
+              className="w-full flex items-center justify-between gap-3 text-left bg-none border-none cursor-pointer px-5 py-3.5 hover:bg-paper transition-colors"
+            >
+              <span className="flex items-center gap-2 min-w-0 shrink-0">
+                <span className="text-small text-slate">{rowLabel(row, t)}</span>
+                {isChanged && (
+                  <span className="text-caption font-semibold text-violet bg-violet-tint rounded-md px-1.5 py-0.5">
+                    {t.quote.setupJustThis}
+                  </span>
+                )}
+                {kept && (
+                  <span className="flex items-center gap-1 text-caption text-success">
+                    <Check size={11} /> {t.quote.setupKept}
+                  </span>
+                )}
+              </span>
+              <span className="flex items-center gap-2 min-w-0">
+                <span className="font-body font-semibold text-small text-ink text-right">
+                  {describeRow(row, setup, words, symbol)}
+                </span>
+                {isOpen ? (
+                  <ChevronDown size={14} className="text-text-muted shrink-0" />
+                ) : (
+                  <ChevronRight size={14} className="text-text-muted shrink-0" />
+                )}
+              </span>
+            </button>
+
+            {/* What the usual was, and both ways out of a per-quote change.
+                Outside the disclosure on purpose: a change you cannot see is
+                the thing this whole block exists to prevent. */}
+            {isChanged && !kept && (
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 px-5 pb-3 -mt-1">
+                <span className="text-caption text-text-muted">
+                  {t.quote.setupUsually.replace("{value}", describeRow(row, usual, words, symbol))}
+                </span>
+                <span className="flex items-center gap-4">
+                  <button
+                    type="button"
+                    onClick={() => putBack(row)}
+                    className="flex items-center gap-1 text-caption text-slate hover:text-ink bg-none border-none cursor-pointer p-0 tap"
+                  >
+                    <RotateCcw size={11} /> {t.quote.setupPutBack}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onKeep(row)}
+                    className="text-caption font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
+                  >
+                    {t.quote.setupMakeUsual}
+                  </button>
+                </span>
+              </div>
+            )}
+
+            {isOpen && (
+              <div className="px-5 pb-4">
+                {row === "rate" && (
+                  <RateBody
+                    draft={draft}
+                    setDraft={setDraft}
+                    rateHelpOpen={rateHelpOpen}
+                    setRateHelpOpen={setRateHelpOpen}
+                    pricedFor={pricedFor}
+                    // Only when the level was read rather than stated, so the
+                    // note explains where a value nobody typed came from.
+                    readLevel={saved.expertiseLevel ? null : saved.inferredExpertise ?? null}
+                  />
+                )}
+                {row === "payment" && <PaymentBody draft={draft} setDraft={setDraft} />}
+                {row === "sections" && (
+                  <SectionsBody
+                    draft={draft}
+                    setDraft={setDraft}
+                    sectionNotes={sectionNotes}
+                    setSectionNotes={setSectionNotes}
+                    availabilityNote={availabilityNote}
+                    setAvailabilityNote={setAvailabilityNote}
+                  />
+                )}
+                {row === "presentation" && (
+                  <PresentationBody
+                    draft={draft}
+                    setDraft={setDraft}
+                    hasBrand={hasBrand}
+                    brandUpload={brandUpload}
+                  />
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** What you charge, and the market questions when you have not said. */
+export function RateBody({
+  draft,
+  setDraft,
+  rateHelpOpen,
+  setRateHelpOpen,
+  pricedFor,
+  readLevel,
+}: {
+  draft: QuoteDraftPayload;
+  setDraft: Dispatch<SetStateAction<QuoteDraftPayload>>;
+  rateHelpOpen: boolean;
+  setRateHelpOpen: (open: boolean) => void;
+  pricedFor?: ReactNode;
+  /** A level inferred from Memory rather than stated, if there is one. */
+  readLevel?: string | null;
+}) {
+  const t = useT();
+  const unit = (draft.rateUnit ?? "HOUR") as RateUnit;
+  return (
+    <>
+      {/* Plenty of freelancers price in days, and converting to an hourly
+          figure to fit the form means inventing a day length. Fixed is a third
+          thing again: one price, with no rate shown to the client at all. */}
+      <div className="flex flex-wrap gap-1.5 mb-2.5">
+        {(
+          [
+            ["HOUR", t.quote.perHour],
+            ["DAY", t.quote.perDay],
+            ["FIXED", t.quote.rateFixed],
+          ] as const
+        ).map(([value, label]) => (
+          <Chip
+            key={value}
+            active={unit === value}
+            onClick={() => setDraft((d) => ({ ...d, rateUnit: value }))}
+          >
+            {label}
+          </Chip>
+        ))}
+      </div>
+      <div className="flex items-center gap-2">
+        <select
+          value={draft.currency}
+          onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value }))}
+          className="bg-paper rounded-lg border-none px-2 py-2.5 text-sm text-ink outline-none cursor-pointer"
+        >
+          {CURRENCIES.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.code}
+            </option>
+          ))}
+        </select>
+        <span className="text-slate text-sm">{currencySymbol(draft.currency)}</span>
+        <input
+          type="number"
+          min={0}
+          step={5}
+          value={draft.hourlyRate || ""}
+          onChange={(e) => setDraft((d) => ({ ...d, hourlyRate: Number(e.target.value) }))}
+          placeholder={unit === "FIXED" ? "2400" : unit === "DAY" ? "520" : "65"}
+          className="w-full bg-paper rounded-lg border-none px-3 py-2.5 text-sm text-ink outline-none"
+        />
+        <span className="text-slate text-sm">{rateSuffix(unit, t.publicQuote)}</span>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-2 mt-2.5">
+        <span className="text-meta text-text-muted">
+          {unit === "FIXED"
+            ? t.quote.rateFixedHint
+            : draft.hourlyRate > 0
+            ? t.quote.usedAsTyped
+            : t.quote.orResearched}
+        </span>
+        <button
+          type="button"
+          onClick={() => {
+            setRateHelpOpen(!rateHelpOpen);
+            if (!rateHelpOpen) setDraft((d) => ({ ...d, hourlyRate: 0 }));
+          }}
+          className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
+        >
+          {rateHelpOpen ? t.quote.iKnowMyRate : t.quote.notSureWhatToCharge}
+        </button>
+      </div>
+
+      {/* Seniority, only here, and only when there is no rate.
+          It used to be a card of its own on every quote. Given a rate it
+          changes nothing: £65/hour already says everything the level would.
+          It only moves a number when the rate is being researched, so this is
+          the one place it can affect anything. */}
+      {rateHelpOpen && (
+        <div className="mt-4 pt-4 border-t border-line">
+          <SubLabel>{t.quote.expertise}</SubLabel>
+          <div className="flex flex-wrap gap-1.5">
+            {(["Junior", "Mid-level", "Senior", "Expert"] as const).map((level) => (
+              <Chip
+                key={level}
+                active={draft.expertiseLevel === level}
+                onClick={() => setDraft((d) => ({ ...d, expertiseLevel: level }))}
+              >
+                {level}
+              </Chip>
+            ))}
+          </div>
+          <p className="text-caption text-text-muted mt-1.5 mb-0">
+            {readLevel
+              ? t.quote.expertiseRead.replace("{level}", readLevel)
+              : t.quote.expertiseHint}
+          </p>
+          {pricedFor}
+        </div>
+      )}
+    </>
+  );
+}
+
+/** When the money arrives, and how the work is chunked if it is billed that way. */
+export function PaymentBody({
+  draft,
+  setDraft,
+}: {
+  draft: QuoteDraftPayload;
+  setDraft: Dispatch<SetStateAction<QuoteDraftPayload>>;
+}) {
+  const t = useT();
+  const plan = draft.paymentPlan ?? "SPLIT";
+  return (
+    <>
+      <div className="flex flex-wrap gap-1.5">
+        {(
+          [
+            ["UPFRONT", t.quote.paymentUpfront],
+            ["SPLIT", t.quote.paymentSplit],
+            ["MILESTONE", t.quote.paymentMilestone],
+          ] as const
+        ).map(([value, label]) => (
+          <Chip
+            key={value}
+            active={plan === value}
+            onClick={() => setDraft((d) => ({ ...d, paymentPlan: value }))}
+          >
+            {label}
+          </Chip>
+        ))}
+      </div>
+
+      {plan === "SPLIT" && (
+        <div className="mt-3">
+          <SubLabel>{t.quote.paymentHowMuchUpfront}</SubLabel>
+          <div className="flex flex-wrap gap-1.5">
+            {[25, 40, 50].map((pct) => (
+              <Chip
+                key={pct}
+                active={(draft.upfrontPercent ?? 50) === pct}
+                onClick={() => setDraft((d) => ({ ...d, upfrontPercent: pct }))}
+              >
+                {`${pct}%`}
+              </Chip>
+            ))}
+          </div>
+          <p className="text-caption text-text-muted mt-1.5 mb-0">{t.quote.paymentRest}</p>
+        </div>
+      )}
+
+      {plan === "MILESTONE" && (
+        <div className="mt-3 flex flex-col gap-3">
+          <p className="text-caption text-text-muted m-0">{t.quote.paymentMilestoneHint}</p>
+          <div>
+            <SubLabel>{t.quote.milestonesHowMany}</SubLabel>
+            {/* "Work it out" first and default: the natural number of chunks is
+                a property of the work, and picking one before seeing the
+                deliverables is guessing. */}
+            <div className="flex flex-wrap gap-1.5">
+              <Chip
+                active={!draft.milestoneCount}
+                onClick={() => setDraft((d) => ({ ...d, milestoneCount: undefined }))}
+              >
+                {t.quote.milestonesDecideForMe}
+              </Chip>
+              {[2, 3, 4, 5].map((n) => (
+                <Chip
+                  key={n}
+                  active={draft.milestoneCount === n}
+                  onClick={() => setDraft((d) => ({ ...d, milestoneCount: n }))}
+                >
+                  {String(n)}
+                </Chip>
+              ))}
+            </div>
+          </div>
+          <div>
+            <SubLabel>{t.quote.milestonesWhatGoesWhere}</SubLabel>
+            <textarea
+              value={draft.milestoneNotes ?? ""}
+              onChange={(e) => setDraft((d) => ({ ...d, milestoneNotes: e.target.value }))}
+              rows={2}
+              placeholder={t.quote.milestonesNotesPlaceholder}
+              className="w-full font-body text-small text-ink leading-relaxed bg-paper border border-line rounded-lg px-3 py-2.5 outline-none focus:border-violet"
+            />
+            <p className="text-caption text-text-muted mt-1 mb-0">{t.quote.milestonesNotesHint}</p>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+/**
+ * Which sections the quote includes.
+ *
+ * Chips rather than a list of toggle rows, and every option visible whether it
+ * is on or not: the choice here is a set, so seeing what is off is half the
+ * information. The questions appear under the sections that rest on something
+ * only the freelancer can say, and only when that section is actually on.
+ */
+export function SectionsBody({
+  draft,
+  setDraft,
+  sectionNotes,
+  setSectionNotes,
+  availabilityNote,
+  setAvailabilityNote,
+}: {
+  draft: QuoteDraftPayload;
+  setDraft: Dispatch<SetStateAction<QuoteDraftPayload>>;
+  sectionNotes: SectionNotes;
+  setSectionNotes: Dispatch<SetStateAction<SectionNotes>>;
+  availabilityNote: string;
+  setAvailabilityNote: Dispatch<SetStateAction<string>>;
+}) {
+  const t = useT();
+  const questions = SECTION_QUESTIONS.filter(
+    (q) => draft[q.inclusion as keyof QuoteDraftPayload]
+  );
+  return (
+    <>
+      <div className="flex flex-wrap gap-1.5">
+        {ALL_SECTIONS.map((key) => (
+          <Chip
+            key={key}
+            active={Boolean(draft[key as keyof QuoteDraftPayload])}
+            onClick={() => setDraft((d) => ({ ...d, [key]: !d[key as keyof QuoteDraftPayload] }))}
+          >
+            {sectionName(key, t)}
+          </Chip>
+        ))}
+      </div>
+      <p className="text-caption text-text-muted mt-2 mb-0">{t.quote.setupSectionsNote}</p>
+
+      {questions.length > 0 && (
+        <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-line">
+          {questions.map((q) => (
+            <div key={q.key}>
+              <SubLabel>{t.quote[q.promptKey]}</SubLabel>
+              <textarea
+                value={sectionNotes[q.key] ?? ""}
+                onChange={(e) =>
+                  setSectionNotes((notes) => ({ ...notes, [q.key]: e.target.value }))
+                }
+                rows={2}
+                placeholder={t.quote[q.placeholderKey]}
+                className="w-full font-body text-small text-ink leading-relaxed bg-paper border border-line rounded-lg px-3 py-2.5 outline-none focus:border-violet"
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {draft.includeAvailability && (
+        <div className="mt-3">
+          <SubLabel>{t.quote.availabilityPrompt}</SubLabel>
+          <textarea
+            value={availabilityNote}
+            onChange={(e) => setAvailabilityNote(e.target.value)}
+            rows={2}
+            placeholder={t.quote.availabilityPlaceholder}
+            className="w-full font-body text-small text-ink leading-relaxed bg-paper border border-line rounded-lg px-3 py-2.5 outline-none focus:border-violet"
+          />
+          <p className="text-caption text-text-muted mt-1 mb-0">{t.quote.availabilitySkipped}</p>
+        </div>
+      )}
+    </>
+  );
+}
+
+/** What the client receives and how it looks. */
+export function PresentationBody({
+  draft,
+  setDraft,
+  hasBrand,
+  brandUpload,
+}: {
+  draft: QuoteDraftPayload;
+  setDraft: Dispatch<SetStateAction<QuoteDraftPayload>>;
+  hasBrand?: boolean;
+  brandUpload?: ReactNode;
+}) {
+  const t = useT();
+  return (
+    <>
+      <div className="flex flex-wrap gap-1.5">
+        {(
+          [
+            ["HTML", t.quote.formatHtml],
+            ["PDF", t.quote.formatPdf],
+            ["Figma", t.quote.formatFigma],
+          ] as const
+        ).map(([value, label]) => (
+          <Chip
+            key={value}
+            active={draft.format === value}
+            // Figma is not built. A chip that does nothing is worse than one
+            // that says why, so it stays visible and says "coming soon".
+            onClick={
+              value === "Figma" ? undefined : () => setDraft((d) => ({ ...d, format: value }))
+            }
+          >
+            {value === "Figma" ? `${label} · ${t.memory.comingSoon}` : label}
+          </Chip>
+        ))}
+      </div>
+
+      {(draft.format === "HTML" || draft.format === "PDF") && (
+        <>
+          <div className="mt-4">
+            <SubLabel>{t.quote.branding}</SubLabel>
+            <div className="flex flex-wrap gap-1.5">
+              {(
+                [
+                  ["freely", t.quote.brandFreely],
+                  ["own", t.quote.brandOwn],
+                  ["mono-light", t.quote.brandMonoLight],
+                  ["mono-dark", t.quote.brandMonoDark],
+                ] as const
+              ).map(([value, label]) => (
+                <Chip
+                  key={value}
+                  active={draft.branding === value}
+                  onClick={
+                    value === "own" && !hasBrand
+                      ? undefined
+                      : () => setDraft((d) => ({ ...d, branding: value }))
+                  }
+                >
+                  {label}
+                </Chip>
+              ))}
+            </div>
+            {!hasBrand && <div className="mt-2">{brandUpload}</div>}
+          </div>
+
+          <div className="mt-4">
+            <SubLabel>{t.quote.style}</SubLabel>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {(
+                [
+                  ["classic", t.quote.templateClassic, t.quote.templateClassicHint],
+                  ["editorial", t.quote.templateEditorial, t.quote.templateEditorialHint],
+                  ["minimal", t.quote.templateMinimal, t.quote.templateMinimalHint],
+                ] as const
+              ).map(([value, label, hint]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setDraft((d) => ({ ...d, template: value }))}
+                  className={`text-left bg-white rounded-lg p-2.5 cursor-pointer transition-colors ${
+                    draft.template === value
+                      ? "border-[1.5px] border-violet"
+                      : "border border-line hover:border-slate"
+                  }`}
+                >
+                  <TemplatePreview id={value} />
+                  <div className="font-body font-semibold text-small text-ink mt-2">{label}</div>
+                  <div className="text-caption text-slate mt-0.5">{hint}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
+function rowLabel(row: SetupRowKey, t: Dictionary): string {
+  switch (row) {
+    case "rate":
+      return t.quote.setupRate;
+    case "payment":
+      return t.quote.setupPayment;
+    case "sections":
+      return t.quote.setupSections;
+    case "presentation":
+      return t.quote.setupPresentation;
+  }
+}
+
+function sectionName(key: SectionKey, t: Dictionary): string {
+  switch (key) {
+    case "includeStrategy":
+      return t.quote.sectionStrategy;
+    case "includeTimeline":
+      return t.quote.sectionTimeline;
+    case "includeSOW":
+      return t.quote.sectionSow;
+    case "includeTerms":
+      return t.quote.sectionTerms;
+    case "includeRevisions":
+      return t.quote.sectionRevisions;
+    case "includeAvailability":
+      return t.quote.sectionAvailability;
+    case "includeAI":
+      return t.quote.sectionAi;
+  }
+}
+
+/** The dictionary, as the plain strings lib/quote-defaults describes rows with. */
+export function setupWords(t: Dictionary): SetupWords {
+  return {
+    perHour: t.quote.perHour.toLowerCase(),
+    perDay: t.quote.perDay.toLowerCase(),
+    fixed: t.quote.rateFixed.toLowerCase(),
+    upfrontAll: t.quote.paymentUpfront,
+    splitTemplate: t.quote.splitSummary,
+    byMilestone: t.quote.paymentMilestone,
+    and: t.common.and,
+    nothingYet: t.quote.setupNotSet,
+    sectionNames: {
+      includeStrategy: t.quote.sectionStrategy,
+      includeTimeline: t.quote.sectionTimeline,
+      includeSOW: t.quote.sectionSow,
+      includeTerms: t.quote.sectionTerms,
+      includeRevisions: t.quote.sectionRevisions,
+      includeAvailability: t.quote.sectionAvailability,
+      includeAI: t.quote.sectionAi,
+    },
+    formats: {
+      HTML: t.quote.formatHtml,
+      PDF: t.quote.formatPdf,
+      Figma: t.quote.formatFigma,
+    },
+    templates: {
+      classic: t.quote.templateClassic,
+      editorial: t.quote.templateEditorial,
+      minimal: t.quote.templateMinimal,
+    },
+    brandings: {
+      freely: t.quote.brandFreely,
+      own: t.quote.brandOwn,
+      "mono-light": t.quote.brandMonoLight,
+      "mono-dark": t.quote.brandMonoDark,
+    },
+  };
+}
+
+/** The section flags as a patch, for putting a row back to the usual. */
+function sectionFlags(sections: SectionKey[]): Record<SectionKey, boolean> {
+  const on = new Set(sections);
+  return ALL_SECTIONS.reduce(
+    (flags, key) => ({ ...flags, [key]: on.has(key) }),
+    {} as Record<SectionKey, boolean>
+  );
+}
+
+/**
+ * The draft as a setup.
+ *
+ * The wizard holds these across a draft object and two pieces of sibling
+ * state, and lib/quote-defaults reasons about one shape. The draft is
+ * authoritative for everything it holds, including a value that arrived there
+ * as a prefill from the account.
+ */
+export function setupFromDraft(
+  draft: QuoteDraftPayload,
+  sectionNotes: SectionNotes,
+  availabilityNote: string
+): QuoteSetup {
+  return {
+    rate: draft.hourlyRate,
+    rateUnit: (draft.rateUnit ?? "HOUR") as RateUnit,
+    currency: draft.currency || "USD",
+    paymentPlan: draft.paymentPlan ?? "SPLIT",
+    upfrontPercent: draft.upfrontPercent ?? 50,
+    sections: ALL_SECTIONS.filter((key) => Boolean(draft[key as keyof QuoteDraftPayload])),
+    termsNote: sectionNotes.terms ?? "",
+    revisionsNote: sectionNotes.revisions ?? "",
+    aiUsageNote: sectionNotes.aiUsage ?? "",
+    availabilityNote,
+    format: draft.format,
+    template: draft.template ?? "classic",
+    branding: draft.branding ?? "freely",
+    expertise: draft.expertiseLevel,
+  };
+}

@@ -3,6 +3,7 @@ import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import { hasOwnBranding } from "@/lib/branding";
 import { quotesToAskAbout, type QuoteOutcome } from "@/lib/quote-outcome";
+import type { AccountDefaults } from "@/lib/quote-defaults";
 import { QuoteWizard } from "./quote-wizard";
 
 /**
@@ -121,6 +122,11 @@ export default async function QuotePage({
       savedRateUnit={
         (user as unknown as { defaultRateUnit: string | null }).defaultRateUnit ?? "HOUR"
       }
+      // The quote setup. Cast rather than selected: these columns are newer
+      // than the generated Prisma client here, and narrowing to what the stub
+      // knows would return them undefined, so every row would look undecided
+      // and the wizard would ask everything again on every quote.
+      saved={user as unknown as AccountDefaults}
     />
   );
 }
