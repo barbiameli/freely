@@ -27,11 +27,12 @@ import { parseRateUnit } from "@/lib/rate-unit";
 import { useT, useLocale } from "@/lib/i18n/context";
 import { MAX_DOCUMENT_UPLOAD_BYTES, documentTooLargeError } from "@/lib/upload-limits";
 import {
-  projectPresetKeys,
+  projectPresets,
   sectionNoteLines,
   toggleExampleLine,
   availabilityFacts,
   type SectionNotes,
+  type ProjectPresetKey,
 } from "@/lib/quote-prompts";
 import { readPastedText } from "@/lib/paste-text";
 import { extractFileText } from "@/lib/extract-file";
@@ -202,7 +203,7 @@ export function QuoteWizard({
   }));
   // Which examples are currently in the text, so a chip can show as selected
   // and be clicked again to take it back out.
-  const [pickedExamples, setPickedExamples] = useState<string[]>([]);
+  const [pickedExamples, setPickedExamples] = useState<ProjectPresetKey[]>([]);
   const [sourceMode, setSourceMode] = useState<"paste" | "upload">("upload");
   const [fileName, setFileName] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -768,38 +769,37 @@ export function QuoteWizard({
               multiline
               rows={4}
             />
-            {/* Chips, not links: a link appends every time it is clicked and
-                gives no way to take it back, so clicking one twice put the
-                same sentence in twice. */}
+            {/* The chip is a label; the sentence it writes is a different
+                string. They used to be the same string, so a row of them read
+                as one run-on paragraph and every label was a whole clause.
+                Clicking again takes the line back out, which a link could not
+                do: a link appended a second copy. */}
             <div className="mt-3">
               <div className="text-caption text-text-muted mb-1.5">{t.common.commonOnes}</div>
               <div className="flex flex-wrap gap-1.5">
-                {projectPresetKeys(industry).map((exampleKey) => {
-                  const example = t.quote[exampleKey];
-                  const picked = pickedExamples.includes(example);
+                {projectPresets(industry).map(({ labelKey, textKey }) => {
+                  const line = t.quote[textKey];
+                  const picked = pickedExamples.includes(labelKey);
                   return (
                     <Chip
-                      key={example}
+                      key={labelKey}
                       active={picked}
                       onClick={() => {
                         setPickedExamples((prev) =>
-                          picked ? prev.filter((e) => e !== example) : [...prev, example]
+                          picked ? prev.filter((k) => k !== labelKey) : [...prev, labelKey]
                         );
                         setDraft((d) => ({
                           ...d,
-                          instructions: toggleExampleLine(d.instructions, example, !picked),
+                          instructions: toggleExampleLine(d.instructions, line, !picked),
                         }));
                       }}
                     >
-                      {example}
+                      {t.quote[labelKey]}
                     </Chip>
                   );
                 })}
               </div>
             </div>
-            <p className="text-caption text-text-muted mt-3 mb-0">
-              {t.quote.workedOutFromBrief}
-            </p>
           </Card>
 
           {/* Everything that used to be asked on every quote and is actually

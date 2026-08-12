@@ -32,55 +32,88 @@ export interface QuotePromptPreset {
  * the kind of thing that belongs in it.
  */
 /**
- * Example steers, chosen for the work the freelancer actually does.
+ * Ready-made steers, five for the work this freelancer actually does.
  *
- * These were four design examples shown to everyone, so a data scientist was
- * offered "Agree the visual direction before any design starts", which is not
- * a sentence about their job. Two of the four were about money and are gone
- * entirely: rate and payment answer those now, in one place.
+ * These were six long sentences used as their own chip labels, so a row of
+ * them read as one run-on paragraph: "Do the discovery first and present
+ * findings before scoping the restKeep the first phase small so it can be
+ * re-scoped after". A chip is a label. The instruction it writes into the field
+ * is a different string, and can be a whole sentence because it is read there
+ * rather than in a row of pills.
  *
- * Grouped into families rather than written per role. Thirteen roles times
- * three examples times two languages is seventy-eight strings nobody would
- * keep good, and the sequencing question is genuinely the same across, say,
- * frontend and backend work.
+ * Three are true of any project and two depend on the field. Grouped into
+ * families rather than written per role, because thirteen roles times five
+ * presets times two languages is a hundred and thirty strings nobody would keep
+ * good, and the sequencing question is genuinely the same across, say, frontend
+ * and backend work.
  *
- * Keys into the dictionary rather than the text itself, so they are translated
- * with everything else.
+ * What belongs here is a decision that changes the shape of a quote: what has
+ * to be agreed before the next part can start, how it is split, what counts as
+ * extra. Not what the work is, which the brief already says, and not what you
+ * charge, which rate and payment answer in one place.
  */
 export type ProjectPresetKey =
-  | "presetSignOffDesign"
-  | "presetSignOffBuild"
-  | "presetSignOffData"
-  | "presetSignOffWords"
-  | "presetResearchFirst"
-  | "presetSmallFirstPhase";
+  | "presetPhases"
+  | "presetDiscovery"
+  | "presetFixedScope"
+  | "presetDirectionFirst"
+  | "presetHandover"
+  | "presetStackFirst"
+  | "presetDeploy"
+  | "presetDataAccess"
+  | "presetBaseline"
+  | "presetAngleFirst"
+  | "presetSample";
 
-const PRESETS_BY_FAMILY: Record<string, ProjectPresetKey> = {
-  "ux-designer": "presetSignOffDesign",
-  "product-designer": "presetSignOffDesign",
-  "brand-designer": "presetSignOffDesign",
-  "frontend-developer": "presetSignOffBuild",
-  "backend-developer": "presetSignOffBuild",
-  "fullstack-developer": "presetSignOffBuild",
-  "mobile-developer": "presetSignOffBuild",
-  "data-engineer": "presetSignOffData",
-  "data-scientist": "presetSignOffData",
-  marketing: "presetSignOffWords",
-  "content-creator": "presetSignOffWords",
-  consultant: "presetSignOffWords",
+/** True of any project, whatever the field. */
+const GENERAL: ProjectPresetKey[] = ["presetPhases", "presetDiscovery", "presetFixedScope"];
+
+/**
+ * The two that depend on the field.
+ *
+ * One about what has to be settled before the work can start, one about what
+ * counts as finished, since those are the two things a quote gets wrong when it
+ * is written without an opinion about them.
+ */
+const BY_FAMILY: Record<string, ProjectPresetKey[]> = {
+  "ux-designer": ["presetDirectionFirst", "presetHandover"],
+  "product-designer": ["presetDirectionFirst", "presetHandover"],
+  "brand-designer": ["presetDirectionFirst", "presetHandover"],
+  "frontend-developer": ["presetStackFirst", "presetDeploy"],
+  "backend-developer": ["presetStackFirst", "presetDeploy"],
+  "fullstack-developer": ["presetStackFirst", "presetDeploy"],
+  "mobile-developer": ["presetStackFirst", "presetDeploy"],
+  "data-engineer": ["presetDataAccess", "presetBaseline"],
+  "data-scientist": ["presetDataAccess", "presetBaseline"],
+  marketing: ["presetAngleFirst", "presetSample"],
+  "content-creator": ["presetAngleFirst", "presetSample"],
+  consultant: ["presetAngleFirst", "presetSample"],
 };
 
 /**
- * The examples to offer this freelancer.
+ * The five to offer this freelancer, field-specific ones first.
  *
- * The first is the one that depends on their field; the other two are true of
- * any project. An unrecognised industry, including the free text someone typed
- * under "other", gets the two general ones rather than a guess.
+ * An unrecognised industry, including whatever somebody typed under "other",
+ * gets the three general ones rather than a guess: a data scientist offered
+ * "get the direction signed off before detailed design starts" learns only
+ * that the app was built for someone else.
  */
 export function projectPresetKeys(industry?: string | null): ProjectPresetKey[] {
-  const specific = industry ? PRESETS_BY_FAMILY[industry] : undefined;
-  const general: ProjectPresetKey[] = ["presetResearchFirst", "presetSmallFirstPhase"];
-  return specific ? [specific, ...general] : general;
+  const specific = (industry && BY_FAMILY[industry]) || [];
+  return [...specific, ...GENERAL];
+}
+
+/** The short label for a chip, and the sentence it writes into the field. */
+export interface ProjectPreset {
+  labelKey: ProjectPresetKey;
+  textKey: `${ProjectPresetKey}Text`;
+}
+
+export function projectPresets(industry?: string | null): ProjectPreset[] {
+  return projectPresetKeys(industry).map((key) => ({
+    labelKey: key,
+    textKey: `${key}Text` as const,
+  }));
 }
 
 export interface QuoteInclusion {
