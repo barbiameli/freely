@@ -40,6 +40,51 @@ select:focus {
   }
 }
 
+/* A finger-sized tap area on a small control, without changing the layout.
+
+   The interface has around forty-five text and icon buttons written as
+   `cursor-pointer p-0`: a close X, a copy link, a date, a "See all". At an
+   11px icon that is a target roughly 14px across, against the ~44px a
+   fingertip actually covers. On a desktop with a mouse it is fine, which is
+   why it survived this long, and on a phone it is a control you stab at twice.
+
+   Padding cannot fix it without moving everything: these sit in tight rows
+   where real padding would push the layout around. A pseudo-element extends
+   the hit area outwards instead, over the whitespace that is already there.
+
+   Only on touch screens. On a mouse it would mean invisible rectangles
+   swallowing clicks meant for whatever is next to them, and hover:none is the
+   honest test for "this is being touched, not pointed at". */
+@media (hover: none) {
+  .tap {
+    position: relative;
+  }
+  .tap::after {
+    content: "";
+    position: absolute;
+    /* Takes a ~14px control to ~44px. */
+    inset: -15px;
+  }
+
+  /* The same idea, pulled in, for a control in a list.
+
+     A checkbox at the head of every deliverable row cannot take the full
+     expansion: rows sit about 44px apart, so a 30px reach in each direction
+     would have neighbouring hit areas overlapping, and a tap near the boundary
+     would tick whichever row happened to be later in the DOM. Ticking the
+     wrong deliverable is a worse outcome than a small target.
+
+     This stays inside the row it belongs to. */
+  .tap-row {
+    position: relative;
+  }
+  .tap-row::after {
+    content: "";
+    position: absolute;
+    inset: -9px -11px;
+  }
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);

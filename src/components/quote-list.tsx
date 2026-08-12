@@ -30,7 +30,7 @@ export function QuoteList({
           <button
             type="button"
             onClick={onStartNew}
-            className="font-body font-semibold text-body text-violet bg-none border-none cursor-pointer p-0 underline"
+            className="font-body font-semibold text-body text-violet bg-none border-none cursor-pointer p-0 tap underline"
           >
             {t.quote.makeYourFirst}
           </button>

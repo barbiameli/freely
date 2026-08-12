@@ -65,7 +65,7 @@ export function SignedBanner({ signed }: { signed: SignedQuote[] }) {
                 setHidden((h) => [...h, s.briefId]);
                 void markAcceptanceSeenAction(s.briefId);
               }}
-              className="text-caption font-semibold text-slate bg-none border-none cursor-pointer p-0 flex items-center gap-1"
+              className="text-caption font-semibold text-slate bg-none border-none cursor-pointer p-0 tap flex items-center gap-1"
             >
               <X size={12} />
               {t.quote.signedDismiss}

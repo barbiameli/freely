@@ -48,14 +48,14 @@ export function DeleteBriefButton({
               }
             })
           }
-          className="font-semibold text-overdue bg-none border-none cursor-pointer p-0 disabled:opacity-50"
+          className="font-semibold text-overdue bg-none border-none cursor-pointer p-0 tap disabled:opacity-50"
         >
           {pending ? t.common.deleting : t.common.delete}
         </button>
         <button
           type="button"
           onClick={() => setConfirming(false)}
-          className="text-text-muted bg-none border-none cursor-pointer p-0"
+          className="text-text-muted bg-none border-none cursor-pointer p-0 tap"
         >
           {t.common.keep}
         </button>

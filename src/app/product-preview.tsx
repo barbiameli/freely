@@ -244,7 +244,7 @@ export function TrackPreview({ t }: { t: Dictionary }) {
     <div ref={ref}>
       <Frame label={t.nav.track}>
         <div className="px-5 py-5">
-          <div className="grid grid-cols-3 gap-2 mb-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
             {stats.map((stat, i) => (
               <StaggerItem key={stat.label} index={i} start={inView} step={90}>
                 <div className="rounded-lg bg-ink px-3 py-2.5">

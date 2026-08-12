@@ -351,7 +351,7 @@ function ReferencesStep({
                 <button
                   type="button"
                   onClick={() => handleDelete(f.id, "file")}
-                  className="text-text-muted hover:text-overdue flex-shrink-0 bg-none border-none cursor-pointer p-0"
+                  className="text-text-muted hover:text-overdue flex-shrink-0 bg-none border-none cursor-pointer p-0 tap"
                 >
                   <Trash2 size={12} />
                 </button>
@@ -386,7 +386,7 @@ function ReferencesStep({
             <button
               type="submit"
               disabled={!canAddLink}
-              className="font-body font-bold text-small text-violet text-left disabled:opacity-40 disabled:cursor-default bg-none border-none cursor-pointer p-0"
+              className="font-body font-bold text-small text-violet text-left disabled:opacity-40 disabled:cursor-default bg-none border-none cursor-pointer p-0 tap"
             >
               {uploading === "link" ? t.common.saving : t.onboarding.saveLink}
             </button>
@@ -398,7 +398,7 @@ function ReferencesStep({
                 <button
                   type="button"
                   onClick={() => handleDelete(l.id, "link")}
-                  className="text-text-muted hover:text-overdue flex-shrink-0 bg-none border-none cursor-pointer p-0"
+                  className="text-text-muted hover:text-overdue flex-shrink-0 bg-none border-none cursor-pointer p-0 tap"
                 >
                   <Trash2 size={12} />
                 </button>
@@ -438,7 +438,7 @@ function ReferencesStep({
                 }
                 onContinue();
               }}
-              className="font-body font-semibold text-small text-slate bg-none border-none cursor-pointer p-0"
+              className="font-body font-semibold text-small text-slate bg-none border-none cursor-pointer p-0 tap"
             >
               {showSkipWarning ? t.onboarding.skipAnyway : t.onboarding.skipThisStep}
             </button>
@@ -635,7 +635,7 @@ function BrandingStep({
                 }
                 onContinue();
               }}
-              className="font-body font-semibold text-small text-slate bg-none border-none cursor-pointer p-0"
+              className="font-body font-semibold text-small text-slate bg-none border-none cursor-pointer p-0 tap"
             >
               {showSkipWarning ? t.onboarding.skipAnyway : t.onboarding.skipThisStep}
             </button>
@@ -720,7 +720,7 @@ function MemoryStep({
               onContinue();
             }}
             disabled={pending}
-            className="font-body font-semibold text-small text-slate bg-none border-none cursor-pointer p-0"
+            className="font-body font-semibold text-small text-slate bg-none border-none cursor-pointer p-0 tap"
           >
             {value.trim() ? "Skip" : showSkipWarning ? "Skip anyway" : "Skip this step"}
           </button>

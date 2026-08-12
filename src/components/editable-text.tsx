@@ -122,7 +122,7 @@ export function EditableBlock({
             type="button"
             onClick={cancel}
             disabled={saving}
-            className="text-meta text-text-muted bg-none border-none cursor-pointer p-0"
+            className="text-meta text-text-muted bg-none border-none cursor-pointer p-0 tap"
           >
             {t.common.cancel}
           </button>
@@ -137,7 +137,7 @@ export function EditableBlock({
       <button
         type="button"
         onClick={() => setEditing(true)}
-        className={`flex items-center gap-1 text-meta font-bold bg-none border-none cursor-pointer p-0 mt-2 ${
+        className={`flex items-center gap-1 text-meta font-bold bg-none border-none cursor-pointer p-0 tap mt-2 ${
           tone === "dark" ? "text-white/70 hover:text-white" : "text-violet"
         }`}
       >
@@ -213,7 +213,7 @@ export function EditableSection({
         <button
           type="button"
           onClick={open}
-          className={`flex items-center gap-1 text-meta font-bold bg-none border-none cursor-pointer p-0 mt-3 ${
+          className={`flex items-center gap-1 text-meta font-bold bg-none border-none cursor-pointer p-0 tap mt-3 ${
             tone === "dark" ? "text-white/75 hover:text-white" : "text-violet"
           }`}
         >
@@ -269,7 +269,7 @@ export function EditableSection({
           type="button"
           onClick={() => setEditing(false)}
           disabled={saving}
-          className={`text-meta bg-none border-none cursor-pointer p-0 ${
+          className={`text-meta bg-none border-none cursor-pointer p-0 tap ${
             tone === "dark" ? "text-white/60" : "text-text-muted"
           }`}
         >

@@ -109,7 +109,7 @@ export function LandedPrompt({ quotes }: { quotes: LandedQuote[] }) {
             setClosed(true);
             void dismissQuotePromptAction();
           }}
-          className="shrink-0 text-text-muted hover:text-ink bg-none border-none cursor-pointer p-0"
+          className="shrink-0 text-text-muted hover:text-ink bg-none border-none cursor-pointer p-0 tap"
         >
           <X size={14} />
         </button>
@@ -129,12 +129,12 @@ export function LandedPrompt({ quotes }: { quotes: LandedQuote[] }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 [&>button]:flex-1 sm:[&>button]:flex-none">
           <button
             type="button"
             disabled={pending}
             onClick={won}
-            className="flex items-center gap-1.5 font-body font-bold text-meta text-white bg-violet rounded-lg px-3.5 py-2 border-none cursor-pointer disabled:opacity-50 transition-transform duration-200 hover:-translate-y-px motion-reduce:transition-none"
+            className="flex items-center justify-center gap-1.5 font-body font-bold text-meta text-white bg-violet rounded-lg px-3.5 py-2.5 sm:py-2 border-none cursor-pointer disabled:opacity-50 transition-transform duration-200 hover:-translate-y-px motion-reduce:transition-none"
           >
             <Check size={13} />
             {pending ? t.quote.landedSaving : t.quote.landedWon}
@@ -143,7 +143,7 @@ export function LandedPrompt({ quotes }: { quotes: LandedQuote[] }) {
             type="button"
             disabled={pending}
             onClick={lost}
-            className="font-body font-semibold text-meta text-slate bg-white border border-line rounded-lg px-3.5 py-2 cursor-pointer disabled:opacity-50 hover:text-ink hover:border-slate transition-colors"
+            className="font-body font-semibold text-meta text-slate bg-white border border-line rounded-lg px-3.5 py-2.5 sm:py-2 cursor-pointer disabled:opacity-50 hover:text-ink hover:border-slate transition-colors"
           >
             {t.quote.landedLost}
           </button>
@@ -158,7 +158,7 @@ export function LandedPrompt({ quotes }: { quotes: LandedQuote[] }) {
             type="button"
             disabled={index === 0}
             onClick={() => setIndex((i) => Math.max(0, i - 1))}
-            className="text-slate disabled:opacity-30 bg-none border-none cursor-pointer p-0 disabled:cursor-default"
+            className="text-slate disabled:opacity-30 bg-none border-none cursor-pointer p-0 tap disabled:cursor-default"
             aria-label={t.common.back}
           >
             <ChevronLeft size={15} />
@@ -170,7 +170,7 @@ export function LandedPrompt({ quotes }: { quotes: LandedQuote[] }) {
             type="button"
             disabled={index >= remaining.length - 1}
             onClick={() => setIndex((i) => Math.min(remaining.length - 1, i + 1))}
-            className="text-slate disabled:opacity-30 bg-none border-none cursor-pointer p-0 disabled:cursor-default"
+            className="text-slate disabled:opacity-30 bg-none border-none cursor-pointer p-0 tap disabled:cursor-default"
             aria-label={t.common.continue}
           >
             <ChevronRight size={15} />

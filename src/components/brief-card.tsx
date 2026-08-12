@@ -87,7 +87,7 @@ export function BriefCard({ brief }: { brief: BriefSummary }) {
       <button
         type="button"
         onClick={() => router.push(`/quote/${brief.id}`)}
-        className="text-left bg-none border-none cursor-pointer p-0"
+        className="text-left bg-none border-none cursor-pointer p-0 tap"
       >
         <DocumentPreview brief={brief} />
         <div className="mt-2.5">

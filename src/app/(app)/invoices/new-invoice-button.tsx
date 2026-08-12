@@ -70,14 +70,14 @@ export function NewInvoiceButton({
           type="button"
           disabled={pending}
           onClick={() => create()}
-          className="font-body font-bold text-small text-violet bg-none border-none cursor-pointer p-0"
+          className="font-body font-bold text-small text-violet bg-none border-none cursor-pointer p-0 tap"
         >
           {pending ? "Creating..." : "Blank invoice"}
         </button>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="text-small text-text-muted bg-none border-none cursor-pointer p-0"
+          className="text-small text-text-muted bg-none border-none cursor-pointer p-0 tap"
         >
           {t.common.cancel}
         </button>

@@ -153,16 +153,16 @@ export function TrackDashboard({ projects }: { projects: TrackProject[] }) {
         </Card>
       )}
       {visibleProjects.length > 0 && (
-        <div className="flex gap-[14px]">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 lg:gap-[14px]">
           {[
             [t.track.activeNow, String(activeCount)],
             [t.track.overdueCount, String(overdueCount)],
             [t.track.totalValue, `${currencySymbol(visibleProjects[0]?.currency)}${totalValue.toLocaleString()}`],
             [t.track.doneCount, `${doneDeliverables}/${totalDeliverables}`],
           ].map(([label, value]) => (
-            <Card key={label} className="flex-1 px-5 py-3.5">
+            <Card key={label} className="min-w-0 px-4 py-3.5 lg:px-5">
               <div className="font-label text-caption text-slate uppercase tracking-wide">{label}</div>
-              <div className="font-body font-bold text-lg text-ink mt-0.5">{value}</div>
+              <div className="font-body font-bold text-lg text-ink mt-0.5 truncate">{value}</div>
             </Card>
           ))}
         </div>

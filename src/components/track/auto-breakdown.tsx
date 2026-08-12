@@ -91,7 +91,7 @@ export function AutoBreakdown({
               setStopped(true);
               router.refresh();
             }}
-            className="flex items-center gap-1 text-meta text-text-muted hover:text-ink bg-none border-none cursor-pointer p-0 shrink-0"
+            className="flex items-center gap-1 text-meta text-text-muted hover:text-ink bg-none border-none cursor-pointer p-0 tap shrink-0"
           >
             <X size={11} /> {t.quote.stop}
           </button>

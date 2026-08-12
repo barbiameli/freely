@@ -25,8 +25,12 @@ export interface Stat {
 }
 
 export function StatRow({ stats }: { stats: Stat[] }) {
+  // auto-fit rather than a fixed column count. There are four of these on most
+  // projects and five on one billed per milestone, and a fixed four left the
+  // fifth stranded alone on a second row. Two per row on a phone, because a
+  // label like "Deliverables done" at a quarter of 390px is a truncation.
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+    <div className="grid grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-2.5">
       {stats.map((stat) => (
         <div
           key={stat.label}

@@ -154,7 +154,7 @@ export function DiaryView({
                   setCopied(true);
                   setTimeout(() => setCopied(false), 1500);
                 }}
-                className="flex items-center gap-1.5 text-caption font-semibold text-violet bg-none border-none cursor-pointer p-0 shrink-0"
+                className="flex items-center gap-1.5 text-caption font-semibold text-violet bg-none border-none cursor-pointer p-0 tap shrink-0"
               >
                 {copied ? <CheckIcon size={13} /> : <Copy size={13} />}
                 {copied ? t.diary.linkCopied : t.diary.copyLink}

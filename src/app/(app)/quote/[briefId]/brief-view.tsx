@@ -461,7 +461,7 @@ export function BriefView({
                 {brief.milestones.map((ms, i) => (
                   <div
                     key={i}
-                    className="flex items-baseline justify-between gap-3 pb-2.5 border-b border-line last:border-b-0 last:pb-0"
+                    className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 sm:gap-3 pb-2.5 border-b border-line last:border-b-0 last:pb-0"
                   >
                     <div className="min-w-0">
                       <div className="font-body font-semibold text-body text-ink">{ms.name}</div>
@@ -737,7 +737,7 @@ export function BriefView({
                         <span className="text-caption font-bold text-ink">{ex.name}</span>
                         <button
                           onClick={() => handleDeleteExample(ex.id)}
-                          className="bg-none border-none cursor-pointer p-0 text-slate hover:text-overdue"
+                          className="bg-none border-none cursor-pointer p-0 tap text-slate hover:text-overdue"
                           aria-label={t.quote.removeExample}
                         >
                           <Trash2 size={12} />
@@ -838,7 +838,7 @@ export function BriefView({
                 <button
                   key={b.id}
                   onClick={() => router.push(`/quote/${b.id}`)}
-                  className="bg-none border-none text-left cursor-pointer p-0 flex justify-between gap-2"
+                  className="bg-none border-none text-left cursor-pointer p-0 tap flex justify-between gap-2"
                 >
                   <span
                     className={`text-xs ${
@@ -908,7 +908,7 @@ export function BriefView({
               type="button"
               disabled={publishing}
               onClick={handleTogglePublish}
-              className="text-meta text-text-muted hover:text-overdue underline bg-none border-none cursor-pointer p-0"
+              className="text-meta text-text-muted hover:text-overdue underline bg-none border-none cursor-pointer p-0 tap"
             >
               {publishing ? "Working..." : "Unpublish"}
             </button>

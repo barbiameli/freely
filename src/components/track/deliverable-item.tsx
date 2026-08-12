@@ -68,7 +68,9 @@ function Checkbox({
       aria-label={label}
       aria-pressed={done}
       style={{ width: size, height: size }}
-      className={`rounded-[5px] flex items-center justify-center shrink-0 cursor-pointer p-0 transition-colors ${
+      // tap-row rather than tap: these sit one per row about 44px apart, and
+      // the full expansion would have neighbouring hit areas overlap.
+      className={`rounded-[5px] flex items-center justify-center shrink-0 cursor-pointer p-0 tap-row transition-colors ${
         done ? "bg-violet border-none" : "bg-white border border-line hover:border-slate"
       }`}
     >
@@ -257,7 +259,7 @@ export function DeliverableItem({
               type="button"
               onClick={() => setEditingDate(true)}
               title={t.track.changeThisDate}
-              className={`text-caption tabular-nums bg-none border-none cursor-pointer p-0 ${
+              className={`text-caption tabular-nums bg-none border-none cursor-pointer p-0 tap ${
                 overdue ? "text-overdue font-semibold" : "text-text-muted hover:text-slate"
               }`}
             >
@@ -308,7 +310,7 @@ export function DeliverableItem({
                 <button
                   type="button"
                   onClick={() => setEditing(false)}
-                  className="text-meta text-text-muted bg-none border-none cursor-pointer p-0"
+                  className="text-meta text-text-muted bg-none border-none cursor-pointer p-0 tap"
                 >
                   {t.common.cancel}
                 </button>
@@ -339,7 +341,7 @@ export function DeliverableItem({
                 <button
                   type="button"
                   onClick={openEditor}
-                  className="flex items-center gap-1.5 text-caption font-semibold text-violet bg-none border-none cursor-pointer p-0"
+                  className="flex items-center gap-1.5 text-caption font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
                 >
                   <Pencil size={11} /> {t.track.editSteps}
                 </button>
@@ -347,7 +349,7 @@ export function DeliverableItem({
                   type="button"
                   onClick={runBreakdown}
                   disabled={breaking}
-                  className="flex items-center gap-1.5 text-caption text-text-muted hover:text-slate bg-none border-none cursor-pointer p-0 disabled:opacity-50"
+                  className="flex items-center gap-1.5 text-caption text-text-muted hover:text-slate bg-none border-none cursor-pointer p-0 tap disabled:opacity-50"
                 >
                   <Sparkles size={11} />
                   {breaking ? t.track.workingItOut : t.track.redo}

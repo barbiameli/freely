@@ -765,7 +765,7 @@ export function QuoteWizard({
                     setShowRateHelp((v) => !v);
                     if (!showRateHelp) setDraft((d) => ({ ...d, hourlyRate: 0 }));
                   }}
-                  className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0"
+                  className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
                 >
                   {showRateHelp ? t.quote.iKnowMyRate : t.quote.notSureWhatToCharge}
                 </button>
@@ -1052,7 +1052,7 @@ export function QuoteWizard({
                               e.stopPropagation();
                               setShowBrandUpload(true);
                             }}
-                            className="text-violet text-caption font-bold mt-1.5 bg-none border-none cursor-pointer p-0"
+                            className="text-violet text-caption font-bold mt-1.5 bg-none border-none cursor-pointer p-0 tap"
                           >
                             {t.quote.addYourBranding}
                           </button>
@@ -1076,7 +1076,7 @@ export function QuoteWizard({
                       <button
                         type="button"
                         onClick={() => setShowBrandUpload(false)}
-                        className="text-meta text-text-muted bg-none border-none cursor-pointer p-0"
+                        className="text-meta text-text-muted bg-none border-none cursor-pointer p-0 tap"
                       >
                         {t.common.close}
                       </button>

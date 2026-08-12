@@ -62,7 +62,7 @@ export function ComingUp({
           type="button"
           onClick={() => setDismissed(true)}
           aria-label={t.track.hideComingUp}
-          className="text-text-muted hover:text-ink bg-none border-none cursor-pointer p-0 shrink-0"
+          className="text-text-muted hover:text-ink bg-none border-none cursor-pointer p-0 tap shrink-0"
         >
           <X size={12} />
         </button>
@@ -77,7 +77,7 @@ export function ComingUp({
             key={d.deliverableId}
             type="button"
             onClick={() => onSelect(d.deliverableId)}
-            className={`text-left bg-none border-none cursor-pointer p-0 group min-w-0 ${
+            className={`text-left bg-none border-none cursor-pointer p-0 tap group min-w-0 ${
               i > 0 ? "sm:border-l sm:border-line sm:pl-4" : ""
             } ${i < 2 ? "sm:pr-4" : ""}`}
           >

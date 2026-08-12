@@ -360,7 +360,7 @@ export function ProjectDetail({
                 <button
                   type="button"
                   onClick={() => setRescheduling((r) => !r)}
-                  className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0"
+                  className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
                 >
                   {rescheduling ? t.common.cancel : t.track.reschedule}
                 </button>
@@ -425,7 +425,7 @@ export function ProjectDetail({
 
                 return (
                   <div key={ms.id} className="border-t border-line first:border-t-0 pt-3 first:pt-0">
-                    <div className="flex items-baseline justify-between gap-3 mb-1">
+                    <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-0.5 sm:gap-3 mb-1">
                       <div className="flex items-baseline gap-2 min-w-0">
                         <span
                           className={`font-body font-bold text-caption uppercase tracking-wide ${
