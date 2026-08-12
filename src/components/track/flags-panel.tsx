@@ -40,7 +40,7 @@ export function FlagsPanel({ deliverable }: { deliverable: DeliverableView | nul
   if (!deliverable || (open.length === 0 && answered.length === 0)) return null;
 
   return (
-    <div className="bg-paper border border-line rounded-lg px-4 py-3.5 mt-4">
+    <div className="bg-paper border border-line rounded-lg px-4 py-3.5 mt-4 max-w-[74ch]">
       <SubLabel className="mb-3">
         {t.track.worthRaising}
       </SubLabel>
@@ -49,8 +49,9 @@ export function FlagsPanel({ deliverable }: { deliverable: DeliverableView | nul
         <p className="text-small text-text-muted m-0">{t.track.allAnswered}</p>
       ) : (
         // Two across on a wide screen. One question per full-width row would put
-        // a six-word question on a line built for eighteen.
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+        // a six-word question on a line built for eighteen. content-start so a
+        // short question does not stretch to match a long one beside it.
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4 content-start">
           {open.map((flag) => (
             <div
               key={flag.id}

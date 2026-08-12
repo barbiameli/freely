@@ -341,6 +341,12 @@ export const es: Dictionary = {
 
     comingUp: "Próximamente",
     hideComingUp: "Ocultar lo próximo",
+    stepsOf: "{done} de {total}",
+    diaryPromptTitle: "{count} hechos. Lo mandas al diario?",
+    diaryPromptHint: "Esto lo lee el cliente, asi que mejor una frase mas normal que la del tracker.",
+    diaryAdd: "Anadir al diario",
+    diaryNotNow: "Ahora no",
+    diaryDefaultTitle: "Avance",
     worthRaising: "Conviene plantear",
     allAnswered: "Todo aclarado.",
     answered: "Aclarada",

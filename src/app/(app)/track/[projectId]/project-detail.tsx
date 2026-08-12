@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { TimelineBar } from "@/components/track/timeline-bar";
 import { DeliverableItem, type DeliverableView } from "@/components/track/deliverable-item";
+import { DiaryPrompt, type DoneItem } from "@/components/track/diary-prompt";
 import { StatRow } from "@/components/track/stat-row";
 import { ComingUp } from "@/components/track/coming-up";
 import { AutoBreakdown } from "@/components/track/auto-breakdown";
@@ -208,6 +209,17 @@ export function ProjectDetail({
   );
 
   const milestones = milestoneProgress(quotedMilestones, project.deliverables);
+
+  // What has been ticked off since this page was opened. Held here rather than
+  // in the rows so a run of five ticks produces one offer to write it up, and
+  // so ticking a step in one deliverable and a step in another still reads as
+  // one update.
+  const [justDone, setJustDone] = useState<DoneItem[]>([]);
+  function noteDone(name: string, deliverable: string) {
+    setJustDone((items) =>
+      items.some((item) => item.name === name) ? items : [...items, { name, deliverable }]
+    );
+  }
   const health = toHealth(project);
   const completion = projectCompletion(health);
   const currentPace = pace(health);
@@ -458,6 +470,7 @@ export function ProjectDetail({
                         projectId={project.id}
                         expanded={openId === d.id}
                         onToggleExpanded={() => setOpenId(openId === d.id ? null : d.id)}
+                        onDone={noteDone}
                       />
                     ))}
                   </div>
@@ -473,10 +486,20 @@ export function ProjectDetail({
                   projectId={project.id}
                   expanded={openId === d.id}
                   onToggleExpanded={() => setOpenId(openId === d.id ? null : d.id)}
+                  onDone={noteDone}
                 />
               ))}
             </div>
           )}
+          {/* Right after the work it is about. A bar pinned to the bottom of the
+              window would be easier to notice and harder to connect to the box
+              that was just ticked. */}
+          <DiaryPrompt
+            projectId={project.id}
+            done={justDone}
+            onDismiss={() => setJustDone([])}
+          />
+
           <div className="flex gap-2 mt-3">
             <TextField
               value={newDeliverable}

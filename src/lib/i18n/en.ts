@@ -343,6 +343,12 @@ export const en = {
 
     comingUp: "Coming up",
     hideComingUp: "Hide what's coming up",
+    stepsOf: "{done} of {total}",
+    diaryPromptTitle: "{count} done. Send it to the diary?",
+    diaryPromptHint: "The client reads this, so it is worth a plainer sentence than the tracker uses.",
+    diaryAdd: "Add to diary",
+    diaryNotNow: "Not now",
+    diaryDefaultTitle: "Progress",
     worthRaising: "Worth raising",
     allAnswered: "All answered.",
     answered: "Answered",

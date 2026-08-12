@@ -85,7 +85,7 @@ function Checkbox({
  * Its own component because each row needs its own optimistic state, and a
  * hook cannot be called inside a map.
  */
-function StepRow({ step }: { step: StepView }) {
+function StepRow({ step, onDone }: { step: StepView; onDone?: (name: string) => void }) {
   const router = useRouter();
   const [done, toggle] = useOptimisticFlag(step.done, (next) =>
     toggleStepAction(step.id, next).then((r) => {
@@ -95,21 +95,28 @@ function StepRow({ step }: { step: StepView }) {
   );
 
   return (
-    <div className="flex items-start gap-2.5 py-1">
+    <div className="flex items-start gap-3 py-2 border-b border-line/70 last:border-b-0">
       <Checkbox
         size={15}
         done={done}
         label={`Mark step ${done ? "not done" : "done"}`}
-        onClick={toggle}
+        onClick={() => {
+          // Only on the way to done. Unticking is a correction, and offering to
+          // tell the client about a correction would be strange.
+          if (!done) onDone?.(step.name);
+          toggle();
+        }}
       />
+      {/* Ink rather than slate. It was the same grey as the description above
+          it, so the paragraph and the checklist read as one block of text. */}
       <span
-        className={`flex-1 text-small leading-[1.6] ${
-          done ? "text-text-muted line-through" : "text-slate"
+        className={`flex-1 text-small leading-[1.55] ${
+          done ? "text-text-muted line-through" : "text-ink"
         }`}
       >
         {step.name}
       </span>
-      <span className="text-caption text-text-muted tabular-nums shrink-0 pt-[3px] w-10 text-right">
+      <span className="text-caption text-text-muted tabular-nums shrink-0 pt-[3px] w-9 text-right">
         {step.estimateHours > 0 ? `${step.estimateHours}h` : ""}
       </span>
     </div>
@@ -131,11 +138,15 @@ export function DeliverableItem({
   projectId,
   expanded,
   onToggleExpanded,
+  onDone,
 }: {
   deliverable: DeliverableView;
   projectId: string;
   expanded: boolean;
   onToggleExpanded: () => void;
+  /** Something was ticked off. Collected by the page so it can offer to write
+   * it up for the client while it is still fresh. */
+  onDone?: (name: string, deliverable: string) => void;
 }) {
   const t = useT();
   const locale = useLocale();
@@ -192,7 +203,10 @@ export function DeliverableItem({
         <Checkbox
           done={done}
           label={`Mark ${shortName(deliverable.name, 40)} ${done ? "not done" : "done"}`}
-          onClick={toggleDone}
+          onClick={() => {
+            if (!done) onDone?.(deliverable.name, deliverable.name);
+            toggleDone();
+          }}
         />
 
         <button
@@ -217,23 +231,35 @@ export function DeliverableItem({
                 behind a truncation with a thousand pixels to spare. Clamped to
                 two lines when closed, uncapped when open, both by CSS, which
                 only truncates when there is actually no room. */}
+            {/* 15px against the 13px of the steps below. At 14 it was one pixel
+                bigger than its own checklist, so nothing on the row looked like
+                the heading of anything. Size, weight and colour all do a bit of
+                the work: 15 semibold ink for the name, 13 slate for what it is,
+                13 ink for the steps, 11 muted for the hours. */}
             <span
-              className={`block font-body font-semibold text-body tracking-[-0.01em] ${
+              className={`block font-body font-semibold text-lead leading-snug tracking-[-0.01em] ${
                 expanded ? "" : "line-clamp-2"
               } ${done ? "text-text-muted line-through" : "text-ink"}`}
             >
               {deliverable.name}
             </span>
+          {/* The bar only once there is something to show. Empty, it was a grey
+              dash under every title that read as a rule or a mistake, and the
+              count beside it already said 0 of 8. */}
           {deliverable.steps.length > 0 && (
-            <div className="flex items-center gap-2 mt-1.5">
-              <div className="w-16 h-[3px] rounded-full bg-line overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-violet"
-                  style={{ width: `${Math.round(completion * 100)}%` }}
-                />
-              </div>
+            <div className="flex items-center gap-2 mt-1">
+              {doneCount > 0 && (
+                <div className="w-16 h-[3px] rounded-full bg-line overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-violet"
+                    style={{ width: `${Math.round(completion * 100)}%` }}
+                  />
+                </div>
+              )}
               <span className="text-caption text-text-muted tabular-nums">
-                {doneCount}/{deliverable.steps.length}
+                {t.track.stepsOf
+                  .replace("{done}", String(doneCount))
+                  .replace("{total}", String(deliverable.steps.length))}
               </span>
             </div>
           )}
@@ -270,15 +296,17 @@ export function DeliverableItem({
       </div>
 
       {expanded && (
-        <div className="pb-4 pl-[30px] pr-1">
-          {/* One measure for the description, set in ch so it tracks the font
+        <div className="pb-4 pl-[30px] pr-1 max-w-[74ch]">
+          {/* One measure for everything in here, set in ch so it tracks the font
               rather than a pixel width that was right at one column width and
-              wrong at the next. It was capped at 62ch inside a column that grew
-              past it, which is what made the text look like it was breaking
-              early for no reason. 78ch is a long line but this is a paragraph
-              read once, not a column of body copy. */}
+              wrong at the next.
+              It used to be per block: the description broke at 78ch and the step
+              list ran to 92ch, so the two had different right edges and the
+              hours column sat a long way from the text it belonged to. One
+              measure on the container fixes both, and 74ch is a readable line
+              rather than the longest one that fits. */}
           {deliverable.summary && !editing && (
-            <p className="text-small text-slate leading-[1.6] mt-0 mb-3.5 max-w-[78ch]">
+            <p className="text-small text-slate leading-[1.6] mt-0 mb-3.5">
               {deliverable.summary}
             </p>
           )}
@@ -328,12 +356,17 @@ export function DeliverableItem({
             </button>
           ) : (
             <>
-              {/* The hours sit in a fixed column at the right rather than
-                  wherever the step text happens to end, so a column of them
-                  lines up and can be read down. */}
-              <div className="flex flex-col gap-0.5 max-w-[92ch]">
+              {/* Hairlines between the steps rather than nothing, because a
+                  checklist of eight with only leading between the rows reads as
+                  a paragraph with boxes down the side. The hours stay in a
+                  fixed column so they can be read down. */}
+              <div className="flex flex-col border-t border-line/70">
                 {deliverable.steps.map((step) => (
-                  <StepRow key={step.id} step={step} />
+                  <StepRow
+                    key={step.id}
+                    step={step}
+                    onDone={(name) => onDone?.(name, deliverable.name)}
+                  />
                 ))}
               </div>
 
