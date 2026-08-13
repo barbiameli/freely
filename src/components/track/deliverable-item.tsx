@@ -305,8 +305,14 @@ export function DeliverableItem({
               hours column sat a long way from the text it belonged to. One
               measure on the container fixes both, and 74ch is a readable line
               rather than the longest one that fits. */}
+          {/* text-balance evens the lines out. Left to itself the browser fills
+              line one to the measure and drops whatever is left onto line two,
+              so a two-line summary broke mid-clause after "so every" with a
+              third of the width empty beside it. Balanced, both lines are about
+              the same length and the break lands somewhere a person would put
+              it. Browsers cap this at a few lines, which is all this ever is. */}
           {deliverable.summary && !editing && (
-            <p className="text-small text-slate leading-[1.6] mt-0 mb-3.5">
+            <p className="text-small text-slate leading-[1.6] mt-0 mb-3.5 text-balance">
               {deliverable.summary}
             </p>
           )}

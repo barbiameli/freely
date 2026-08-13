@@ -34,7 +34,6 @@ import { currencySymbol } from "@/lib/currencies";
 import { useAction } from "@/lib/use-action";
 import { useT, useLocale } from "@/lib/i18n/context";
 import { ActionError } from "@/components/ui/action-error";
-import { BillingPanel } from "@/components/track/billing-panel";
 import type { BillingMode } from "@/lib/invoice-queue";
 import { milestoneProgress, type MilestoneView } from "@/lib/milestones";
 
@@ -173,7 +172,6 @@ export function ProjectDetail({
   projectList,
   billing,
   milestones: quotedMilestones = [],
-  invoiceCount,
 }: {
   project: Project;
   projectList: ProjectSummary[];
@@ -186,8 +184,6 @@ export function ProjectDetail({
    * agreed to, so the tracker shows it rather than offering to rearrange it.
    */
   milestones?: MilestoneView[];
-  /** Invoices already raised against this project. */
-  invoiceCount: number;
 }) {
   const router = useRouter();
   const t = useT();
@@ -332,31 +328,6 @@ export function ProjectDetail({
                 ]
               : []),
           ]}
-        />
-
-        {/* Directly under the figures, because what is billable is one of the
-            figures: it belongs with "58% done" rather than at the bottom of the
-            page under the deliverables. */}
-        <BillingPanel
-          invoiceCount={invoiceCount}
-          project={{
-            id: project.id,
-            title: project.title,
-            client: project.client,
-            price: project.price,
-            hours: project.hours,
-            currency: project.currency || "USD",
-            billing,
-            status: project.status,
-            invoiceCount,
-            deliverables: project.deliverables.map((d) => ({
-              id: d.id,
-              name: d.name,
-              done: d.done,
-              invoicedAt: d.invoicedAt ? new Date(d.invoicedAt) : null,
-              steps: d.steps.map((s) => ({ estimateHours: s.estimateHours })),
-            })),
-          }}
         />
 
         {!scheduled ? (

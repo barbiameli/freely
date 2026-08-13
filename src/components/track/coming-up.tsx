@@ -14,10 +14,14 @@ import { useT, useLocale } from "@/lib/i18n/context";
  * dates lost their urgency. A tinted, bordered aside instead, distinct from the
  * cards around it.
  *
- * It runs across the page now rather than down a 270px rail. In the rail three
- * deadlines were three stacked rows with every name cut to 34 characters, which
- * is not enough to tell "Checkout flow redesign" from "Checkout flow rebuild".
- * Across the top they are three columns with room for the whole name.
+ * It runs across the page rather than down a 270px rail, where every name was
+ * cut to 34 characters, which is not enough to tell "Checkout flow redesign"
+ * from "Checkout flow rebuild".
+ *
+ * One row per deadline, not one column. Three columns divided the width by
+ * however many deadlines there happened to be, so two of them left a third of
+ * the aside empty and every name got a different amount of room. In rows the
+ * date is a column you can read down and the name has the rest of the line.
  *
  * The fade-in is deliberate and slight. Something appearing a beat after the
  * page settles draws the eye once, which is what a deadline reminder is for,
@@ -68,29 +72,36 @@ export function ComingUp({
         </button>
       </div>
 
-      {/* Three columns on a wide screen, stacked on a phone. The divider
-          between them is a left border on all but the first, which is one rule
-          instead of a wrapper per item. */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-0">
-        {deadlines.slice(0, 3).map((d, i) => (
+      {/* Rows rather than columns. Three columns meant two deadlines left a
+          third of the aside empty, and every name had a different amount of
+          room depending on how many there were. A row per deadline gives the
+          date a fixed column that can be read down, the name the rest of the
+          line, and the count of days a consistent place at the end. */}
+      <div className="flex flex-col">
+        {deadlines.slice(0, 3).map((d) => (
           <button
             key={d.deliverableId}
             type="button"
             onClick={() => onSelect(d.deliverableId)}
-            className={`text-left bg-none border-none cursor-pointer p-0 tap group min-w-0 ${
-              i > 0 ? "sm:border-l sm:border-line sm:pl-4" : ""
-            } ${i < 2 ? "sm:pr-4" : ""}`}
+            className="w-full text-left bg-none border-none cursor-pointer px-0 py-2 first:pt-0 last:pb-0 border-b border-line/60 last:border-b-0 group flex items-baseline gap-3"
           >
-            <div className="font-body font-semibold text-small text-ink leading-snug group-hover:text-violet">
+            <span
+              className={`text-caption tabular-nums shrink-0 w-[52px] ${
+                d.overdue ? "text-overdue font-bold" : "text-slate font-semibold"
+              }`}
+            >
+              {formatDay(d.dueAt, locale)}
+            </span>
+            <span className="font-body font-semibold text-small text-ink leading-snug min-w-0 flex-1 group-hover:text-violet">
               {d.name}
-            </div>
-            <div
-              className={`text-caption tabular-nums mt-0.5 ${
+            </span>
+            <span
+              className={`text-caption tabular-nums shrink-0 ${
                 d.overdue ? "text-overdue font-semibold" : "text-text-muted"
               }`}
             >
-              {formatDay(d.dueAt, locale)} · {relativeDay(d.dueAt, new Date(), locale)}
-            </div>
+              {relativeDay(d.dueAt, new Date(), locale)}
+            </span>
           </button>
         ))}
       </div>

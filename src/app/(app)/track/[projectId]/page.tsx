@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import { deliverableDb, milestoneDb, projectSchedule } from "@/lib/track-db";
-import { invoiceDb } from "@/lib/invoice-db";
 import { detectBillingMode } from "@/lib/billing-mode";
 import { ProjectDetail } from "./project-detail";
 
@@ -50,9 +49,6 @@ export default async function ProjectPage({ params }: { params: { projectId: str
 
   // Needed to tell an unbilled project from one already through, which is what
   // decides whether the billing panel offers an invoice.
-  const invoiceCount = await invoiceDb.count({
-    where: { userId: user.id, projectId: project.id },
-  });
 
   // Read off the quote rather than asked: the freelancer already wrote down how
   // this bills when they sent it. See lib/billing-mode.
@@ -65,7 +61,6 @@ export default async function ProjectPage({ params }: { params: { projectId: str
 
   return (
     <ProjectDetail
-      invoiceCount={invoiceCount}
       // A project with milestones bills per milestone by definition, so that
       // wins over reading the payment terms. Detection is the fallback for
       // everything quoted before milestones existed.

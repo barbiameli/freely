@@ -188,3 +188,19 @@ select:focus {
     background-image: none;
   }
 }
+
+/* A marker landing on the timeline when something is ticked off. Overshoots
+   once and settles: the one moment in the app that is unambiguously good news
+   was previously a dot changing colour, which nobody saw. */
+@keyframes pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.18); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-pop {
+  animation: pop 420ms cubic-bezier(0.16, 0.84, 0.28, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pop { animation: none; }
+}
