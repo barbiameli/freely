@@ -93,6 +93,11 @@ export default async function ProjectPage({ params }: { params: { projectId: str
           summary: d.summary,
           brokenDown: Boolean(d.brokenDownAt),
           invoicedAt: d.invoicedAt?.toISOString() ?? null,
+          // When it was ticked, so the timeline can tell "4 of 6 done" from
+          // "you finished three of those today". Cast because this column is
+          // newer than the generated Prisma client here.
+          doneAt:
+            (d as unknown as { doneAt?: Date | null }).doneAt?.toISOString() ?? null,
           milestoneId: d.milestoneId ?? null,
           steps: (d.steps ?? []).map((s) => ({
             id: s.id,

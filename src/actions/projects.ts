@@ -105,9 +105,16 @@ export async function toggleDeliverableAction(
   });
   if (!deliverable) return { ok: false, error: "Deliverable not found." };
 
+  const nowDone = !deliverable.done;
   await prisma.deliverable.update({
     where: { id: deliverableId },
-    data: { done: !deliverable.done },
+    data: {
+      done: nowDone,
+      // Stamped on the way to done and cleared on the way back, so unticking
+      // something by mistake does not leave a completion date behind. Cast
+      // because this column is newer than the generated client here.
+      ...({ doneAt: nowDone ? new Date() : null } as Record<string, unknown>),
+    },
   });
 
   revalidatePath(`/track/${projectId}`);

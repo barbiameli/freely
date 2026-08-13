@@ -2,6 +2,7 @@
 
 import { Check } from "lucide-react";
 import { formatDay, relativeDay, daysBetween } from "@/lib/schedule";
+import { cheerFor } from "@/lib/cheer";
 import { useT, useLocale } from "@/lib/i18n/context";
 
 /** Due, and not ticked. A named helper because the guard against hardcoded JSX
@@ -15,6 +16,9 @@ export interface TimelineMarker {
   name: string;
   dueAt: Date;
   done: boolean;
+  /** When it was ticked. Null on anything finished before this was recorded,
+   * which is why nothing here depends on it being present. */
+  doneAt?: Date | null;
 }
 
 /**
@@ -64,6 +68,22 @@ export function TimelineBar({
   // ticked as most of the way along.
   const doneTo = done.length > 0 ? Math.max(...done.map((m) => at(m.dueAt))) : 0;
 
+  // One dry line about where this actually is. See lib/cheer: earned from the
+  // real numbers, deterministic, and absent on the ordinary middle of a
+  // project, which is most days.
+  const elapsedDays = daysBetween(startDate, now);
+  const cheer = cheerFor({
+    total: markers.length,
+    done: done.length,
+    overdue: overdue.length,
+    doneToday: markers.filter((m) => m.doneAt && daysBetween(m.doneAt, now) === 0).length,
+    elapsed: Math.min(1, Math.max(0, elapsedDays / span)),
+    daysToDue: daysBetween(now, dueDate),
+  });
+  const cheerLine = cheer
+    ? t.track[cheer.key].replace("{count}", String(cheer.count ?? ""))
+    : null;
+
   return (
     <div>
       {/* The count, loud, because it is the answer to the question somebody
@@ -82,9 +102,16 @@ export function TimelineBar({
                   .replace("{done}", String(done.length))
                   .replace("{total}", String(markers.length))}
           </div>
-          {overdue.length > 0 && (
-            <div className="text-caption font-semibold text-overdue mt-0.5">
-              {t.track.pastTheDateCount.replace("{count}", String(overdue.length))}
+          {/* The line replaces the bare overdue count rather than sitting next
+              to it: "2 past the date" and "2 past the date, start with the
+              smallest" is the same fact twice, and only one of them is useful. */}
+          {cheerLine && (
+            <div
+              className={`text-small mt-0.5 ${
+                cheer?.good ? "text-slate" : "text-overdue font-semibold"
+              }`}
+            >
+              {cheerLine}
             </div>
           )}
         </div>

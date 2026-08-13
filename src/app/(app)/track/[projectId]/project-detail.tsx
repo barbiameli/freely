@@ -371,6 +371,7 @@ export function ProjectDetail({
                   name: d.name,
                   dueAt: new Date(d.dueAt as string),
                   done: d.done,
+                  doneAt: d.doneAt ? new Date(d.doneAt) : null,
                 }))}
             />
           </Card>

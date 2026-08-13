@@ -44,6 +44,9 @@ export interface DeliverableView {
   brokenDown: boolean;
   /** When this milestone was billed, on a per-milestone project. */
   invoicedAt: string | null;
+  /** When it was ticked off. Null on anything finished before this was
+   * recorded, so nothing depends on it being there. */
+  doneAt?: string | null;
   /** Which milestone covers it, null when the project has none. */
   milestoneId?: string | null;
   steps: StepView[];
