@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, Send, Trash2 } from "lucide-react";
+import { CalendarDays, Trash2 } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -12,13 +12,13 @@ import { Chip } from "@/components/ui/chip";
 import { TimelineBar } from "@/components/track/timeline-bar";
 import { DeliverableItem, type DeliverableView } from "@/components/track/deliverable-item";
 import { DiaryPrompt, type DoneItem } from "@/components/track/diary-prompt";
+import { SendToDiary } from "@/components/track/send-to-diary";
 import { StatRow } from "@/components/track/stat-row";
 import { ComingUp } from "@/components/track/coming-up";
 import { AutoBreakdown } from "@/components/track/auto-breakdown";
 import {
   updateProjectAction,
   addDeliverableAction,
-  sendToDiaryAction,
   deleteProjectAction,
   type ProjectStatusValue,
 } from "@/actions/projects";
@@ -282,19 +282,23 @@ export function ProjectDetail({
             <p className="text-slate text-small mt-1.5">{project.client}</p>
           </div>
           <div className="flex items-center gap-2.5 shrink-0">
-            <Button
-              variant="ghost"
-              icon={Send}
-              disabled={isPending}
-              onClick={() =>
-                run(() => sendToDiaryAction(project.id), {
-                  skipRefresh: true,
-                  onSuccess: () => router.push(`/diary/${project.id}`),
-                })
-              }
-            >
-              {t.track.sendToDiary}
-            </Button>
+            {/* Asks what the client should see before sending anything. It used
+                to send one line that named nothing you had ticked. */}
+            <SendToDiary
+              projectId={project.id}
+              source={{
+                deliverables: project.deliverables.map((d) => ({
+                  id: d.id,
+                  name: d.name,
+                  done: d.done,
+                })),
+                questions: project.deliverables
+                  .flatMap((d) => d.flags)
+                  .filter((f) => !f.resolved)
+                  .map((f) => ({ id: f.id, question: f.question })),
+                dueLabel: health.dueDate ? formatDay(health.dueDate as Date, locale) : null,
+              }}
+            />
             <Button onClick={() => router.push(`/track/${project.id}/invoice`)}>
               {t.track.generateInvoice}, {currencySymbol(project.currency)}
               {project.price.toLocaleString()}
@@ -334,20 +338,19 @@ export function ProjectDetail({
           <SchedulePrompt projectId={project.id} />
         ) : (
           <Card>
-            <div className="flex items-baseline justify-between gap-3 mb-3">
-              <Label>{t.brief.timeline}</Label>
-              <div className="flex items-baseline gap-3">
-                <span className="text-meta text-text-muted">
-                  {formatDay(health.startDate as Date, locale)} to {formatDay(health.dueDate as Date, locale)}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setRescheduling((r) => !r)}
-                  className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
-                >
-                  {rescheduling ? t.common.cancel : t.track.reschedule}
-                </button>
-              </div>
+            {/* No "Timeline" heading and no date range up here. A line with dots
+                on it is self-evidently a timeline, and the bar already states
+                both dates at its right-hand end, so the header was a label and a
+                duplicate above the thing they described. Reschedule is the only
+                part that had to stay. */}
+            <div className="flex items-baseline justify-end mb-1">
+              <button
+                type="button"
+                onClick={() => setRescheduling((r) => !r)}
+                className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
+              >
+                {rescheduling ? t.common.cancel : t.track.reschedule}
+              </button>
             </div>
             {rescheduling && (
               <div className="mb-4">

@@ -299,21 +299,14 @@ export function DeliverableItem({
       </div>
 
       {expanded && (
-        <div className="pb-4 pl-[30px] pr-1 max-w-[74ch]">
-          {/* One measure for everything in here, set in ch so it tracks the font
-              rather than a pixel width that was right at one column width and
-              wrong at the next.
-              It used to be per block: the description broke at 78ch and the step
-              list ran to 92ch, so the two had different right edges and the
-              hours column sat a long way from the text it belonged to. One
-              measure on the container fixes both, and 74ch is a readable line
-              rather than the longest one that fits. */}
-          {/* text-balance evens the lines out. Left to itself the browser fills
-              line one to the measure and drops whatever is left onto line two,
-              so a two-line summary broke mid-clause after "so every" with a
-              third of the width empty beside it. Balanced, both lines are about
-              the same length and the break lands somewhere a person would put
-              it. Browsers cap this at a few lines, which is all this ever is. */}
+        <div className="pb-4 pl-[30px] pr-1">
+          {/* No measure of its own. It had one, at 74ch, and it broke earlier
+              than the step list underneath it, which is what made the wrap look
+              like a mistake: two blocks of text in the same column with
+              different right edges. Both now run to the width of the card, so
+              the summary and the first step break in the same place. */}
+          {/* text-balance still evens out whatever lines there are, so the last
+              one is not left holding two words. */}
           {deliverable.summary && !editing && (
             <p className="text-small text-slate leading-[1.6] mt-0 mb-3.5 text-balance">
               {deliverable.summary}
