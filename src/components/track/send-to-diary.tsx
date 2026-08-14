@@ -66,7 +66,7 @@ export function SendToDiary({
       () => addDiaryEntryAction(projectId, composed.title, composed.body),
       { skipRefresh: true }
     );
-    if (result) {
+    if (result.ok) {
       setOpen(false);
       router.push(`/diary/${projectId}`);
     }

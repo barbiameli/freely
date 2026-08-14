@@ -7,6 +7,25 @@ import { teamScopeWhere } from "@/lib/team-scope";
 import type { ActionResult } from "@/actions/briefs";
 import { plainDeliverableNames } from "@/lib/anthropic";
 
+
+/**
+ * Revalidates the client's page as well as the freelancer's.
+ *
+ * Everything in this file changes what a client reads, and revalidating only
+ * /diary means the tool looks updated while the page they were sent does not.
+ * The public route is force-dynamic today, so this is belt and braces rather
+ * than load-bearing, and it is exactly the sort of thing that stops being belt
+ * and braces the moment somebody adds caching.
+ */
+async function revalidateBoth(projectId: string): Promise<void> {
+  revalidatePath(`/diary/${projectId}`);
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { publicSlug: true },
+  });
+  if (project?.publicSlug) revalidatePath(`/p/${project.publicSlug}`);
+}
+
 export async function addDiaryEntryAction(
   projectId: string,
   title: string,
@@ -36,7 +55,7 @@ export async function addDiaryEntryAction(
     data: { projectId, title: title.trim() || "Update", body: body.trim() },
   });
 
-  revalidatePath(`/diary/${projectId}`);
+  await revalidateBoth(projectId);
   return { ok: true, data: undefined };
 }
 
@@ -57,7 +76,7 @@ export async function deleteDiaryEntryAction(
   if (!entry) return { ok: false, error: "That entry no longer exists." };
 
   await prisma.diaryEntry.delete({ where: { id: entryId } });
-  revalidatePath(`/diary/${entry.projectId}`);
+  await revalidateBoth(entry.projectId);
   return { ok: true, data: undefined };
 }
 
@@ -73,7 +92,7 @@ export async function updateDiaryEntryAction(
   if (!entry) return { ok: false, error: "Entry not found." };
 
   await prisma.diaryEntry.update({ where: { id: entryId }, data: patch });
-  revalidatePath(`/diary/${entry.projectId}`);
+  await revalidateBoth(entry.projectId);
   return { ok: true, data: undefined };
 }
 
@@ -154,7 +173,7 @@ export async function setPlainLanguageAction(
     data: { ...({ plainLanguage: on } as Record<string, unknown>) },
   });
 
-  revalidatePath(`/diary/${projectId}`);
+  await revalidateBoth(projectId);
   revalidatePath(`/track/${projectId}`);
   return { ok: true, data: undefined };
 }
@@ -176,6 +195,6 @@ export async function updateClientNameAction(
     where: { id: deliverableId },
     data: { ...({ clientName: clientName.trim() || null } as Record<string, unknown>) },
   });
-  revalidatePath(`/diary/${deliverable.projectId}`);
+  await revalidateBoth(deliverable.projectId);
   return { ok: true, data: undefined };
 }

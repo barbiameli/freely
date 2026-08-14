@@ -71,7 +71,7 @@ function QueueCard({ row }: { row: QueueRow }) {
 
   async function invoice() {
     const created = await run(() => invoiceProjectAction(row.projectId), { skipRefresh: true });
-    if (created) router.push(`/invoices/${created.invoiceId}`);
+    if (created.ok) router.push(`/invoices/${created.data.invoiceId}`);
   }
 
   return (

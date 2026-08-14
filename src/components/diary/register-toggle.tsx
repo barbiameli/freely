@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, Loader2, ArrowRight } from "lucide-react";
+import { Pencil, Loader2, ArrowRight, Check } from "lucide-react";
 import { setPlainLanguageAction, updateClientNameAction } from "@/actions/diary";
 import { useAction } from "@/lib/use-action";
 import { ActionError } from "@/components/ui/action-error";
@@ -47,24 +47,38 @@ export function RegisterToggle({
   projectId,
   plainLanguage,
   lines,
+  publicSlug,
+  published,
 }: {
   projectId: string;
   plainLanguage: boolean;
   lines: ClientLine[];
+  /** For the link that lets somebody check the result themselves. */
+  publicSlug?: string | null;
+  published?: boolean;
 }) {
   const t = useT();
   const { run, pending, error } = useAction();
   const [plain, setPlain] = useState(plainLanguage);
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  // Said out loud after a switch. Without it the only confirmation was the chip
+  // staying where it was put, which is indistinguishable from nothing happening.
+  const [saved, setSaved] = useState(false);
 
   async function choose(next: boolean) {
     if (next === plain || pending) return;
     setPlain(next);
     const result = await run(() => setPlainLanguageAction(projectId, next));
     // Put it back if the rewrite failed, rather than showing a state that was
-    // never saved.
-    if (!result) setPlain(!next);
+    // never saved. This read `if (!result)` and the action returns no data, so
+    // every success looked like a failure and the toggle flipped itself back.
+    if (!result.ok) {
+      setPlain(!next);
+      return;
+    }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
   }
 
   async function saveName(id: string) {
@@ -79,12 +93,16 @@ export function RegisterToggle({
     <div className="rounded-lg border border-line bg-paper px-4 py-3.5 mb-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <SubLabel className="mb-0">{t.diary.registerLabel}</SubLabel>
-        {pending && (
+        {pending ? (
           <span className="flex items-center gap-1.5 text-caption text-violet">
             <Loader2 size={11} className="animate-spin-slow" />
             {t.diary.registerWorking}
           </span>
-        )}
+        ) : saved ? (
+          <span className="flex items-center gap-1.5 text-caption text-success">
+            <Check size={11} /> {t.diary.registerSaved}
+          </span>
+        ) : null}
       </div>
 
       <div className="flex flex-wrap gap-1.5 mt-2">
@@ -150,7 +168,21 @@ export function RegisterToggle({
               )}
             </div>
           ))}
-          <p className="text-caption text-text-muted mt-2 mb-0">{t.diary.registerEditable}</p>
+          <div className="flex flex-wrap items-center justify-between gap-2 mt-2">
+            <p className="text-caption text-text-muted m-0">{t.diary.registerEditable}</p>
+            {/* So the result can be checked rather than trusted. The page is
+                rendered fresh on every request, so it is already current. */}
+            {published && publicSlug && (
+              <a
+                href={`/p/${publicSlug}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-caption font-semibold text-violet no-underline tap"
+              >
+                {t.diary.registerSeePage}
+              </a>
+            )}
+          </div>
         </div>
       )}
 

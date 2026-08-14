@@ -74,7 +74,7 @@ export function LandedPrompt({ quotes }: { quotes: LandedQuote[] }) {
   async function won() {
     const id = current.id;
     const result = await run(() => markQuoteWonAction(id), { skipRefresh: true });
-    if (result) {
+    if (result.ok) {
       answered(id);
       // Refresh so the quote's card in the list below picks up its new state.
       router.refresh();
@@ -84,7 +84,7 @@ export function LandedPrompt({ quotes }: { quotes: LandedQuote[] }) {
   async function lost() {
     const id = current.id;
     const result = await run(() => markQuoteLostAction(id), { skipRefresh: true });
-    if (result) {
+    if (result.ok) {
       answered(id);
       router.refresh();
     }

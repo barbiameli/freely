@@ -559,6 +559,8 @@ export const en = {
     registerTechnicalHint: "The client sees your own wording, exactly as it is in the tracker.",
     registerPlainHint: "The client sees the plain version. Your tracker keeps its own wording.",
     registerWorking: "Rewriting the list...",
+    registerSaved: "Saved. The client's page is updated.",
+    registerSeePage: "See the client's page",
     registerEditable: "Edit any line. Your version is kept.",
     fromTracker: "Progress",
     fromTrackerHint: "The same deliverables as your tracker. Tick or edit here and it changes in both.",

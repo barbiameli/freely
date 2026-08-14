@@ -106,7 +106,7 @@ export function DiaryPrompt({
           disabled={pending || !body.trim()}
           onClick={async () => {
             const result = await run(() => addDiaryEntryAction(projectId, title, body));
-            if (result) {
+            if (result.ok) {
               setAdded(true);
               onDismiss();
             }

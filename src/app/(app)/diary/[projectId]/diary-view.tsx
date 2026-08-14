@@ -205,6 +205,8 @@ export function DiaryView({
                 clientName: d.clientName ?? null,
                 done: d.done,
               }))}
+              publicSlug={project.publicSlug}
+              published={project.published}
             />
 
             <div className="flex flex-col gap-2">

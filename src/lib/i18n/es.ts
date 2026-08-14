@@ -557,6 +557,8 @@ export const es: Dictionary = {
     registerTechnicalHint: "El cliente ve tus palabras, tal cual estan en el tracker.",
     registerPlainHint: "El cliente ve la version sencilla. Tu tracker mantiene sus palabras.",
     registerWorking: "Reescribiendo la lista...",
+    registerSaved: "Guardado. La pagina del cliente ya esta al dia.",
+    registerSeePage: "Ver la pagina del cliente",
     registerEditable: "Edita cualquier linea. Se guarda tu version.",
     fromTracker: "Avance",
     fromTrackerHint: "Los mismos entregables que en seguimiento. Márcalos o edítalos aquí y cambian en los dos.",
