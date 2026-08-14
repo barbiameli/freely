@@ -421,8 +421,10 @@ export const en = {
   memory: {
     groupYou: "You",
     groupYouHint: "Who you are and how you work. Quotes are written from this.",
+    groupVoice: "Voice",
+    groupVoiceHint: "How it writes. Applied to every quote.",
     groupQuotes: "Your quotes",
-    groupQuotesHint: "How they read, what they include, and what the client receives.",
+    groupQuotesHint: "What every quote starts with, and how it looks when it arrives.",
     groupSources: "What it learns from",
     groupSourcesHint: "Files, links and connected tools it reads before writing anything.",
     quoteSetup: "Quote setup",

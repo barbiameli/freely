@@ -39,30 +39,51 @@ import {
   CONTEXT_PRESETS,
 } from "@/lib/memory-presets";
 import { useT } from "@/lib/i18n/context";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Tabs } from "@/components/ui/tabs";
 import { QuoteSetupCard } from "@/components/memory/quote-setup-card";
 import type { AccountDefaults } from "@/lib/quote-defaults";
 
 /**
- * Memory, in three groups.
+ * Memory, in four tabs.
  *
- * It was six flat sections and, in the middle of them, four near-identical
- * boxes of free text: instructions, tone, story, context. Nothing on the page
- * said how those four differed, so the honest answer to "which box does this
- * go in" was that it did not much matter, which is not a thing an interface
- * should leave you guessing about.
+ * It was six flat sections, then three headings on one long scroll, which is
+ * the same page with signposts: everything still rendered, still all at once,
+ * and the persona sat above a brand colour picker above a list of connectors.
+ * A heading tells you where you are. It does not stop there being nine cards
+ * below it.
  *
- * Grouped by what each thing affects instead. Who you are, how your quotes
- * read, what it learns from. The four boxes are still four boxes, but two of
- * them are now under a heading about your quotes and two under a heading about
- * you, which is the distinction that was missing.
+ * Tabs show one group and hide the rest. That is the difference worth having
+ * here, because these groups are genuinely unrelated: nobody editing their
+ * studio story also wants a font name and an unsubscribe switch on screen.
  *
- * The chip row is an anchor nav, not tabs. Nothing here is hidden.
+ * Four rather than three. The old "your quotes" group held instructions, tone,
+ * the whole quote setup and branding, which is four cards and about twenty
+ * controls, so it was the long scroll again inside a tab. Voice is its own
+ * thing and now has its own place.
+ *
+ * The tab lives in the URL, so a refresh, a back button and a link all land
+ * where you were rather than at the top.
  */
-const GROUPS = [
-  ["you", "groupYou", "groupYouHint"],
-  ["quotes", "groupQuotes", "groupQuotesHint"],
-  ["sources", "groupSources", "groupSourcesHint"],
-] as const;
+type MemoryTab = "you" | "voice" | "quotes" | "sources";
+
+const TABS: { id: MemoryTab; labelKey: "groupYou" | "groupVoice" | "groupQuotes" | "groupSources" }[] = [
+  { id: "you", labelKey: "groupYou" },
+  { id: "voice", labelKey: "groupVoice" },
+  { id: "quotes", labelKey: "groupQuotes" },
+  { id: "sources", labelKey: "groupSources" },
+];
+
+const HINTS: Record<MemoryTab, "groupYouHint" | "groupVoiceHint" | "groupQuotesHint" | "groupSourcesHint"> = {
+  you: "groupYouHint",
+  voice: "groupVoiceHint",
+  quotes: "groupQuotesHint",
+  sources: "groupSourcesHint",
+};
+
+function isTab(value: string | null): value is MemoryTab {
+  return value === "you" || value === "voice" || value === "quotes" || value === "sources";
+}
 
 interface FileAsset {
   id: string;
@@ -133,6 +154,20 @@ export function MemoryView({
   connections: ConnectionInfo[];
 }) {
   const t = useT();
+  const router = useRouter();
+  const params = useSearchParams();
+  // The URL is the state, so a refresh, a link and the back button all land in
+  // the same place. Anything unrecognised falls back rather than showing a
+  // blank page.
+  const fromUrl = params.get("tab");
+  const tab: MemoryTab = isTab(fromUrl) ? fromUrl : "you";
+
+  function select(next: MemoryTab) {
+    // Replace rather than push: flicking between tabs is not four things to
+    // press Back through.
+    router.replace(`/memory?tab=${next}`, { scroll: false });
+  }
+
   return (
     <>
       <Topbar />
@@ -145,44 +180,43 @@ export function MemoryView({
           <span className="font-semibold text-slate">{industryLabel(industry)}</span>.
         </p>
       </div>
-      <div className="flex gap-2 flex-wrap">
-        {GROUPS.map(([id, labelKey]) => (
-          <a key={id} href={`#${id}`}>
-            <Chip>{t.memory[labelKey]}</Chip>
-          </a>
-        ))}
-      </div>
+      <Tabs
+        items={TABS.map((tab) => ({ id: tab.id, label: t.memory[tab.labelKey] }))}
+        value={tab}
+        onChange={select}
+        label={t.nav.memory}
+      />
+      <p className="text-small text-slate -mt-2">{t.memory[HINTS[tab]]}</p>
 
-      <div className="flex flex-col gap-10">
+      <div className="flex flex-col gap-5">
         {/* Who you are. The persona is read off everything else here, and the
-            story is what it is mostly read off, so they sit together. */}
-        <section id="you" className="scroll-mt-6 flex flex-col gap-5">
-          <GroupHeading title={t.memory.groupYou} hint={t.memory.groupYouHint} />
-          <PersonaCard initial={aiPersona} updatedAt={personaUpdatedAt} />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <AutosaveNotes
-              field="storyNotes"
-              initial={initialStory}
-              label={t.memory.studioStory}
-              placeholder={t.onboarding.storyPlaceholder}
-              presets={STORY_PRESETS}
-              rows={4}
-            />
-            <AutosaveNotes
-              field="contextNotes"
-              initial={initialContext}
-              label={t.memory.additionalContext}
-              placeholder={t.memory.contextPlaceholder}
-              presets={CONTEXT_PRESETS}
-              rows={4}
-            />
-          </div>
-        </section>
+            story is most of what it is read off, so they sit together. */}
+        {tab === "you" && (
+          <>
+            <PersonaCard initial={aiPersona} updatedAt={personaUpdatedAt} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <AutosaveNotes
+                field="storyNotes"
+                initial={initialStory}
+                label={t.memory.studioStory}
+                placeholder={t.onboarding.storyPlaceholder}
+                presets={STORY_PRESETS}
+                rows={4}
+              />
+              <AutosaveNotes
+                field="contextNotes"
+                initial={initialContext}
+                label={t.memory.additionalContext}
+                placeholder={t.memory.contextPlaceholder}
+                presets={CONTEXT_PRESETS}
+                rows={4}
+              />
+            </div>
+          </>
+        )}
 
-        {/* How quotes read. Voice and the setup the wizard stopped asking for
-            are the same subject: what comes out when you generate one. */}
-        <section id="quotes" className="scroll-mt-6 flex flex-col gap-5">
-          <GroupHeading title={t.memory.groupQuotes} hint={t.memory.groupQuotesHint} />
+        {/* How it writes. Two boxes, and nothing else competing with them. */}
+        {tab === "voice" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <AutosaveNotes
               field={null}
@@ -201,38 +235,34 @@ export function MemoryView({
               rows={4}
             />
           </div>
-          <QuoteSetupCard saved={saved} hasBrand={hasBrand}>
-            <QuoteLanguage initial={quoteLocale} />
-          </QuoteSetupCard>
-          <BrandingCard
-            primaryColor={brandPrimaryColor}
-            accentColor={brandAccentColor}
-            logoDataUrl={brandLogoDataUrl}
-            headingFont={brandHeadingFont}
-            bodyFont={brandBodyFont}
-            currency={currency}
-          />
-        </section>
+        )}
+
+        {/* What a quote starts with, and what it looks like. */}
+        {tab === "quotes" && (
+          <>
+            <QuoteSetupCard saved={saved} hasBrand={hasBrand}>
+              <QuoteLanguage initial={quoteLocale} />
+            </QuoteSetupCard>
+            <BrandingCard
+              primaryColor={brandPrimaryColor}
+              accentColor={brandAccentColor}
+              logoDataUrl={brandLogoDataUrl}
+              headingFont={brandHeadingFont}
+              bodyFont={brandBodyFont}
+              currency={currency}
+            />
+          </>
+        )}
 
         {/* What it learns from. */}
-        <section id="sources" className="scroll-mt-6 flex flex-col gap-5">
-          <GroupHeading title={t.memory.groupSources} hint={t.memory.groupSourcesHint} />
-          <ReferencesCard files={files} images={images} links={links} />
-          <ConnectorsCard connections={connections} />
-        </section>
+        {tab === "sources" && (
+          <>
+            <ReferencesCard files={files} images={images} links={links} />
+            <ConnectorsCard connections={connections} />
+          </>
+        )}
       </div>
     </>
-  );
-}
-
-/** A group's heading. Says what the things under it affect, once, rather than
- * every card repeating it. */
-function GroupHeading({ title, hint }: { title: string; hint: string }) {
-  return (
-    <div>
-      <h2 className="font-body font-bold text-lead text-ink m-0">{title}</h2>
-      <p className="text-small text-slate mt-1 mb-0">{hint}</p>
-    </div>
   );
 }
 

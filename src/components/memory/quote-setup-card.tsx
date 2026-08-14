@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Check } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Check, ChevronDown, ChevronRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Label, SubLabel } from "@/components/ui/label";
+import { Label } from "@/components/ui/label";
 import { Chip } from "@/components/ui/chip";
 import {
   RateBody,
@@ -82,6 +82,10 @@ export function QuoteSetupCard({
   const [availabilityNote, setAvailabilityNote] = useState(saved.defaultAvailabilityNote ?? "");
   /** Whether a level has been stated, as opposed to read off Memory. */
   const [stated, setStated] = useState(Boolean(saved.expertiseLevel));
+  // Which section is open, or none. One at a time: opening a second closes the
+  // first, because two open sections is most of the way back to the wall of
+  // controls this replaced.
+  const [open, setOpen] = useState<string | null>(null);
 
   // Debounced, because the notes are typed into. A save per keystroke would be
   // a write per character.
@@ -121,10 +125,12 @@ export function QuoteSetupCard({
       </div>
       <p className="text-meta text-slate mt-1 mb-4 leading-relaxed">{t.memory.quoteSetupHint}</p>
 
-      <div className="flex flex-col gap-5">
-        <div>
-          <SubLabel>{t.quote.setupRate}</SubLabel>
-          {/* No rate helper here: researching a rate is a thing a quote does
+      {/* One at a time, all closed. Five sections open at once is the long
+          scroll the tabs were meant to end, one level further in. Each row
+          says what it holds, which is enough to find the one you came for. */}
+      <div className="flex flex-col">
+        <Section id="rate" open={open} onToggle={setOpen} label={t.quote.setupRate}>
+          {/* No rate helper here: researching a rate is something a quote does
               with a market and a brief in front of it, not a preference. */}
           <RateBody
             draft={draft}
@@ -132,10 +138,9 @@ export function QuoteSetupCard({
             rateHelpOpen={false}
             setRateHelpOpen={() => {}}
           />
-        </div>
+        </Section>
 
-        <div className="pt-5 border-t border-line">
-          <SubLabel>{t.quote.expertise}</SubLabel>
+        <Section id="level" open={open} onToggle={setOpen} label={t.quote.expertise}>
           <div className="flex flex-wrap gap-1.5">
             {(["Junior", "Mid-level", "Senior", "Expert"] as const).map((level) => (
               <Chip
@@ -153,15 +158,13 @@ export function QuoteSetupCard({
           <p className="text-caption text-text-muted mt-1.5 mb-0">
             {readLevel ? t.quote.expertiseRead.replace("{level}", readLevel) : t.quote.expertiseHint}
           </p>
-        </div>
+        </Section>
 
-        <div className="pt-5 border-t border-line">
-          <SubLabel>{t.quote.setupPayment}</SubLabel>
+        <Section id="payment" open={open} onToggle={setOpen} label={t.quote.setupPayment}>
           <PaymentBody draft={draft} setDraft={setDraft} />
-        </div>
+        </Section>
 
-        <div className="pt-5 border-t border-line">
-          <SubLabel>{t.quote.setupSections}</SubLabel>
+        <Section id="sections" open={open} onToggle={setOpen} label={t.quote.setupSections}>
           <SectionsBody
             draft={draft}
             setDraft={setDraft}
@@ -170,15 +173,59 @@ export function QuoteSetupCard({
             availabilityNote={availabilityNote}
             setAvailabilityNote={setAvailabilityNote}
           />
-        </div>
+        </Section>
 
-        <div className="pt-5 border-t border-line">
-          <SubLabel>{t.quote.setupPresentation}</SubLabel>
+        <Section
+          id="presentation"
+          open={open}
+          onToggle={setOpen}
+          label={t.quote.setupPresentation}
+        >
           <PresentationBody draft={draft} setDraft={setDraft} hasBrand={hasBrand} />
-        </div>
+        </Section>
 
-        {children && <div className="pt-5 border-t border-line">{children}</div>}
+        {children && (
+          <Section id="language" open={open} onToggle={setOpen} label={t.quote.quoteLanguage}>
+            {children}
+          </Section>
+        )}
       </div>
     </Card>
+  );
+}
+
+/** One collapsible section. The label is the whole closed state, which is the
+ * point: six short rows are scannable, six open panels are not. */
+function Section({
+  id,
+  label,
+  open,
+  onToggle,
+  children,
+}: {
+  id: string;
+  label: string;
+  open: string | null;
+  onToggle: (next: string | null) => void;
+  children: ReactNode;
+}) {
+  const isOpen = open === id;
+  return (
+    <div className="border-t border-line first:border-t-0">
+      <button
+        type="button"
+        onClick={() => onToggle(isOpen ? null : id)}
+        aria-expanded={isOpen}
+        className="w-full flex items-center justify-between gap-3 text-left bg-none border-none cursor-pointer px-0 py-3 hover:text-violet transition-colors"
+      >
+        <span className="font-body font-semibold text-small text-ink">{label}</span>
+        {isOpen ? (
+          <ChevronDown size={14} className="text-text-muted shrink-0" />
+        ) : (
+          <ChevronRight size={14} className="text-text-muted shrink-0" />
+        )}
+      </button>
+      {isOpen && <div className="pb-4">{children}</div>}
+    </div>
   );
 }

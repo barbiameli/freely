@@ -419,8 +419,10 @@ export const es: Dictionary = {
   memory: {
     groupYou: "Tu",
     groupYouHint: "Quien eres y como trabajas. Los presupuestos se escriben con esto.",
+    groupVoice: "Voz",
+    groupVoiceHint: "Como escribe. Se aplica a cada presupuesto.",
     groupQuotes: "Tus presupuestos",
-    groupQuotesHint: "Como se leen, que incluyen y que recibe el cliente.",
+    groupQuotesHint: "Con lo que empieza cada presupuesto y como llega.",
     groupSources: "De donde aprende",
     groupSourcesHint: "Archivos, enlaces y herramientas conectadas que lee antes de escribir.",
     quoteSetup: "Configuracion del presupuesto",
