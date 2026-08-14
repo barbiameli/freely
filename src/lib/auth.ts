@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { isAdminEmail } from "@/lib/session";
 
 const googleEnabled = Boolean(
   process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
@@ -90,6 +91,13 @@ export const authOptions: AuthOptions = {
           session.user.name = dbUser.name;
           session.user.studioName = dbUser.studioName;
           session.user.email = dbUser.email;
+          // Whether this account may see the product's own dashboard. On the
+          // session rather than passed down as a prop, because Topbar is
+          // rendered from fourteen places and threading a boolean through all
+          // of them to show one menu item is not a trade worth making. The
+          // page checks again on the server: this only decides whether a link
+          // is drawn.
+          (session.user as { isAdmin?: boolean }).isAdmin = isAdminEmail(dbUser.email);
         }
       }
       return session;

@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useT } from "@/lib/i18n/context";
 import { LanguageSwitcher } from "@/components/language-switcher";
-import { Settings, Users, LogOut } from "lucide-react";
+import { Settings, Users, LogOut, BarChart3 } from "lucide-react";
 
 function initialsFor(name?: string | null, email?: string | null): string {
   if (name?.trim()) {
@@ -85,6 +85,19 @@ export function Topbar() {
               <Users size={14} className="text-slate" />
               {t.nav.team}
             </Link>
+            {/* Only for whoever ADMIN_EMAIL names. Without this the page could
+                only be reached by typing the address, which is a page nobody
+                opens. Not in the sidebar: it is not part of anybody's work. */}
+            {(session?.user as { isAdmin?: boolean } | undefined)?.isAdmin && (
+              <Link
+                href="/insights"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 px-3.5 py-2.5 text-small text-ink hover:bg-paper"
+              >
+                <BarChart3 size={14} className="text-slate" />
+                {t.nav.insights}
+              </Link>
+            )}
 
             <button
               type="button"

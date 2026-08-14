@@ -54,6 +54,7 @@ export const es: Dictionary = {
     memory: "Memoria",
     team: "Equipo",
     account: "Cuenta",
+    insights: "Metricas",
     signOut: "Cerrar sesión",
     language: "Idioma",
   },

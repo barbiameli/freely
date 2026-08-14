@@ -45,6 +45,7 @@ export const en = {
     memory: "Memory",
     team: "Team",
     account: "Account",
+    insights: "Insights",
     signOut: "Sign out",
     language: "Language",
   },

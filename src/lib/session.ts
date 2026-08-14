@@ -24,3 +24,14 @@ export async function requireFullUser() {
   if (!user) redirect("/signin");
   return user;
 }
+
+/**
+ * Whether this is the account that may see the product's own dashboard.
+ *
+ * Read from ADMIN_EMAIL on the server. Unset means nobody, which is the right
+ * default for a page that shows what every account is doing.
+ */
+export function isAdminEmail(email: string): boolean {
+  const admin = process.env.ADMIN_EMAIL;
+  return Boolean(admin && email.toLowerCase() === admin.toLowerCase());
+}
