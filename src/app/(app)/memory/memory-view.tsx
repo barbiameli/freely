@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Trash2, PenTool, Link2, Sparkles, Pencil, Upload, FileText, CheckCircle2 } from "lucide-react";
+import { Trash2, PenTool, Link2, Sparkles, Pencil, Upload, FileText, CheckCircle2, CalendarDays } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { Label, SubLabel } from "@/components/ui/label";
@@ -901,6 +901,18 @@ const PROVIDER_LABEL: Record<Provider, string> = {
   FIGMA: "Figma",
   NOTION: "Notion",
   GITHUB: "GitHub",
+  GOOGLE_CALENDAR: "Google Calendar",
+};
+
+/**
+ * Where connecting starts, for the ones that are actually built.
+ *
+ * A provider with no URL here renders as "coming soon" rather than as a button
+ * that goes nowhere, which is what the other three have been doing.
+ */
+const CONNECT_URL: Partial<Record<Provider, string>> = {
+  FIGMA: "/api/connect/figma/start",
+  GOOGLE_CALENDAR: "/api/connect/google-calendar/start",
 };
 
 function ConnectorsCard({ connections }: { connections: ConnectionInfo[] }) {
@@ -914,6 +926,14 @@ function ConnectorsCard({ connections }: { connections: ConnectionInfo[] }) {
         <ConnectorRow provider="FIGMA" icon={<PenTool size={16} />} info={connected.get("FIGMA")} />
         <ConnectorRow provider="NOTION" icon={<Link2 size={16} />} info={connected.get("NOTION")} />
         <ConnectorRow provider="GITHUB" icon={<Link2 size={16} />} info={connected.get("GITHUB")} />
+        {/* The one that writes rather than reads, so its line says what it
+            does with the permission before it is granted. */}
+        <ConnectorRow
+          provider="GOOGLE_CALENDAR"
+          icon={<CalendarDays size={16} />}
+          info={connected.get("GOOGLE_CALENDAR")}
+          hint={t.memory.calendarHint}
+        />
       </div>
     </Card>
   );
@@ -923,10 +943,13 @@ function ConnectorRow({
   provider,
   icon,
   info,
+  hint,
 }: {
   provider: Provider;
   icon: React.ReactNode;
   info?: ConnectionInfo;
+  /** What this one does with the access, for anything that writes. */
+  hint?: string;
 }) {
   const t = useT();
   const [working, setWorking] = useState(false);
@@ -940,14 +963,18 @@ function ConnectorRow({
         <div>
           <div className="flex items-center gap-1.5">
             <span className="font-body font-semibold text-sm text-ink">{PROVIDER_LABEL[provider]}</span>
-            {!info && (
+            {!info && !CONNECT_URL[provider] && (
               <span className="font-body font-semibold text-caption uppercase tracking-wide text-text-muted bg-white border border-line rounded-full px-2 py-0.5">
                 {t.memory.comingSoon}
               </span>
             )}
           </div>
           <div className="text-xs text-text-muted">
-            {info ? `Connected${info.accountLabel ? ` as ${info.accountLabel}` : ""}` : "Not connected"}
+            {info
+              ? info.accountLabel
+                ? t.memory.connectedAs.replace("{account}", info.accountLabel)
+                : t.memory.connected
+              : hint ?? t.memory.notConnected}
           </div>
         </div>
       </div>
@@ -964,6 +991,12 @@ function ConnectorRow({
         >
           {t.memory.disconnect}
         </Button>
+      ) : CONNECT_URL[provider] ? (
+        // A link rather than a button with an onClick: this leaves the app for
+        // an OAuth screen, and a plain navigation is what that is.
+        <a href={CONNECT_URL[provider]} className="no-underline">
+          <Button variant="ghost">{t.memory.connect}</Button>
+        </a>
       ) : (
         <Button variant="ghost" disabled>
           {t.memory.comingSoon}

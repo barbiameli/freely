@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { syncProject } from "@/lib/calendar-sync";
 import { prisma } from "@/lib/prisma";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
@@ -90,7 +91,7 @@ export async function scheduleProjectAction(
   startDateISO: string,
   dueDateISO?: string
 ): Promise<ActionResult<undefined>> {
-  const { project } = await ownedProject(projectId);
+  const { user, project } = await ownedProject(projectId);
   if (!project) return { ok: false, error: "That project no longer exists." };
 
   const startDate = new Date(startDateISO);
@@ -132,6 +133,10 @@ export async function scheduleProjectAction(
     ),
   ]);
 
+  // After the write, never before: an event for a change that then failed to
+  // save is a wrong date in somebody's calendar, which is worse than none.
+  await syncProject(user.id, projectId);
+
   revalidatePath(`/track/${projectId}`);
   revalidatePath("/track");
   return { ok: true, data: undefined };
@@ -149,6 +154,7 @@ export async function setDeliverableDueAction(
   if (dueAt && Number.isNaN(dueAt.getTime())) return { ok: false, error: "That date isn't valid." };
 
   await deliverableDb.update({ where: { id: deliverableId }, data: { dueAt } });
+  await syncProject(deliverable.project.userId, deliverable.projectId);
   revalidatePath(`/track/${deliverable.projectId}`);
   return { ok: true, data: undefined };
 }

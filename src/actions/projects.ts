@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { syncProject, removeProjectEvents } from "@/lib/calendar-sync";
 import { prisma } from "@/lib/prisma";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
@@ -117,6 +118,10 @@ export async function toggleDeliverableAction(
     },
   });
 
+  // Finished work loses its event, so the calendar is not full of deadlines
+  // that were already met.
+  await syncProject(user.id, projectId);
+
   revalidatePath(`/track/${projectId}`);
   revalidatePath("/track");
   return { ok: true, data: undefined };
@@ -152,6 +157,9 @@ export async function deleteProjectAction(projectId: string): Promise<ActionResu
   });
   if (!project) return { ok: false, error: "Project not found." };
 
+  // Before the delete: the event ids live on rows that are about to stop
+  // existing, and an orphaned event is one nobody can find to remove.
+  await removeProjectEvents(user.id, projectId);
   await prisma.project.delete({ where: { id: projectId } });
 
   revalidatePath("/track");

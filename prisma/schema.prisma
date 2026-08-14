@@ -217,6 +217,12 @@ enum ConnectionProvider {
   FIGMA
   NOTION
   GITHUB
+  // Calendar only. Signing in with Google does not grant this and must not:
+  // reading somebody's identity and writing to their calendar are different
+  // permissions and they are asked for at different moments, because "let me
+  // put your deadlines in your calendar" is a sentence that deserves its own
+  // yes.
+  GOOGLE_CALENDAR
 }
 
 model Connection {
@@ -542,6 +548,12 @@ model Deliverable {
   // Cleared when something is unticked, so a correction does not leave a
   // completion date on unfinished work.
   doneAt    DateTime?
+  // The Google Calendar event this became, if the freelancer connected one.
+  //
+  // Stored so a date change updates the event that exists rather than creating
+  // a second one, and so deleting the work can delete the event. Null means
+  // there is no event, which is the normal case.
+  calendarEventId String?
   // The same deliverable said in plain language, for the client's page.
   // "Swap font from Inter to Sohne across all 13 text styles" is a task; a
   // client is buying "the brand typeface applied everywhere". Written once and
