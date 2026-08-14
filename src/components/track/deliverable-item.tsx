@@ -47,6 +47,9 @@ export interface DeliverableView {
   /** When it was ticked off. Null on anything finished before this was
    * recorded, so nothing depends on it being there. */
   doneAt?: string | null;
+  /** The same thing said for the client, when the project's page is set to
+   * plain language. Null until it has been written. */
+  clientName?: string | null;
   /** Which milestone covers it, null when the project has none. */
   milestoneId?: string | null;
   steps: StepView[];

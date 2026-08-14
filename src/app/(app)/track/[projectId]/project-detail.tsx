@@ -172,6 +172,7 @@ export function ProjectDetail({
   projectList,
   billing,
   milestones: quotedMilestones = [],
+  plainLanguage = false,
 }: {
   project: Project;
   projectList: ProjectSummary[];
@@ -184,6 +185,8 @@ export function ProjectDetail({
    * agreed to, so the tracker shows it rather than offering to rearrange it.
    */
   milestones?: MilestoneView[];
+  /** Whether the client's page is written in plain language. */
+  plainLanguage?: boolean;
 }) {
   const router = useRouter();
   const t = useT();
@@ -289,7 +292,9 @@ export function ProjectDetail({
               source={{
                 deliverables: project.deliverables.map((d) => ({
                   id: d.id,
-                  name: d.name,
+                  // The client's wording where there is one, so an update and
+                  // the page it lands on do not read as two different projects.
+                  name: plainLanguage ? d.clientName || d.name : d.name,
                   done: d.done,
                 })),
                 questions: project.deliverables

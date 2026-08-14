@@ -4,6 +4,7 @@ import { currencySymbol } from "@/lib/currencies";
 import type { SectionNotes } from "@/lib/quote-prompts";
 import type { Locale } from "@/lib/i18n/types";
 import { dict } from "@/lib/i18n";
+import { sanitizeText } from "@/lib/sanitize-text";
 import {
   priceFor,
   rateSuffix,
@@ -1044,4 +1045,68 @@ export function parseBreakdownResponse(text: string): DeliverableBreakdown {
     throw new Error(`Breakdown failed validation: ${result.error.message}`);
   }
   return result.data;
+}
+
+export const plainNamesSchema = z.object({
+  names: z.array(z.string()),
+});
+
+/**
+ * The deliverables, said the way a client would say them.
+ *
+ * The tracker's names are written for the person doing the work: "Swap font
+ * from Inter to Sohne across all 13 text styles" is a task with a definition of
+ * done in it. A client reading their own project page is not managing that
+ * task, they are buying an outcome, and the task version reads like somebody
+ * else's to-do list left on their desk.
+ *
+ * Rewritten rather than summarised: one line in, one line out, same order, same
+ * count. The mapping has to survive so a name can be traced back to the
+ * deliverable it belongs to, which is also why the count is checked rather than
+ * trusted.
+ *
+ * Written once and then editable, so a correction is never overwritten by a
+ * regeneration.
+ */
+export async function plainDeliverableNames(
+  names: string[],
+  language: Locale = "en"
+): Promise<string[]> {
+  if (names.length === 0) return [];
+
+  const system = [
+    "You rewrite a freelancer's internal task names as short lines a client can read on their project page.",
+    "Keep the meaning and the outcome. Drop tool names, file names, counts of internal objects, and anything that only makes sense to the person doing the work.",
+    "Say what the client gets, not what was done to achieve it. \"Swap font from Inter to Sohne across all 13 text styles\" becomes \"Brand typeface applied across the whole design\".",
+    "Each line is under 60 characters, sentence case, no trailing full stop, no jargon, no marketing language, no em dashes.",
+    "Do not invent work that is not in the input, do not merge two inputs into one line, and do not drop any.",
+    language === "es"
+      ? 'Write them in Spanish, neutral between Latin America and Spain, addressing the client as "tú" rather than "usted".'
+      : "Write them in English.",
+    'Respond with ONLY valid JSON, no markdown fences, matching exactly: {"names": string[]}',
+  ].join(" ");
+
+  const user = `Rewrite each of these ${names.length} lines, in the same order:\n${names
+    .map((n, i) => `${i + 1}. ${n}`)
+    .join("\n")}`;
+
+  const text = await callClaude(system, user);
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  const cleaned = (jsonMatch ? jsonMatch[0] : text)
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
+  try {
+    const parsed = plainNamesSchema.safeParse(JSON.parse(cleaned));
+    // A short list would silently mis-map every name after the gap, so a
+    // mismatch is a failure rather than something to pad out.
+    if (parsed.success && parsed.data.names.length === names.length) {
+      // Through the same sanitiser as generated quote text, so the house rules
+      // about dashes and contrastive phrasing hold here too.
+      return parsed.data.names.map((n) => sanitizeText(n).trim());
+    }
+  } catch {
+    // Falls through.
+  }
+  throw new Error("Couldn't rewrite those in plain language. Try again.");
 }

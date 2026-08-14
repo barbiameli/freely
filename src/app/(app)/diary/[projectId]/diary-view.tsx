@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ActionError } from "@/components/ui/action-error";
 import { StatRow } from "@/components/track/stat-row";
 import { DeliverableItem, type DeliverableView } from "@/components/track/deliverable-item";
+import { RegisterToggle } from "@/components/diary/register-toggle";
 import { useAction } from "@/lib/use-action";
 import { addDiaryEntryAction, setPublishedAction } from "@/actions/diary";
 import { statusLabel, STATUS_TEXT } from "@/lib/project-status";
@@ -34,6 +35,8 @@ interface Project {
   published: boolean;
   publicSlug: string;
   deliverables: DeliverableView[];
+  /** Which register the client's page is written in. */
+  plainLanguage?: boolean;
   diaryEntries: Entry[];
 }
 
@@ -264,6 +267,19 @@ export function DiaryView({
                 ))}
               </div>
             )}
+            {/* Under the list it is about, so the two versions of the same
+                names sit next to each other and a bad rewrite is obvious. */}
+            <RegisterToggle
+              projectId={project.id}
+              plainLanguage={project.plainLanguage ?? false}
+              lines={project.deliverables.map((d) => ({
+                id: d.id,
+                name: d.name,
+                clientName: d.clientName ?? null,
+                done: d.done,
+              }))}
+            />
+
             <Link
               href={`/track/${project.id}`}
               className="inline-block text-caption font-semibold text-violet no-underline mt-3"

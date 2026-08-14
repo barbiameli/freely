@@ -47,6 +47,10 @@ export default async function DiaryProjectPage({ params }: { params: { projectId
         status: project.status,
         published: project.published,
         publicSlug: project.publicSlug,
+        // Cast: both columns are newer than the generated Prisma client here.
+        plainLanguage: Boolean(
+          (project as unknown as { plainLanguage?: boolean }).plainLanguage
+        ),
         deliverables: deliverables.map((d) => ({
           id: d.id,
           name: d.name,
@@ -55,6 +59,8 @@ export default async function DiaryProjectPage({ params }: { params: { projectId
           summary: d.summary,
           brokenDown: Boolean(d.brokenDownAt),
           invoicedAt: d.invoicedAt?.toISOString() ?? null,
+          clientName:
+            (d as unknown as { clientName?: string | null }).clientName ?? null,
           steps: (d.steps ?? []).map((s) => ({
             id: s.id,
             name: s.name,

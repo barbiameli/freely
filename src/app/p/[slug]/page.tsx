@@ -49,6 +49,10 @@ export default async function PublicProjectPage({ params }: { params: { slug: st
   const t = dict(quoteLanguage);
   const q = t.publicPage;
 
+  // Cast: this column is newer than the generated Prisma client here.
+  const plainLanguage = Boolean(
+    (project as unknown as { plainLanguage?: boolean }).plainLanguage
+  );
   const done = project.deliverables.filter((d) => d.done).length;
   const total = project.deliverables.length;
   const primary = project.user.brandPrimaryColor || "#F45B69";
@@ -134,12 +138,19 @@ export default async function PublicProjectPage({ params }: { params: { slug: st
                       >
                         {d.done ? "✓" : ""}
                       </span>
+                      {/* The plain version when the project is set to it, the
+                          tracker's own wording when it is not. Falls back to
+                          the name either way, so a line that was never
+                          rewritten still appears rather than vanishing. */}
                       <span
                         className={`text-small leading-relaxed ${
                           d.done ? "text-text-muted line-through" : "text-slate"
                         }`}
                       >
-                        {d.name}
+                        {plainLanguage
+                          ? (d as unknown as { clientName?: string | null }).clientName ||
+                            d.name
+                          : d.name}
                       </span>
                     </li>
                   ))}

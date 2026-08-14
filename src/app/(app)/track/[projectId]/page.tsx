@@ -65,6 +65,9 @@ export default async function ProjectPage({ params }: { params: { projectId: str
       // wins over reading the payment terms. Detection is the fallback for
       // everything quoted before milestones existed.
       billing={milestones.length ? "PER_MILESTONE" : detected.mode}
+      plainLanguage={Boolean(
+        (project as unknown as { plainLanguage?: boolean }).plainLanguage
+      )}
       milestones={milestones.map((ms) => ({
         id: ms.id,
         name: ms.name,
@@ -96,6 +99,8 @@ export default async function ProjectPage({ params }: { params: { projectId: str
           // When it was ticked, so the timeline can tell "4 of 6 done" from
           // "you finished three of those today". Cast because this column is
           // newer than the generated Prisma client here.
+          clientName:
+            (d as unknown as { clientName?: string | null }).clientName ?? null,
           doneAt:
             (d as unknown as { doneAt?: Date | null }).doneAt?.toISOString() ?? null,
           milestoneId: d.milestoneId ?? null,
