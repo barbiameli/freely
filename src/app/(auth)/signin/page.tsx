@@ -74,7 +74,14 @@ export default function SignInPage() {
             </Button>
           </>
         )}
+        {/* Under the form rather than beside the password field, so it is
+            found when it is wanted and ignored when it is not. */}
         <p className="text-xs text-text-muted mt-5">
+          <Link href="/forgot" className="text-violet font-semibold">
+            {t.auth.forgotPassword}
+          </Link>
+        </p>
+        <p className="text-xs text-text-muted mt-2">
           {t.auth.firstTimeHere}{" "}
           <Link href="/signup" className="text-violet font-semibold">
             {t.auth.createYourAccount}

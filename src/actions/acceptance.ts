@@ -115,7 +115,8 @@ export async function acceptQuoteAction(
     const amount = brief.price
       ? `${currencySymbol(brief.currency)}${brief.price.toLocaleString()}`
       : "";
-    await send({
+    await send(
+      {
       to: owner.email,
       subject: `${cleanName} accepted your quote`,
       lines: [
@@ -125,7 +126,10 @@ export async function acceptQuoteAction(
           .join(" · "),
       ],
       action: { label: "Open the quote", url: `${appUrl()}/quote/${brief.id}` },
-    });
+    },
+    // Logged against the brief, so "did they get told" has an answer on the
+    // one path where the freelancer is waiting for news.
+    { kind: "QUOTE_ACCEPTED", userId: brief.userId, subjectId: brief.id });
   }
 
   revalidatePath(`/q/${publicSlug}`);

@@ -152,6 +152,8 @@ model User {
 
   briefs      Brief[]
   projects    Project[]
+  passwordResets PasswordReset[]
+  emails         EmailLog[]
   assets      MemoryAsset[]
   connections Connection[]
   invoices    Invoice[]
@@ -585,4 +587,93 @@ model DiaryEntry {
   createdAt     DateTime @default(now())
 
   @@index([projectId])
+}
+
+
+ // A password reset in progress.
+ //
+ // The token is stored hashed, never in the clear. Anyone with read access to
+ // this table, including a leaked backup, would otherwise be able to take over
+ // every account with a reset outstanding, which is a worse position than
+ // storing passwords badly.
+ //
+ // Rows are kept after use rather than deleted, so a used token can be told
+ // apart from one that never existed, and so a burst of requests is visible.
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// SHA-256 of the token that was emailed. The plaintext exists only in that
+  /// one email and in the URL the person clicks.
+  tokenHash String   @unique
+  expiresAt DateTime
+  /// Set the moment it is spent. A reset link is single use: an email sitting
+  /// in an inbox for a year must not still open the account.
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  /// Kept to spot somebody hammering the form, not to identify anybody.
+  requestIp String?
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+ // Every email the app has tried to send.
+ //
+ // Three jobs, and the first is the reason it exists: a nudge that has already
+ // been sent must not be sent again, and without a record the only way to know
+ // is to guess from the state that triggered it.
+ //
+ // It also makes a failure visible. Sending is best effort by design, so a
+ // bounced or rejected message otherwise disappears silently and the freelancer
+ // is left wondering why a client never replied.
+ //
+ // And it answers "did that actually go out", which is the question every
+ // support conversation about email starts with.
+ //
+ // No body is stored. Knowing that a reset email was sent is operations; keeping
+ // its contents is keeping a copy of somebody's mail.
+model EmailLog {
+  id        String      @id @default(cuid())
+  /// Null for mail to somebody who is not a user, such as a client accepting a
+  /// quote.
+  userId    String?
+  user      User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  to        String
+  kind      EmailKind
+  subject   String
+  status    EmailStatus @default(SENT)
+  /// Why it failed, when it did. Provider wording, kept for diagnosis.
+  error     String?     @db.Text
+  /// What it was about, so a nudge can find its own last send without
+  /// scanning subjects. A brief id, a project id, or null.
+  subjectId String?
+  createdAt DateTime    @default(now())
+
+  @@index([userId, kind, createdAt])
+  @@index([subjectId])
+}
+
+enum EmailStatus {
+  SENT
+  FAILED
+  /// Configured off, so nothing was attempted. Recorded rather than dropped:
+  /// "no key set" and "we never tried" look identical afterwards otherwise.
+  SKIPPED
+}
+
+ // What an email is for.
+ //
+ // The distinction that matters is transactional against marketing, because only
+ // one of them is allowed to be sent to somebody who has opted out. Everything
+ // up to and including NUDGE_* is transactional: it is about work this person is
+ // doing and money they are owed.
+enum EmailKind {
+  PASSWORD_RESET
+  QUOTE_ACCEPTED
+  TEAM_INVITE
+  NUDGE_TRACK_QUOTE
+  NUDGE_DUE_SOON
+  NUDGE_OVERDUE
+  MARKETING
 }

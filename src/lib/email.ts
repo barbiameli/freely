@@ -1,3 +1,6 @@
+import { emailDb } from "@/lib/mail-db";
+import type { EmailKind } from "@/lib/email-kinds";
+
 /**
  * Sending email, over Resend's REST API.
  *
@@ -71,8 +74,57 @@ function escape(text: string): string {
 
 let warnedAboutMissingKey = false;
 
+/**
+ * What this message is about, so it can be found again.
+ *
+ * Every send is recorded. Three things need that record and none of them can be
+ * reconstructed afterwards: a nudge has to know it has already been sent, a
+ * failure has to be visible rather than silent, and "did that go out" has to
+ * have an answer.
+ *
+ * No body is stored. Knowing a reset email was sent is operations; keeping its
+ * contents is keeping a copy of somebody's mail.
+ */
+export interface SendContext {
+  kind: EmailKind;
+  userId?: string;
+  /** A brief or project id, so a nudge can find its own last send without
+   * scanning subject lines. */
+  subjectId?: string;
+}
+
+async function record(
+  email: Email,
+  context: SendContext | undefined,
+  status: "SENT" | "FAILED" | "SKIPPED",
+  error?: string
+): Promise<void> {
+  if (!context) return;
+  try {
+    await emailDb.create({
+      data: {
+        to: email.to,
+        kind: context.kind,
+        subject: email.subject,
+        status,
+        userId: context.userId ?? null,
+        subjectId: context.subjectId ?? null,
+        error: error?.slice(0, 500) ?? null,
+      },
+    });
+  } catch (err) {
+    // The log failing must not fail the send. A missing row is a gap in the
+    // record; a thrown error here would be a client seeing an error because a
+    // logging table was unhappy.
+    console.error("[email] could not log", err);
+  }
+}
+
 /** Sends, or explains in the log why it did not. Never throws. */
-export async function send(email: Email): Promise<{ sent: boolean; reason?: string }> {
+export async function send(
+  email: Email,
+  context?: SendContext
+): Promise<{ sent: boolean; reason?: string }> {
   const key = process.env.RESEND_API_KEY;
   if (!key) {
     if (!warnedAboutMissingKey) {
@@ -81,6 +133,9 @@ export async function send(email: Email): Promise<{ sent: boolean; reason?: stri
         "[email] RESEND_API_KEY is not set, so notifications are off. Everything else works."
       );
     }
+    // Recorded rather than dropped: afterwards, "not configured" and "we never
+    // tried" look identical otherwise.
+    await record(email, context, "SKIPPED", "no api key");
     return { sent: false, reason: "no api key" };
   }
 
@@ -103,11 +158,38 @@ export async function send(email: Email): Promise<{ sent: boolean; reason?: stri
     if (!res.ok) {
       const body = await res.text().catch(() => "");
       console.error("[email] send failed", res.status, body.slice(0, 300));
+      await record(email, context, "FAILED", `http ${res.status}: ${body.slice(0, 200)}`);
       return { sent: false, reason: `http ${res.status}` };
     }
+    await record(email, context, "SENT");
     return { sent: true };
   } catch (err) {
     console.error("[email] send threw", err);
+    await record(email, context, "FAILED", err instanceof Error ? err.message : "network");
     return { sent: false, reason: "network" };
   }
+}
+
+/**
+ * When this kind of message was last sent to this person.
+ *
+ * The whole reason for the log. A nudge that cannot see its own history sends
+ * itself every time the cron runs.
+ */
+export async function lastSentAt(
+  userId: string,
+  kind: EmailKind,
+  subjectId?: string
+): Promise<Date | null> {
+  const last = await emailDb.findFirst({
+    where: {
+      userId,
+      kind,
+      status: "SENT",
+      ...(subjectId ? { subjectId } : {}),
+    },
+    orderBy: { createdAt: "desc" },
+    select: { createdAt: true },
+  });
+  return last?.createdAt ?? null;
 }
