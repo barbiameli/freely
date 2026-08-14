@@ -144,6 +144,37 @@ model User {
   inferredExpertise  String?
   inferredExpertiseAt DateTime?
 
+  // Consent to marketing email, and the evidence for it.
+  //
+  // Three columns rather than one boolean, because consent is a claim you have
+  // to be able to support: what they agreed to, when, and where they were when
+  // they agreed. A lone true/false cannot answer any question anybody would
+  // actually ask about it.
+  //
+  // Defaults to false and is never set by anything other than somebody ticking
+  // a box themselves. A pre-ticked box is not consent.
+  marketingOptIn     Boolean  @default(false)
+  marketingOptInAt   DateTime?
+  // Where it was given: "signup", "account". Free text rather than an enum
+  // because it is a record of history and history keeps happening.
+  marketingOptInSource String?
+  // Lets somebody unsubscribe from a link without signing in, which is the
+  // only kind of unsubscribe that is any use: the whole point is that they do
+  // not want to deal with you. Nullable so it only exists once needed, and
+  // rotated on unsubscribe so an old email cannot resubscribe anybody.
+  unsubscribeToken   String?  @unique
+
+  // Whether the nudges are wanted.
+  //
+  // Separate from marketing consent and defaulted on, because these are about
+  // this person's own work and their own money: a quote sitting untracked, a
+  // deliverable past its date. Turning them off is one switch and it is not
+  // buried.
+  nudgeEmails        Boolean  @default(true)
+  // When a nudge was last sent, whatever kind. One a day at most, and the log
+  // could answer this, but a column keeps the daily cap off a table scan.
+  lastNudgeAt        DateTime?
+
   // A user either owns a team (TeamOwner) or belongs to one as a member
   // (TeamMember, via teamId). Solo users have neither set.
   ownedTeam Team?   @relation("TeamOwner")

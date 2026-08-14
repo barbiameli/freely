@@ -575,6 +575,10 @@ export const en = {
   },
 
   account: {
+    emailsTitle: "Emails",
+    nudgesLabel: "Remind me about my own work",
+    nudgesHint: "One a day at most, on weekdays. A signed quote not yet tracked, or something past its date.",
+    alwaysSent: "Password resets and a client signing your quote always come through.",
     basicInfoOnly: "Nothing here is shared with clients. Branding and quoting preferences live in Memory.",
     updated: "Updated",
     deleteWarning: "Permanently deletes your account, quotes, projects and everything saved to Memory.",
@@ -683,6 +687,11 @@ export const en = {
   },
 
   auth: {
+    unsubscribedTitle: "You are unsubscribed",
+    unsubscribedBody: "No more product news. Emails about your own work, like a password reset or a signed quote, still come through.",
+    backToFreely: "Back to Freely",
+    marketingOptIn: "Send me occasional product news",
+    marketingOptInHint: "A few times a year. Unsubscribe from any of them.",
     forgotPassword: "Forgot your password?",
     forgotTitle: "Reset your password",
     forgotBody: "Enter the address you signed up with and a link is on its way.",

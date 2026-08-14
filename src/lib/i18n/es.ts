@@ -573,6 +573,10 @@ export const es: Dictionary = {
   },
 
   account: {
+    emailsTitle: "Correos",
+    nudgesLabel: "Recuerdame lo mio",
+    nudgesHint: "Uno al dia como mucho, entre semana. Un presupuesto firmado sin trackear, o algo fuera de plazo.",
+    alwaysSent: "Los de recuperar contrasena y los de un cliente firmando siempre llegan.",
     basicInfoOnly: "Nada de esto se comparte con los clientes. La marca y las preferencias de presupuesto están en Memoria.",
     updated: "Actualizado",
     deleteWarning: "Elimina para siempre tu cuenta, tus presupuestos, tus proyectos y todo lo guardado en Memoria.",
@@ -676,6 +680,11 @@ export const es: Dictionary = {
   },
 
   auth: {
+    unsubscribedTitle: "Te has dado de baja",
+    unsubscribedBody: "No mas novedades del producto. Los correos sobre tu trabajo, como recuperar la contrasena o un presupuesto firmado, siguen llegando.",
+    backToFreely: "Volver a Freely",
+    marketingOptIn: "Mandame novedades del producto de vez en cuando",
+    marketingOptInHint: "Unas pocas veces al ano. Te puedes dar de baja en cualquiera.",
     forgotPassword: "Olvidaste tu contrasena?",
     forgotTitle: "Recupera tu contrasena",
     forgotBody: "Pon el correo con el que te registraste y te mandamos un enlace.",

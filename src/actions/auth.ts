@@ -1,6 +1,7 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+import { grant, newUnsubscribeToken } from "@/lib/marketing";
 import { prisma } from "@/lib/prisma";
 
 export type SignUpResult = { ok: true } | { ok: false; error: string };
@@ -17,6 +18,11 @@ export async function signUpAction(formData: FormData): Promise<SignUpResult> {
   const password = String(formData.get("password") || "");
   const name = String(formData.get("name") || "").trim();
   const studioName = String(formData.get("studioName") || "").trim();
+  // Only true if they actually ticked it. A checkbox that is not submitted is
+  // absent from the form data, which is exactly the right default here: a
+  // pre-ticked box is not consent, and neither is a missing one read
+  // optimistically.
+  const marketingOptIn = formData.get("marketingOptIn") === "on";
 
   if (!email || !password || !name) {
     return { ok: false, error: "Name, email, and password are required." };
@@ -32,7 +38,17 @@ export async function signUpAction(formData: FormData): Promise<SignUpResult> {
 
   const passwordHash = await bcrypt.hash(password, 12);
   await prisma.user.create({
-    data: { email, passwordHash, name, studioName: studioName || null },
+    data: {
+      email,
+      passwordHash,
+      name,
+      studioName: studioName || null,
+      // Recorded with a time and a place, because consent is a claim that has
+      // to be supportable rather than a boolean somebody has to take on trust.
+      ...((marketingOptIn
+        ? { ...grant("signup"), unsubscribeToken: newUnsubscribeToken() }
+        : {}) as Record<string, unknown>),
+    },
   });
 
   return { ok: true };

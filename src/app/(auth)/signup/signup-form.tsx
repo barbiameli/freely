@@ -16,6 +16,9 @@ export function SignUpForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // Unticked, and it stays unticked unless somebody ticks it. A pre-ticked box
+  // is not consent, whatever the conversion rate says.
+  const [marketing, setMarketing] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -27,6 +30,7 @@ export function SignUpForm() {
     formData.set("studioName", studioName);
     formData.set("email", email);
     formData.set("password", password);
+    if (marketing) formData.set("marketingOptIn", "on");
     const result = await signUpAction(formData);
 
     if (!result.ok) {
@@ -76,6 +80,22 @@ export function SignUpForm() {
       <p className="text-caption text-text-muted -mt-1">
         {t.auth.justEnough}
       </p>
+      {/* Separate from the account, and clearly optional. Nothing about
+          creating an account depends on it. */}
+      <label className="flex items-start gap-2.5 cursor-pointer mt-1">
+        <input
+          type="checkbox"
+          checked={marketing}
+          onChange={(e) => setMarketing(e.target.checked)}
+          className="mt-[3px] accent-violet shrink-0"
+        />
+        <span className="min-w-0">
+          <span className="block text-small text-slate">{t.auth.marketingOptIn}</span>
+          <span className="block text-caption text-text-muted mt-0.5">
+            {t.auth.marketingOptInHint}
+          </span>
+        </span>
+      </label>
       {error && <div className="text-overdue text-xs">{error}</div>}
       <Button
         type="submit"

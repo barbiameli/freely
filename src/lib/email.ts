@@ -1,5 +1,7 @@
+import { prisma } from "@/lib/prisma";
 import { emailDb } from "@/lib/mail-db";
-import type { EmailKind } from "@/lib/email-kinds";
+import { isTransactional, type EmailKind } from "@/lib/email-kinds";
+import { maySend, type ConsentState } from "@/lib/marketing";
 
 /**
  * Sending email, over Resend's REST API.
@@ -125,6 +127,29 @@ export async function send(
   email: Email,
   context?: SendContext
 ): Promise<{ sent: boolean; reason?: string }> {
+  // Consent, checked here rather than at each call site. This is the kind of
+  // rule that gets followed everywhere except the one place somebody was in a
+  // hurry, and the cost of that one place is a complaint to a regulator rather
+  // than a bug report. Transactional mail passes straight through: somebody who
+  // unsubscribed from product news has not asked to stop being told their
+  // password changed.
+  if (context && !isTransactional(context.kind)) {
+    // No select: the consent columns are newer than the generated Prisma
+    // client here, and narrowing to what it knows would return them undefined,
+    // which reads as "not opted in" and would quietly stop all marketing. That
+    // is the safe direction to fail, but failing silently either way is worse
+    // than reading the whole row.
+    const consent = context.userId
+      ? ((await prisma.user.findUnique({
+          where: { id: context.userId },
+        })) as unknown as ConsentState | null)
+      : null;
+    if (!maySend(context.kind, consent)) {
+      await record(email, context, "SKIPPED", "not opted in");
+      return { sent: false, reason: "not opted in" };
+    }
+  }
+
   const key = process.env.RESEND_API_KEY;
   if (!key) {
     if (!warnedAboutMissingKey) {

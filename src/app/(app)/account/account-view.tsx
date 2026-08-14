@@ -9,6 +9,7 @@ import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
 import { Trash2, Save, KeyRound } from "lucide-react";
 import { updateAccountAction, changePasswordAction, deleteAccountAction } from "@/actions/account";
+import { setMarketingOptInAction, setNudgeEmailsAction } from "@/actions/marketing";
 import { useT } from "@/lib/i18n/context";
 
 export function AccountView({
@@ -16,11 +17,17 @@ export function AccountView({
   studioName,
   email,
   hasPassword,
+  nudgeEmails,
+  marketingOptIn,
 }: {
   name: string | null;
   studioName: string | null;
   email: string;
   hasPassword: boolean;
+  /** Reminders about this person's own work. On by default. */
+  nudgeEmails: boolean;
+  /** Product news. Off unless they said yes. */
+  marketingOptIn: boolean;
 }) {
   const t = useT();
   return (
@@ -35,6 +42,7 @@ export function AccountView({
       <div className="flex flex-col gap-5 max-w-lg">
         <BasicInfoCard name={name} studioName={studioName} email={email} />
         <PasswordCard hasPassword={hasPassword} />
+        <EmailSettingsCard nudgeEmails={nudgeEmails} marketingOptIn={marketingOptIn} />
         <DangerZoneCard />
       </div>
     </>
@@ -234,6 +242,77 @@ function DangerZoneCard() {
       >
         {deleting ? "Deleting..." : "Delete my account"}
       </Button>
+    </Card>
+  );
+}
+
+/**
+ * What Freely is allowed to email about.
+ *
+ * Two switches, and keeping them apart is the point. The nudges are about this
+ * person's own work and their own money, so they default on and are turned off
+ * here. Product news is marketing, so it defaults off and only ever goes on
+ * because somebody said yes.
+ *
+ * Saved on the click rather than behind a Save button, because a preference
+ * with a Save button is a preference somebody thinks they changed.
+ *
+ * The line at the bottom is not a disclaimer. Somebody turning both off still
+ * needs a password reset to reach them, and saying so is what stops that being
+ * a surprise later.
+ */
+function EmailSettingsCard({
+  nudgeEmails,
+  marketingOptIn,
+}: {
+  nudgeEmails: boolean;
+  marketingOptIn: boolean;
+}) {
+  const t = useT();
+  const [nudges, setNudges] = useState(nudgeEmails);
+  const [marketing, setMarketing] = useState(marketingOptIn);
+
+  return (
+    <Card>
+      <Label>{t.account.emailsTitle}</Label>
+      <div className="flex flex-col gap-3 mt-3">
+        <label className="flex items-start gap-2.5 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={nudges}
+            onChange={(e) => {
+              setNudges(e.target.checked);
+              void setNudgeEmailsAction(e.target.checked);
+            }}
+            className="mt-[3px] accent-violet shrink-0"
+          />
+          <span className="min-w-0">
+            <span className="block text-small text-ink">{t.account.nudgesLabel}</span>
+            <span className="block text-caption text-text-muted mt-0.5">
+              {t.account.nudgesHint}
+            </span>
+          </span>
+        </label>
+
+        <label className="flex items-start gap-2.5 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={marketing}
+            onChange={(e) => {
+              setMarketing(e.target.checked);
+              void setMarketingOptInAction(e.target.checked);
+            }}
+            className="mt-[3px] accent-violet shrink-0"
+          />
+          <span className="min-w-0">
+            <span className="block text-small text-ink">{t.auth.marketingOptIn}</span>
+            <span className="block text-caption text-text-muted mt-0.5">
+              {t.auth.marketingOptInHint}
+            </span>
+          </span>
+        </label>
+      </div>
+      <p className="text-caption text-text-muted mt-3 mb-0">{t.account.alwaysSent}</p>
     </Card>
   );
 }
