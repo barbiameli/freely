@@ -11,9 +11,15 @@ import { Button } from "@/components/ui/button";
 import { ActionError } from "@/components/ui/action-error";
 import { StatRow } from "@/components/track/stat-row";
 import { DeliverableItem, type DeliverableView } from "@/components/track/deliverable-item";
+import { Pencil, Trash2 } from "lucide-react";
 import { RegisterToggle } from "@/components/diary/register-toggle";
 import { useAction } from "@/lib/use-action";
-import { addDiaryEntryAction, setPublishedAction } from "@/actions/diary";
+import {
+  addDiaryEntryAction,
+  updateDiaryEntryAction,
+  deleteDiaryEntryAction,
+  setPublishedAction,
+} from "@/actions/diary";
 import { statusLabel, STATUS_TEXT } from "@/lib/project-status";
 import { formatDay } from "@/lib/schedule";
 import { UpdateBody } from "@/components/update-body";
@@ -63,7 +69,6 @@ export function DiaryView({
 }) {
   const router = useRouter();
   const t = useT();
-  const locale = useLocale();
   const { run, pending, error } = useAction();
   const [newEntry, setNewEntry] = useState("");
   const [copied, setCopied] = useState(false);
@@ -187,6 +192,21 @@ export function DiaryView({
             <Label>{t.diary.entries}</Label>
             <p className="text-caption text-text-muted mt-1 mb-3">{t.diary.writeUpdate}</p>
 
+            {/* Here, above the entries, rather than at the foot of the tracker
+                card on the right. It changes what the client reads, so it
+                belongs with the other thing that changes what the client reads.
+                Down there it was found by accident, if at all. */}
+            <RegisterToggle
+              projectId={project.id}
+              plainLanguage={project.plainLanguage ?? false}
+              lines={project.deliverables.map((d) => ({
+                id: d.id,
+                name: d.name,
+                clientName: d.clientName ?? null,
+                done: d.done,
+              }))}
+            />
+
             <div className="flex flex-col gap-2">
               <textarea
                 value={newEntry}
@@ -217,31 +237,12 @@ export function DiaryView({
                 <p className="text-small text-text-muted m-0">{t.diary.noEntries}</p>
               ) : (
                 project.diaryEntries.map((entry, i) => (
-                  <div
+                  <EntryRow
                     key={entry.id}
-                    className={`flex gap-3 py-3 ${
-                      i < project.diaryEntries.length - 1 ? "border-b border-line" : ""
-                    }`}
-                  >
-                    <div className="flex flex-col items-center shrink-0 pt-1.5">
-                      <span
-                        className={`w-2 h-2 rounded-full ${i === 0 ? "bg-violet" : "bg-line"}`}
-                      />
-                      {i < project.diaryEntries.length - 1 && (
-                        <span className="w-px flex-1 bg-line mt-1.5" />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-caption text-text-muted">
-                        {formatDay(new Date(entry.date), locale)}
-                      </div>
-                      {/* The same component the client's page uses, so what you
-                          write here and what they read are formatted once. */}
-                      <div className="mt-1">
-                        <UpdateBody text={entry.body} />
-                      </div>
-                    </div>
-                  </div>
+                    entry={entry}
+                    first={i === 0}
+                    last={i === project.diaryEntries.length - 1}
+                  />
                 ))
               )}
             </div>
@@ -267,19 +268,6 @@ export function DiaryView({
                 ))}
               </div>
             )}
-            {/* Under the list it is about, so the two versions of the same
-                names sit next to each other and a bad rewrite is obvious. */}
-            <RegisterToggle
-              projectId={project.id}
-              plainLanguage={project.plainLanguage ?? false}
-              lines={project.deliverables.map((d) => ({
-                id: d.id,
-                name: d.name,
-                clientName: d.clientName ?? null,
-                done: d.done,
-              }))}
-            />
-
             <Link
               href={`/track/${project.id}`}
               className="inline-block text-caption font-semibold text-violet no-underline mt-3"
@@ -288,6 +276,136 @@ export function DiaryView({
             </Link>
           </Card>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * One entry, editable and removable.
+ *
+ * Both were missing, and everything that can go wrong here goes wrong in
+ * public: a double-submitted update, a line written in tracker shorthand, an
+ * update that went to the wrong project. Without these the only fix was to
+ * unpublish the whole page.
+ *
+ * Editing in place rather than in a dialog, because the thing being corrected is
+ * usually one word and a dialog is four interactions to change one word.
+ *
+ * Delete asks once. It is on the client's page, so it is not a keystroke away,
+ * and it is also not a modal: the second click is the confirmation.
+ */
+function EntryRow({
+  entry,
+  first,
+  last,
+}: {
+  entry: { id: string; body: string; date: string };
+  first: boolean;
+  last: boolean;
+}) {
+  const t = useT();
+  const locale = useLocale();
+  const { run, pending, error } = useAction();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(entry.body);
+  const [confirming, setConfirming] = useState(false);
+
+  async function save() {
+    const value = draft.trim();
+    if (!value || value === entry.body) {
+      setEditing(false);
+      return;
+    }
+    setEditing(false);
+    await run(() => updateDiaryEntryAction(entry.id, { body: value }));
+  }
+
+  return (
+    <div className={`flex gap-3 py-3 group ${last ? "" : "border-b border-line"}`}>
+      <div className="flex flex-col items-center shrink-0 pt-1.5">
+        <span className={`w-2 h-2 rounded-full ${first ? "bg-violet" : "bg-line"}`} />
+        {!last && <span className="w-px flex-1 bg-line mt-1.5" />}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-caption text-text-muted">
+            {formatDay(new Date(entry.date), locale)}
+          </div>
+          {/* Visible on hover on a mouse, always visible on touch, since there
+              is no hover to reveal them with. */}
+          <div className="flex items-center gap-3 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+            {!editing && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDraft(entry.body);
+                  setEditing(true);
+                }}
+                className="flex items-center gap-1 text-caption text-slate hover:text-violet bg-none border-none cursor-pointer p-0 tap"
+              >
+                <Pencil size={11} /> {t.common.edit}
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => {
+                if (!confirming) {
+                  setConfirming(true);
+                  return;
+                }
+                void run(() => deleteDiaryEntryAction(entry.id));
+              }}
+              onBlur={() => setConfirming(false)}
+              className={`flex items-center gap-1 text-caption bg-none border-none cursor-pointer p-0 tap ${
+                confirming ? "text-overdue font-semibold" : "text-slate hover:text-overdue"
+              }`}
+            >
+              <Trash2 size={11} /> {confirming ? t.diary.deleteConfirm : t.common.delete}
+            </button>
+          </div>
+        </div>
+
+        {editing ? (
+          <div className="mt-1.5">
+            <textarea
+              autoFocus
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setEditing(false);
+              }}
+              rows={Math.min(12, Math.max(3, draft.split("\n").length + 1))}
+              className="w-full font-body text-small text-ink leading-[1.6] bg-white border border-violet rounded-lg px-3 py-2.5 outline-none"
+            />
+            <div className="flex items-center gap-3 mt-2">
+              <button
+                type="button"
+                onClick={save}
+                disabled={pending}
+                className="font-body font-bold text-meta text-white bg-violet rounded-lg px-3.5 py-1.5 border-none cursor-pointer disabled:opacity-50"
+              >
+                {pending ? t.common.saving : t.common.save}
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditing(false)}
+                className="text-meta text-text-muted bg-none border-none cursor-pointer p-0 tap"
+              >
+                {t.common.cancel}
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* The same component the client's page uses, so what you write here
+             and what they read are formatted once. */
+          <div className="mt-1">
+            <UpdateBody text={entry.body} />
+          </div>
+        )}
+
+        <ActionError error={error} className="mt-2" />
       </div>
     </div>
   );

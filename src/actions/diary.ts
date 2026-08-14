@@ -19,11 +19,45 @@ export async function addDiaryEntryAction(
   if (!project) return { ok: false, error: "Project not found." };
   if (!body.trim()) return { ok: false, error: "Write something before adding an entry." };
 
+  // The same update, twice, within a few minutes is a double submit rather than
+  // two things that happened. Three identical entries appeared on a real project
+  // this way, and the client's page showed all three. Cheap to prevent here and
+  // impossible to tidy up afterwards without a delete button.
+  const duplicate = await prisma.diaryEntry.findFirst({
+    where: {
+      projectId,
+      body: body.trim(),
+      createdAt: { gt: new Date(Date.now() - 5 * 60 * 1000) },
+    },
+  });
+  if (duplicate) return { ok: true, data: undefined };
+
   await prisma.diaryEntry.create({
     data: { projectId, title: title.trim() || "Update", body: body.trim() },
   });
 
   revalidatePath(`/diary/${projectId}`);
+  return { ok: true, data: undefined };
+}
+
+/**
+ * Removing an entry.
+ *
+ * Needed because everything else here can go wrong in public. A duplicate, a
+ * line written in tracker shorthand, an update sent to the wrong project: all
+ * of them are on the client's page until this exists.
+ */
+export async function deleteDiaryEntryAction(
+  entryId: string
+): Promise<ActionResult<undefined>> {
+  const user = await requireFullUser();
+  const entry = await prisma.diaryEntry.findFirst({
+    where: { id: entryId, project: teamScopeWhere(user) },
+  });
+  if (!entry) return { ok: false, error: "That entry no longer exists." };
+
+  await prisma.diaryEntry.delete({ where: { id: entryId } });
+  revalidatePath(`/diary/${entry.projectId}`);
   return { ok: true, data: undefined };
 }
 
