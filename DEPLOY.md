@@ -41,7 +41,7 @@ git push -u origin main
    |---|---|
    | `DATABASE_URL` | the Neon connection string from step 2 |
    | `NEXTAUTH_SECRET` | a random string — generate with `openssl rand -base64 32` |
-   | `NEXTAUTH_URL` | your Vercel URL, e.g. `https://freely-yourname.vercel.app` (you'll get the exact one after the first deploy — you can add/edit this var and redeploy once you know it) |
+   | `NEXTAUTH_URL` | your project's **stable** domain, e.g. `https://freely-yourname.vercel.app` or your own domain. See the warning in step 5: this must not be a per-deployment URL. |
    | `ANTHROPIC_API_KEY` | your Claude API key |
    | `FREELY_ENCRYPTION_KEY` | a random string — generate with `openssl rand -base64 32` |
 
@@ -65,10 +65,28 @@ Do this once now, and again any time the schema changes in the future
 
 ## 5. Lock in the real URL
 
-After the first deploy, Vercel shows you the live URL (e.g.
-`https://freely-yourname.vercel.app`). Go back to the project's
-**Settings → Environment Variables**, set `NEXTAUTH_URL` to that exact URL,
-then **Deployments → redeploy** so login/sessions work correctly.
+After the first deploy, set `NEXTAUTH_URL` and `NEXT_PUBLIC_APP_URL` to your
+project's stable domain, then **Deployments → redeploy**.
+
+**Use the right URL.** Vercel shows several and they are not interchangeable:
+
+| Looks like | What it is | Use it? |
+|---|---|---|
+| `freely-a1b2c3d4-yourname.vercel.app` | one deployment | **No.** Replaced on every push |
+| `freely-git-main-yourname.vercel.app` | the main branch | No |
+| `freely-yourname.vercel.app` | the project | Yes |
+| `your-own-domain.com` | your domain | Yes, best |
+
+Pick a deployment URL and everything works until the next push, then sign-out,
+sign-in and OAuth callbacks all return `DEPLOYMENT_NOT_FOUND`, because
+NextAuth redirects to a deployment that no longer exists. It is the same reason
+a client's project page link would stop working: those links are built from
+`NEXT_PUBLIC_APP_URL`, and a link you sent a client last week has to still open
+this week.
+
+The deployment URL is the one Vercel shows you immediately after a deploy, so it
+is the easy one to copy by mistake. Find the stable one under
+**Settings → Domains**.
 
 ## 6. Verify
 

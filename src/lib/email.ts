@@ -32,10 +32,30 @@ function sender(): string {
   return process.env.EMAIL_FROM || "Freely <onboarding@resend.dev>";
 }
 
-/** The app's own address, for links back into it. */
+/**
+ * The app's own address, for links that leave the app and have to come back.
+ *
+ * The order matters more than it looks. VERCEL_URL is the address of one
+ * deployment, and every push replaces it: a link built from it works today and
+ * returns DEPLOYMENT_NOT_FOUND next week. That is survivable in a password reset
+ * that expires in an hour, and not survivable in a client's project page, which
+ * is a link somebody sends to a paying customer and expects to keep working.
+ *
+ * VERCEL_PROJECT_PRODUCTION_URL is the stable production domain and is tried
+ * first, so a deployment address is only ever used on a preview build where
+ * there is nothing else.
+ *
+ * NEXT_PUBLIC_APP_URL beats both, and should be set to the real domain in
+ * production. If it is set to a deployment address, this cannot save you.
+ */
 export function appUrl(): string {
   if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
-  // Vercel sets this per deployment, without a scheme.
+  // The project's own domain, stable across deployments.
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  }
+  // One deployment's address. Replaced on the next push, so it is the last
+  // resort rather than the obvious answer.
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
   return "http://localhost:3000";
 }
