@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { currencySymbol } from "@/lib/currencies";
+import { Tabs } from "@/components/ui/tabs";
 import { useT } from "@/lib/i18n/context";
 import { InvoiceQueueList, type QueueRow } from "./invoice-queue-list";
 import { NewInvoiceButton } from "./new-invoice-button";
@@ -61,36 +62,9 @@ export function InvoicesView({
         <NewInvoiceButton projects={projects} />
       </div>
 
-      <div role="tablist" className="flex items-center gap-1 border-b border-line">
-        {tabs.map((item) => {
-          const active = item.id === tab;
-          return (
-            <button
-              key={item.id}
-              role="tab"
-              type="button"
-              aria-selected={active}
-              onClick={() => setTab(item.id)}
-              className={`font-body font-semibold text-small bg-none border-none cursor-pointer px-3.5 py-2.5 -mb-px border-b-2 transition-colors ${
-                active
-                  ? "text-ink border-b-violet"
-                  : "text-text-muted border-b-transparent hover:text-slate"
-              }`}
-            >
-              {item.label}
-              {item.badge !== undefined && item.badge > 0 && (
-                <span
-                  className={`ml-1.5 tabular-nums text-caption ${
-                    active ? "text-violet" : "text-text-muted"
-                  }`}
-                >
-                  {item.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+      {/* The shared strip. This page had its own copy of the markup, which is
+          how the same control came to look slightly different on three pages. */}
+      <Tabs items={tabs} value={tab} onChange={setTab} label={t.nav.invoices} />
 
       {tab === "queue" ? (
         <InvoiceQueueList rows={queue} />

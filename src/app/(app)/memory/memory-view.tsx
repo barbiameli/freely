@@ -186,7 +186,7 @@ export function MemoryView({
         onChange={select}
         label={t.nav.memory}
       />
-      <p className="text-small text-slate -mt-2">{t.memory[HINTS[tab]]}</p>
+      <p className="text-small text-slate -mt-3">{t.memory[HINTS[tab]]}</p>
 
       <div className="flex flex-col gap-5">
         {/* Who you are. The persona is read off everything else here, and the

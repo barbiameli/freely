@@ -10,9 +10,25 @@ export interface TabItem<T extends string> {
 /**
  * The tab strip, in one place.
  *
- * Quote, Invoices and the diary all grew their own copy of this within a day of
- * each other, and they had already started to differ in padding. One definition
- * means they stay the same control.
+ * Quote, Invoices, Diary and Memory each grew their own copy of this within days
+ * of each other and had already started to differ. One definition means they
+ * stay the same control, which matters more than usual here: tabs are the only
+ * navigation inside a page, so four slightly different ones teach you to look
+ * for them in four different ways.
+ *
+ * It was an underline: a 2px violet rule under the selected label, with the rest
+ * in muted grey. Quiet enough to miss entirely, which people did. The problem
+ * was not the weight of the marker, it was that nothing said "this is a control"
+ * until you had already found it.
+ *
+ * So it is a segmented control now, on a track. The track is the part that does
+ * the work: an enclosed shape reads as something to press before any of the
+ * labels are read. The selected tab is a solid violet pill, the same treatment
+ * an active Chip has everywhere else in the app, so it is new furniture rather
+ * than a new idea.
+ *
+ * Scrolls sideways rather than wrapping. Four tabs on a phone will not fit, and
+ * a strip that wraps to two lines stops reading as one control.
  */
 export function Tabs<T extends string>({
   items,
@@ -27,7 +43,11 @@ export function Tabs<T extends string>({
   label: string;
 }) {
   return (
-    <div role="tablist" aria-label={label} className="flex items-center gap-1 border-b border-line">
+    <div
+      role="tablist"
+      aria-label={label}
+      className="inline-flex items-center gap-1 bg-paper border border-line rounded-full p-1 max-w-full overflow-x-auto"
+    >
       {items.map((item) => {
         const active = item.id === value;
         return (
@@ -37,17 +57,17 @@ export function Tabs<T extends string>({
             type="button"
             aria-selected={active}
             onClick={() => onChange(item.id)}
-            className={`font-body font-semibold text-small bg-none border-none cursor-pointer px-3.5 py-2.5 -mb-px border-b-2 transition-colors ${
+            className={`font-body font-semibold text-small rounded-full border-none cursor-pointer px-4 py-2 whitespace-nowrap transition-colors ${
               active
-                ? "text-ink border-b-violet"
-                : "text-text-muted border-b-transparent hover:text-slate"
+                ? "bg-violet text-white"
+                : "bg-transparent text-slate hover:text-ink hover:bg-white"
             }`}
           >
             {item.label}
             {item.badge !== undefined && item.badge > 0 && (
               <span
                 className={`ml-1.5 tabular-nums text-caption ${
-                  active ? "text-violet" : "text-text-muted"
+                  active ? "text-white/75" : "text-text-muted"
                 }`}
               >
                 {item.badge}
