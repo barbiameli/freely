@@ -185,6 +185,7 @@ model User {
   projects    Project[]
   passwordResets PasswordReset[]
   emails         EmailLog[]
+  events         Event[]
   assets      MemoryAsset[]
   connections Connection[]
   invoices    Invoice[]
@@ -719,4 +720,38 @@ enum EmailKind {
   NUDGE_DUE_SOON
   NUDGE_OVERDUE
   MARKETING
+}
+
+
+// Something that happened, worth counting later.
+//
+// Written from the app's own code rather than from a script in the browser, so
+// an ad blocker cannot silence it and no third party is involved. That is the
+// point of having this at all: the numbers are about the product, they come
+// from the database that already holds the truth, and nobody outside gets a
+// copy.
+//
+// One row per event, kept deliberately thin. What happened, who it happened to,
+// when, and a small bag of detail. No page views, no session recording, no
+// mouse movements: those answer questions nobody here is asking and they turn a
+// product database into a surveillance one.
+//
+// userId is nullable and set to null when an account is deleted rather than
+// cascading, because "someone generated 40 quotes in March" stays true after
+// they leave, and the row no longer points at a person.
+model Event {
+  id        String   @id @default(cuid())
+  kind      String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  // What it was about: a brief id, a project id, an invoice id. Enough to count
+  // distinct things without joining, and to spot double counting.
+  subjectId String?
+  // A handful of numbers or short strings. Price, hours, language, whether AI
+  // research ran. Never free text somebody typed, and never a client's name.
+  detail    Json?
+  createdAt DateTime @default(now())
+
+  @@index([kind, createdAt])
+  @@index([userId, createdAt])
 }

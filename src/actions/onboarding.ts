@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { track } from "@/lib/events";
 import { requireUser } from "@/lib/session";
 import { INDUSTRY_OPTIONS } from "@/lib/industries";
 
@@ -59,5 +60,6 @@ export async function completeOnboardingAction(input: OnboardingMemoryInput) {
       } as Record<string, unknown>),
     },
   });
+  track("onboarding_finished", { userId: user.id });
   redirect("/quote");
 }

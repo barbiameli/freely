@@ -99,7 +99,13 @@ describe("the pages outside the app shell read every string from the dictionary"
    * mistranslated liability clause is worse than an English one, so it is
    * deliberately left until it can be translated by someone qualified to.
    */
-  const exemptFiles = ["src/app/terms/page.tsx"];
+  const exemptFiles = [
+    "src/app/terms/page.tsx",
+    // The product's own dashboard, behind ADMIN_EMAIL. One reader, who is the
+    // person writing the app, so translating it would be work with no audience.
+    // Worth revisiting the moment anybody else is given the address.
+    "src/app/(app)/insights/insights-view.tsx",
+  ];
   const exemptText = ["Freely"];
 
   const files = areas

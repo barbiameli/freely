@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { track } from "@/lib/events";
 import { sanitizeText } from "@/lib/sanitize-text";
 import { send, appUrl } from "@/lib/email";
 import { currencySymbol } from "@/lib/currencies";
@@ -131,6 +132,12 @@ export async function acceptQuoteAction(
     // one path where the freelancer is waiting for news.
     { kind: "QUOTE_ACCEPTED", userId: brief.userId, subjectId: brief.id });
   }
+
+  track("quote_accepted", {
+    userId: brief.userId,
+    subjectId: brief.id,
+    detail: { price: brief.price, currency: brief.currency ?? undefined },
+  });
 
   revalidatePath(`/q/${publicSlug}`);
   revalidatePath("/track");

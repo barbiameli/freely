@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { track } from "@/lib/events";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import type { ActionResult } from "@/actions/briefs";
@@ -54,6 +55,7 @@ export async function addDiaryEntryAction(
   await prisma.diaryEntry.create({
     data: { projectId, title: title.trim() || "Update", body: body.trim() },
   });
+  track("diary_entry_added", { userId: user.id, subjectId: projectId });
 
   await revalidateBoth(projectId);
   return { ok: true, data: undefined };
@@ -107,6 +109,7 @@ export async function setPublishedAction(
   if (!project) return { ok: false, error: "Project not found." };
 
   const updated = await prisma.project.update({ where: { id: projectId }, data: { published } });
+  if (published) track("diary_published", { userId: user.id, subjectId: projectId });
   revalidatePath(`/diary/${projectId}`);
   return { ok: true, data: { publicSlug: updated.publicSlug } };
 }

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { syncProject, removeProjectEvents } from "@/lib/calendar-sync";
 import { prisma } from "@/lib/prisma";
+import { track } from "@/lib/events";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import { extractProjectFromDocument } from "@/lib/anthropic";
@@ -117,6 +118,10 @@ export async function toggleDeliverableAction(
       ...({ doneAt: nowDone ? new Date() : null } as Record<string, unknown>),
     },
   });
+
+  // Only on the way to done. Ticking and unticking would otherwise read as
+  // two days' work.
+  if (nowDone) track("deliverable_done", { userId: user.id, subjectId: projectId });
 
   // Finished work loses its event, so the calendar is not full of deadlines
   // that were already met.

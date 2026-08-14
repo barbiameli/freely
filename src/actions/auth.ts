@@ -3,6 +3,7 @@
 import bcrypt from "bcryptjs";
 import { grant, newUnsubscribeToken } from "@/lib/marketing";
 import { prisma } from "@/lib/prisma";
+import { track } from "@/lib/events";
 
 export type SignUpResult = { ok: true } | { ok: false; error: string };
 
@@ -37,7 +38,7 @@ export async function signUpAction(formData: FormData): Promise<SignUpResult> {
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
-  await prisma.user.create({
+  const created = await prisma.user.create({
     data: {
       email,
       passwordHash,
@@ -51,5 +52,6 @@ export async function signUpAction(formData: FormData): Promise<SignUpResult> {
     },
   });
 
+  track("signed_up", { userId: created.id });
   return { ok: true };
 }

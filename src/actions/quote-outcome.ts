@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { track } from "@/lib/events";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import { createProjectFromBrief } from "@/lib/track-from-brief";
@@ -56,6 +57,10 @@ export async function markQuoteWonAction(
 
   revalidatePath("/quote");
   revalidatePath("/track");
+  // Won, and the project it became, so tracking can be counted against it.
+  track("quote_won", { userId: user.id, subjectId: briefId });
+  if (projectId) track("project_tracked", { userId: user.id, subjectId: projectId });
+
   return { ok: true, data: { projectId } };
 }
 
@@ -74,6 +79,7 @@ export async function markQuoteLostAction(briefId: string): Promise<ActionResult
   });
 
   revalidatePath("/quote");
+  track("quote_lost", { userId: user.id, subjectId: briefId });
   return { ok: true, data: undefined };
 }
 

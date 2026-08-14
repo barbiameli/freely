@@ -1,3 +1,4 @@
+import { HostedAnalytics } from "@/components/hosted-analytics";
 import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Raleway } from "next/font/google";
 import "./globals.css";
@@ -65,6 +66,9 @@ export default async function RootLayout({
     <html lang={locale} style={{ "--font-label": fontLabelFamily } as React.CSSProperties}>
       <body className={`${fontDisplay.variable} ${fontBody.variable} antialiased font-body text-ink`}>
         <LocaleProvider locale={locale}>{children}</LocaleProvider>
+        {/* Nothing unless a key is set. See the component: this is the only
+            thing here that tells a third party anything. */}
+        <HostedAnalytics />
       </body>
     </html>
   );

@@ -45,6 +45,16 @@ git push -u origin main
    | `ANTHROPIC_API_KEY` | your Claude API key |
    | `FREELY_ENCRYPTION_KEY` | a random string — generate with `openssl rand -base64 32` |
 
+   Optional, and each one switches something on:
+
+   | Key | What it turns on |
+   |---|---|
+   | `RESEND_API_KEY` | All email. Without it, sends are recorded as skipped and nothing goes out. |
+   | `EMAIL_FROM` | The address mail comes from. Needs a domain verified in Resend, otherwise only your own address receives anything. |
+   | `CRON_SECRET` | The daily nudges. The endpoint refuses to run without it rather than running unauthenticated. Generate with `openssl rand -base64 32`. |
+   | `ADMIN_EMAIL` | The /insights dashboard, for that address only. Unset means nobody, and the page 404s. |
+   | `NEXT_PUBLIC_POSTHOG_KEY` | A hosted analytics tool. Off unless set. Update your privacy policy before setting it: it is the only thing here that sends a third party anything. |
+
    Leave `STRIPE_*`, `FIGMA_*`, and `GOOGLE_*` out for now — those features
    just stay greyed out until you add them later, nothing breaks.
 

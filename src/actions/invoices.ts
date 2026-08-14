@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { track } from "@/lib/events";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import { sanitizeText } from "@/lib/sanitize-text";
@@ -115,6 +116,12 @@ export async function createInvoiceAction(
       projectId: seed.projectId,
       briefId: seed.briefId,
     },
+  });
+
+  track("invoice_created", {
+    userId: user.id,
+    subjectId: invoice.id,
+    detail: { currency: seed.currency },
   });
 
   revalidatePath("/invoices");

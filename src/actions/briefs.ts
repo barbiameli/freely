@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { track } from "@/lib/events";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import { createProjectFromBrief } from "@/lib/track-from-brief";
@@ -322,6 +323,21 @@ export async function generateBriefAction(
   }
 
   revalidatePath("/quote");
+  // Never awaited: a chart is not worth delaying somebody's quote for.
+  track("quote_generated", {
+    userId: user.id,
+    subjectId: brief.id,
+    detail: {
+      price: generated.price,
+      hours: generated.hours,
+      currency: draft.currency,
+      language: quoteLanguage,
+      rateUnit: draft.rateUnit ?? "HOUR",
+      researched: pricingHistory.length === 0 && !draft.hourlyRate,
+      count: generated.deliverables.length,
+    },
+  });
+
   return { ok: true, data: { briefId: brief.id } };
 }
 
