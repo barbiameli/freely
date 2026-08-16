@@ -121,8 +121,6 @@ function wording(step: GuideStep, t: Dictionary): { title: string; body: string 
       return { title: t.guide.breakdownTitle, body: t.guide.breakdownBody };
     case "client":
       return { title: t.guide.clientTitle, body: t.guide.clientBody };
-    case "share":
-      return { title: t.guide.shareTitle, body: t.guide.shareBody };
     case "invoice":
       return { title: t.guide.invoiceTitle, body: t.guide.invoiceBody };
   }

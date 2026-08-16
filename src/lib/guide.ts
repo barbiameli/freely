@@ -28,11 +28,18 @@ export const GUIDE_STEPS = [
   "track",
   "breakdown",
   "client",
-  "share",
   "invoice",
 ] as const;
 
 export type GuideStep = (typeof GUIDE_STEPS)[number];
+
+/**
+ * How much ticking counts as having used the tracker.
+ *
+ * Two, because one could be somebody trying the checkbox to see what it does.
+ * Two is a habit starting.
+ */
+export const USED_TRACKING = 2;
 
 /**
  * What the account has actually done.
@@ -88,27 +95,31 @@ export function isReady(step: GuideStep, state: GuideState): boolean {
     case "breakdown":
       return state.projects > 0 && state.brokenDownDeliverables === 0;
 
-    // A tracked project with no client page.
+    // Tracking has been used a few times, and there is no client page.
+    //
+    // Waiting for a couple of ticks rather than offering it the moment a
+    // project appears. Somebody who has just sent work to Track has not used
+    // Track yet, and an offer to show all this to a client lands better once
+    // there is visibly something to show. It is also the point where the
+    // freelancer has seen what the tracker holds, so "your client can see this
+    // too" is a sentence about something they recognise.
     //
     // Deliberately not waiting for a breakdown. Breaking deliverables into
     // steps is a feature, not a stage: plenty of people will never use it, and
-    // gating the client page behind it meant the most distinctive thing in the
-    // product stayed invisible to exactly those people.
+    // gating the client page behind it hid the most distinctive thing in the
+    // product from exactly those people.
     case "client":
-      return state.projects > 0 && state.publishedProjects === 0;
+      return (
+        state.projects > 0 &&
+        state.doneDeliverables >= USED_TRACKING &&
+        state.publishedProjects === 0
+      );
 
-    // The page exists and nothing has been sent to it. Publishing a page and
-    // never putting anything on it is a link that makes a freelancer look
-    // worse than sending nothing would have.
-    case "share":
-      return state.publishedProjects > 0 && state.diaryEntries === 0;
-
-    // Something has been shared, or the work is finished, and no invoice
-    // exists. The second half matters more: somebody who ticked the last box
-    // is owed money and this is the moment to say so.
+    // The work is finished and no invoice exists. Somebody who ticked the last
+    // box is owed money, and this is the moment to say so.
     case "invoice": {
       const finished = state.deliverables > 0 && state.doneDeliverables === state.deliverables;
-      return (state.diaryEntries > 0 || finished) && state.invoices === 0;
+      return finished && state.invoices === 0;
     }
   }
 }
@@ -144,7 +155,6 @@ export const STEP_SCREEN: Record<GuideStep, string> = {
   // One project, where the rest of these buttons live.
   breakdown: "/track/project",
   client: "/track/project",
-  share: "/track/project",
   invoice: "/track/project",
 };
 

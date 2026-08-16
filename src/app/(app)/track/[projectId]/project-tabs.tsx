@@ -1,9 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Globe } from "lucide-react";
+import { Globe, Check } from "lucide-react";
 import { Tabs } from "@/components/ui/tabs";
-import { Prompt } from "@/components/ui/prompt";
 import { Button } from "@/components/ui/button";
 import { setPublishedAction } from "@/actions/diary";
 import { useAction } from "@/lib/use-action";
@@ -45,24 +44,47 @@ export function ProjectTabs({
   }
 
   if (!published) {
+    // Bigger than a Prompt, on purpose. This is the one thing in Freely a
+    // freelancer's competitors do not have, and it was a quiet line of text
+    // that read as a setting. Three short facts, because the objections are
+    // predictable: does my client need an account, do I have to keep writing
+    // it, and can I take it down.
     return (
-      <Prompt
-        level="attention"
-        className="w-full"
-        title={t.track.clientPageTitle}
-        body={t.track.clientPageBody}
-        actions={
-          <Button
-            size="sm"
-            icon={Globe}
-            disabled={pending}
-            onClick={publish}
-            data-guide="client"
-          >
-            {pending ? t.common.working : t.track.clientPageOpen}
-          </Button>
-        }
-      />
+      <div className="w-full rounded-card border border-violet/30 bg-violet-tint px-4 py-4 sm:px-5 animate-card-in motion-reduce:animate-none">
+        <div className="flex items-start gap-3.5">
+          <span className="hidden sm:flex items-center justify-center w-9 h-9 rounded-full bg-violet shrink-0">
+            <Globe size={17} className="text-white" />
+          </span>
+          <div className="min-w-0">
+            <div className="font-body font-bold text-body text-ink text-pretty">
+              {t.track.clientPageTitle}
+            </div>
+            <p className="text-small text-slate mt-1 mb-0 text-pretty">
+              {t.track.clientPageBody}
+            </p>
+
+            <ul className="flex flex-col gap-1 list-none p-0 mt-3 mb-0">
+              {[
+                t.track.clientPagePoint1,
+                t.track.clientPagePoint2,
+                t.track.clientPagePoint3,
+              ].map((line) => (
+                <li key={line} className="flex items-start gap-2 text-meta text-slate">
+                  <Check size={13} className="text-violet shrink-0 mt-0.5" />
+                  <span className="text-pretty">{line}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="flex flex-wrap items-center gap-3 mt-4">
+              <Button icon={Globe} disabled={pending} onClick={publish} data-guide="client">
+                {pending ? t.common.working : t.track.clientPageOpen}
+              </Button>
+              <span className="text-caption text-text-muted">{t.track.clientPageNotYet}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 

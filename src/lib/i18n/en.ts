@@ -316,9 +316,12 @@ export const en = {
   },
 
   track: {
-    clientPageTitle: "Your client can follow this",
-    clientPageBody: "Publish a page they open in a browser, in your colours. You choose what goes on it, and nothing appears until you send it.",
-    clientPageOpen: "Set up their page",
+    clientPageTitle: "Give your client a page to follow",
+    clientPageBody: "A link they can open any time, in your name and colours, showing what is done and what is next. It keeps itself up to date as you tick things off.",
+    clientPagePoint1: "No account, no login. Just a link.",
+    clientPagePoint2: "Updates itself. Nothing to write.",
+    clientPagePoint3: "Unpublish whenever you like.",
+    clientPageOpen: "Publish the client page",
     clientPageNotYet: "Not now",
     sendUpdate: "Send an update",
     invoiceThis: "Invoice this project",

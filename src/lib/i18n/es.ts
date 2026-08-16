@@ -316,9 +316,12 @@ export const es: Dictionary = {
   },
 
   track: {
-    clientPageTitle: "Tu cliente puede seguir esto",
-    clientPageBody: "Publica una pagina que abre en el navegador, con tus colores. Tu eliges que aparece, y no se ve nada hasta que lo mandas.",
-    clientPageOpen: "Crear su pagina",
+    clientPageTitle: "Dale a tu cliente una pagina que seguir",
+    clientPageBody: "Un enlace que puede abrir cuando quiera, con tu nombre y tus colores, que muestra lo hecho y lo que viene. Se actualiza solo segun vas marcando cosas.",
+    clientPagePoint1: "Sin cuenta ni contrasena. Solo un enlace.",
+    clientPagePoint2: "Se actualiza solo. No hay que escribir nada.",
+    clientPagePoint3: "Puedes dejar de publicarla cuando quieras.",
+    clientPageOpen: "Publicar la pagina del cliente",
     clientPageNotYet: "Ahora no",
     sendUpdate: "Mandar una actualizacion",
     invoiceThis: "Facturar este proyecto",

@@ -96,16 +96,6 @@ function art(step: GuideStep) {
         </>
       );
 
-    // A link, being handed over.
-    case "share":
-      return (
-        <>
-          <path d="M20 26a6 6 0 0 1 0-8l5-5a6 6 0 0 1 8 8l-2 2" />
-          <path d="M26 20a6 6 0 0 1 0 8l-5 5a6 6 0 0 1-8-8l2-2" />
-          <path d="M38 7v4M36 9h4" stroke={CORAL} />
-        </>
-      );
-
     // A receipt, with the amount marked.
     case "invoice":
       return (
