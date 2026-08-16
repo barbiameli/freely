@@ -61,6 +61,8 @@ export const en = {
   },
 
   quote: {
+    untitledQuote: "Untitled quote",
+    unnamedClient: "Client",
     setupChoose: "Choose",
     referencesHint: "Screenshots, moodboards or examples of the kind of thing you mean. They go on the quote so the client sees the direction.",
     branding: "Branding",

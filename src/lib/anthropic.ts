@@ -124,12 +124,28 @@ export const milestoneSchema = z.object({
 });
 export type GeneratedMilestoneShape = z.infer<typeof milestoneSchema>;
 
+/**
+ * What a generated quote has to contain.
+ *
+ * The text fields accept an empty string. They used to require at least one
+ * character, and a brief that never named the client came back with client: ""
+ * and the entire quote was discarded: scope, deliverables, pricing, timeline,
+ * a minute of waiting and a paid model call, thrown away over one word the
+ * freelancer could have typed in two seconds.
+ *
+ * A missing word is not a broken quote. Empty strings are filled in afterwards
+ * with something obviously provisional, which the freelancer edits like any
+ * other part of the draft. See fillGaps.
+ *
+ * Deliverables stay required. A quote with nothing in it is not a quote, and
+ * there is nothing sensible to invent in its place.
+ */
 export const briefSchema = z.object({
-  title: z.string().min(1),
-  client: z.string().min(1),
-  scope: z.string().min(1),
+  title: z.string(),
+  client: z.string(),
+  scope: z.string(),
   deliverables: z.array(z.string()).min(1),
-  timeline: z.string().min(1),
+  timeline: z.string(),
   /** Optional structured "Strategy" section. Only populated when the
    * wizard's "Strategy" section is included. */
   strategy: strategySchema.optional(),
@@ -301,7 +317,7 @@ export function buildSystemPrompt(memory: MemoryContext | string): string {
           .map((f) => `--- ${f.name} ---\n${f.text.slice(0, 4000)}`)
           .join("\n\n")}`
       : null,
-    'Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly this schema: {"title": string, "client": string, "scope": string, "deliverables": string[], "timeline": string, "strategy": {"goal": string, "findings": string[], "openQuestions": string[]} (optional object, omit entirely if Strategy wasn\'t requested), "price": number, "hours": number, "terms": {"cancellation": string, "ownership": string, "confidentiality": string} (optional), "revisions": string (optional), "availability": string (optional), "paymentTerms": string (optional), "aiUsage": {"will": string[], "willNot": string[]} (optional)}. Omit any optional key entirely unless it was explicitly requested. Never put bank account numbers, sort codes, IBANs, card details or any other payment credentials anywhere in the response, not even as an example or placeholder: quotes can be published to a public web address, so payment details belong only on an invoice. Each findings/openQuestions entry should be one short, standalone bullet point, not a run-on sentence with several ideas mashed together, and never numbered manually (e.g. no "(1)" prefixes) since the UI renders them as a real bulleted list. If you used web search to research rates, do not include citations or URLs in the JSON, fold the conclusion into your reasoning about price only.',
+    'Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly this schema: {"title": string, "client": string, "scope": string, "deliverables": string[], "timeline": string, "strategy": {"goal": string, "findings": string[], "openQuestions": string[]} (optional object, omit entirely if Strategy wasn\'t requested), "price": number, "hours": number, "terms": {"cancellation": string, "ownership": string, "confidentiality": string} (optional), "revisions": string (optional), "availability": string (optional), "paymentTerms": string (optional), "aiUsage": {"will": string[], "willNot": string[]} (optional)}. Omit any optional key entirely unless it was explicitly requested. "client" is the name of the person or company being quoted. Plenty of briefs never name one: when the brief does not say, put a short generic stand-in like "Client" rather than an empty string, and never invent a company name. The same goes for "title": describe the work in a few words if the brief does not title it. Never put bank account numbers, sort codes, IBANs, card details or any other payment credentials anywhere in the response, not even as an example or placeholder: quotes can be published to a public web address, so payment details belong only on an invoice. Each findings/openQuestions entry should be one short, standalone bullet point, not a run-on sentence with several ideas mashed together, and never numbered manually (e.g. no "(1)" prefixes) since the UI renders them as a real bulleted list. If you used web search to research rates, do not include citations or URLs in the JSON, fold the conclusion into your reasoning about price only.',
   ];
 
   return sections.filter(Boolean).join(" ");
@@ -614,7 +630,25 @@ export function extractJsonObject(text: string): string | null {
   return last;
 }
 
-export function parseBriefResponse(text: string): GeneratedBrief {
+/**
+ * Stand-in wording for anything the model left blank.
+ *
+ * Deliberately generic and obviously a placeholder: "Client" reads as a gap to
+ * fill, where a guessed company name reads as a fact and would go out to a real
+ * client as one.
+ */
+function fillGaps(brief: GeneratedBrief, language?: Locale): GeneratedBrief {
+  const t = dict(language ?? "en");
+  return {
+    ...brief,
+    title: brief.title.trim() || t.quote.untitledQuote,
+    client: brief.client.trim() || t.quote.unnamedClient,
+    scope: brief.scope.trim(),
+    timeline: brief.timeline.trim(),
+  };
+}
+
+export function parseBriefResponse(text: string, language?: Locale): GeneratedBrief {
   const stripped = text.replace(/```json/gi, "").replace(/```/g, "");
   const cleaned = (extractJsonObject(stripped) ?? stripped).trim();
   let parsed: unknown;
@@ -634,7 +668,7 @@ export function parseBriefResponse(text: string): GeneratedBrief {
   if (!result.success) {
     throw new Error(`Brief response failed validation: ${result.error.message}`);
   }
-  return result.data;
+  return fillGaps(result.data, language);
 }
 
 async function callClaude(
@@ -697,7 +731,11 @@ export async function generateBriefFromDraft(
     // it was being truncated mid-object.
     maxTokens: 8000,
   });
-  return applyHourlyRate(parseBriefResponse(text), draft.hourlyRate, draft.rateUnit ?? "HOUR");
+  return applyHourlyRate(
+    parseBriefResponse(text, draft.language),
+    draft.hourlyRate,
+    draft.rateUnit ?? "HOUR"
+  );
 }
 
 /**

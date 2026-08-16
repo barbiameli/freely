@@ -70,6 +70,8 @@ export const es: Dictionary = {
   },
 
   quote: {
+    untitledQuote: "Presupuesto sin titulo",
+    unnamedClient: "Cliente",
     setupChoose: "Elegir",
     referencesHint: "Capturas, moodboards o ejemplos de lo que tienes en la cabeza. Van en el presupuesto para que el cliente vea por dónde vas.",
     branding: "Marca",
