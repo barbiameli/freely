@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
+import { scanBrandGuide, scanIsComplete } from "@/lib/brand-scan";
 import { currencySymbol } from "@/lib/currencies";
 import type { SectionNotes } from "@/lib/quote-prompts";
 import type { Locale } from "@/lib/i18n/types";
@@ -13,7 +14,20 @@ import {
   type RateUnit,
 } from "@/lib/rate-unit";
 
+/**
+ * Two models, chosen per job rather than one for everything.
+ *
+ * The split is not about importance, it is about what the task is. Writing a
+ * whole quote, rewriting a section for a client, or turning a deliverable into
+ * steps and risks are judgement. Pulling a hex code out of a document, or
+ * saying the same sentence more plainly, is not: a smaller model does those as
+ * well and costs roughly a tenth as much, and running everything on the larger
+ * one was paying judgement prices for transcription.
+ */
 const MODEL = "claude-sonnet-4-6";
+
+/** Extraction, and short rewrites of somebody else's words. */
+const SMALL_MODEL = "claude-haiku-4-5-20251001";
 
 let client: Anthropic | null = null;
 
@@ -626,11 +640,16 @@ export function parseBriefResponse(text: string): GeneratedBrief {
 async function callClaude(
   system: string,
   userPrompt: string,
-  opts: { webSearch?: boolean; maxTokens?: number } = {}
+  opts: {
+    webSearch?: boolean;
+    maxTokens?: number;
+    /** Extraction or a short rewrite, where the smaller model is as good. */
+    small?: boolean;
+  } = {}
 ): Promise<string> {
   const anthropic = getClient();
   const response = await anthropic.messages.create({
-    model: MODEL,
+    model: opts.small ? SMALL_MODEL : MODEL,
     max_tokens: opts.maxTokens ?? 2000,
     system,
     messages: [{ role: "user", content: userPrompt }],
@@ -807,7 +826,9 @@ export async function generatePersona(input: PersonaInput): Promise<PersonaResul
     "\n\n"
   )}\n\nWrite the persona summary and read their seniority.`;
 
-  const text = await callClaude(system, user);
+  // Two to four sentences and a seniority read. No judgement about a client's
+  // money, so no reason to pay for the larger model.
+  const text = await callClaude(system, user, { small: true });
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   const cleaned = (jsonMatch ? jsonMatch[0] : text)
     .replace(/```json/gi, "")
@@ -842,6 +863,11 @@ export type BrandGuideAnalysis = z.infer<typeof brandGuideSchema>;
  * (see uploadBrandLogoAction) since reliably extracting a specific logo
  * asset out of a laid-out PDF page isn't something text extraction can do. */
 export async function analyzeBrandGuide(sourceText: string): Promise<BrandGuideAnalysis> {
+  // Most guides state all four outright, and reading them off the page costs
+  // nothing. The model is for the ones written as prose. See lib/brand-scan.
+  const scanned = scanBrandGuide(sourceText);
+  if (scanIsComplete(scanned)) return { ...scanned, notes: null };
+
   const system = [
     "You read brand/style guideline documents and extract concrete, stated facts only.",
     "primaryColor and accentColor must be valid hex codes (e.g. \"#6320EE\"), if the document only names a color (\"deep violet\") without a hex code, convert it to the closest reasonable hex value. If no color guidance is present at all, use null.",
@@ -850,7 +876,8 @@ export async function analyzeBrandGuide(sourceText: string): Promise<BrandGuideA
     'Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly: {"primaryColor": string|null, "accentColor": string|null, "headingFont": string|null, "bodyFont": string|null, "notes": string|null}',
   ].join(" ");
   const user = `Brand guideline document:\n${sourceText.slice(0, 12000)}\n\nExtract the primary color, accent color, heading font, and body font.`;
-  const text = await callClaude(system, user);
+  // Extraction, not judgement.
+  const text = await callClaude(system, user, { small: true });
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   const cleaned = (jsonMatch ? jsonMatch[0] : text).replace(/```json/gi, "").replace(/```/g, "").trim();
   let parsed: unknown;
@@ -1023,8 +1050,16 @@ export async function breakDownDeliverable(
   memory: MemoryContext,
   input: BreakdownInput
 ): Promise<DeliverableBreakdown> {
+  // Saved files are dropped here rather than at the call site, so no future
+  // caller can put them back by accident.
+  //
+  // A breakdown answers "what are the steps, and what could go wrong": the
+  // material for that is the quote and the deliverable being planned. A brand
+  // guide does not make the steps better, and every saved file was being sent
+  // with every breakdown, so a full Memory quietly multiplied the size of a
+  // call that never read the extra material.
   const system = [
-    buildSystemPrompt(memory),
+    buildSystemPrompt({ ...memory, fileExcerpts: [] }),
     "You are now planning delivery, not selling. Write for the freelancer doing the work, not for the client: no pitch language, no reassurance, just what has to happen.",
   ].join("\n\n");
   const text = await callClaude(system, buildBreakdownPrompt(input));
@@ -1090,7 +1125,8 @@ export async function plainDeliverableNames(
     .map((n, i) => `${i + 1}. ${n}`)
     .join("\n")}`;
 
-  const text = await callClaude(system, user);
+  // One short line in, one short line out, with the meaning already decided.
+  const text = await callClaude(system, user, { small: true });
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   const cleaned = (jsonMatch ? jsonMatch[0] : text)
     .replace(/```json/gi, "")

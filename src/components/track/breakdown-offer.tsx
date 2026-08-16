@@ -1,24 +1,29 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, X } from "lucide-react";
 import { breakDownNextAction } from "@/actions/track";
 import { useT } from "@/lib/i18n/context";
 
 /**
- * Breaks the project's deliverables into steps as soon as it lands in Track.
+ * Offers to break the project's deliverables into steps, and does it on a click.
  *
- * A button per deliverable meant the tracker arrived as a list of things the
- * client bought rather than a list of work, and someone had to press seven
- * buttons to get anything usable. This just does it.
+ * This used to run by itself the moment a project landed in Track: arriving at a
+ * tracker that had already worked out the steps felt like the app being useful
+ * without being asked. What it actually did was spend a model call per
+ * deliverable on every project, including the ones opened once and abandoned,
+ * and including the freelancers who write their own steps and then had to
+ * delete a set they never wanted.
  *
- * One deliverable per request: seven model calls inside the send-to-track
- * redirect would hang for a minute and risk the function timeout, and asking
- * for all seven in one call gives seven shallow answers. Looping here means
- * each one is done properly and the page fills in as it goes.
+ * So the loop is the same, it just starts from a button. Somebody who wants the
+ * steps is one click away, and nobody pays for the ones nobody reads.
+ *
+ * Still one deliverable per request. Six in a single call gives six shallow
+ * answers, and six calls inside one request risks the function timeout, so the
+ * loop runs here and the page fills in a piece at a time.
  */
-export function AutoBreakdown({
+export function BreakdownOffer({
   projectId,
   pending,
   total,
@@ -33,14 +38,14 @@ export function AutoBreakdown({
   const [remaining, setRemaining] = useState(pending);
   const [current, setCurrent] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [started, setStarted] = useState(false);
   const [stopped, setStopped] = useState(false);
-  // Strict mode mounts effects twice in development, and each run is a real
-  // model call, so the loop is guarded rather than left to run twice.
   const running = useRef(false);
 
   const run = useCallback(async () => {
     if (running.current) return;
     running.current = true;
+    setStarted(true);
 
     // A failure part way through is worth surfacing, but the deliverables
     // already done stay done, so stopping is not losing anything.
@@ -60,17 +65,45 @@ export function AutoBreakdown({
     router.refresh();
   }, [projectId, router]);
 
-  useEffect(() => {
-    if (pending > 0 && !stopped) void run();
-    // Only ever kicked off by the initial pending count: re-running on every
-    // refresh would loop forever.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   if (pending === 0 || stopped) return null;
 
   const done = total - remaining;
   const percent = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  if (!started) {
+    return (
+      <div className="bg-white border border-line rounded-card px-4 py-3.5 flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <Sparkles size={13} className="text-violet shrink-0" />
+            <span className="font-body font-semibold text-small text-ink">
+              {t.track.breakDownOffer}
+            </span>
+            <span className="text-meta text-text-muted shrink-0">
+              {pending} {t.track.breakDownCount}
+            </span>
+          </div>
+          <p className="text-meta text-text-muted mt-1 m-0 text-pretty">{t.track.breakDownWhy}</p>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            type="button"
+            onClick={() => setStopped(true)}
+            className="text-meta text-text-muted hover:text-ink bg-none border-none cursor-pointer p-0 tap"
+          >
+            {t.common.notNow}
+          </button>
+          <button
+            type="button"
+            onClick={() => void run()}
+            className="font-body font-semibold text-meta text-white bg-violet border-none rounded-full px-3.5 py-2 cursor-pointer tap"
+          >
+            {t.track.breakDownOffer}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white border border-line rounded-card px-4 py-3.5">
@@ -106,7 +139,9 @@ export function AutoBreakdown({
       </div>
 
       {current && (
-        <div className="text-meta text-text-muted mt-2 truncate">{t.track.lastDone}: {current}</div>
+        <div className="text-meta text-text-muted mt-2 truncate">
+          {t.track.lastDone}: {current}
+        </div>
       )}
       {error && <div className="text-overdue text-meta mt-2">{error}</div>}
     </div>

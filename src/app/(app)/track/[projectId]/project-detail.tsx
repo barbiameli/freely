@@ -15,7 +15,7 @@ import { DiaryPrompt, type DoneItem } from "@/components/track/diary-prompt";
 import { SendToDiary } from "@/components/track/send-to-diary";
 import { StatRow } from "@/components/track/stat-row";
 import { ComingUp } from "@/components/track/coming-up";
-import { AutoBreakdown } from "@/components/track/auto-breakdown";
+import { BreakdownOffer } from "@/components/track/breakdown-offer";
 import {
   updateProjectAction,
   addDeliverableAction,
@@ -385,7 +385,7 @@ export function ProjectDetail({
           </Card>
         )}
 
-        <AutoBreakdown
+        <BreakdownOffer
           projectId={project.id}
           pending={project.deliverables.filter((d) => !d.brokenDown).length}
           total={project.deliverables.length}

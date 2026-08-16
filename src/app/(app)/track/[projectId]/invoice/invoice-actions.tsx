@@ -22,6 +22,12 @@ export function InvoiceActions({
   const [error, setError] = useState("");
   const [checkoutUrl, setCheckoutUrl] = useState(existingCheckoutUrl);
 
+  // Online payment is not switched on, so there is no button to explain. The
+  // invoice PDF is the whole feature here and it works on its own; a disabled
+  // button with a note under it would be the app advertising something the
+  // person cannot have and blaming a setting they have never heard of.
+  if (!stripeConfigured) return null;
+
   if (invoiceStatus === "PAID") {
     return <div className="text-success font-body font-semibold text-sm">{t.invoices.paidNothingElse}</div>;
   }
@@ -41,14 +47,13 @@ export function InvoiceActions({
 
   return (
     <div className="flex flex-col gap-2">
-      <Button icon={CreditCard} disabled={working || !stripeConfigured} onClick={handleSend} className="justify-center">
-        {working ? "Creating checkout..." : checkoutUrl ? "Resend for payment" : "Send for payment"}
+      <Button icon={CreditCard} disabled={working} onClick={handleSend} className="justify-center">
+        {working
+          ? t.invoices.creatingCheckout
+          : checkoutUrl
+            ? t.invoices.resendForPayment
+            : t.invoices.sendForPayment}
       </Button>
-      {!stripeConfigured && (
-        <div className="text-xs text-text-muted">
-          {t.invoices.stripeMissing}
-        </div>
-      )}
       {checkoutUrl && (
         <a href={checkoutUrl} target="_blank" rel="noreferrer" className="text-xs text-violet font-semibold">
           {t.invoices.openPaymentLink}

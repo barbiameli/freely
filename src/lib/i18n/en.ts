@@ -11,6 +11,7 @@
  */
 export const en = {
   common: {
+    notNow: "Not now",
     save: "Save",
     saveChanges: "Save changes",
     cancel: "Cancel",
@@ -128,7 +129,8 @@ export const en = {
 
     setupTitle: "Your usual setup",
     setupFirstTitle: "How this quote works",
-    setupFirstHint: "Answered once. Every quote after this one starts with these already set.",
+    setupFirstHint: "Answered once. These get saved to Memory and fill themselves in from now on.",
+    setupSavedOnce: "Asked once. Saved to Memory and filled in for you on every quote after this.",
     setupRemembered: "Kept from your last quote. Change any line for this one only.",
     setupEditInMemory: "Edit in Memory",
     setupRate: "Rate",
@@ -402,6 +404,9 @@ export const en = {
     noStepsYet: "No steps on this one yet.",
 
     workingOutSteps: "Working out the steps",
+    breakDownOffer: "Turn these into steps",
+    breakDownWhy: "Each deliverable becomes a short list of what the work involves.",
+    breakDownCount: "deliverables waiting",
     allBrokenDown: "All broken down",
     lastDone: "Last done",
 
@@ -492,7 +497,11 @@ export const en = {
     deleteThisInvoice: "Delete this invoice",
     startFrom: "Start from",
     openPaymentLink: "Open payment link",
-    stripeMissing: "Add STRIPE_SECRET_KEY to .env to enable this.",
+    payOnlineIntro: "Send this for online payment, Freely never sees card details.",
+    pdfOnlyIntro: "Download this as a PDF and send it however you normally invoice.",
+    creatingCheckout: "Opening payment...",
+    resendForPayment: "Resend for payment",
+    sendForPayment: "Send for payment",
     backToProject: "Back to project",
     readyToBill: "{count} ready to bill",
     allBilled: "Everything on this project has been billed.",

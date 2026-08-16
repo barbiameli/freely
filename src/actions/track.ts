@@ -58,24 +58,20 @@ async function ownedVia(
   return { deliverableId: row.deliverableId, projectId: deliverable.projectId };
 }
 
-async function memoryFor(userId: string, user: {
+function memoryFor(user: {
   memoryInstructions: string;
   toneNotes: string;
   storyNotes: string;
   contextNotes: string;
-}): Promise<MemoryContext> {
-  const files = await prisma.memoryAsset.findMany({
-    where: { userId, type: "FILE" },
-    select: { name: true, textContent: true },
-  });
+}): MemoryContext {
+  // Deliberately no file read. Breakdowns work from the quote and the
+  // deliverable, so loading every saved file here was a database round trip
+  // and a much larger prompt for material the answer never used.
   return {
     instructions: user.memoryInstructions,
     toneNotes: user.toneNotes,
     storyNotes: user.storyNotes,
     contextNotes: user.contextNotes,
-    fileExcerpts: files
-      .filter((f) => f.textContent)
-      .map((f) => ({ name: f.name, text: f.textContent as string })),
   };
 }
 
@@ -176,7 +172,7 @@ export async function breakDownDeliverableAction(
 
   let breakdown;
   try {
-    breakdown = await breakDownDeliverable(await memoryFor(user.id, user), {
+    breakdown = await breakDownDeliverable(memoryFor(user), {
       projectTitle: project.title,
       client: project.client,
       deliverable: deliverable.name,

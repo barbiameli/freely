@@ -27,7 +27,7 @@ export async function createCheckoutSessionAction(
     return {
       ok: false,
       error:
-        "Stripe isn't configured yet. Add STRIPE_SECRET_KEY to your .env file to enable real invoicing.",
+        "Online payment isn't switched on for this account yet. The invoice PDF still works.",
     };
   }
   if (project.price <= 0) {

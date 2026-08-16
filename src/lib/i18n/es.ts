@@ -21,6 +21,7 @@ import type { Dictionary } from "@/lib/i18n/en";
  */
 export const es: Dictionary = {
   common: {
+    notNow: "Ahora no",
     save: "Guardar",
     saveChanges: "Guardar cambios",
     cancel: "Cancelar",
@@ -133,7 +134,8 @@ export const es: Dictionary = {
 
     setupTitle: "Tu configuracion habitual",
     setupFirstTitle: "Como funciona este presupuesto",
-    setupFirstHint: "Se responde una vez. Los siguientes presupuestos ya empiezan con esto puesto.",
+    setupFirstHint: "Se responde una vez. Esto se guarda en Memoria y a partir de ahora se rellena solo.",
+    setupSavedOnce: "Se pregunta una vez. Se guarda en Memoria y se rellena solo en los siguientes presupuestos.",
     setupRemembered: "Guardado de tu ultimo presupuesto. Cambia cualquier linea solo para este.",
     setupEditInMemory: "Editar en Memoria",
     setupRate: "Tarifa",
@@ -400,6 +402,9 @@ export const es: Dictionary = {
     noStepsYet: "Este todavía no tiene pasos.",
 
     workingOutSteps: "Sacando los pasos",
+    breakDownOffer: "Convertir esto en pasos",
+    breakDownWhy: "Cada entregable pasa a ser una lista corta de lo que implica el trabajo.",
+    breakDownCount: "entregables esperando",
     allBrokenDown: "Todo desglosado",
     lastDone: "Acabado",
 
@@ -490,7 +495,11 @@ export const es: Dictionary = {
     deleteThisInvoice: "Eliminar esta factura",
     startFrom: "Partir de",
     openPaymentLink: "Abrir enlace de pago",
-    stripeMissing: "Añade STRIPE_SECRET_KEY a .env para activarlo.",
+    payOnlineIntro: "Envía esto para cobrar online, Freely nunca ve los datos de la tarjeta.",
+    pdfOnlyIntro: "Descarga esto en PDF y envíalo como facturas normalmente.",
+    creatingCheckout: "Abriendo el pago...",
+    resendForPayment: "Volver a enviar para cobrar",
+    sendForPayment: "Enviar para cobrar",
     backToProject: "Volver al proyecto",
     readyToBill: "{count} listos para facturar",
     allBilled: "Ya está facturado todo este proyecto.",

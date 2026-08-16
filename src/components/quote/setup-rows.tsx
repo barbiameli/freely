@@ -224,6 +224,16 @@ export function SetupRows({
 
             {isOpen && (
               <div className="px-5 pb-4">
+                {/* Only on a row nobody has answered yet, and only while it is
+                    open, so the promise sits next to the work it is asking for
+                    rather than as a banner over four closed lines. It stops
+                    appearing the moment the row has an answer, which is also
+                    the moment it stops being true. */}
+                {!decided.includes(row) && (
+                  <p className="text-caption text-text-muted bg-paper rounded-lg px-3 py-2 mt-0 mb-3 text-pretty">
+                    {t.quote.setupSavedOnce}
+                  </p>
+                )}
                 {row === "rate" && (
                   <RateBody
                     draft={draft}

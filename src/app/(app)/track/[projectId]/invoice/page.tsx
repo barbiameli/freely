@@ -29,9 +29,7 @@ export default async function InvoicePage({ params }: { params: { projectId: str
       <div>
         <h1 className="font-display italic text-[30px] text-coral m-0">{t.invoices.summary}</h1>
         <p className="text-slate text-small mt-1.5">
-          {isStripeConfigured()
-            ? "Send this for real payment via Stripe's hosted checkout, Freely never touches card details."
-            : "A computed summary, connect Stripe (STRIPE_SECRET_KEY in .env) to accept real payment."}{" "}
+          {isStripeConfigured() ? t.invoices.payOnlineIntro : t.invoices.pdfOnlyIntro}{" "}
           <Link href={`/track/${project.id}`} className="text-violet font-semibold">
             {t.invoices.backToProject}
           </Link>
