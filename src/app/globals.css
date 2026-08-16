@@ -272,3 +272,50 @@ select:focus {
     animation: none;
   }
 }
+
+/* Freely arriving at the top of the page.
+
+   Dropping in rather than fading. A card that fades in at the top of a screen
+   is a cookie banner, and people have learned to close those without reading
+   them. Something that drops and settles reads as somebody arriving. */
+@keyframes guide-in {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -24px);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(-50%, 4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+.animate-guide-in {
+  animation: guide-in 0.42s cubic-bezier(0.16, 0.84, 0.28, 1) both;
+}
+
+/* The blink. Long gaps and a very short close, which is what a blink is: at
+   even intervals it reads as a fault rather than as a face. */
+@keyframes guide-blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}
+.guide-face-eyes {
+  transform-origin: center 18px;
+  animation: guide-blink 5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-guide-in,
+  .guide-face-eyes {
+    animation: none;
+  }
+}

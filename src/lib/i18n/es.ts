@@ -842,6 +842,7 @@ export const es: Dictionary = {
   },
 
   guide: {
+    showMe: "Enseñamelo",
     gotIt: "Entendido",
     quoteTitle: "Empieza por el encargo",
     quoteBody: "Pega lo que te ha mandado el cliente, o subelo. Recibes un presupuesto con alcance, entregables, plazos y precio.",

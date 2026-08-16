@@ -849,6 +849,7 @@ export const en = {
   },
 
   guide: {
+    showMe: "Show me",
     gotIt: "Got it",
     quoteTitle: "Start with a brief",
     quoteBody: "Paste what the client sent you, or upload it. You get back a quote with scope, deliverables, a timeline and a price.",
