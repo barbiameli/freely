@@ -1,18 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  X,
-  FileText,
-  Send,
-  ListChecks,
-  Globe,
-  Link2,
-  Receipt,
-  type LucideIcon,
-} from "lucide-react";
+import { X } from "lucide-react";
 import { dismissGuideStepAction } from "@/actions/guide";
-import { FreelyFace } from "@/components/guide/freely-face";
+import { GuideArt } from "@/components/guide/guide-art";
 import type { GuideStep } from "@/lib/guide";
 import { useT } from "@/lib/i18n/context";
 import type { Dictionary } from "@/lib/i18n";
@@ -33,10 +24,15 @@ import type { Dictionary } from "@/lib/i18n";
  * the button is made by ringing the button rather than by sitting next to it,
  * and a Show me scrolls to it for anybody who cannot see it.
  *
- * It has a face and an icon: the face so the advice reads as somebody talking
- * rather than as a system message, the icon so the subject is legible before
- * the sentence is. It arrives with a small drop, because a card that fades in
- * at the top of a page is a cookie banner and gets treated like one.
+ * White, with a small line drawing of whatever it is describing. Dark was the
+ * wrong instinct: at the top of a page a dark slab reads as a system message,
+ * and a system message is something people close without reading. White with a
+ * border is the same material as every other card in the app, so it reads as
+ * part of Freely rather than as an interruption from it.
+ *
+ * The drawing does the work the colour was meant to do. It arrives with a small
+ * drop, because something that fades in at the top of a page is a cookie banner
+ * and gets treated like one.
  */
 export function CoachMark({ step }: { step: GuideStep }) {
   const t = useT();
@@ -67,24 +63,21 @@ export function CoachMark({ step }: { step: GuideStep }) {
 
   if (gone) return null;
 
-  const { title, body, Icon } = wording(step, t);
+  const { title, body } = wording(step, t);
 
   return (
     <div className="fixed top-4 left-1/2 -translate-x-1/2 z-40 w-[min(520px,calc(100vw-32px))] animate-guide-in motion-reduce:animate-none">
-      <div className="flex items-start gap-3.5 bg-ink text-white rounded-card shadow-dialog px-4 py-3.5">
-        <FreelyFace />
+      <div className="flex items-start gap-4 bg-white border border-line rounded-card shadow-dialog px-4 py-4">
+        <GuideArt step={step} />
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <Icon size={13} className="text-white/70 shrink-0" />
-            <span className="font-body font-bold text-small text-white text-pretty">{title}</span>
-          </div>
-          <p className="text-meta text-white/80 mt-1 mb-0 text-pretty">{body}</p>
+          <div className="font-body font-bold text-small text-ink text-pretty">{title}</div>
+          <p className="text-meta text-slate mt-1 mb-0 text-pretty">{body}</p>
 
           <button
             type="button"
             onClick={show}
-            className="font-body font-bold text-meta text-ink bg-white rounded-full px-3 py-1.5 border-none cursor-pointer mt-2.5 tap hover:opacity-90 transition-opacity"
+            className="font-body font-bold text-meta text-white bg-violet rounded-full px-3.5 py-1.5 border-none cursor-pointer mt-3 tap hover:opacity-90 transition-opacity"
           >
             {t.guide.showMe}
           </button>
@@ -94,7 +87,7 @@ export function CoachMark({ step }: { step: GuideStep }) {
           type="button"
           onClick={dismiss}
           aria-label={t.common.close}
-          className="shrink-0 text-white/50 hover:text-white bg-none border-none cursor-pointer p-0 tap"
+          className="shrink-0 text-text-muted hover:text-ink bg-none border-none cursor-pointer p-0 tap"
         >
           <X size={15} />
         </button>
@@ -104,29 +97,26 @@ export function CoachMark({ step }: { step: GuideStep }) {
 }
 
 /**
- * The words and the picture for a step.
+ * The two lines for a step.
  *
  * A switch rather than a lookup, so a step added without copy fails to compile
  * instead of rendering "undefined" at somebody.
  */
-function wording(
-  step: GuideStep,
-  t: Dictionary
-): { title: string; body: string; Icon: LucideIcon } {
+function wording(step: GuideStep, t: Dictionary): { title: string; body: string } {
   switch (step) {
     case "quote":
-      return { title: t.guide.quoteTitle, body: t.guide.quoteBody, Icon: FileText };
+      return { title: t.guide.quoteTitle, body: t.guide.quoteBody };
     case "publish":
-      return { title: t.guide.publishTitle, body: t.guide.publishBody, Icon: Send };
+      return { title: t.guide.publishTitle, body: t.guide.publishBody };
     case "track":
-      return { title: t.guide.trackTitle, body: t.guide.trackBody, Icon: ListChecks };
+      return { title: t.guide.trackTitle, body: t.guide.trackBody };
     case "breakdown":
-      return { title: t.guide.breakdownTitle, body: t.guide.breakdownBody, Icon: ListChecks };
+      return { title: t.guide.breakdownTitle, body: t.guide.breakdownBody };
     case "client":
-      return { title: t.guide.clientTitle, body: t.guide.clientBody, Icon: Globe };
+      return { title: t.guide.clientTitle, body: t.guide.clientBody };
     case "share":
-      return { title: t.guide.shareTitle, body: t.guide.shareBody, Icon: Link2 };
+      return { title: t.guide.shareTitle, body: t.guide.shareBody };
     case "invoice":
-      return { title: t.guide.invoiceTitle, body: t.guide.invoiceBody, Icon: Receipt };
+      return { title: t.guide.invoiceTitle, body: t.guide.invoiceBody };
   }
 }

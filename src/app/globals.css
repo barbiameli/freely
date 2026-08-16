@@ -296,26 +296,27 @@ select:focus {
   animation: guide-in 0.42s cubic-bezier(0.16, 0.84, 0.28, 1) both;
 }
 
-/* The blink. Long gaps and a very short close, which is what a blink is: at
-   even intervals it reads as a fault rather than as a face. */
-@keyframes guide-blink {
+/* The drawing, breathing.
+
+   Very little movement, on a long cycle. Enough that the eye comes back to it
+   once, which is the whole job; any more and it becomes the thing you are
+   trying not to look at while reading the sentence next to it. */
+@keyframes guide-bob {
   0%,
-  92%,
   100% {
-    transform: scaleY(1);
+    transform: translateY(0);
   }
-  95% {
-    transform: scaleY(0.1);
+  50% {
+    transform: translateY(-3px);
   }
 }
-.guide-face-eyes {
-  transform-origin: center 18px;
-  animation: guide-blink 5s ease-in-out infinite;
+.guide-art {
+  animation: guide-bob 3.4s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-guide-in,
-  .guide-face-eyes {
+  .guide-art {
     animation: none;
   }
 }
