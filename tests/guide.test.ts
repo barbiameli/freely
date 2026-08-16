@@ -19,6 +19,9 @@ function fresh(over: Partial<GuideState> = {}): GuideState {
     brokenDownDeliverables: 0,
     diaryEntries: 0,
     invoices: 0,
+    publishedProjects: 0,
+    deliverables: 0,
+    doneDeliverables: 0,
     seen: [],
     ...over,
   };
@@ -54,6 +57,7 @@ describe("nextHint", () => {
       publishedQuotes: 3,
       acceptedQuotes: 2,
       projects: 2,
+      publishedProjects: 2,
       brokenDownDeliverables: 8,
       diaryEntries: 4,
       invoices: 1,
@@ -83,18 +87,34 @@ describe("isReady", () => {
     expect(isReady("track", fresh({ acceptedQuotes: 1, projects: 1 }))).toBe(false);
   });
 
-  it("does not mention the client page before there is progress to show", () => {
-    // The failure this prevents: being taught to publish a client page on the
-    // day you sign up, with nothing on it.
+  it("offers the client page as soon as anything is tracked", () => {
+    // Deliberately not waiting for a breakdown. Breaking work into steps is a
+    // feature somebody may never use, and gating the client page behind it hid
+    // the most distinctive thing in the product from exactly those people.
     expect(isReady("client", fresh())).toBe(false);
-    expect(isReady("client", fresh({ projects: 1 }))).toBe(false);
-    expect(isReady("client", fresh({ brokenDownDeliverables: 3 }))).toBe(true);
+    expect(isReady("client", fresh({ projects: 1 }))).toBe(true);
+    expect(isReady("client", fresh({ projects: 1, publishedProjects: 1 }))).toBe(false);
+  });
+
+  it("asks for an update only once a page exists to put it on", () => {
+    expect(isReady("share", fresh({ projects: 1 }))).toBe(false);
+    expect(isReady("share", fresh({ projects: 1, publishedProjects: 1 }))).toBe(true);
+    expect(
+      isReady("share", fresh({ projects: 1, publishedProjects: 1, diaryEntries: 1 }))
+    ).toBe(false);
   });
 
   it("does not mention invoicing before anything has been done", () => {
     expect(isReady("invoice", fresh())).toBe(false);
     expect(isReady("invoice", fresh({ diaryEntries: 1 }))).toBe(true);
     expect(isReady("invoice", fresh({ diaryEntries: 1, invoices: 1 }))).toBe(false);
+  });
+
+  it("mentions invoicing the moment the last box is ticked", () => {
+    // Somebody who finished the work is owed money, whether or not they ever
+    // used the client page.
+    expect(isReady("invoice", fresh({ deliverables: 4, doneDeliverables: 3 }))).toBe(false);
+    expect(isReady("invoice", fresh({ deliverables: 4, doneDeliverables: 4 }))).toBe(true);
   });
 });
 

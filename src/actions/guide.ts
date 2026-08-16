@@ -19,17 +19,30 @@ export async function guideStateFor(userId: string): Promise<GuideState | null> 
 
   const scope = teamScopeWhere(user);
 
-  const [quotes, publishedQuotes, acceptedQuotes, projects, brokenDown, diaryEntries, invoices] =
-    await Promise.all([
+  const [
+    quotes,
+    publishedQuotes,
+    acceptedQuotes,
+    projects,
+    publishedProjects,
+    brokenDown,
+    diaryEntries,
+    invoices,
+    deliverables,
+    doneDeliverables,
+  ] = await Promise.all([
       prisma.brief.count({ where: scope }),
       prisma.brief.count({ where: { ...scope, published: true } }),
       prisma.brief.count({ where: { ...scope, status: "TRACKED" } }),
       prisma.project.count({ where: scope }),
+      prisma.project.count({ where: { ...scope, published: true } }),
       prisma.deliverable.count({
         where: { project: scope, brokenDownAt: { not: null } },
       } as unknown as { where: Record<string, unknown> }),
       prisma.diaryEntry.count({ where: { project: scope } }),
       prisma.invoice.count({ where: scope }),
+      prisma.deliverable.count({ where: { project: scope } }),
+      prisma.deliverable.count({ where: { project: scope, done: true } }),
     ]);
 
   return {
@@ -40,6 +53,9 @@ export async function guideStateFor(userId: string): Promise<GuideState | null> 
     brokenDownDeliverables: brokenDown,
     diaryEntries,
     invoices,
+    publishedProjects,
+    deliverables,
+    doneDeliverables,
     seen: ((user as unknown as { guideSeen?: string[] }).guideSeen ?? []) as GuideStep[],
   };
 }

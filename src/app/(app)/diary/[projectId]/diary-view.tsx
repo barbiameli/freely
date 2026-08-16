@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, Copy, Check as CheckIcon, ExternalLink, Globe } from "lucide-react";
+import { SendToDiary } from "@/components/track/send-to-diary";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -126,6 +127,7 @@ export function DiaryView({
                 setCopied(true);
                 setTimeout(() => setCopied(false), 1500);
               }}
+              data-guide="share"
               className="flex items-center gap-1.5 text-caption font-semibold text-violet bg-none border-none cursor-pointer p-0 tap shrink-0"
             >
               {copied ? <CheckIcon size={13} /> : <Copy size={13} />}
@@ -284,8 +286,36 @@ export function DiaryView({
                 {statusLabel(project.status, t)}
               </span>
             </p>
+            {tabs && <div className="mt-3">{tabs}</div>}
           </div>
-          {tabs}
+          {/* Both client-facing actions, together. "Send to diary" used to sit
+              on the private side of the project next to somebody's rate, which
+              is why it read as out of place there. Invoicing is here as well
+              as on the work side, because finishing a project and invoicing it
+              is the same moment whichever side you happen to be looking at. */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <SendToDiary
+              projectId={project.id}
+              source={{
+                deliverables: project.deliverables.map((d) => ({
+                  id: d.id,
+                  name: project.plainLanguage ? d.clientName || d.name : d.name,
+                  done: d.done,
+                })),
+                questions: project.deliverables
+                  .flatMap((d) => d.flags)
+                  .filter((f) => !f.resolved)
+                  .map((f) => ({ id: f.id, question: f.question })),
+                dueLabel: null,
+              }}
+            />
+            <Button
+              data-guide="invoice"
+              onClick={() => router.push(`/track/${project.id}/invoice`)}
+            >
+              {t.track.invoiceThis}
+            </Button>
+          </div>
         </div>
 
         {body}

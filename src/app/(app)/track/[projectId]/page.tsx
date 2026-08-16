@@ -76,7 +76,7 @@ export default async function ProjectPage({
     <>
       {clientView ? (
         <DiaryView
-          tabs={<ProjectTabs projectId={project.id} />}
+          tabs={<ProjectTabs projectId={project.id} published={project.published} />}
           allProjects={allProjects}
           project={{
             id: project.id,
@@ -122,14 +122,11 @@ export default async function ProjectPage({
         />
       ) : (
     <ProjectDetail
-      tabs={<ProjectTabs projectId={project.id} />}
+      tabs={<ProjectTabs projectId={project.id} published={project.published} />}
       // A project with milestones bills per milestone by definition, so that
       // wins over reading the payment terms. Detection is the fallback for
       // everything quoted before milestones existed.
       billing={milestones.length ? "PER_MILESTONE" : detected.mode}
-      plainLanguage={Boolean(
-        (project as unknown as { plainLanguage?: boolean }).plainLanguage
-      )}
       milestones={milestones.map((ms) => ({
         id: ms.id,
         name: ms.name,

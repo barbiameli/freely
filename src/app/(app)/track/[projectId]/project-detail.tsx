@@ -8,11 +8,11 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
+import { relativeDay } from "@/lib/schedule";
 import { Chip } from "@/components/ui/chip";
 import { TimelineBar } from "@/components/track/timeline-bar";
 import { DeliverableItem, type DeliverableView } from "@/components/track/deliverable-item";
 import { DiaryPrompt, type DoneItem } from "@/components/track/diary-prompt";
-import { SendToDiary } from "@/components/track/send-to-diary";
 import { StatRow } from "@/components/track/stat-row";
 import { ComingUp } from "@/components/track/coming-up";
 import { BreakdownOffer } from "@/components/track/breakdown-offer";
@@ -30,7 +30,6 @@ import {
   upcomingDeadlines,
   type HealthProject,
 } from "@/lib/project-health";
-import { formatDay, relativeDay } from "@/lib/schedule";
 import { currencySymbol } from "@/lib/currencies";
 import { useAction } from "@/lib/use-action";
 import { useT, useLocale } from "@/lib/i18n/context";
@@ -173,7 +172,6 @@ export function ProjectDetail({
   projectList,
   billing,
   milestones: quotedMilestones = [],
-  plainLanguage = false,
   /** The Your work / What the client sees strip, placed in the title row. */
   tabs,
 }: {
@@ -188,8 +186,6 @@ export function ProjectDetail({
    * agreed to, so the tracker shows it rather than offering to rearrange it.
    */
   milestones?: MilestoneView[];
-  /** Whether the client's page is written in plain language. */
-  plainLanguage?: boolean;
   tabs?: ReactNode;
 }) {
   const router = useRouter();
@@ -284,26 +280,11 @@ export function ProjectDetail({
             <p className="text-slate text-small mt-1.5">{project.client}</p>
             {tabs && <div className="mt-3">{tabs}</div>}
           </div>
+          {/* Only the invoice here. "Send to diary" used to sit alongside it,
+              which put a client-facing action in the middle of the private
+              side of the project, next to somebody's rate and their own
+              questions. It belongs with the client page and now lives there. */}
           <div className="flex items-center gap-2.5 shrink-0">
-            {/* Asks what the client should see before sending anything. It used
-                to send one line that named nothing you had ticked. */}
-            <SendToDiary
-              projectId={project.id}
-              source={{
-                deliverables: project.deliverables.map((d) => ({
-                  id: d.id,
-                  // The client's wording where there is one, so an update and
-                  // the page it lands on do not read as two different projects.
-                  name: plainLanguage ? d.clientName || d.name : d.name,
-                  done: d.done,
-                })),
-                questions: project.deliverables
-                  .flatMap((d) => d.flags)
-                  .filter((f) => !f.resolved)
-                  .map((f) => ({ id: f.id, question: f.question })),
-                dueLabel: health.dueDate ? formatDay(health.dueDate as Date, locale) : null,
-              }}
-            />
             <Button data-guide="invoice" onClick={() => router.push(`/track/${project.id}/invoice`)}>
               {t.track.generateInvoice}, {currencySymbol(project.currency)}
               {project.price.toLocaleString()}
