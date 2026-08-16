@@ -814,6 +814,22 @@ export const es: Dictionary = {
     finishSetup: "Terminar",
   },
 
+  guide: {
+    gotIt: "Entendido",
+    quoteTitle: "Empieza por el encargo",
+    quoteBody: "Pega lo que te ha mandado el cliente, o subelo. Recibes un presupuesto con alcance, entregables, plazos y precio.",
+    publishTitle: "Enviaselo a tu cliente",
+    publishBody: "Al publicarlo tienes un enlace que abre en el navegador, con tu nombre y tus colores. Puede aceptarlo ahi mismo.",
+    trackTitle: "Pasa esto a Track",
+    trackBody: "Todo lo que presupuestaste se convierte en el trabajo, asi lo que haces y lo que acordasteis son la misma lista. De ahi salen tambien las cifras de la factura.",
+    breakdownTitle: "Conviertelo en pasos",
+    breakdownBody: "Cada entregable pasa a ser una lista corta de lo que implica el trabajo, con los riesgos que conviene tener en cuenta.",
+    clientTitle: "Deja que tu cliente vea como va",
+    clientBody: "Manda una actualizacion a su pagina de proyecto y podra mirarla cuando quiera. Muchos menos correos preguntando.",
+    invoiceTitle: "Factura el trabajo terminado",
+    invoiceBody: "Las horas y las cifras ya estan aqui. Tus condiciones y tus datos de pago van dentro.",
+  },
+
   marketing: {
     home: "Inicio",
     logIn: "Entrar",

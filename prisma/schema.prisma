@@ -99,6 +99,16 @@ model User {
   stripeChargesEnabled Boolean @default(false)
   // When the checks last came back clear, for saying so on the settings page.
   stripeConnectedAt  DateTime?
+
+  // Which pieces of the guide this person has already been shown.
+  //
+  // Stored as a list of step names rather than a column per step, because the
+  // set of steps is a product decision that will change and a boolean column
+  // per hint is a migration every time somebody adds one.
+  //
+  // On the account rather than in the browser: a hint that reappears because
+  // somebody opened Freely on their phone is a hint that reads as a bug.
+  guideSeen          String[] @default([])
   // The rate this freelancer usually charges, and whether it is per hour or
   // per day. Prefilled into every quote so it is not retyped, and still
   // editable per quote, since one job is not always priced like the last.

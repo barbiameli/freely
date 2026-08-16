@@ -845,7 +845,7 @@ export function QuoteWizard({
                 {t.quote.stop}
               </Button>
             ) : (
-              <Button icon={Sparkles} onClick={handleGenerate}>
+              <Button icon={Sparkles} onClick={handleGenerate} data-guide="quote">
                 {t.quote.generate}
               </Button>
             )}

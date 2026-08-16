@@ -821,6 +821,22 @@ export const en = {
     finishSetup: "Finish setup",
   },
 
+  guide: {
+    gotIt: "Got it",
+    quoteTitle: "Start with a brief",
+    quoteBody: "Paste what the client sent you, or upload it. You get back a quote with scope, deliverables, a timeline and a price.",
+    publishTitle: "Send it to your client",
+    publishBody: "Publishing gives you a link they open in a browser, with your name and colours on it. They can accept it there.",
+    trackTitle: "Put this into Track",
+    trackBody: "Everything you quoted becomes the work, so what you are doing and what you agreed stay the same list. It is also where the invoice gets its figures.",
+    breakdownTitle: "Turn these into steps",
+    breakdownBody: "Each deliverable becomes a short list of what the work involves, with the risks worth knowing about.",
+    clientTitle: "Let your client see how it is going",
+    clientBody: "Send an update to their project page and they can check whenever they like. Far fewer emails asking.",
+    invoiceTitle: "Invoice the finished work",
+    invoiceBody: "The hours and figures are already here. Your terms and payment details go on it.",
+  },
+
   marketing: {
     home: "Home",
     logIn: "Log in",

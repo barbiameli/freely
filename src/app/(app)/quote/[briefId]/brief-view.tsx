@@ -914,7 +914,7 @@ export function BriefView({
             </button>
           </div>
         ) : (
-          <Button icon={Link2} disabled={publishing} onClick={handleTogglePublish}>
+          <Button icon={Link2} disabled={publishing} onClick={handleTogglePublish} data-guide="publish">
             {publishing ? "Publishing..." : "Publish as a page"}
           </Button>
         )}

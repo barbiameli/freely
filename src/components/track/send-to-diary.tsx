@@ -75,7 +75,7 @@ export function SendToDiary({
 
   return (
     <>
-      <Button variant="ghost" icon={Send} onClick={start}>
+      <Button variant="ghost" icon={Send} onClick={start} data-guide="client">
         {t.track.sendToDiary}
       </Button>
 

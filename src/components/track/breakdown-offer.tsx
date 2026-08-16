@@ -96,6 +96,7 @@ export function BreakdownOffer({
           <button
             type="button"
             onClick={() => void run()}
+            data-guide="breakdown"
             className="font-body font-semibold text-meta text-white bg-violet border-none rounded-full px-3.5 py-2 cursor-pointer tap"
           >
             {t.track.breakDownOffer}

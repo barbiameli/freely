@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { GuideMount } from "@/components/guide/guide-mount";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import { hasOwnBranding } from "@/lib/branding";
@@ -92,6 +93,8 @@ export default async function QuotePage({
     }));
 
   return (
+    <>
+
     <QuoteWizard
       signed={signed}
       landedQuotes={toAskAbout.map((q) => ({
@@ -128,5 +131,7 @@ export default async function QuotePage({
       // and the wizard would ask everything again on every quote.
       saved={user as unknown as AccountDefaults}
     />
+      <GuideMount screen="/quote" />
+    </>
   );
 }

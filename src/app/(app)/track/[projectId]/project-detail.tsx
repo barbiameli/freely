@@ -300,7 +300,7 @@ export function ProjectDetail({
                 dueLabel: health.dueDate ? formatDay(health.dueDate as Date, locale) : null,
               }}
             />
-            <Button onClick={() => router.push(`/track/${project.id}/invoice`)}>
+            <Button data-guide="invoice" onClick={() => router.push(`/track/${project.id}/invoice`)}>
               {t.track.generateInvoice}, {currencySymbol(project.currency)}
               {project.price.toLocaleString()}
             </Button>

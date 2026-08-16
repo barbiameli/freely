@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { GuideMount } from "@/components/guide/guide-mount";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import type { Strategy, BriefExtras } from "@/lib/anthropic";
@@ -30,6 +31,8 @@ export default async function BriefPage({ params }: { params: { briefId: string 
   });
 
   return (
+    <>
+
     <BriefView
       brief={{
         id: brief.id,
@@ -83,5 +86,7 @@ export default async function BriefPage({ params }: { params: { briefId: string 
       }}
       history={history}
     />
+      <GuideMount screen="/quote/brief" />
+    </>
   );
 }

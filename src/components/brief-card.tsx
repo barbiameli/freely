@@ -134,6 +134,7 @@ export function BriefCard({ brief }: { brief: BriefSummary }) {
               }
             });
           }}
+          data-guide="track"
           className="flex items-center justify-center gap-1.5 w-full text-meta font-bold text-white bg-violet rounded-lg py-2 border-none cursor-pointer disabled:opacity-50"
         >
           {pending ? t.quote.sending : t.quote.sendToTrack}

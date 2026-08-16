@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { GuideMount } from "@/components/guide/guide-mount";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import { deliverableDb, milestoneDb, projectSchedule } from "@/lib/track-db";
@@ -60,6 +61,8 @@ export default async function ProjectPage({ params }: { params: { projectId: str
   });
 
   return (
+    <>
+
     <ProjectDetail
       // A project with milestones bills per milestone by definition, so that
       // wins over reading the payment terms. Detection is the fallback for
@@ -121,5 +124,7 @@ export default async function ProjectPage({ params }: { params: { projectId: str
       }}
       projectList={allProjects}
     />
+      <GuideMount screen="/track/project" />
+    </>
   );
 }
