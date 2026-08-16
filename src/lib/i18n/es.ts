@@ -610,7 +610,6 @@ export const es: Dictionary = {
     publish: "Publicar",
     published: "Publicada",
     entries: "Entradas",
-    latestUpdate: "Última actualización",
     writeUpdate: "Escribe una actualización rápida para el diario...",
     openPage: "Abrir la página",
   },
@@ -899,12 +898,17 @@ export const es: Dictionary = {
   },
 
   publicPage: {
+    nextSteps: "Lo que viene",
+    timeline: "Calendario",
+    started: "Empezado",
+    due: "Fecha final",
+    allDone: "Esta todo hecho.",
+    nothingYet: "El trabajo todavia no ha empezado.",
+    stepsDone: "{done} de {total} pasos",
     deliverables: "Entregables",
     updates: "Novedades",
     signedOff: "Terminado y aprobado.",
     progress: "{done} de {total} hechos",
-    latestUpdate: "Última actualización",
-    noUpdates: "Todavía no hay novedades.",
     projectUpdate: "Novedades del proyecto",
   },
 

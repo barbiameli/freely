@@ -612,7 +612,6 @@ export const en = {
     publish: "Publish",
     published: "Published",
     entries: "Entries",
-    latestUpdate: "Latest update",
     writeUpdate: "Write a quick update to add to the diary...",
     openPage: "Open page",
   },
@@ -906,12 +905,17 @@ export const en = {
   },
 
   publicPage: {
+    nextSteps: "Next steps",
+    timeline: "Timeline",
+    started: "Started",
+    due: "Due",
+    allDone: "Everything is done.",
+    nothingYet: "Work has not started yet.",
+    stepsDone: "{done} of {total} steps",
     deliverables: "Deliverables",
     updates: "Updates",
     signedOff: "Finished and signed off.",
     progress: "{done} of {total} done",
-    latestUpdate: "Latest update",
-    noUpdates: "No updates yet.",
     projectUpdate: "Project update",
   },
 

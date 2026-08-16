@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { dict, fill } from "@/lib/i18n";
+import { recentlyDone, comingUp, type ClientDeliverable } from "@/lib/client-page";
+import { ClientDeliverableRow } from "./client-sections";
 import { statusLabel } from "@/lib/project-status";
-import { UpdateBody } from "@/components/update-body";
 import { formatLongDay } from "@/lib/schedule";
 
 export const dynamic = "force-dynamic";
@@ -24,8 +25,12 @@ export default async function PublicProjectPage({ params }: { params: { slug: st
   const project = await prisma.project.findUnique({
     where: { publicSlug: params.slug },
     include: {
-      deliverables: { orderBy: { order: "asc" } },
-      diaryEntries: { orderBy: { date: "desc" } },
+      deliverables: {
+        orderBy: { order: "asc" },
+        // The broken-down list, for the chevron and for working out what has
+        // just been finished.
+        include: { steps: { orderBy: { order: "asc" } } },
+      },
       brief: true,
       user: {
         select: {
@@ -53,6 +58,35 @@ export default async function PublicProjectPage({ params }: { params: { slug: st
   const plainLanguage = Boolean(
     (project as unknown as { plainLanguage?: boolean }).plainLanguage
   );
+  // The tracker's own rows, in the shape lib/client-page works in. The client
+  // wording where the project is set to plain language, falling back to the
+  // real name so a line that was never rewritten still appears.
+  const deliverables: ClientDeliverable[] = project.deliverables.map((d) => {
+    const row = d as unknown as {
+      id: string;
+      name: string;
+      done: boolean;
+      doneAt: Date | null;
+      dueAt: Date | null;
+      order: number;
+      clientName?: string | null;
+      steps?: { id: string; name: string; done: boolean; order: number }[];
+    };
+    return {
+      id: row.id,
+      name: (plainLanguage && row.clientName) || row.name,
+      done: row.done,
+      doneAt: row.doneAt ?? null,
+      dueAt: row.dueAt ?? null,
+      order: row.order,
+      steps: row.steps ?? [],
+    };
+  });
+
+  const justDone = recentlyDone(deliverables);
+  const next = comingUp(deliverables);
+  const schedule = project as unknown as { startDate: Date | null; dueDate: Date | null };
+
   const done = project.deliverables.filter((d) => d.done).length;
   const total = project.deliverables.length;
   const primary = project.user.brandPrimaryColor || "#F45B69";
@@ -124,81 +158,114 @@ export default async function PublicProjectPage({ params }: { params: { slug: st
               </div>
             )}
 
+            {/* The timeline, when there is one. Two dates rather than a
+                graphic: a client wants to know when it started and when it is
+                meant to be finished, and a bar with no labelled points on it
+                answers neither. */}
+            {(schedule.startDate || schedule.dueDate) && (
+              <section className="flex flex-wrap gap-x-8 gap-y-3 border-y border-line py-3.5">
+                {schedule.startDate && (
+                  <div>
+                    <div className="font-body text-caption uppercase tracking-wide text-text-muted">
+                      {q.started}
+                    </div>
+                    <div className="font-body font-semibold text-small text-ink mt-0.5">
+                      {formatLongDay(new Date(schedule.startDate), quoteLanguage)}
+                    </div>
+                  </div>
+                )}
+                {schedule.dueDate && (
+                  <div>
+                    <div className="font-body text-caption uppercase tracking-wide text-text-muted">
+                      {q.due}
+                    </div>
+                    <div className="font-body font-semibold text-small text-ink mt-0.5">
+                      {formatLongDay(new Date(schedule.dueDate), quoteLanguage)}
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
+
             {total > 0 && (
               <section>
-                <h2 className="font-body font-bold text-caption uppercase tracking-wide text-text-muted m-0 mb-3">
+                <h2 className="font-body font-bold text-caption uppercase tracking-wide text-text-muted m-0 mb-1">
                   {q.deliverables}
                 </h2>
-                <ul className="list-none p-0 m-0 flex flex-col gap-2">
-                  {project.deliverables.map((d) => (
-                    <li key={d.id} className="flex items-start gap-2.5">
-                      <span
-                        className="mt-[3px] w-4 h-4 rounded-full shrink-0 flex items-center justify-center text-[10px] text-white"
-                        style={{ backgroundColor: d.done ? primary : "#E8EAEF" }}
-                      >
-                        {d.done ? "✓" : ""}
-                      </span>
-                      {/* The plain version when the project is set to it, the
-                          tracker's own wording when it is not. Falls back to
-                          the name either way, so a line that was never
-                          rewritten still appears rather than vanishing. */}
-                      <span
-                        className={`text-small leading-relaxed ${
-                          d.done ? "text-text-muted line-through" : "text-slate"
-                        }`}
-                      >
-                        {plainLanguage
-                          ? (d as unknown as { clientName?: string | null }).clientName ||
-                            d.name
-                          : d.name}
-                      </span>
-                    </li>
+                <ul className="list-none p-0 m-0">
+                  {deliverables.map((d) => (
+                    <ClientDeliverableRow
+                      key={d.id}
+                      deliverable={d}
+                      label={d.name}
+                      primary={primary}
+                      stepsLabel={q.stepsDone}
+                    />
                   ))}
                 </ul>
               </section>
             )}
 
-            {project.diaryEntries.length > 0 && (
-              <section>
-                <h2 className="font-body font-bold text-caption uppercase tracking-wide text-text-muted m-0 mb-3">
-                  {q.updates}
-                </h2>
-                <div className="flex flex-col">
-                  {project.diaryEntries.map((entry, i) => (
-                    <article
-                      key={entry.id}
-                      className={`flex gap-3 py-3.5 ${
-                        i < project.diaryEntries.length - 1 ? "border-b border-line" : ""
-                      }`}
-                    >
-                      <div className="flex flex-col items-center shrink-0 pt-1.5">
-                        <span
-                          className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: i === 0 ? primary : "#E8EAEF" }}
-                        />
-                        {i < project.diaryEntries.length - 1 && (
-                          <span className="w-px flex-1 bg-line mt-1.5" />
+            {/* What has just been finished, worked out from the work itself.
+                It used to be whatever the freelancer had last written and sent,
+                which made the page only as current as the last time somebody
+                remembered to write one. */}
+            <section>
+              <h2 className="font-body font-bold text-caption uppercase tracking-wide text-text-muted m-0 mb-3">
+                {q.updates}
+              </h2>
+              {justDone.length === 0 ? (
+                <p className="text-small text-text-muted m-0">{q.nothingYet}</p>
+              ) : (
+                <ul className="list-none p-0 m-0 flex flex-col gap-2.5">
+                  {justDone.map((line) => (
+                    <li key={line.id} className="flex items-start gap-2.5">
+                      <span
+                        className="mt-[7px] w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{ backgroundColor: primary }}
+                      />
+                      <span className="min-w-0">
+                        <span className="block text-small text-ink leading-relaxed">
+                          {line.text}
+                        </span>
+                        {line.under && (
+                          <span className="block text-caption text-text-muted mt-0.5">
+                            {line.under}
+                          </span>
                         )}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-caption text-text-muted">
-                          {formatLongDay(new Date(entry.date), quoteLanguage)}
-                        </div>
-                        {/* Structured, not just paragraphed. A kick-off update
-                            is a week-by-week plan and now looks like one. */}
-                        <div className="mt-1">
-                          <UpdateBody text={entry.body} size="body" />
-                        </div>
-                      </div>
-                    </article>
+                      </span>
+                    </li>
                   ))}
-                </div>
-              </section>
-            )}
+                </ul>
+              )}
+            </section>
 
-            {project.diaryEntries.length === 0 && (
-              <p className="text-body text-text-muted m-0">{q.noUpdates}</p>
-            )}
+            <section>
+              <h2 className="font-body font-bold text-caption uppercase tracking-wide text-text-muted m-0 mb-3">
+                {q.nextSteps}
+              </h2>
+              {next.length === 0 ? (
+                <p className="text-small text-text-muted m-0">{q.allDone}</p>
+              ) : (
+                <ul className="list-none p-0 m-0 flex flex-col gap-2.5">
+                  {next.map((line) => (
+                    <li key={line.id} className="flex items-start gap-2.5">
+                      <span className="mt-[6px] w-1.5 h-1.5 rounded-full bg-line shrink-0" />
+                      <span className="min-w-0">
+                        <span className="block text-small text-slate leading-relaxed">
+                          {line.text}
+                        </span>
+                        {line.under && (
+                          <span className="block text-caption text-text-muted mt-0.5">
+                            {line.under}
+                          </span>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           </div>
         </div>
 
