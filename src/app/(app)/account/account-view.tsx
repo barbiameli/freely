@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Trash2, Save, KeyRound } from "lucide-react";
 import { updateAccountAction, changePasswordAction, deleteAccountAction } from "@/actions/account";
 import { setMarketingOptInAction, setNudgeEmailsAction } from "@/actions/marketing";
+import { PaymentsCard } from "@/components/account/payments-card";
+import type { ConnectState } from "@/lib/stripe-connect";
 import { useT } from "@/lib/i18n/context";
 
 export function AccountView({
@@ -19,6 +21,8 @@ export function AccountView({
   hasPassword,
   nudgeEmails,
   marketingOptIn,
+  stripeState,
+  justReturnedFromStripe,
 }: {
   name: string | null;
   studioName: string | null;
@@ -28,6 +32,9 @@ export function AccountView({
   nudgeEmails: boolean;
   /** Product news. Off unless they said yes. */
   marketingOptIn: boolean;
+  /** Where they are with linking their own Stripe account. */
+  stripeState: ConnectState;
+  justReturnedFromStripe: boolean;
 }) {
   const t = useT();
   return (
@@ -42,6 +49,7 @@ export function AccountView({
       <div className="flex flex-col gap-5 max-w-lg">
         <BasicInfoCard name={name} studioName={studioName} email={email} />
         <PasswordCard hasPassword={hasPassword} />
+        <PaymentsCard state={stripeState} justReturned={justReturnedFromStripe} />
         <EmailSettingsCard nudgeEmails={nudgeEmails} marketingOptIn={marketingOptIn} />
         <DangerZoneCard />
       </div>

@@ -7,6 +7,14 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser, requireUser, requireFullUser } from "@/lib/session";
 import { parseLocale, LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE } from "@/lib/i18n";
 import type { ActionResult } from "@/actions/briefs";
+import {
+  createConnectedAccount,
+  onboardingLink,
+  dashboardLink,
+  connectStatus,
+  isConnectAvailable,
+} from "@/lib/stripe-connect";
+import { appUrl } from "@/lib/email";
 
 /** Updates the basic-info fields collected at signup — kept to just these
  * two, matching the "no data collection yet" scope of signup itself. */
@@ -100,5 +108,111 @@ export async function updateLocaleAction(locale: string): Promise<ActionResult<u
   }
 
   revalidatePath("/", "layout");
+  return { ok: true, data: undefined };
+}
+
+/**
+ * Starts, or resumes, linking a freelancer's own Stripe account.
+ *
+ * One action for both because they are the same click to the person doing it:
+ * somebody who left halfway through Stripe's checks comes back to a button that
+ * carries on from where they stopped rather than a second account nobody asked
+ * for. The account id is saved before the link is built, so an abandoned
+ * attempt is resumable rather than orphaned in Stripe with no way back to it.
+ */
+export async function startStripeConnectAction(): Promise<ActionResult<{ url: string }>> {
+  const sessionUser = await requireFullUser();
+  if (!isConnectAvailable()) {
+    return { ok: false, error: "Online payments aren't available on Freely yet." };
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: sessionUser.id } });
+  if (!user) return { ok: false, error: "Account not found." };
+
+  const stored = user as unknown as { stripeAccountId: string | null };
+
+  try {
+    let accountId = stored.stripeAccountId;
+    if (!accountId) {
+      accountId = await createConnectedAccount(user.email);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { stripeAccountId: accountId } as unknown as Record<string, unknown>,
+      });
+    }
+    const url = await onboardingLink(accountId, appUrl());
+    return { ok: true, data: { url } };
+  } catch (err) {
+    console.error("[startStripeConnectAction] failed", err);
+    return { ok: false, error: "Couldn't reach Stripe just now. Try again in a minute." };
+  }
+}
+
+/**
+ * Asks Stripe whether this account can take money, and records the answer.
+ *
+ * Called when somebody comes back from onboarding and whenever the settings
+ * page is opened. Stripe's checks finish minutes or days after the person
+ * returns, and can be undone later, so the flag is refreshed rather than set
+ * once and believed.
+ */
+export async function refreshStripeStatusAction(): Promise<ActionResult<{ ready: boolean }>> {
+  const sessionUser = await requireFullUser();
+  const user = await prisma.user.findUnique({ where: { id: sessionUser.id } });
+  const stored = user as unknown as { stripeAccountId: string | null } | null;
+  if (!stored?.stripeAccountId) return { ok: true, data: { ready: false } };
+
+  try {
+    const status = await connectStatus(stored.stripeAccountId);
+    await prisma.user.update({
+      where: { id: sessionUser.id },
+      data: {
+        stripeChargesEnabled: status.chargesEnabled,
+        // Stamped the first time it comes back clear, and left alone after, so
+        // it reads as "connected since" rather than "last checked".
+        ...(status.chargesEnabled ? { stripeConnectedAt: new Date() } : {}),
+      } as unknown as Record<string, unknown>,
+    });
+    revalidatePath("/account");
+    return { ok: true, data: { ready: status.chargesEnabled } };
+  } catch (err) {
+    console.error("[refreshStripeStatusAction] failed", err);
+    return { ok: false, error: "Couldn't check with Stripe just now." };
+  }
+}
+
+/** A link into their own Stripe dashboard, for payouts and refunds. */
+export async function stripeDashboardAction(): Promise<ActionResult<{ url: string }>> {
+  const sessionUser = await requireFullUser();
+  const user = await prisma.user.findUnique({ where: { id: sessionUser.id } });
+  const stored = user as unknown as { stripeAccountId: string | null } | null;
+  if (!stored?.stripeAccountId) return { ok: false, error: "No Stripe account linked." };
+
+  try {
+    return { ok: true, data: { url: await dashboardLink(stored.stripeAccountId) } };
+  } catch (err) {
+    console.error("[stripeDashboardAction] failed", err);
+    return { ok: false, error: "Couldn't open your Stripe dashboard just now." };
+  }
+}
+
+/**
+ * Unlinks the account from Freely.
+ *
+ * Freely forgets the id; the Stripe account itself carries on existing, with
+ * its history and any pending payouts, because it is theirs and deleting it is
+ * not ours to do. Reconnecting later finds the same account.
+ */
+export async function disconnectStripeAction(): Promise<ActionResult<undefined>> {
+  const user = await requireFullUser();
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      stripeAccountId: null,
+      stripeChargesEnabled: false,
+      stripeConnectedAt: null,
+    } as unknown as Record<string, unknown>,
+  });
+  revalidatePath("/account");
   return { ok: true, data: undefined };
 }

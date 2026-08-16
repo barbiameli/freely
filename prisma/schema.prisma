@@ -79,6 +79,26 @@ model User {
   // Memory → Branding. Each Brief/Project stores its own currency too, so
   // changing this later doesn't rewrite past quotes.
   currency           String   @default("USD")
+
+  // The freelancer's own Stripe account, linked through Stripe Connect.
+  //
+  // Only the account id lives here. It is an identifier Stripe hands back, not
+  // a credential: on its own it authorises nothing, and every call using it is
+  // signed with Freely's platform key. No card details, no bank details, no
+  // keys belonging to the freelancer are stored anywhere in this database.
+  //
+  // Charges are created directly on this account, so their client's money goes
+  // from the client to the freelancer. Freely is never in the middle of it and
+  // never holds it.
+  stripeAccountId    String?
+  // Whether Stripe has finished its checks and will let this account take
+  // money. Separate from having an account id because the two are days apart
+  // in practice: Stripe issues the id immediately and then asks for identity
+  // documents, and offering a Pay button in between produces a checkout that
+  // fails in front of the client. Refreshed from Stripe rather than assumed.
+  stripeChargesEnabled Boolean @default(false)
+  // When the checks last came back clear, for saying so on the settings page.
+  stripeConnectedAt  DateTime?
   // The rate this freelancer usually charges, and whether it is per hour or
   // per day. Prefilled into every quote so it is not retyped, and still
   // editable per quote, since one job is not always priced like the last.

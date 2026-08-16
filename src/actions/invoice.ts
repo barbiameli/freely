@@ -4,15 +4,22 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
-import { getStripeClient, isStripeConfigured } from "@/lib/stripe";
+import { getStripeClient } from "@/lib/stripe";
+import { canTakePayments } from "@/lib/stripe-connect";
+import { appUrl } from "@/lib/email";
 import type { ActionResult } from "@/actions/briefs";
 
 /**
- * Creates a Stripe Checkout session for a project's price and stores the
- * hosted payment link on the Project. Freely never touches card details or
- * custodies funds — it just hands off to Stripe's hosted page. Requires
- * STRIPE_SECRET_KEY to be set; until then this returns a clear error rather
- * than a confusing Stripe SDK crash.
+ * Creates a checkout page for this project's price, on the freelancer's own
+ * Stripe account.
+ *
+ * The charge is created directly on their account, so their client's money goes
+ * to them. Freely never receives it, never holds it, and never pays it on,
+ * which is the difference between being software and being a payment business.
+ *
+ * Both the account and Stripe's clearance are required: an account halfway
+ * through its checks produces a checkout page that fails in front of a client,
+ * which is worse than no button at all.
  */
 export async function createCheckoutSessionAction(
   projectId: string
@@ -23,11 +30,14 @@ export async function createCheckoutSessionAction(
   });
   if (!project) return { ok: false, error: "Project not found." };
 
-  if (!isStripeConfigured()) {
+  if (!canTakePayments(user as unknown as {
+    stripeAccountId: string | null;
+    stripeChargesEnabled: boolean;
+  })) {
     return {
       ok: false,
       error:
-        "Online payment isn't switched on for this account yet. The invoice PDF still works.",
+        "Connect your Stripe account in Account settings to take card payments. The invoice PDF works either way.",
     };
   }
   if (project.price <= 0) {
@@ -35,14 +45,18 @@ export async function createCheckoutSessionAction(
   }
 
   const stripe = getStripeClient();
-  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const baseUrl = appUrl();
+  const account = (user as unknown as { stripeAccountId: string }).stripeAccountId;
 
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     line_items: [
       {
         price_data: {
-          currency: "usd",
+          // The quote's currency, rather than a hardcoded USD. Charging a
+          // London client in dollars for a quote written in pounds is both
+          // the wrong amount and an obvious mistake to whoever is paying.
+          currency: project.currency.toLowerCase(),
           unit_amount: Math.round(project.price * 100),
           product_data: {
             name: project.title,
@@ -54,7 +68,12 @@ export async function createCheckoutSessionAction(
     ],
     success_url: `${baseUrl}/track/${project.id}/invoice?paid=1`,
     cancel_url: `${baseUrl}/track/${project.id}/invoice`,
+    // Read back on the webhook, which is the only thing tying a completed
+    // payment to a project in this database.
     metadata: { projectId: project.id },
+  }, {
+    // On their account, not Freely's.
+    stripeAccount: account,
   });
 
   await prisma.project.update({

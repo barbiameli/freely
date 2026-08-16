@@ -111,3 +111,68 @@ is the easy one to copy by mistake. Find the stable one under
 Everything above from here on is a one-time setup. Day-to-day, you keep
 working locally (`npm run dev`) and just `git push` when you want to ship
 changes — Vercel redeploys automatically on every push to `main`.
+
+## Card payments (optional, add later)
+
+Skip this entirely and Freely still invoices: the PDF works on its own, the Pay
+button simply never appears, and no part of the app breaks. Set it up when you
+want clients to be able to pay by card.
+
+**How the money moves.** Freely has one Stripe account, the platform. Each
+freelancer links their own. A client's payment is charged directly on the
+freelancer's account, so the money goes from the client to the freelancer and
+Freely never holds it. That is deliberate: taking other people's money into our
+account and paying it on afterwards is money transmission, which is licensed
+work in most countries.
+
+What Freely stores is the account id Stripe hands back. No bank details, no card
+details, no keys belonging to a freelancer.
+
+### One-off setup
+
+1. Sign up at **stripe.com**. This is Freely's own account, not yours as a
+   freelancer, so use a business email you are happy to keep.
+2. In the dashboard, leave the **Test mode** toggle on until you have tried a
+   payment end to end.
+3. Left sidebar, **Connect**, then **Get started**. Choose **Platform or
+   marketplace** when it asks what you are building. Stripe will ask for a
+   business name and a support email that its users see.
+4. Left sidebar, **Developers**, then **API keys**. Reveal the **Secret key**
+   (it starts with `sk_test_`) and copy it.
+5. In Vercel, **Settings**, then **Environment Variables**. Add
+   `STRIPE_SECRET_KEY` with that value.
+
+### The webhook
+
+This is what marks an invoice paid. It has to be a **Connect** endpoint, because
+payments happen on connected accounts rather than on Freely's own. An account
+endpoint will be accepted by Stripe and then never deliver anything, which is a
+slow thing to debug.
+
+6. **Developers**, then **Webhooks**, then **Add endpoint**.
+7. URL: `https://free-ly.co/api/webhooks/stripe`
+8. Where it asks which events to listen to, choose **Events on Connected
+   accounts**, not events on your account.
+9. Select `checkout.session.completed`. Nothing else is used.
+10. On the endpoint's page, reveal the **Signing secret** (starts with `whsec_`)
+    and add it in Vercel as `STRIPE_WEBHOOK_SECRET`.
+11. **Deployments**, three dots on the newest, **Redeploy**.
+
+### Trying it
+
+12. Open **Account** in Freely. A **Card payments** section appears once the key
+    is set. Click **Connect Stripe** and go through Stripe's sign-up.
+13. In test mode Stripe accepts made-up details and clears the account in
+    seconds. Come back and the section says Connected.
+14. Open a project's invoice, click **Send for payment**, and pay with card
+    number `4242 4242 4242 4242`, any future expiry, any CVC.
+15. The invoice should flip to paid within a few seconds. If it does not, the
+    webhook is the thing to check: Stripe's Webhooks page lists every delivery
+    and the response it got.
+
+### Going live
+
+Switch Stripe out of test mode, repeat steps 4 and 10 with the live keys
+(`sk_live_`, and a new signing secret for the live endpoint), and update both
+variables in Vercel. Test keys and live keys are separate worlds and nothing
+carries over, including connected accounts.
