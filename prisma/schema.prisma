@@ -109,6 +109,8 @@ model User {
   // On the account rather than in the browser: a hint that reappears because
   // somebody opened Freely on their phone is a hint that reads as a bug.
   guideSeen          String[] @default([])
+
+  notifications      Notification[]
   // The rate this freelancer usually charges, and whether it is per hour or
   // per day. Prefilled into every quote so it is not retyped, and still
   // editable per quote, since one job is not always priced like the last.
@@ -673,6 +675,53 @@ model DiaryEntry {
  //
  // Rows are kept after use rather than deleted, so a used token can be told
  // apart from one that never existed, and so a burst of requests is visible.
+// Something that happened, that this freelancer should know about.
+//
+// Separate from EmailLog on purpose. That records what was sent; this records
+// what happened. The two overlap because most notifications are also emailed,
+// but a person who turned emails off still has a bell, and an email that
+// bounced is still something that happened.
+//
+// Separate from Event too, which is the product's own analytics and is never
+// shown to the person it is about.
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  kind      NotificationKind
+  // Written at the time rather than rendered from the kind on read, so a
+  // notification about a project that has since been deleted still says what
+  // it said. Rebuilding the sentence later means holding onto rows that only
+  // exist to make old notifications readable.
+  title     String
+  body      String   @db.Text
+
+  // Where it goes when clicked. Nullable, since not everything has a page.
+  href      String?
+  // The project or quote it is about, for collapsing repeats.
+  subjectId String?
+
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+}
+
+enum NotificationKind {
+  // A client accepted a quote. The one that matters most.
+  QUOTE_ACCEPTED
+  // A client paid an invoice.
+  INVOICE_PAID
+  // Something is due, or has slipped past its date.
+  DEADLINE
+  // A signed quote that is not being tracked yet.
+  UNTRACKED
+  // Everything else worth a line.
+  GENERAL
+}
+
 model PasswordReset {
   id        String   @id @default(cuid())
   userId    String

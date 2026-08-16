@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { getStripeClient } from "@/lib/stripe";
+import { notify } from "@/lib/notify";
+
+// A webhook has no session and therefore no locale. English here, and the
+// notification stores its own words, so changing this later leaves old rows
+// reading as they did.
+const paidTitle = "An invoice was paid";
 
 /**
  * Stripe telling us a client has paid.
@@ -57,9 +63,19 @@ export async function POST(req: Request) {
       // so the two can be compared before anything is written.
       const project = (await prisma.project.findUnique({
         where: { id: projectId },
-        select: { id: true, user: { select: { stripeAccountId: true } } },
+        select: {
+          id: true,
+          title: true,
+          userId: true,
+          user: { select: { stripeAccountId: true } },
+        },
       } as unknown as { where: { id: string } })) as unknown as
-        | { id: string; user: { stripeAccountId: string | null } }
+        | {
+            id: string;
+            title: string;
+            userId: string;
+            user: { stripeAccountId: string | null };
+          }
         | null;
 
       if (project && project.user.stripeAccountId === account) {
@@ -70,6 +86,18 @@ export async function POST(req: Request) {
             stripePaymentIntentId:
               typeof session.payment_intent === "string" ? session.payment_intent : null,
           },
+        });
+
+        // Money arriving is the thing a freelancer most wants to be told, and
+        // Stripe's own email goes to whoever set the account up rather than
+        // necessarily to the person watching this project.
+        await notify({
+          userId: project.userId,
+          kind: "INVOICE_PAID",
+          title: paidTitle,
+          body: project.title,
+          href: `/track/${project.id}/invoice`,
+          subjectId: project.id,
         });
       }
     }

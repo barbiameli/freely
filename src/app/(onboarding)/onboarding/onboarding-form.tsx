@@ -27,6 +27,7 @@ import { hostnameOf, normalizeUrl } from "@/lib/links";
 import {
   ArrowRight,
   ChevronLeft,
+  CreditCard,
   TriangleAlert,
   Upload,
   Trash2,
@@ -35,6 +36,8 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { DropZone } from "@/components/ui/drop-zone";
+import { startStripeConnectAction } from "@/actions/account";
+import type { ConnectState } from "@/lib/stripe-connect";
 import { useT } from "@/lib/i18n/context";
 import { SubLabel } from "@/components/ui/label";
 import { CURRENCIES, currencySymbol } from "@/lib/currencies";
@@ -78,7 +81,7 @@ const MEMORY_STEPS: {
   },
 ];
 
-export function OnboardingForm() {
+export function OnboardingForm({ stripeState }: { stripeState: ConnectState }) {
   const t = useT();
   const [step, setStep] = useState(0);
   const [industry, setIndustry] = useState<string | null>(null);
@@ -112,15 +115,19 @@ export function OnboardingForm() {
   const [brandLogo, setBrandLogo] = useState<string | null>(null);
   const [brandGuide, setBrandGuide] = useState<BrandGuideSummary | null>(null);
 
-  const totalSteps = 4 + MEMORY_STEPS.length;
+  // The payments step disappears when Freely itself has no Stripe key: the
+  // button would make an account nobody could reach.
+  const offerPayments = stripeState !== "unavailable";
+  const totalSteps = (offerPayments ? 5 : 4) + MEMORY_STEPS.length;
   const onIndustryStep = step === 0;
   const onPricingStep = step === 1;
   const onReferencesStep = step === 2;
   const onBrandingStep = step === 3;
+  const onPaymentsStep = offerPayments && step === 4;
   const memoryStep =
-    onIndustryStep || onPricingStep || onReferencesStep || onBrandingStep
+    onIndustryStep || onPricingStep || onReferencesStep || onBrandingStep || onPaymentsStep
       ? null
-      : MEMORY_STEPS[step - 4];
+      : MEMORY_STEPS[step - (offerPayments ? 5 : 4)];
   const industryValue = industry === "other" ? customIndustry.trim() : industry;
 
   function finish() {
@@ -234,6 +241,13 @@ export function OnboardingForm() {
           setLogo={setBrandLogo}
           guideResult={brandGuide}
           setGuideResult={setBrandGuide}
+        />
+      ) : onPaymentsStep ? (
+        <PaymentsStep
+          onBack={goBack}
+          onContinue={goNext}
+          isLast={step === totalSteps - 1}
+          state={stripeState}
         />
       ) : (
         memoryStep && (
@@ -851,6 +865,111 @@ function BrandingStep({
           <Button icon={ArrowRight} onClick={onContinue}>
             {isLast ? t.onboarding.finishSetup : t.common.continue}
           </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Offering card payments, once, and making the skip the easy answer.
+ *
+ * Here because somebody setting up their account is already in the mood to
+ * answer questions about how they work, and because discovering months later
+ * that invoices could have taken card payments is a worse outcome than being
+ * asked once.
+ *
+ * Written to be skippable without a hint of a penalty. Linking Stripe means
+ * handing identity documents to a third party, which is a reasonable thing to
+ * want to think about, and the invoice PDF works either way. The three lines
+ * under the description exist so the decision is made on facts rather than on
+ * a fear of missing out: it costs a cut, it is not required, and it can be
+ * done later.
+ *
+ * If the platform has no Stripe key at all this step never renders, because
+ * the button would create an account that cannot be reached.
+ */
+function PaymentsStep({
+  onBack,
+  onContinue,
+  isLast,
+  state,
+}: {
+  onBack: () => void;
+  onContinue: () => void;
+  isLast: boolean;
+  state: ConnectState;
+}) {
+  const t = useT();
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState("");
+
+  async function connect() {
+    setWorking(true);
+    setError("");
+    const result = await startStripeConnectAction();
+    if (!result.ok) {
+      setError(result.error);
+      setWorking(false);
+      return;
+    }
+    window.location.href = result.data.url;
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <h2 className="font-display italic text-2xl text-coral m-0">{t.onboarding.paymentsTitle}</h2>
+        <p className="text-slate text-small mt-1.5 text-pretty">{t.onboarding.paymentsBody}</p>
+      </div>
+
+      <ul className="flex flex-col gap-2 list-none p-0 m-0">
+        {[t.onboarding.paymentsPoint1, t.onboarding.paymentsPoint2, t.onboarding.paymentsPoint3].map(
+          (line) => (
+            <li key={line} className="flex items-start gap-2 text-small text-slate">
+              <span className="w-1 h-1 rounded-full bg-text-muted shrink-0 mt-2.5" />
+              <span className="text-pretty">{line}</span>
+            </li>
+          )
+        )}
+      </ul>
+
+      {state === "ready" && (
+        <div className="flex items-start gap-1.5 bg-mint rounded-lg px-3 py-2.5 text-small text-ink">
+          <CheckCircle2 size={14} className="text-success shrink-0 mt-0.5" />
+          <span>{t.onboarding.paymentsConnected}</span>
+        </div>
+      )}
+      {state === "pending" && (
+        <div className="text-small text-slate bg-paper border border-line rounded-lg px-3 py-2.5">
+          {t.onboarding.paymentsPending}
+        </div>
+      )}
+      {error && <div className="text-overdue text-small">{error}</div>}
+
+      <div className="flex justify-between items-center">
+        <Button variant="ghost" icon={ChevronLeft} onClick={onBack}>
+          {t.common.back}
+        </Button>
+        <div className="flex items-center gap-4">
+          {state !== "ready" && (
+            <button
+              type="button"
+              onClick={onContinue}
+              className="font-body font-semibold text-small text-slate bg-none border-none cursor-pointer p-0 tap"
+            >
+              {t.onboarding.paymentsSkip}
+            </button>
+          )}
+          {state === "ready" ? (
+            <Button icon={ArrowRight} onClick={onContinue}>
+              {isLast ? t.onboarding.finishSetup : t.common.continue}
+            </Button>
+          ) : (
+            <Button icon={CreditCard} disabled={working} onClick={connect}>
+              {t.onboarding.paymentsConnect}
+            </Button>
+          )}
         </div>
       </div>
     </div>

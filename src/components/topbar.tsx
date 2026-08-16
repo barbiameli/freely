@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
+import { NotificationBell } from "@/components/notification-bell";
 import { useT } from "@/lib/i18n/context";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Settings, Users, LogOut, BarChart3 } from "lucide-react";
@@ -51,6 +52,7 @@ export function Topbar() {
       <span className="md:hidden">
         <LanguageSwitcher compact />
       </span>
+      <NotificationBell />
       <div ref={ref} className="relative">
         <button
           type="button"

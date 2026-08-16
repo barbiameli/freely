@@ -779,6 +779,15 @@ export const en = {
   },
 
   onboarding: {
+    paymentsTitle: "Want clients to pay by card?",
+    paymentsBody: "Link your own Stripe account and your invoices get a Pay button. The money goes from your client to you, Freely never holds it.",
+    paymentsPoint1: "Stripe asks for your details and takes a small cut of each payment.",
+    paymentsPoint2: "Your invoice PDFs work whether or not you do this.",
+    paymentsPoint3: "You can set it up later in Account, nothing is lost by skipping.",
+    paymentsConnect: "Connect Stripe",
+    paymentsConnected: "Connected. Your invoices can take card payments.",
+    paymentsPending: "Stripe is checking your details. Carry on, it finishes on its own.",
+    paymentsSkip: "Skip for now",
     pricingTitle: "What do you charge?",
     pricingSubtitle: "Asked once. Every quote starts from this, and any one of them can be priced differently.",
     pricingResearched: "A rate gets researched for your market and this level.",
@@ -819,6 +828,16 @@ export const en = {
     skipThisStep: "Skip this step",
     skipAnyway: "Skip anyway",
     finishSetup: "Finish setup",
+  },
+
+  notifications: {
+    title: "Notifications",
+    emptyTitle: "Nothing yet",
+    emptyBody: "A client accepting a quote, an invoice being paid, or a date passing shows up here.",
+    quoteAcceptedTitle: "A client accepted your quote",
+    invoicePaidTitle: "An invoice was paid",
+    deadlineTitle: "Something is due",
+    untrackedTitle: "A signed quote is not being tracked",
   },
 
   guide: {

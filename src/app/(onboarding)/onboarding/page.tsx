@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { requireFullUser } from "@/lib/session";
 import { Card } from "@/components/ui/card";
 import { OnboardingForm } from "./onboarding-form";
+import { connectState } from "@/lib/stripe-connect";
 import { serverDict } from "@/lib/i18n/server";
 
 export default async function OnboardingPage() {
@@ -15,7 +16,11 @@ export default async function OnboardingPage() {
       <Card className="w-full max-w-lg">
         <h1 className="font-display italic text-3xl text-coral mb-1">{t.onboarding.whatWork}</h1>
         <p className="text-slate text-sm mb-6">{t.onboarding.intro}</p>
-        <OnboardingForm />
+        <OnboardingForm
+          stripeState={connectState(
+            user as unknown as { stripeAccountId: string | null; stripeChargesEnabled: boolean }
+          )}
+        />
       </Card>
     </div>
   );

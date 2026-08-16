@@ -772,6 +772,15 @@ export const es: Dictionary = {
   },
 
   onboarding: {
+    paymentsTitle: "¿Quieres que te paguen con tarjeta?",
+    paymentsBody: "Conecta tu propia cuenta de Stripe y tus facturas tendran un boton de pago. El dinero va de tu cliente a ti, Freely nunca lo retiene.",
+    paymentsPoint1: "Stripe te pedira tus datos y se queda una pequena parte de cada pago.",
+    paymentsPoint2: "Tus facturas en PDF funcionan hagas esto o no.",
+    paymentsPoint3: "Puedes configurarlo mas adelante en Cuenta, no pierdes nada por saltarlo.",
+    paymentsConnect: "Conectar Stripe",
+    paymentsConnected: "Conectado. Tus facturas ya pueden cobrar con tarjeta.",
+    paymentsPending: "Stripe esta revisando tus datos. Sigue, termina solo.",
+    paymentsSkip: "Saltar por ahora",
     pricingTitle: "Cuanto cobras?",
     pricingSubtitle: "Se pregunta una vez. Cada presupuesto parte de aqui, y cualquiera puede llevar otro precio.",
     pricingResearched: "Se buscara una tarifa para tu mercado y este nivel.",
@@ -812,6 +821,16 @@ export const es: Dictionary = {
     skipThisStep: "Saltar este paso",
     skipAnyway: "Saltar igualmente",
     finishSetup: "Terminar",
+  },
+
+  notifications: {
+    title: "Notificaciones",
+    emptyTitle: "Todavia nada",
+    emptyBody: "Aqui apareceran los presupuestos que acepte un cliente, las facturas pagadas y las fechas que llegan.",
+    quoteAcceptedTitle: "Un cliente ha aceptado tu presupuesto",
+    invoicePaidTitle: "Han pagado una factura",
+    deadlineTitle: "Hay algo con fecha",
+    untrackedTitle: "Un presupuesto firmado no esta en Track",
   },
 
   guide: {

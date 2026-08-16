@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { track } from "@/lib/events";
+import { notify } from "@/lib/notify";
 import { sanitizeText } from "@/lib/sanitize-text";
 import { send, appUrl } from "@/lib/email";
 import { currencySymbol } from "@/lib/currencies";
@@ -132,6 +133,17 @@ export async function acceptQuoteAction(
     // one path where the freelancer is waiting for news.
     { kind: "QUOTE_ACCEPTED", userId: brief.userId, subjectId: brief.id });
   }
+
+  // The same news on the bell, so somebody who has turned emails off, or who
+  // simply has not opened their inbox, still finds out.
+  await notify({
+    userId: brief.userId,
+    kind: "QUOTE_ACCEPTED",
+    title: `${cleanName} accepted your quote`,
+    body: brief.title,
+    href: `/quote/${brief.id}`,
+    subjectId: brief.id,
+  });
 
   track("quote_accepted", {
     userId: brief.userId,
