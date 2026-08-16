@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarDays, Trash2 } from "lucide-react";
 import { Topbar } from "@/components/topbar";
@@ -174,6 +174,8 @@ export function ProjectDetail({
   billing,
   milestones: quotedMilestones = [],
   plainLanguage = false,
+  /** The Your work / What the client sees strip, placed in the title row. */
+  tabs,
 }: {
   project: Project;
   projectList: ProjectSummary[];
@@ -188,6 +190,7 @@ export function ProjectDetail({
   milestones?: MilestoneView[];
   /** Whether the client's page is written in plain language. */
   plainLanguage?: boolean;
+  tabs?: ReactNode;
 }) {
   const router = useRouter();
   const t = useT();
@@ -279,6 +282,7 @@ export function ProjectDetail({
               {project.title}
             </h1>
             <p className="text-slate text-small mt-1.5">{project.client}</p>
+            {tabs && <div className="mt-3">{tabs}</div>}
           </div>
           <div className="flex items-center gap-2.5 shrink-0">
             {/* Asks what the client should see before sending anything. It used

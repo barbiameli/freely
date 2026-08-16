@@ -69,7 +69,7 @@ export function SendToDiary({
     );
     if (result.ok) {
       setOpen(false);
-      router.push(`/diary/${projectId}`);
+      router.push(`/track/${projectId}?view=client`);
     }
   }
 

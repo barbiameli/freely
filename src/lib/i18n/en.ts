@@ -313,6 +313,8 @@ export const en = {
   },
 
   track: {
+    yourWork: "Your work",
+    clientView: "What the client sees",
     due: "Due",
     pastTheDate: "Past the date",
     statusActive: "In progress",

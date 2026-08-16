@@ -313,6 +313,8 @@ export const es: Dictionary = {
   },
 
   track: {
+    yourWork: "Tu trabajo",
+    clientView: "Lo que ve el cliente",
     due: "Entrega",
     pastTheDate: "Fuera de plazo",
     statusActive: "En marcha",

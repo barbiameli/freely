@@ -5,20 +5,30 @@ import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import { deliverableDb, milestoneDb, projectSchedule } from "@/lib/track-db";
 import { detectBillingMode } from "@/lib/billing-mode";
+import { DiaryView } from "@/app/(app)/diary/[projectId]/diary-view";
 import { ProjectDetail } from "./project-detail";
+import { ProjectTabs } from "./project-tabs";
 
 // Breaking a deliverable down is a real model call, so give the route the
 // same headroom the quote page has.
 export const maxDuration = 60;
 
-export default async function ProjectPage({ params }: { params: { projectId: string } }) {
+export default async function ProjectPage({
+  params,
+  searchParams,
+}: {
+  params: { projectId: string };
+  searchParams?: { view?: string };
+}) {
   const user = await requireFullUser();
   const scope = teamScopeWhere(user);
 
   const [project, allProjects] = await Promise.all([
     prisma.project.findFirst({
       where: { id: params.projectId, ...scope },
-      include: { brief: true },
+      // The diary entries come with it, because the client tab is part of this
+      // page now rather than a separate section holding the same project.
+      include: { brief: true, diaryEntries: { orderBy: { date: "desc" } } },
     }),
     prisma.project.findMany({
       where: scope,
@@ -60,10 +70,59 @@ export default async function ProjectPage({ params }: { params: { projectId: str
     instructions: settings?.instructions,
   });
 
+  const clientView = searchParams?.view === "client";
+
   return (
     <>
-
+      {clientView ? (
+        <DiaryView
+          tabs={<ProjectTabs projectId={project.id} />}
+          allProjects={allProjects}
+          project={{
+            id: project.id,
+            title: project.title,
+            client: project.client,
+            status: project.status,
+            published: project.published,
+            publicSlug: project.publicSlug,
+            plainLanguage: Boolean(
+              (project as unknown as { plainLanguage?: boolean }).plainLanguage
+            ),
+            deliverables: deliverables.map((d) => ({
+              id: d.id,
+              name: d.name,
+              done: d.done,
+              dueAt: d.dueAt?.toISOString() ?? null,
+              summary: d.summary,
+              brokenDown: Boolean(d.brokenDownAt),
+              invoicedAt: d.invoicedAt?.toISOString() ?? null,
+              clientName:
+                (d as unknown as { clientName?: string | null }).clientName ?? null,
+              steps: (d.steps ?? []).map((s) => ({
+                id: s.id,
+                name: s.name,
+                done: s.done,
+                estimateHours: s.estimateHours,
+              })),
+              flags: (d.flags ?? []).map((f) => ({
+                id: f.id,
+                question: f.question,
+                reason: f.reason,
+                kind: f.kind as "BLOCKER" | "ASSUMPTION" | "WORTH_ASKING",
+                resolved: f.resolved,
+              })),
+            })),
+            diaryEntries: project.diaryEntries.map((e) => ({
+              id: e.id,
+              date: e.date.toISOString(),
+              title: e.title,
+              body: e.body,
+            })),
+          }}
+        />
+      ) : (
     <ProjectDetail
+      tabs={<ProjectTabs projectId={project.id} />}
       // A project with milestones bills per milestone by definition, so that
       // wins over reading the payment terms. Detection is the fallback for
       // everything quoted before milestones existed.
@@ -124,6 +183,7 @@ export default async function ProjectPage({ params }: { params: { projectId: str
       }}
       projectList={allProjects}
     />
+      )}
       <GuideMount screen="/track/project" />
     </>
   );

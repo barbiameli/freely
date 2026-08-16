@@ -9,7 +9,6 @@ import { useT } from "@/lib/i18n/context";
 const ITEMS = [
   { key: "quote", glyph: "Q", href: "/quote" },
   { key: "track", glyph: "T", href: "/track" },
-  { key: "diary", glyph: "D", href: "/diary" },
   { key: "invoices", glyph: "I", href: "/invoices" },
   { key: "memory", glyph: "M", href: "/memory" },
 ] as const;

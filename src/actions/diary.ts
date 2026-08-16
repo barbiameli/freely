@@ -19,7 +19,7 @@ import { plainDeliverableNames } from "@/lib/anthropic";
  * and braces the moment somebody adds caching.
  */
 async function revalidateBoth(projectId: string): Promise<void> {
-  revalidatePath(`/diary/${projectId}`);
+  revalidatePath(`/track/${projectId}`);
   const project = await prisma.project.findUnique({
     where: { id: projectId },
     select: { publicSlug: true },
@@ -110,7 +110,7 @@ export async function setPublishedAction(
 
   const updated = await prisma.project.update({ where: { id: projectId }, data: { published } });
   if (published) track("diary_published", { userId: user.id, subjectId: projectId });
-  revalidatePath(`/diary/${projectId}`);
+  revalidatePath(`/track/${projectId}`);
   return { ok: true, data: { publicSlug: updated.publicSlug } };
 }
 

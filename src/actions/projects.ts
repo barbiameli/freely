@@ -168,7 +168,7 @@ export async function deleteProjectAction(projectId: string): Promise<ActionResu
   await prisma.project.delete({ where: { id: projectId } });
 
   revalidatePath("/track");
-  revalidatePath("/diary");
+  revalidatePath("/track");
   return { ok: true, data: undefined };
 }
 
