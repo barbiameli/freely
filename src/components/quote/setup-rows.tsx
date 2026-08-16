@@ -98,11 +98,19 @@ export function SetupRows({
   const words = setupWords(t);
   const symbol = currencySymbol(draft.currency);
 
-  // Everything starts closed, including on a first quote where nothing has been
-  // decided. Four closed lines read as a summary you can skim; four open ones
-  // read as the form this replaced, and the values are stated on the closed row
-  // anyway, so opening them by default bought nothing.
-  const [open, setOpen] = useState<SetupRowKey[]>([]);
+  // Closed once there is something to summarise, open when there is not.
+  //
+  // A closed row states its value, which is right when that value is something
+  // this person chose last time. On a first quote there is no such value, and
+  // the row was stating a fallback: a brand new account opened the wizard to
+  // find sections and a template apparently already picked, under a heading
+  // saying they had been kept from a previous quote. Nothing had been kept and
+  // nothing had been picked.
+  //
+  // So an undecided row opens, and says nothing until it is answered.
+  const [open, setOpen] = useState<SetupRowKey[]>(
+    SETUP_ROWS.filter((row) => !decided.includes(row))
+  );
 
   // Except when generating was refused for want of a rate. The message would
   // otherwise point at a control inside a closed row.
@@ -184,8 +192,16 @@ export function SetupRows({
                 )}
               </span>
               <span className="flex items-center gap-2 min-w-0">
-                <span className="font-body font-semibold text-small text-ink text-right">
-                  {describeRow(row, setup, words, symbol)}
+                <span
+                  className={
+                    decided.includes(row)
+                      ? "font-body font-semibold text-small text-ink text-right"
+                      : "font-body font-semibold text-small text-violet text-right"
+                  }
+                >
+                  {decided.includes(row)
+                    ? describeRow(row, setup, words, symbol)
+                    : t.quote.setupChoose}
                 </span>
                 {isOpen ? (
                   <ChevronDown size={14} className="text-text-muted shrink-0" />

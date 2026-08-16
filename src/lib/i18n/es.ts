@@ -70,6 +70,7 @@ export const es: Dictionary = {
   },
 
   quote: {
+    setupChoose: "Elegir",
     referencesHint: "Capturas, moodboards o ejemplos de lo que tienes en la cabeza. Van en el presupuesto para que el cliente vea por dónde vas.",
     branding: "Marca",
     addYourBranding: "Añade tu marca",
