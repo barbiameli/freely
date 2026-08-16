@@ -11,6 +11,15 @@
  */
 export const en = {
   common: {
+    confirmDeleteProject: "Delete this project?",
+    confirmDeleteProjectHint: "Its deliverables, steps and diary entries go with it. This cannot be undone.",
+    confirmDeleteProjectAction: "Delete project",
+    confirmDeleteAccount: "Delete your account?",
+    confirmDeleteAccountHint: "Everything saved to Freely goes, permanently. This cannot be undone.",
+    confirmDeleteAccountAction: "Delete my account",
+    confirmDeleteDraft: "Delete this draft?",
+    confirmDeleteDraftAction: "Delete draft",
+    goesWithIt: "What goes with it",
     notNow: "Not now",
     save: "Save",
     saveChanges: "Save changes",

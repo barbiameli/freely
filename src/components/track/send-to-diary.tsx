@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Send, X, Check } from "lucide-react";
+import { Send, Check } from "lucide-react";
 import { addDiaryEntryAction } from "@/actions/diary";
 import { useAction } from "@/lib/use-action";
 import { ActionError } from "@/components/ui/action-error";
 import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
 import { SubLabel } from "@/components/ui/label";
 import {
   shareableItems,
@@ -78,30 +79,25 @@ export function SendToDiary({
         {t.track.sendToDiary}
       </Button>
 
-      {open && (
-        <div
-          className="fixed inset-0 z-50 bg-ink/40 flex items-start sm:items-center justify-center p-4 overflow-y-auto"
-          role="dialog"
-          aria-modal="true"
-          aria-label={t.track.shareTitle}
-        >
-          <div className="bg-white rounded-card shadow-panel w-full max-w-[560px] my-auto">
-            <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-3 border-b border-line">
-              <div className="min-w-0">
-                <div className="font-body font-bold text-body text-ink">{t.track.shareTitle}</div>
-                <p className="text-caption text-slate mt-0.5 mb-0">{t.track.shareHint}</p>
-              </div>
-              <button
-                type="button"
-                aria-label={t.common.close}
-                onClick={() => setOpen(false)}
-                className="shrink-0 text-text-muted hover:text-ink bg-none border-none cursor-pointer p-0 tap"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="px-5 py-4 max-h-[50vh] overflow-y-auto">
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title={t.track.shareTitle}
+        hint={t.track.shareHint}
+        wide
+        footer={
+          <>
+            <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>
+              {t.common.cancel}
+            </Button>
+            <Button size="sm" icon={Check} disabled={pending || !ready} onClick={send}>
+              {pending ? t.common.saving : t.track.shareSend}
+            </Button>
+          </>
+        }
+      >
+        <div className="-mx-1">
+          <div className="max-h-[50vh] overflow-y-auto px-1">
               {/* Grouped, because "untick the ones you do not want" is only easy
                   when like things sit together. */}
               {(["PROGRESS", "DONE", "TODO", "DUE", "QUESTION"] as ShareKind[]).map((kind) => {
@@ -137,43 +133,23 @@ export function SendToDiary({
               })}
             </div>
 
-            {/* What the client will actually read. Ticking boxes and hoping is
-                what the old version effectively was. */}
-            <div className="px-5 pb-4">
-              <SubLabel className="mb-1.5">{t.track.sharePreview}</SubLabel>
-              <div className="bg-paper border border-line rounded-lg px-3.5 py-3">
-                {ready ? (
-                  <p className="text-small text-slate leading-[1.6] whitespace-pre-line m-0">
-                    {composed.body}
-                  </p>
-                ) : (
-                  <p className="text-small text-text-muted m-0">{t.track.shareNothing}</p>
-                )}
-              </div>
-              <ActionError error={error} className="mt-2" />
+          {/* What the client will actually read. Ticking boxes and hoping is
+              what the old version effectively was. */}
+          <div className="mt-4">
+            <SubLabel className="mb-1.5">{t.track.sharePreview}</SubLabel>
+            <div className="bg-paper border border-line rounded-lg px-3.5 py-3">
+              {ready ? (
+                <p className="text-small text-slate leading-[1.6] whitespace-pre-line m-0">
+                  {composed.body}
+                </p>
+              ) : (
+                <p className="text-small text-text-muted m-0">{t.track.shareNothing}</p>
+              )}
             </div>
-
-            <div className="flex items-center justify-end gap-3 px-5 py-3.5 border-t border-line">
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="text-meta text-slate hover:text-ink bg-none border-none cursor-pointer p-0 tap"
-              >
-                {t.common.cancel}
-              </button>
-              <button
-                type="button"
-                disabled={pending || !ready}
-                onClick={send}
-                className="flex items-center gap-1.5 font-body font-bold text-meta text-white bg-violet rounded-lg px-3.5 py-2 border-none cursor-pointer disabled:opacity-50"
-              >
-                <Check size={13} />
-                {pending ? t.common.saving : t.track.shareSend}
-              </button>
-            </div>
+            <ActionError error={error} className="mt-2" />
           </div>
         </div>
-      )}
+      </Modal>
     </>
   );
 }

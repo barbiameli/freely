@@ -59,6 +59,11 @@ const config: Config = {
         // and slightly warmer than the resting shadow, which is what makes it
         // read as rising rather than as growing a bigger shadow.
         lift: "0px 28px 60px -12px rgba(52,52,52,0.16)",
+        // A dialog sitting over a dimmed page. Much heavier than `panel`,
+        // which at 5% is invisible against a backdrop and left every overlay
+        // reading as a white rectangle pasted onto the screen rather than as
+        // something floating above it.
+        dialog: "0px 24px 64px -12px rgba(20,20,20,0.35)",
       },
       transitionTimingFunction: {
         // One easing across the whole marketing page. Decelerating hard at the

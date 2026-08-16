@@ -170,6 +170,38 @@ select:focus {
   animation: card-in 0.32s cubic-bezier(0.16, 0.84, 0.28, 1) both;
 }
 
+/* The backdrop behind a dialog. Fading it in rather than snapping it on is
+   what makes the page look like it stepped back, instead of the screen
+   flickering. */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-fade-in {
+  animation: fade-in 0.16s ease-out both;
+}
+
+/* The dialog itself: up and in, briefly. Rising is the movement that reads as
+   arriving on top of something. The card carousel slides sideways instead,
+   which is right for one card replacing another and wrong for this. */
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-dialog-in {
+  animation: dialog-in 0.2s cubic-bezier(0.16, 0.84, 0.28, 1) both;
+}
+
 /* Nobody who asked for less motion gets any of the above. Written as one block
    rather than per-component checks so a new decorative animation is covered by
    default instead of only if someone remembers. */
@@ -177,7 +209,9 @@ select:focus {
   .animate-drift-a,
   .animate-drift-b,
   .animate-sheen,
-  .animate-card-in {
+  .animate-card-in,
+  .animate-fade-in,
+  .animate-dialog-in {
     animation: none;
   }
   /* The sheen also loses its gradient, not just its animation. Stopping the

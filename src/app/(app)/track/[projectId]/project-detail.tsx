@@ -16,6 +16,7 @@ import { SendToDiary } from "@/components/track/send-to-diary";
 import { StatRow } from "@/components/track/stat-row";
 import { ComingUp } from "@/components/track/coming-up";
 import { BreakdownOffer } from "@/components/track/breakdown-offer";
+import { Confirm } from "@/components/ui/confirm";
 import {
   updateProjectAction,
   addDeliverableAction,
@@ -199,6 +200,7 @@ export function ProjectDetail({
   const [timeline, setTimeline] = useState(project.timeline);
   const [newDeliverable, setNewDeliverable] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
   // Which deliverable is open. The questions worth raising about it now sit
@@ -231,13 +233,7 @@ export function ProjectDetail({
   }
 
   async function handleDeleteProject() {
-    if (
-      !window.confirm(
-        `Delete "${project.title}"? This removes its deliverables and diary entries too, this can't be undone.`
-      )
-    ) {
-      return;
-    }
+    setConfirming(false);
     setDeleting(true);
     // A failed delete used to leave the button stuck on "Deleting..." with no
     // explanation, since the result was checked but never shown.
@@ -557,19 +553,31 @@ export function ProjectDetail({
                   {t.common.saveChanges}
                 </Button>
                 <Button
-                  variant="ghost"
+                  variant="danger"
                   icon={Trash2}
                   disabled={deleting}
-                  onClick={handleDeleteProject}
-                  className="text-overdue border-overdue/30 hover:text-overdue"
+                  onClick={() => setConfirming(true)}
                 >
-                  {deleting ? t.common.deleting : t.track.deleteProject}
+                  {t.track.deleteProject}
                 </Button>
               </div>
             </div>
           )}
         </Card>
       </div>
+
+      <Confirm
+        open={confirming}
+        onClose={() => setConfirming(false)}
+        onConfirm={handleDeleteProject}
+        working={deleting}
+        title={t.common.confirmDeleteProject}
+        hint={t.common.confirmDeleteProjectHint}
+        confirmLabel={t.common.confirmDeleteProjectAction}
+      >
+        <p className="text-small text-ink m-0 font-semibold text-pretty">{project.title}</p>
+        <p className="text-caption text-text-muted mt-1 mb-0">{project.client}</p>
+      </Confirm>
     </div>
   );
 }

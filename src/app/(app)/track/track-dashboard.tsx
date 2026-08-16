@@ -13,6 +13,7 @@ import {
   createProjectFromDocumentAction,
   deleteProjectAction,
 } from "@/actions/projects";
+import { Confirm } from "@/components/ui/confirm";
 import { deliverableProgress } from "@/lib/project-state";
 import { extractFileText } from "@/lib/extract-file";
 import { currencySymbol } from "@/lib/currencies";
@@ -42,6 +43,7 @@ export function TrackDashboard({ projects }: { projects: TrackProject[] }) {
   const [uploadReading, setUploadReading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [asking, setAsking] = useState<{ id: string; title: string; client: string } | null>(null);
   const [removedIds, setRemovedIds] = useState<string[]>([]);
 
   const visibleProjects = projects.filter((p) => !removedIds.includes(p.id));
@@ -54,15 +56,13 @@ export function TrackDashboard({ projects }: { projects: TrackProject[] }) {
     0
   );
 
-  async function handleDelete(e: React.MouseEvent, projectId: string, projectTitle: string) {
-    e.stopPropagation();
-    if (
-      !window.confirm(
-        `Delete "${projectTitle}"? This removes its deliverables and diary entries too, this can't be undone.`
-      )
-    ) {
-      return;
-    }
+  // The dialog holds which project it is asking about, so the card only has to
+  // say "somebody pressed delete on me".
+  async function handleDelete() {
+    const target = asking;
+    if (!target) return;
+    const projectId = target.id;
+    setAsking(null);
     setDeletingId(projectId);
     const result = await deleteProjectAction(projectId);
     setDeletingId(null);
@@ -195,11 +195,7 @@ export function TrackDashboard({ projects }: { projects: TrackProject[] }) {
                 href={`/track/${p.id}`}
                 deleting={deletingId === p.id}
                 deleteLabel={t.track.deleteProjectLabel}
-                onDelete={() => handleDelete(
-                  { stopPropagation: () => {} } as React.MouseEvent,
-                  p.id,
-                  p.title
-                )}
+                onDelete={() => setAsking({ id: p.id, title: p.title, client: p.client })}
                 project={{
                   id: p.id,
                   title: p.title,
@@ -213,6 +209,19 @@ export function TrackDashboard({ projects }: { projects: TrackProject[] }) {
           })}
         </ProjectCardGrid>
       )}
+
+      <Confirm
+        open={asking !== null}
+        onClose={() => setAsking(null)}
+        onConfirm={handleDelete}
+        working={deletingId !== null}
+        title={t.common.confirmDeleteProject}
+        hint={t.common.confirmDeleteProjectHint}
+        confirmLabel={t.common.confirmDeleteProjectAction}
+      >
+        <p className="text-small text-ink m-0 font-semibold text-pretty">{asking?.title}</p>
+        <p className="text-caption text-text-muted mt-1 mb-0">{asking?.client}</p>
+      </Confirm>
     </>
   );
 }

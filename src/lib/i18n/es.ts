@@ -21,6 +21,15 @@ import type { Dictionary } from "@/lib/i18n/en";
  */
 export const es: Dictionary = {
   common: {
+    confirmDeleteProject: "¿Eliminar este proyecto?",
+    confirmDeleteProjectHint: "Se van tambien sus entregables, pasos y entradas del diario. Esto no se puede deshacer.",
+    confirmDeleteProjectAction: "Eliminar proyecto",
+    confirmDeleteAccount: "¿Eliminar tu cuenta?",
+    confirmDeleteAccountHint: "Todo lo que tienes guardado en Freely se borra para siempre. Esto no se puede deshacer.",
+    confirmDeleteAccountAction: "Eliminar mi cuenta",
+    confirmDeleteDraft: "¿Eliminar este borrador?",
+    confirmDeleteDraftAction: "Eliminar borrador",
+    goesWithIt: "Que se va con el",
     notNow: "Ahora no",
     save: "Guardar",
     saveChanges: "Guardar cambios",

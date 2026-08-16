@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Trash2, Save, KeyRound } from "lucide-react";
 import { updateAccountAction, changePasswordAction, deleteAccountAction } from "@/actions/account";
 import { setMarketingOptInAction, setNudgeEmailsAction } from "@/actions/marketing";
+import { Confirm } from "@/components/ui/confirm";
 import { PaymentsCard } from "@/components/account/payments-card";
 import type { ConnectState } from "@/lib/stripe-connect";
 import { useT } from "@/lib/i18n/context";
@@ -210,19 +211,13 @@ function PasswordCard({ hasPassword }: { hasPassword: boolean }) {
 function DangerZoneCard() {
   const t = useT();
   const [deleting, setDeleting] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState("");
 
+  // Asked once, in a dialog that says what goes. It used to ask twice through
+  // the browser, which teaches somebody to click through both without reading.
   async function handleDelete() {
-    if (
-      !window.confirm(
-        "Delete your account? This permanently removes every quote, project, and file you've saved, this can't be undone."
-      )
-    ) {
-      return;
-    }
-    if (!window.confirm("Really sure? There's no way to get this back once it's gone.")) {
-      return;
-    }
+    setConfirming(false);
     setDeleting(true);
     setError("");
     const result = await deleteAccountAction();
@@ -241,15 +236,21 @@ function DangerZoneCard() {
         {t.account.deleteWarning}
       </p>
       {error && <div className="text-overdue text-xs mb-2.5">{error}</div>}
-      <Button
-        variant="ghost"
-        icon={Trash2}
-        disabled={deleting}
-        onClick={handleDelete}
-        className="text-overdue border-overdue/30 hover:text-overdue"
-      >
-        {deleting ? "Deleting..." : "Delete my account"}
+      <Button variant="danger" icon={Trash2} disabled={deleting} onClick={() => setConfirming(true)}>
+        {t.common.confirmDeleteAccountAction}
       </Button>
+
+      <Confirm
+        open={confirming}
+        onClose={() => setConfirming(false)}
+        onConfirm={handleDelete}
+        working={deleting}
+        title={t.common.confirmDeleteAccount}
+        hint={t.common.confirmDeleteAccountHint}
+        confirmLabel={t.common.confirmDeleteAccountAction}
+      >
+        <p className="text-small text-slate m-0 text-pretty">{t.account.deleteWarning}</p>
+      </Confirm>
     </Card>
   );
 }
