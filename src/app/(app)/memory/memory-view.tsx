@@ -458,7 +458,7 @@ function ReferencesCard({
   async function handleFileUpload(file: File) {
     setError("");
     if (file.size > MAX_DOCUMENT_UPLOAD_BYTES) {
-      setError(documentTooLargeError(file));
+      setError(documentTooLargeError(file, "several"));
       return;
     }
     setUploading("file");

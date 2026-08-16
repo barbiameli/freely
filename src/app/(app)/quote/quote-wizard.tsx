@@ -250,7 +250,7 @@ export function QuoteWizard({
   async function handleFile(file: File) {
     setError("");
     if (file.size > MAX_DOCUMENT_UPLOAD_BYTES) {
-      setError(documentTooLargeError(file));
+      setError(documentTooLargeError(file, "paste"));
       return;
     }
     setUploading(true);

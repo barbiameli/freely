@@ -77,14 +77,16 @@ describe("isReady", () => {
     expect(isReady("publish", fresh({ quotes: 1 }))).toBe(true);
   });
 
-  it("only mentions tracking once a client has accepted", () => {
-    // Tracking a quote nobody agreed to is tracking work that may not happen.
-    expect(isReady("track", fresh({ quotes: 1, publishedQuotes: 1 }))).toBe(false);
-    expect(isReady("track", fresh({ acceptedQuotes: 1 }))).toBe(true);
+  it("mentions tracking once a quote exists", () => {
+    // Not waiting for acceptance: plenty of clients say yes by email, so it
+    // never arrives as a signal, and the moment somebody needs telling is when
+    // they come back from looking at the quote they just made.
+    expect(isReady("track", fresh())).toBe(false);
+    expect(isReady("track", fresh({ quotes: 1 }))).toBe(true);
   });
 
   it("stops mentioning tracking once something is tracked", () => {
-    expect(isReady("track", fresh({ acceptedQuotes: 1, projects: 1 }))).toBe(false);
+    expect(isReady("track", fresh({ quotes: 1, projects: 1 }))).toBe(false);
   });
 
   it("offers the client page as soon as anything is tracked", () => {

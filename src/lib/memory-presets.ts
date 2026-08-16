@@ -93,4 +93,20 @@ export const CONTEXT_PRESETS: Preset[] = [
     label: "Industries I specialize in",
     text: "I mostly work with early-stage startups and small businesses rather than large enterprises, quotes should assume a lean, fast-moving client.",
   },
+  {
+    label: "Open to a long-term rate",
+    text: "I am happy to offer a better rate where there is potential for an ongoing relationship, so a quote can mention what a longer arrangement would look like.",
+  },
+  {
+    label: "I take work in phases",
+    text: "I prefer to agree a first phase and price the rest once we both know more, so quotes should scope the first piece properly and sketch the rest.",
+  },
+  {
+    label: "Payment matters to me",
+    text: "Late payment is the thing that hurts most, so quotes should state payment terms plainly and ask for a deposit before work starts.",
+  },
+  {
+    label: "I bring the strategy too",
+    text: "I am not a pair of hands, I expect to question the brief where it needs it, and quotes should say so as part of the value.",
+  },
 ];

@@ -54,11 +54,18 @@ export function CoachMark({ step }: { step: GuideStep }) {
     void dismissGuideStepAction(step);
   }
 
-  /** Scrolls to the thing being described, then closes. */
+  /**
+   * Scrolls to the thing being described, and stays put.
+   *
+   * It used to close on the way. That is the wrong moment: somebody who has
+   * just scrolled to a control they have never used still wants the sentence
+   * explaining it, and closing the explanation as a reward for looking is
+   * backwards. It goes when the X is pressed, or when the thing it asked for
+   * has been done, which the next page load works out for itself.
+   */
   function show() {
     const el = document.querySelector<HTMLElement>(`[data-guide="${step}"]`);
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
-    dismiss();
   }
 
   if (gone) return null;

@@ -74,10 +74,15 @@ export function isReady(step: GuideStep, state: GuideState): boolean {
     case "publish":
       return state.quotes > 0 && state.publishedQuotes === 0;
 
-    // Sent, and accepted, and still not being tracked. This is the expensive
-    // gap: the work is happening and nothing is recording it.
+    // A quote exists and nothing is being tracked.
+    //
+    // It used to wait for a client to accept, on the reasoning that tracking
+    // unagreed work is tracking work that may not happen. In practice the
+    // moment somebody needs telling is when they come back from looking at the
+    // quote they just made, and acceptance can be days later or never arrive as
+    // a signal at all, because plenty of clients say yes by email.
     case "track":
-      return state.acceptedQuotes > 0 && state.projects === 0;
+      return state.quotes > 0 && state.projects === 0;
 
     // Something is being tracked but nothing has been broken into steps.
     case "breakdown":
