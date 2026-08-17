@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: freely
+          POSTGRES_PASSWORD: freely
+          POSTGRES_DB: freely
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U freely"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://freely:freely@localhost:5432/freely
+      NEXTAUTH_SECRET: ci-test-secret
+      NEXTAUTH_URL: http://localhost:3000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Schema-only push (no migrations dir — see push-schema.sh), matching
+      # how the schema reaches every other Postgres this app talks to.
+      - run: npx prisma db push
+
+      - run: npm run lint
+
+      - run: npm test

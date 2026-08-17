@@ -84,7 +84,19 @@ npm test
 
 Covers AI-generation prompt building/response parsing (`lib/anthropic.ts`,
 including the full Memory context — tone, story, context, files) and
-project-state logic (`lib/project-state.ts`).
+project-state logic (`lib/project-state.ts`), plus `tests/integration/` —
+integration tests that run against the real Postgres from step 2 rather than
+a mocked Prisma client (see ADR-0002). These need `docker compose up -d`
+running and the schema pushed, same as the app itself. `tests/support/`
+has the test-DB client and User/Team/Quote factories those tests build on.
+
+## CI
+
+`.github/workflows/ci.yml` runs `npm run lint && npm test` on every push and
+pull request to `main`, against an ephemeral Postgres service container (so
+`tests/integration/` runs there too, no extra setup). Set this as a required
+status check under GitHub → Settings → Branches so it actually gates merges,
+rather than only reporting a pass/fail.
 
 ## How it works
 
@@ -230,4 +242,7 @@ src/app/(app)/             Authenticated shell: Quote, Track, Diary, Memory, Tea
 src/app/p/[slug]/          Public, unauthenticated client site
 src/app/api/               Stripe webhook, Figma OAuth start/callback, PDF download
 tests/                     Vitest unit tests
+tests/integration/         Integration tests against real Postgres (see below)
+tests/support/             Test-DB client + User/Team/Quote factories, used by
+                            tests/integration/
 ```
