@@ -13,6 +13,7 @@ import { resolveQuoteLocale } from "@/lib/i18n";
 import {
   generateBriefFromDraft,
   refineBrief,
+  shouldResearchMarketRates,
   type GeneratedBrief,
   type QuoteDraftInput,
   type MemoryContext,
@@ -198,6 +199,7 @@ export async function generateBriefAction(
   }
 
   const pricingHistory = await buildPricingHistory(user);
+  const researched = shouldResearchMarketRates(draft, pricingHistory);
 
   // Where they are based barely changes, so remember it and stop asking.
   const yourLocation = draft.pricing?.yourLocation?.trim();
@@ -294,7 +296,7 @@ export async function generateBriefAction(
           includeTerms: draft.includeTerms ?? false,
           includeRevisions: draft.includeRevisions ?? false,
           includeAvailability: draft.includeAvailability ?? false,
-          usedPricingResearch: pricingHistory.length === 0,
+          usedPricingResearch: researched,
           // Kept so a quote can be explained later: which market the numbers
           // were researched against.
           pricing: draft.pricing
@@ -333,7 +335,7 @@ export async function generateBriefAction(
       currency: draft.currency,
       language: quoteLanguage,
       rateUnit: draft.rateUnit ?? "HOUR",
-      researched: pricingHistory.length === 0 && !draft.hourlyRate,
+      researched,
       count: generated.deliverables.length,
     },
   });

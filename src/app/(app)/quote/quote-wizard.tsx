@@ -517,6 +517,21 @@ export function QuoteWizard({
       <p className="text-caption text-text-muted mt-2 mb-0">
         {savedLocation ? t.quote.pricedFrom.replace("{place}", savedLocation) : t.quote.pricedForFooter}
       </p>
+      {/* Off by default: live web research adds real latency to generation,
+          so it only runs when asked for. See "Gate web_search out of the
+          default quote-generation path". */}
+      <label className="flex items-start gap-2 mt-3 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={draft.researchMarketRates ?? false}
+          onChange={(e) => setDraft((d) => ({ ...d, researchMarketRates: e.target.checked }))}
+          className="mt-0.5 shrink-0"
+        />
+        <span>
+          <span className="text-small text-ink block">{t.quote.researchMarketRates}</span>
+          <span className="text-caption text-text-muted block">{t.quote.researchMarketRatesHint}</span>
+        </span>
+      </label>
     </div>
   );
 

@@ -5,6 +5,7 @@ import {
   buildRefineUserPrompt,
   parseBriefResponse,
   briefSchema,
+  shouldResearchMarketRates,
   type QuoteDraftInput,
   type GeneratedBrief,
   type PricingHistoryEntry,
@@ -178,6 +179,35 @@ describe("buildGenerateUserPrompt", () => {
     expect(withSow).toContain('"paymentTerms" string');
     expect(withSow).toContain("payment details are provided on the invoice");
     expect(withSow).toContain("Never include bank account details");
+  });
+});
+
+describe("shouldResearchMarketRates", () => {
+  const noHistory: PricingHistoryEntry[] = [];
+  const history: PricingHistoryEntry[] = [
+    { title: "Nordic App", price: 6000, hours: 100, impliedHourlyRate: 60 },
+  ];
+
+  it("stays off by default even with no history and no rate", () => {
+    expect(shouldResearchMarketRates({ hourlyRate: 0 }, noHistory)).toBe(false);
+  });
+
+  it("stays off when opted in but a rate and history already anchor the price", () => {
+    expect(
+      shouldResearchMarketRates({ hourlyRate: 65, researchMarketRates: true }, history)
+    ).toBe(false);
+  });
+
+  it("turns on when opted in and there is no history", () => {
+    expect(
+      shouldResearchMarketRates({ hourlyRate: 65, researchMarketRates: true }, noHistory)
+    ).toBe(true);
+  });
+
+  it("turns on when opted in and no rate was given", () => {
+    expect(
+      shouldResearchMarketRates({ hourlyRate: 0, researchMarketRates: true }, history)
+    ).toBe(true);
   });
 });
 

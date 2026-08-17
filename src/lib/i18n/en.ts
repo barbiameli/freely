@@ -191,6 +191,8 @@ export const en = {
     budgetHint: "Anything they said about budget",
     urgency: "Timing",
     experienceNote: "Done this kind of work before?",
+    researchMarketRates: "Research current market rates",
+    researchMarketRatesHint: "Looks up live rates for this market before pricing. Slower than pricing from what's typed above.",
 
     addSections: "Add sections",
     milestonesTitle: "Bill this in milestones",

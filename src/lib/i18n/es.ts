@@ -195,6 +195,8 @@ export const es: Dictionary = {
     budgetHint: "¿Han dicho algo del presupuesto?",
     urgency: "Plazos",
     experienceNote: "¿Has hecho antes este tipo de trabajo?",
+    researchMarketRates: "Investigar tarifas de mercado actuales",
+    researchMarketRatesHint: "Busca tarifas actuales para este mercado antes de fijar el precio. Más lento que fijar el precio con lo escrito arriba.",
 
     addSections: "Añadir secciones",
     milestonesTitle: "Facturar por hitos",

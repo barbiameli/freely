@@ -276,6 +276,14 @@ export interface QuoteDraftInput {
    * to infer a market from the brief, which is a guess.
    */
   pricing?: PricingContext;
+  /**
+   * Explicit opt-in to live web research for market rates. Defaults to
+   * false/undefined: research adds real latency to the slowest, most-used
+   * LLM call, so it no longer turns on just because there's no history or no
+   * rate — the freelancer has to ask for it. See "Gate web_search out of the
+   * default quote-generation path".
+   */
+  researchMarketRates?: boolean;
 }
 
 export interface PricingContext {
@@ -792,6 +800,22 @@ async function callClaude(
   return text;
 }
 
+/**
+ * Whether this generation should spend time on live web research for market
+ * rates. Research is only useful in the first place when there's nothing of
+ * the freelancer's own to anchor to — no pricing history, and no rate given
+ * — but usefulness alone isn't enough to turn it on: it also has to be asked
+ * for, since it adds real latency to the slowest, most-used LLM call and
+ * must not slow down the default path. See "Gate web_search out of the
+ * default quote-generation path".
+ */
+export function shouldResearchMarketRates(
+  draft: Pick<QuoteDraftInput, "researchMarketRates" | "hourlyRate">,
+  pricingHistory: PricingHistoryEntry[]
+): boolean {
+  return Boolean(draft.researchMarketRates) && (pricingHistory.length === 0 || draft.hourlyRate <= 0);
+}
+
 export async function generateBriefFromDraft(
   memory: MemoryContext,
   draft: QuoteDraftInput,
@@ -799,10 +823,8 @@ export async function generateBriefFromDraft(
 ): Promise<GeneratedBrief> {
   const system = buildSystemPrompt(memory);
   const user = buildGenerateUserPrompt(draft, pricingHistory);
-  // Research the market when there is nothing of their own to anchor to,
-  // either because there is no history or because no rate was given.
   const text = await callClaude("generateBriefFromDraft", system, user, {
-    webSearch: pricingHistory.length === 0 || draft.hourlyRate <= 0,
+    webSearch: shouldResearchMarketRates(draft, pricingHistory),
     // A quote with strategy, terms, an SOW and a staged timeline is already
     // long, and the research path writes a preamble before the JSON. At 2000
     // it was being truncated mid-object.
