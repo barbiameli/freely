@@ -8,7 +8,7 @@ Two models exist for a reason (`src/lib/anthropic.ts`): Haiku (`SMALL_MODEL`) fo
 
 ## Observability
 
-Every LLM call goes through the logged `callClaude` wrapper — model, tokens in/out, latency, and a rough $ estimate. Don't call the Anthropic SDK directly from a new call site; add a new exported function in `anthropic.ts` that goes through the wrapper. Without this, "did that change help" is a guess.
+Every LLM call goes through `loggedCreate` in `anthropic.ts` (directly, or via the `callClaude` helper) — model, tokens in/out, latency, and a rough $ estimate, logged as `[llm]`. Don't call the Anthropic SDK directly from a new call site; route it through `loggedCreate` instead. Without this, "did that change help" is a guess.
 
 ## Don't add work to the critical path by default
 

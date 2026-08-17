@@ -29,6 +29,13 @@ const MODEL = "claude-sonnet-4-6";
 /** Extraction, and short rewrites of somebody else's words. */
 const SMALL_MODEL = "claude-haiku-4-5-20251001";
 
+/** USD per million tokens, list price. For the cost estimate logged on every
+ * call — not for billing, so it doesn't need cache-token nuance. */
+const PRICING_PER_MTOK: Record<string, { input: number; output: number }> = {
+  [MODEL]: { input: 3.0, output: 15.0 },
+  [SMALL_MODEL]: { input: 1.0, output: 5.0 },
+};
+
 let client: Anthropic | null = null;
 
 /** Lazily constructs the Anthropic client so importing this module never
@@ -671,7 +678,78 @@ export function parseBriefResponse(text: string, language?: Locale): GeneratedBr
   return fillGaps(result.data, language);
 }
 
+/** The name of the exported function making the call, not the prompt
+ * content — a fixed set so a rename can't silently desync the log label. */
+type LlmJob =
+  | "generateBriefFromDraft"
+  | "extractProjectFromDocument"
+  | "generatePersona"
+  | "analyzeBrandGuide"
+  | "analyzeBrandGuideFromImage"
+  | "refineBrief"
+  | "breakDownDeliverable"
+  | "plainDeliverableNames";
+
+interface LlmCallLog {
+  job: LlmJob;
+  model: string;
+  ok: boolean;
+  latencyMs: number;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  costUsd: number | null;
+  error?: string;
+}
+
+/** One shape whether the call succeeded or not, so a log pipeline never has
+ * to handle two different `[llm]` payloads. */
+function logLlmCall(entry: LlmCallLog): void {
+  const line = JSON.stringify(entry);
+  if (entry.ok) console.log("[llm]", line);
+  else console.error("[llm]", line);
+}
+
+/** Every LLM call goes through this, so cost/latency are never a guess. */
+async function loggedCreate(
+  job: LlmJob,
+  params: Anthropic.MessageCreateParamsNonStreaming
+): Promise<Anthropic.Message> {
+  const anthropic = getClient();
+  const start = Date.now();
+  try {
+    const response = await anthropic.messages.create(params);
+    const pricing = PRICING_PER_MTOK[params.model];
+    const costUsd = pricing
+      ? (response.usage.input_tokens / 1_000_000) * pricing.input +
+        (response.usage.output_tokens / 1_000_000) * pricing.output
+      : null;
+    logLlmCall({
+      job,
+      model: params.model,
+      ok: true,
+      latencyMs: Date.now() - start,
+      inputTokens: response.usage.input_tokens,
+      outputTokens: response.usage.output_tokens,
+      costUsd: costUsd === null ? null : Number(costUsd.toFixed(4)),
+    });
+    return response;
+  } catch (err) {
+    logLlmCall({
+      job,
+      model: params.model,
+      ok: false,
+      latencyMs: Date.now() - start,
+      inputTokens: null,
+      outputTokens: null,
+      costUsd: null,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    throw err;
+  }
+}
+
 async function callClaude(
+  job: LlmJob,
   system: string,
   userPrompt: string,
   opts: {
@@ -681,8 +759,7 @@ async function callClaude(
     small?: boolean;
   } = {}
 ): Promise<string> {
-  const anthropic = getClient();
-  const response = await anthropic.messages.create({
+  const response = await loggedCreate(job, {
     model: opts.small ? SMALL_MODEL : MODEL,
     max_tokens: opts.maxTokens ?? 2000,
     system,
@@ -724,7 +801,7 @@ export async function generateBriefFromDraft(
   const user = buildGenerateUserPrompt(draft, pricingHistory);
   // Research the market when there is nothing of their own to anchor to,
   // either because there is no history or because no rate was given.
-  const text = await callClaude(system, user, {
+  const text = await callClaude("generateBriefFromDraft", system, user, {
     webSearch: pricingHistory.length === 0 || draft.hourlyRate <= 0,
     // A quote with strategy, terms, an SOW and a staged timeline is already
     // long, and the research path writes a preamble before the JSON. At 2000
@@ -778,7 +855,7 @@ export async function extractProjectFromDocument(sourceText: string): Promise<Ex
     'Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly: {"title": string, "client": string, "timeline": string, "deliverables": string[]}',
   ].join(" ");
   const user = `Document:\n${truncateSourceText(sourceText)}\n\nExtract the project title, client name, timeline, and deliverables checklist.`;
-  const text = await callClaude(system, user);
+  const text = await callClaude("extractProjectFromDocument", system, user);
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   const cleaned = (jsonMatch ? jsonMatch[0] : text).replace(/```json/gi, "").replace(/```/g, "").trim();
   let parsed: unknown;
@@ -866,7 +943,7 @@ export async function generatePersona(input: PersonaInput): Promise<PersonaResul
 
   // Two to four sentences and a seniority read. No judgement about a client's
   // money, so no reason to pay for the larger model.
-  const text = await callClaude(system, user, { small: true });
+  const text = await callClaude("generatePersona", system, user, { small: true });
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   const cleaned = (jsonMatch ? jsonMatch[0] : text)
     .replace(/```json/gi, "")
@@ -915,7 +992,7 @@ export async function analyzeBrandGuide(sourceText: string): Promise<BrandGuideA
   ].join(" ");
   const user = `Brand guideline document:\n${sourceText.slice(0, 12000)}\n\nExtract the primary color, accent color, heading font, and body font.`;
   // Extraction, not judgement.
-  const text = await callClaude(system, user, { small: true });
+  const text = await callClaude("analyzeBrandGuide", system, user, { small: true });
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   const cleaned = (jsonMatch ? jsonMatch[0] : text).replace(/```json/gi, "").replace(/```/g, "").trim();
   let parsed: unknown;
@@ -950,8 +1027,7 @@ export async function analyzeBrandGuideFromImage(
   base64Data: string,
   mediaType: "image/png" | "image/jpeg"
 ): Promise<BrandGuideAnalysis> {
-  const anthropic = getClient();
-  const response = await anthropic.messages.create({
+  const response = await loggedCreate("analyzeBrandGuideFromImage", {
     model: MODEL,
     max_tokens: 1000,
     system: BRAND_GUIDE_IMAGE_SYSTEM_PROMPT,
@@ -996,7 +1072,7 @@ export async function refineBrief(
 ): Promise<GeneratedBrief> {
   const system = buildSystemPrompt(memory);
   const user = buildRefineUserPrompt(current, refinePrompt);
-  const text = await callClaude(system, user);
+  const text = await callClaude("refineBrief", system, user);
   return parseBriefResponse(text);
 }
 
@@ -1100,7 +1176,7 @@ export async function breakDownDeliverable(
     buildSystemPrompt({ ...memory, fileExcerpts: [] }),
     "You are now planning delivery, not selling. Write for the freelancer doing the work, not for the client: no pitch language, no reassurance, just what has to happen.",
   ].join("\n\n");
-  const text = await callClaude(system, buildBreakdownPrompt(input));
+  const text = await callClaude("breakDownDeliverable", system, buildBreakdownPrompt(input));
   return parseBreakdownResponse(text);
 }
 
@@ -1164,7 +1240,7 @@ export async function plainDeliverableNames(
     .join("\n")}`;
 
   // One short line in, one short line out, with the meaning already decided.
-  const text = await callClaude(system, user, { small: true });
+  const text = await callClaude("plainDeliverableNames", system, user, { small: true });
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   const cleaned = (jsonMatch ? jsonMatch[0] : text)
     .replace(/```json/gi, "")
