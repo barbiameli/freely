@@ -1,4 +1,4 @@
-import type { Prisma, User, Team, Brief } from "@prisma/client";
+import type { Prisma, User, Team, Brief, Project } from "@prisma/client";
 import { testDb } from "./db";
 
 let seq = 0;
@@ -54,6 +54,21 @@ export function createQuote(
       timeline: "4 weeks",
       price: 4000,
       hours: 40,
+      user: { connect: { id: userId } },
+      ...overrides,
+    },
+  });
+}
+
+/** Creates a Project (Track's row) belonging to the given User. */
+export function createProject(
+  userId: string,
+  overrides: Partial<Omit<Prisma.ProjectCreateInput, "user">> = {}
+): Promise<Project> {
+  return testDb.project.create({
+    data: {
+      title: "Test Project",
+      client: "Test Client",
       user: { connect: { id: userId } },
       ...overrides,
     },

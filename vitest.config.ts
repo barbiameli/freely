@@ -13,5 +13,11 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
+    // Integration tests (tests/integration/**) share one real Postgres (see
+    // ADR-0002) and each resets it wholesale in afterEach. Running test
+    // files in parallel lets one file's reset truncate rows a concurrently
+    // running file is mid-test with — this forces all files onto one worker
+    // so the shared DB only ever sees one test file's writes at a time.
+    fileParallelism: false,
   },
 });
