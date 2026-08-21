@@ -16,4 +16,4 @@ _Avoid_: Brief (in product copy or new code), Offer
 The client-facing artifact: the shareable page at `/q/[publicSlug]` and its PDF export, where a client views and can sign a Quote. Same underlying record, rendered for an external audience — not a separate entity.
 _Avoid_: Offer, client page
 
-Retired 2026-08-16: "Offer" was used for the Public Quote in some code and commits (e.g. the `BreakdownOffer` component) with no fixed convention behind it. Existing "Offer" naming is a known inconsistency to rename, not a deliberate second concept.
+Retired 2026-08-16: "Offer" was used for the Public Quote in some code and commits, with no fixed convention behind it. Existing "Offer" naming was a known inconsistency to rename, not a deliberate second concept — done 2026-08-21 (the `BreakdownOffer` component, an unrelated Track feature that happened to share the retired word, is now `BreakdownSuggestion`).

@@ -427,7 +427,7 @@ export const es: Dictionary = {
     noStepsYet: "Este todavía no tiene pasos.",
 
     workingOutSteps: "Sacando los pasos",
-    breakDownOffer: "Convertir esto en pasos",
+    breakDownSuggestion: "Convertir esto en pasos",
     breakDownWhy: "Cada entregable pasa a ser una lista corta de lo que implica el trabajo.",
     breakDownCount: "entregables esperando",
     allBrokenDown: "Todo desglosado",

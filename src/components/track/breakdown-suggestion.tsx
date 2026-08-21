@@ -7,7 +7,7 @@ import { breakDownNextAction } from "@/actions/track";
 import { useT } from "@/lib/i18n/context";
 
 /**
- * Offers to break the project's deliverables into steps, and does it on a click.
+ * Suggests breaking the project's deliverables into steps, and does it on a click.
  *
  * This used to run by itself the moment a project landed in Track: arriving at a
  * tracker that had already worked out the steps felt like the app being useful
@@ -23,7 +23,7 @@ import { useT } from "@/lib/i18n/context";
  * answers, and six calls inside one request risks the function timeout, so the
  * loop runs here and the page fills in a piece at a time.
  */
-export function BreakdownOffer({
+export function BreakdownSuggestion({
   projectId,
   pending,
   total,
@@ -77,7 +77,7 @@ export function BreakdownOffer({
           <div className="flex items-center gap-2">
             <Sparkles size={13} className="text-violet shrink-0" />
             <span className="font-body font-semibold text-small text-ink">
-              {t.track.breakDownOffer}
+              {t.track.breakDownSuggestion}
             </span>
             <span className="text-meta text-text-muted shrink-0">
               {pending} {t.track.breakDownCount}
@@ -99,7 +99,7 @@ export function BreakdownOffer({
             data-guide="breakdown"
             className="font-body font-semibold text-meta text-white bg-violet border-none rounded-full px-3.5 py-2 cursor-pointer tap"
           >
-            {t.track.breakDownOffer}
+            {t.track.breakDownSuggestion}
           </button>
         </div>
       </div>

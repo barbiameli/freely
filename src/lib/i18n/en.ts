@@ -429,7 +429,7 @@ export const en = {
     noStepsYet: "No steps on this one yet.",
 
     workingOutSteps: "Working out the steps",
-    breakDownOffer: "Turn these into steps",
+    breakDownSuggestion: "Turn these into steps",
     breakDownWhy: "Each deliverable becomes a short list of what the work involves.",
     breakDownCount: "deliverables waiting",
     allBrokenDown: "All broken down",

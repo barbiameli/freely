@@ -15,7 +15,7 @@ import { DeliverableItem, type DeliverableView } from "@/components/track/delive
 import { DiaryPrompt, type DoneItem } from "@/components/track/diary-prompt";
 import { StatRow } from "@/components/track/stat-row";
 import { ComingUp } from "@/components/track/coming-up";
-import { BreakdownOffer } from "@/components/track/breakdown-offer";
+import { BreakdownSuggestion } from "@/components/track/breakdown-suggestion";
 import { Confirm } from "@/components/ui/confirm";
 import {
   updateProjectAction,
@@ -366,7 +366,7 @@ export function ProjectDetail({
           </Card>
         )}
 
-        <BreakdownOffer
+        <BreakdownSuggestion
           projectId={project.id}
           pending={project.deliverables.filter((d) => !d.brokenDown).length}
           total={project.deliverables.length}
