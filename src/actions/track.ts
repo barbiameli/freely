@@ -7,6 +7,7 @@ import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import { sanitizeText, stripLongDashes } from "@/lib/sanitize-text";
 import { breakDownDeliverable, type MemoryContext } from "@/lib/anthropic";
+import { enforceLlmRateLimit } from "@/lib/rate-limit";
 import { stepDb, flagDb, deliverableDb, type FlagKind } from "@/lib/track-db";
 import { scheduleDeliverables, projectEndFromTimeline } from "@/lib/schedule";
 import { tidyTitle, summaryRepeatsTitle } from "@/lib/rich-text";
@@ -172,6 +173,7 @@ export async function breakDownDeliverableAction(
 
   let breakdown;
   try {
+    await enforceLlmRateLimit(user.id);
     breakdown = await breakDownDeliverable(memoryFor(user), {
       projectTitle: project.title,
       client: project.client,

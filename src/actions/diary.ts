@@ -7,6 +7,7 @@ import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import type { ActionResult } from "@/actions/briefs";
 import { plainDeliverableNames } from "@/lib/anthropic";
+import { enforceLlmRateLimit } from "@/lib/rate-limit";
 
 
 /**
@@ -143,6 +144,7 @@ export async function setPlainLanguageAction(
     );
     if (missing.length > 0) {
       try {
+        await enforceLlmRateLimit(user.id);
         // The client's language, which is the quote's language rather than the
         // interface's: a Spanish freelancer often has English clients.
         const language =

@@ -25,4 +25,7 @@ export async function resetTestDb(): Promise<void> {
   // Not owned by a User — see ADR-0001 — so cascading delete never touches
   // it; it has to be cleared explicitly like Team and User are.
   await testDb.marketRateCache.deleteMany();
+  // Also not owned by a User (see lib/rate-limit.ts) — the identifier is
+  // folded into an opaque key, not a foreign key.
+  await testDb.rateLimitHit.deleteMany();
 }

@@ -12,6 +12,7 @@ import {
 } from "@/lib/anthropic";
 import { extractDominantColor } from "@/lib/png-color";
 import { sanitizeText } from "@/lib/sanitize-text";
+import { enforceLlmRateLimit } from "@/lib/rate-limit";
 import { parseLocale } from "@/lib/i18n";
 import type { ActionResult } from "@/actions/briefs";
 
@@ -124,6 +125,7 @@ export async function generatePersonaAction(): Promise<ActionResult<{ persona: s
 
   let persona: Awaited<ReturnType<typeof generatePersona>>;
   try {
+    await enforceLlmRateLimit(user.id);
     persona = await generatePersona({
       industry: user.industry,
       toneNotes: user.toneNotes,
@@ -272,6 +274,7 @@ export async function analyzeBrandGuideAction(
 
   let analysis: BrandGuideAnalysis;
   try {
+    await enforceLlmRateLimit(user.id);
     analysis = await analyzeBrandGuide(text);
   } catch (err) {
     return {
@@ -319,6 +322,7 @@ export async function analyzeBrandGuideImageAction(
 
   let analysis: BrandGuideAnalysis;
   try {
+    await enforceLlmRateLimit(user.id);
     analysis = await analyzeBrandGuideFromImage(base64Data, mediaType as "image/png" | "image/jpeg");
   } catch (err) {
     return {

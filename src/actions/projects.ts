@@ -7,6 +7,7 @@ import { track } from "@/lib/events";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import { extractProjectFromDocument } from "@/lib/anthropic";
+import { enforceLlmRateLimit } from "@/lib/rate-limit";
 import type { ActionResult } from "@/actions/briefs";
 
 export type ProjectStatusValue = "ACTIVE" | "DUE" | "OVERDUE" | "DONE";
@@ -25,6 +26,7 @@ export async function createProjectFromDocumentAction(
 
   let extracted;
   try {
+    await enforceLlmRateLimit(user.id);
     extracted = await extractProjectFromDocument(sourceText);
   } catch (err) {
     return {

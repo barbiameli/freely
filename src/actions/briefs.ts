@@ -10,6 +10,7 @@ import { createProjectFromBrief } from "@/lib/track-from-brief";
 import { reconcileMilestones } from "@/lib/milestones";
 import { sanitizeText, stripLongDashes, stripContrastive } from "@/lib/sanitize-text";
 import { resolveQuoteLocale } from "@/lib/i18n";
+import { enforceLlmRateLimit } from "@/lib/rate-limit";
 import {
   generateBriefFromDraft,
   refineBrief,
@@ -216,6 +217,7 @@ export async function generateBriefAction(
 
   let generated: GeneratedBrief;
   try {
+    await enforceLlmRateLimit(user.id);
     // Cache-first (ADR-0001): a market rate researched for another
     // freelancer with the same industry/currency/rateUnit combination is
     // reused here rather than running web_search again.
@@ -385,6 +387,7 @@ export async function refineBriefAction(
 
   let updated: GeneratedBrief;
   try {
+    await enforceLlmRateLimit(user.id);
     updated = await refineBrief(await buildMemoryContext(user), current, refinePrompt);
   } catch (err) {
     return {

@@ -855,3 +855,16 @@ model MarketRateCache {
 
   @@unique([industry, currency, rateUnit])
 }
+
+// A fixed-window rate-limit counter (see lib/rate-limit.ts) — one row per
+// (scope, identifier, window bucket), not per user, so old windows are just
+// rows that stop being read rather than state that needs resetting. Shared
+// across every app instance via Postgres rather than kept in memory, since
+// serverless instances don't share memory and the limit has to hold across
+// all of them.
+model RateLimitHit {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  count     Int      @default(1)
+  createdAt DateTime @default(now())
+}
