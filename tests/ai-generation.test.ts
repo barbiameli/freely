@@ -6,6 +6,7 @@ import {
   parseBriefResponse,
   briefSchema,
   shouldResearchMarketRates,
+  needsMarketRateNote,
   type QuoteDraftInput,
   type GeneratedBrief,
   type PricingHistoryEntry,
@@ -116,6 +117,23 @@ describe("buildGenerateUserPrompt", () => {
     expect(prompt).not.toContain("That rate is fixed");
   });
 
+  it("states an already-researched market rate directly instead of asking for a live web search", () => {
+    // See ADR-0001 / lib/market-rate-cache: a cache hit hands the note
+    // straight to the prompt so generateBriefFromDraft never runs its own
+    // web_search call.
+    const prompt = buildGenerateUserPrompt(
+      { ...draft, hourlyRate: 0, pricing: { clientLocation: "London, UK" } },
+      [],
+      "$70-95/hr for UX design in GBP-adjacent markets, per industry job boards."
+    );
+    expect(prompt).toContain("Market research for this kind of work has already been done");
+    expect(prompt).toContain("$70-95/hr for UX design in GBP-adjacent markets, per industry job boards.");
+    expect(prompt).toContain("Senior");
+    expect(prompt).toContain("London, UK");
+    expect(prompt).not.toContain("Use web search to find the going");
+    expect(prompt).not.toContain("That rate is fixed");
+  });
+
   it("asks for a Strategy section only when includeStrategy is set, without any AI-usage split", () => {
     const withStrategy = buildGenerateUserPrompt({ ...draft, includeStrategy: true });
     expect(withStrategy).toContain('"strategy"');
@@ -208,6 +226,35 @@ describe("shouldResearchMarketRates", () => {
     expect(
       shouldResearchMarketRates({ hourlyRate: 0, researchMarketRates: true }, history)
     ).toBe(true);
+  });
+});
+
+describe("needsMarketRateNote", () => {
+  const noHistory: PricingHistoryEntry[] = [];
+
+  it("stays off when a rate is already stated, even though shouldResearchMarketRates turns on", () => {
+    // shouldResearchMarketRates({ hourlyRate: 65, researchMarketRates: true },
+    // noHistory) is true (a rate with no history still nudges a live
+    // web_search check into the same call), but buildGenerateUserPrompt's
+    // hasRate branch never reads a marketRateNote — so resolving one here
+    // would just be a paid-for cache lookup / researchMarketRate call that
+    // nothing in the prompt uses.
+    expect(shouldResearchMarketRates({ hourlyRate: 65, researchMarketRates: true }, noHistory)).toBe(
+      true
+    );
+    expect(
+      needsMarketRateNote({ hourlyRate: 65, researchMarketRates: true }, noHistory)
+    ).toBe(false);
+  });
+
+  it("turns on when opted in and no rate was given", () => {
+    expect(
+      needsMarketRateNote({ hourlyRate: 0, researchMarketRates: true }, noHistory)
+    ).toBe(true);
+  });
+
+  it("stays off when not opted in", () => {
+    expect(needsMarketRateNote({ hourlyRate: 0, researchMarketRates: false }, noHistory)).toBe(false);
   });
 });
 

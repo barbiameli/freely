@@ -834,3 +834,24 @@ model Event {
   @@index([kind, createdAt])
   @@index([userId, createdAt])
 }
+
+// Cached market-rate research (ADR-0001), keyed by industry/currency/rateUnit
+// rather than per-freelancer or per-quote: rates for a given combination move
+// slowly (quarters, not days), so the same web_search result is reused across
+// every freelancer who shares it instead of researching it fresh every time.
+// Deliberately coarser than a full pricing context (no location, no
+// expertise level) — see the ADR for why that's an accepted tradeoff.
+model MarketRateCache {
+  id       String @id @default(cuid())
+  industry String
+  currency String
+  rateUnit String
+
+  // The going-rate figure/range and where it came from, in prose — folded
+  // straight into the generation prompt on a cache hit, the same shape a
+  // live web_search aside used to produce inline.
+  note        String   @db.Text
+  refreshedAt DateTime @default(now())
+
+  @@unique([industry, currency, rateUnit])
+}

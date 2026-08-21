@@ -409,7 +409,11 @@ function languageInstruction(language?: Locale): string {
 
 export function buildGenerateUserPrompt(
   draft: QuoteDraftInput,
-  pricingHistory: PricingHistoryEntry[] = []
+  pricingHistory: PricingHistoryEntry[] = [],
+  /** A market-rate figure already researched (live or from the Postgres
+   * cache — see ADR-0001 and lib/market-rate-cache), so the prompt can state
+   * it directly instead of asking the model to run its own web_search. */
+  marketRateNote?: string
 ): string {
   const hasHistory = pricingHistory.length > 0;
   const currencyCode = draft.currency || "USD";
@@ -441,6 +445,14 @@ export function buildGenerateUserPrompt(
     pricingInstruction = `Pricing approach: this freelancer charges ${rateLine}. That rate is fixed and must be used exactly as given. Look at the pricing history below for comparable past work, estimate the hours this new project will realistically take, and ${priceRule}. Your only real decision here is the hours. Do not substitute a market rate, a rounder number, or a rate you consider more appropriate.`;
   } else if (hasRate) {
     pricingInstruction = `Pricing approach: this freelancer charges ${rateLine}. That rate is fixed and must be used exactly as given. Estimate the hours this project realistically needs for a "${draft.expertiseLevel}"-level freelancer, then ${priceRule}. Your only real decision here is the hours. Do not substitute a market rate, a rounder number, or a rate you consider more appropriate. If the stated rate looks well below or well above the going rate, say so in the open questions and leave the numbers alone.`;
+  } else if (marketRateNote) {
+    pricingInstruction = `Pricing approach: this freelancer has not given an hourly rate. Market research for this kind of work has already been done, going ${unitNoun(
+      unit,
+      promptWords
+    )} rate across experience levels: ${marketRateNote}${formatPricingContext(
+      draft.pricing
+    )}
+Place this freelancer within that range as a "${draft.expertiseLevel}"-level freelancer, adjusted for the client's market above if it's given. Then set hours, and price = hours x the rate you land on. State the rate you used, and where it came from, in the open questions so they can check it.`;
   } else {
     pricingInstruction = `Pricing approach: this freelancer has not given an hourly rate, so you set one from market research.${formatPricingContext(
       draft.pricing
@@ -696,7 +708,8 @@ type LlmJob =
   | "analyzeBrandGuideFromImage"
   | "refineBrief"
   | "breakDownDeliverable"
-  | "plainDeliverableNames";
+  | "plainDeliverableNames"
+  | "researchMarketRate";
 
 interface LlmCallLog {
   job: LlmJob;
@@ -816,15 +829,35 @@ export function shouldResearchMarketRates(
   return Boolean(draft.researchMarketRates) && (pricingHistory.length === 0 || draft.hourlyRate <= 0);
 }
 
+/**
+ * Whether it's worth resolving a market-rate note (live or cached, see
+ * lib/market-rate-cache) before generation at all. Narrower than
+ * shouldResearchMarketRates: that also turns on for a stated rate with no
+ * pricing history (to nudge a live web_search check into the same call), but
+ * buildGenerateUserPrompt's pricing instruction only ever reads a
+ * marketRateNote once there's no stated rate — so resolving one whenever
+ * hasRate is true would be a paid-for lookup nothing in the prompt uses.
+ */
+export function needsMarketRateNote(
+  draft: Pick<QuoteDraftInput, "researchMarketRates" | "hourlyRate">,
+  pricingHistory: PricingHistoryEntry[]
+): boolean {
+  return shouldResearchMarketRates(draft, pricingHistory) && draft.hourlyRate <= 0;
+}
+
 export async function generateBriefFromDraft(
   memory: MemoryContext,
   draft: QuoteDraftInput,
-  pricingHistory: PricingHistoryEntry[] = []
+  pricingHistory: PricingHistoryEntry[] = [],
+  /** A market rate already known (from the cache, or a fresh
+   * researchMarketRate call) — see lib/market-rate-cache. When given, this
+   * call never runs its own web_search: the rate is already in the prompt. */
+  marketRateNote?: string
 ): Promise<GeneratedBrief> {
   const system = buildSystemPrompt(memory);
-  const user = buildGenerateUserPrompt(draft, pricingHistory);
+  const user = buildGenerateUserPrompt(draft, pricingHistory, marketRateNote);
   const text = await callClaude("generateBriefFromDraft", system, user, {
-    webSearch: shouldResearchMarketRates(draft, pricingHistory),
+    webSearch: shouldResearchMarketRates(draft, pricingHistory) && !marketRateNote,
     // A quote with strategy, terms, an SOW and a staged timeline is already
     // long, and the research path writes a preamble before the JSON. At 2000
     // it was being truncated mid-object.
@@ -835,6 +868,41 @@ export async function generateBriefFromDraft(
     draft.hourlyRate,
     draft.rateUnit ?? "HOUR"
   );
+}
+
+export interface MarketRateQuery {
+  /** Onboarding's industry key (or free-text "other" value). Callers pass a
+   * shared fallback string, not null, so accounts with no industry set still
+   * land in one cache bucket rather than skipping the cache. */
+  industry: string;
+  currency: string;
+  rateUnit: RateUnit;
+}
+
+/**
+ * Researches the going rate for one (industry, currency, rateUnit)
+ * combination — independent of any one freelancer's expertise level, client,
+ * or location, so the result in lib/market-rate-cache can be reused across
+ * every freelancer who shares that combination (ADR-0001). Returns prose: a
+ * rate or range, and where it came from, the same shape a live web_search
+ * aside used to produce inline inside generateBriefFromDraft.
+ */
+export async function researchMarketRate(query: MarketRateQuery): Promise<string> {
+  const promptWords = dict("en").publicQuote;
+  const system =
+    "You research freelance market rates. Use web search, then answer in one short paragraph: the going rate as a number or a realistic range, and a short clause on where it came from (the kind of source, not a URL or citation). Cover the range from junior to expert, since the answer is reused for freelancers at every level. No preamble, no markdown, no bullet points.";
+  const user = `Industry: ${query.industry}\nCurrency: ${query.currency}\nRate unit: per ${unitNoun(
+    query.rateUnit,
+    promptWords
+  )}\n\nWhat is the going rate?`;
+  // Sonnet, not Haiku: this is the same judgment the pricing branch it
+  // replaces already paid for — weighing conflicting search results into one
+  // defensible rate/range — not a transcription or short-rewrite job.
+  const text = await callClaude("researchMarketRate", system, user, {
+    webSearch: true,
+    maxTokens: 600,
+  });
+  return text.trim();
 }
 
 /**

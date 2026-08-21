@@ -22,4 +22,7 @@ export const testDb = new PrismaClient();
 export async function resetTestDb(): Promise<void> {
   await testDb.team.deleteMany();
   await testDb.user.deleteMany();
+  // Not owned by a User — see ADR-0001 — so cascading delete never touches
+  // it; it has to be cleared explicitly like Team and User are.
+  await testDb.marketRateCache.deleteMany();
 }

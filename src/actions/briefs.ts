@@ -14,6 +14,7 @@ import {
   generateBriefFromDraft,
   refineBrief,
   shouldResearchMarketRates,
+  needsMarketRateNote,
   type GeneratedBrief,
   type QuoteDraftInput,
   type MemoryContext,
@@ -21,6 +22,7 @@ import {
   type Strategy,
   type BriefExtras,
 } from "@/lib/anthropic";
+import { getOrResearchMarketRate } from "@/lib/market-rate-cache";
 
 export type ActionResult<T = undefined> =
   | { ok: true; data: T }
@@ -214,7 +216,22 @@ export async function generateBriefAction(
 
   let generated: GeneratedBrief;
   try {
-    generated = await generateBriefFromDraft(await buildMemoryContext(user), draft, pricingHistory);
+    // Cache-first (ADR-0001): a market rate researched for another
+    // freelancer with the same industry/currency/rateUnit combination is
+    // reused here rather than running web_search again.
+    const marketRateNote = needsMarketRateNote(draft, pricingHistory)
+      ? await getOrResearchMarketRate({
+          industry: user.industry,
+          currency: draft.currency || "USD",
+          rateUnit: draft.rateUnit ?? "HOUR",
+        })
+      : undefined;
+    generated = await generateBriefFromDraft(
+      await buildMemoryContext(user),
+      draft,
+      pricingHistory,
+      marketRateNote
+    );
   } catch (err) {
     console.error("[generateBriefAction] generation failed", err);
     return {
