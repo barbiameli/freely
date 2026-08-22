@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, X, Upload } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { ProjectCard, ProjectCardGrid } from "@/components/project-card";
@@ -14,6 +14,7 @@ import {
 import { addBriefToTrackAction } from "@/actions/briefs";
 import { ActionError } from "@/components/ui/action-error";
 import { Confirm } from "@/components/ui/confirm";
+import { Popover, PopoverHeader, PopoverList } from "@/components/ui/popover";
 import { deliverableProgress } from "@/lib/project-state";
 import { extractFileText } from "@/lib/extract-file";
 import { currencySymbol } from "@/lib/currencies";
@@ -49,8 +50,6 @@ export function TrackDashboard({
 }) {
   const router = useRouter();
   const t = useT();
-  const [showAdd, setShowAdd] = useState(false);
-  const [showUpload, setShowUpload] = useState(false);
   const [error, setError] = useState("");
   const [working, setWorking] = useState(false);
   const [uploadReading, setUploadReading] = useState(false);
@@ -141,40 +140,106 @@ export function TrackDashboard({
           </p>
         </div>
         <div className="flex gap-2.5">
-          <Button
-            variant="outline"
-            icon={Upload}
-            onClick={() => setShowUpload((s) => !s)}
+          {/* Both panels hang off their own button. They used to render further
+              down the page, after the stat cards, so what you had just summoned
+              appeared half a screen away and read as a section that had always
+              been there. */}
+          <Popover
+            label={t.track.uploadSow}
+            align="right"
+            trigger={({ open, toggle }) => (
+              <Button variant="outline" icon={Upload} onClick={toggle} aria-expanded={open}>
+                {t.track.uploadSow}
+              </Button>
+            )}
           >
-            {t.track.uploadSow}
-          </Button>
-          <Button icon={Plus} onClick={() => setShowAdd((s) => !s)}>
-            {t.track.addProject}
-          </Button>
+            {() => (
+              <>
+                <PopoverHeader title={t.track.uploadSow} hint={t.track.uploadSowHint} />
+                <div className="px-4 py-3.5">
+                  <label className="flex flex-col gap-2 cursor-pointer">
+                    <input
+                      type="file"
+                      accept=".txt,.md,.pdf,.docx"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleUploadFile(file);
+                      }}
+                    />
+                    <span className="font-body font-bold text-small text-violet">
+                      {uploadReading
+                        ? t.track.readingFile
+                        : working
+                          ? t.track.creatingProject
+                          : t.track.chooseFile}
+                    </span>
+                  </label>
+                  <ActionError error={uploadError} className="mt-2" />
+                </div>
+              </>
+            )}
+          </Popover>
+
+          <Popover
+            label={t.track.addFromQuote}
+            align="right"
+            trigger={({ open, toggle }) => (
+              <Button icon={Plus} onClick={toggle} aria-expanded={open}>
+                {t.track.addProject}
+              </Button>
+            )}
+          >
+            {({ close }) => (
+              <>
+                <PopoverHeader title={t.track.addFromQuote} hint={t.track.addFromQuoteHint} />
+                {untracked.length === 0 ? (
+                  <div className="px-4 py-4">
+                    <p className="text-small text-slate m-0">{t.track.noQuotesToTrack}</p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-3"
+                      onClick={() => router.push("/quote")}
+                    >
+                      {t.track.makeAQuote}
+                    </Button>
+                  </div>
+                ) : (
+                  <PopoverList>
+                    {untracked.map((q) => (
+                      <button
+                        key={q.id}
+                        type="button"
+                        disabled={working}
+                        onClick={() => {
+                          close();
+                          handleTrack(q.id);
+                        }}
+                        className="w-full flex items-center justify-between gap-3 text-left bg-none border-none cursor-pointer px-4 py-2.5 border-b border-line/70 last:border-b-0 hover:bg-paper transition-colors disabled:opacity-50 tap-row"
+                      >
+                        <span className="min-w-0">
+                          <span className="block font-body font-semibold text-small text-ink truncate">
+                            {q.title}
+                          </span>
+                          <span className="block text-caption text-text-muted truncate">
+                            {q.client}
+                          </span>
+                        </span>
+                        <span className="font-body font-semibold text-small text-slate shrink-0 tabular-nums">
+                          {currencySymbol(q.currency)}
+                          {q.price.toLocaleString()}
+                        </span>
+                      </button>
+                    ))}
+                  </PopoverList>
+                )}
+                <ActionError error={error} className="px-4 pb-3" />
+              </>
+            )}
+          </Popover>
         </div>
       </div>
-      {showUpload && (
-        <Card className="flex flex-col gap-2.5">
-          <div className="text-small text-slate">
-            {t.track.uploadSowHint}
-          </div>
-          <label className="flex flex-col gap-2 cursor-pointer">
-            <input
-              type="file"
-              accept=".txt,.md,.pdf,.docx"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleUploadFile(file);
-              }}
-            />
-            <span className="font-body font-bold text-small text-violet">
-              {uploadReading ? "Reading file..." : working ? "Creating project..." : "+ Choose file"}
-            </span>
-          </label>
-          {uploadError && <div className="text-overdue text-small">{uploadError}</div>}
-        </Card>
-      )}
       {visibleProjects.length > 0 && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 lg:gap-[14px]">
           {[
@@ -190,63 +255,6 @@ export function TrackDashboard({
           ))}
         </div>
       )}
-      {showAdd && (
-        <Card className="flex flex-col gap-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="font-body font-bold text-small text-ink">{t.track.addFromQuote}</div>
-              <p className="text-meta text-text-muted mt-0.5 mb-0 text-pretty">
-                {t.track.addFromQuoteHint}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowAdd(false)}
-              aria-label={t.common.close}
-              className="shrink-0 text-text-muted hover:text-ink bg-none border-none cursor-pointer p-0 tap"
-            >
-              <X size={15} />
-            </button>
-          </div>
-
-          {untracked.length === 0 ? (
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-small text-slate">{t.track.noQuotesToTrack}</span>
-              <Button size="sm" variant="outline" onClick={() => router.push("/quote")}>
-                {t.track.makeAQuote}
-              </Button>
-            </div>
-          ) : (
-            <ul className="list-none p-0 m-0 flex flex-col">
-              {untracked.map((q) => (
-                <li key={q.id} className="border-b border-line/70 last:border-b-0">
-                  <button
-                    type="button"
-                    disabled={working}
-                    onClick={() => handleTrack(q.id)}
-                    className="w-full flex items-center justify-between gap-3 text-left bg-none border-none cursor-pointer px-0 py-2.5 tap-row hover:opacity-80 transition-opacity disabled:opacity-50"
-                  >
-                    <span className="min-w-0">
-                      <span className="block font-body font-semibold text-small text-ink truncate">
-                        {q.title}
-                      </span>
-                      <span className="block text-caption text-text-muted truncate">
-                        {q.client}
-                      </span>
-                    </span>
-                    <span className="font-body font-semibold text-small text-slate shrink-0 tabular-nums">
-                      {currencySymbol(q.currency)}
-                      {q.price.toLocaleString()}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          <ActionError error={error} />
-        </Card>
-      )}
-      {error && <div className="text-overdue text-small">{error}</div>}
       {visibleProjects.length === 0 ? (
         <Card className="text-center text-slate p-10">
           {t.track.nothingTracked}

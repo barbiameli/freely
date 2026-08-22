@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Bell } from "lucide-react";
 import {
   notificationsAction,
   markNotificationsReadAction,
 } from "@/actions/notifications";
+import { Popover, PopoverHeader, PopoverList } from "@/components/ui/popover";
 import { badge, type NotificationRow } from "@/lib/notify";
 import { formatDay } from "@/lib/schedule";
 import { useT, useLocale } from "@/lib/i18n/context";
@@ -30,10 +31,8 @@ import { useT, useLocale } from "@/lib/i18n/context";
 export function NotificationBell() {
   const t = useT();
   const locale = useLocale();
-  const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NotificationRow[] | null>(null);
   const [unread, setUnread] = useState(0);
-  const wrap = useRef<HTMLDivElement>(null);
 
   // The count once, on mount, so the bell is honest before it is opened.
   useEffect(() => {
@@ -46,28 +45,9 @@ export function NotificationBell() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!open) return;
-    function onAway(event: MouseEvent) {
-      if (!wrap.current?.contains(event.target as Node)) setOpen(false);
-    }
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("mousedown", onAway);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onAway);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
 
-  async function toggle() {
-    if (open) {
-      setOpen(false);
-      return;
-    }
-    setOpen(true);
+  /** Loads on open, and opening is reading. */
+  async function load() {
     const result = await notificationsAction();
     if (result.ok) setItems(result.data.items);
     // Cleared straight away so the badge agrees with what is on screen, and
@@ -79,29 +59,33 @@ export function NotificationBell() {
   const count = badge(unread);
 
   return (
-    <div ref={wrap} className="relative">
-      <button
-        type="button"
-        onClick={toggle}
-        aria-label={t.notifications.title}
-        aria-expanded={open}
-        className="relative flex items-center justify-center w-9 h-9 rounded-full text-slate hover:text-ink hover:bg-paper bg-none border-none cursor-pointer tap transition-colors"
-      >
-        <Bell size={16} />
-        {count && (
-          <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-coral text-white font-body font-bold text-[10px] leading-4 text-center">
-            {count}
-          </span>
-        )}
-      </button>
-
-      {open && (
-        <div className="absolute right-0 top-11 z-50 w-[320px] max-w-[calc(100vw-32px)] bg-white border border-line rounded-card shadow-dialog overflow-hidden animate-dialog-in motion-reduce:animate-none">
-          <div className="px-4 py-3 border-b border-line">
-            <div className="font-body font-bold text-small text-ink">{t.notifications.title}</div>
-          </div>
-
-          <div className="max-h-[60vh] overflow-y-auto">
+    <Popover
+      label={t.notifications.title}
+      align="right"
+      trigger={({ open, toggle }) => (
+        <button
+          type="button"
+          onClick={() => {
+            if (!open) void load();
+            toggle();
+          }}
+          aria-label={t.notifications.title}
+          aria-expanded={open}
+          className="relative flex items-center justify-center w-9 h-9 rounded-full text-slate hover:text-ink hover:bg-paper bg-none border-none cursor-pointer tap transition-colors"
+        >
+          <Bell size={16} />
+          {count && (
+            <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-coral text-white font-body font-bold text-[10px] leading-4 text-center">
+              {count}
+            </span>
+          )}
+        </button>
+      )}
+    >
+      {({ close }) => (
+        <>
+          <PopoverHeader title={t.notifications.title} />
+          <PopoverList>
             {items === null ? (
               <div className="px-4 py-6 text-small text-text-muted">{t.common.loading}</div>
             ) : items.length === 0 ? (
@@ -130,24 +114,21 @@ export function NotificationBell() {
                   <Link
                     key={item.id}
                     href={item.href}
-                    onClick={() => setOpen(false)}
+                    onClick={close}
                     className="block px-4 py-3 border-b border-line/70 last:border-b-0 no-underline hover:bg-paper transition-colors"
                   >
                     {inner}
                   </Link>
                 ) : (
-                  <div
-                    key={item.id}
-                    className="px-4 py-3 border-b border-line/70 last:border-b-0"
-                  >
+                  <div key={item.id} className="px-4 py-3 border-b border-line/70 last:border-b-0">
                     {inner}
                   </div>
                 );
               })
             )}
-          </div>
-        </div>
+          </PopoverList>
+        </>
       )}
-    </div>
+    </Popover>
   );
 }

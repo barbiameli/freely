@@ -319,6 +319,9 @@ export const es: Dictionary = {
 
   track: {
     addFromQuote: "Seguir un presupuesto",
+    readingFile: "Leyendo el archivo...",
+    creatingProject: "Creando el proyecto...",
+    chooseFile: "Elegir un archivo",
     addFromQuoteHint: "Elige un presupuesto que ya hayas hecho. Se traen sus entregables, plazos y precio.",
     noQuotesToTrack: "Todos tus presupuestos ya se estan siguiendo.",
     makeAQuote: "Hacer un presupuesto",

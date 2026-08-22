@@ -319,6 +319,9 @@ export const en = {
 
   track: {
     addFromQuote: "Track a quote",
+    readingFile: "Reading file...",
+    creatingProject: "Creating project...",
+    chooseFile: "Choose a file",
     addFromQuoteHint: "Pick a quote you have already made. Its deliverables, timeline and price come with it.",
     noQuotesToTrack: "Every quote you have made is already being tracked.",
     makeAQuote: "Make a quote",
