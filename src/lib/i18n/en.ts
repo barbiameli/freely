@@ -318,6 +318,10 @@ export const en = {
   },
 
   track: {
+    addFromQuote: "Track a quote",
+    addFromQuoteHint: "Pick a quote you have already made. Its deliverables, timeline and price come with it.",
+    noQuotesToTrack: "Every quote you have made is already being tracked.",
+    makeAQuote: "Make a quote",
     clientPageTitle: "Give your client a page to follow",
     clientPageBody: "A link they can open any time, in your name and colours, showing what is done and what is next. It keeps itself up to date as you tick things off.",
     clientPagePoint1: "No account, no login. Just a link.",

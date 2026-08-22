@@ -11,8 +11,25 @@ export default async function TrackPage() {
     orderBy: { createdAt: "desc" },
   });
 
+  // Quotes that exist and are not being tracked, for the picker. "Add project"
+  // used to take a title and a client name and make an empty shell: no
+  // deliverables, no timeline, no price, so nothing to tick, break down, show a
+  // client or invoice. Everything Track does needs a quote behind it.
+  const untracked = await prisma.brief.findMany({
+    where: { ...teamScopeWhere(user), status: { not: "TRACKED" } },
+    select: { id: true, title: true, client: true, price: true, currency: true },
+    orderBy: { createdAt: "desc" },
+  });
+
   return (
     <TrackDashboard
+      untracked={untracked.map((b) => ({
+        id: b.id,
+        title: b.title,
+        client: b.client,
+        price: b.price,
+        currency: b.currency,
+      }))}
       projects={projects.map((p) => ({
         id: p.id,
         title: p.title,

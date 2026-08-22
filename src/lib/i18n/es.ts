@@ -318,6 +318,10 @@ export const es: Dictionary = {
   },
 
   track: {
+    addFromQuote: "Seguir un presupuesto",
+    addFromQuoteHint: "Elige un presupuesto que ya hayas hecho. Se traen sus entregables, plazos y precio.",
+    noQuotesToTrack: "Todos tus presupuestos ya se estan siguiendo.",
+    makeAQuote: "Hacer un presupuesto",
     clientPageTitle: "Dale a tu cliente una pagina que seguir",
     clientPageBody: "Un enlace que puede abrir cuando quiera, con tu nombre y tus colores, que muestra lo hecho y lo que viene. Se actualiza solo segun vas marcando cosas.",
     clientPagePoint1: "Sin cuenta ni contrasena. Solo un enlace.",

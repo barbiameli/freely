@@ -7,12 +7,12 @@ import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { ProjectCard, ProjectCardGrid } from "@/components/project-card";
 import { Button } from "@/components/ui/button";
-import { TextField } from "@/components/ui/text-field";
 import {
-  createManualProjectAction,
   createProjectFromDocumentAction,
   deleteProjectAction,
 } from "@/actions/projects";
+import { addBriefToTrackAction } from "@/actions/briefs";
+import { ActionError } from "@/components/ui/action-error";
 import { Confirm } from "@/components/ui/confirm";
 import { deliverableProgress } from "@/lib/project-state";
 import { extractFileText } from "@/lib/extract-file";
@@ -31,13 +31,26 @@ interface TrackProject {
   deliverables: { id: string; done: boolean }[];
 }
 
-export function TrackDashboard({ projects }: { projects: TrackProject[] }) {
+/** A quote that exists and is not being tracked yet. */
+export interface UntrackedQuote {
+  id: string;
+  title: string;
+  client: string;
+  price: number;
+  currency: string | null;
+}
+
+export function TrackDashboard({
+  projects,
+  untracked,
+}: {
+  projects: TrackProject[];
+  untracked: UntrackedQuote[];
+}) {
   const router = useRouter();
   const t = useT();
   const [showAdd, setShowAdd] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
-  const [title, setTitle] = useState("");
-  const [client, setClient] = useState("");
   const [error, setError] = useState("");
   const [working, setWorking] = useState(false);
   const [uploadReading, setUploadReading] = useState(false);
@@ -72,16 +85,26 @@ export function TrackDashboard({ projects }: { projects: TrackProject[] }) {
     }
   }
 
-  async function handleAdd() {
+  /**
+   * Tracks an existing quote.
+   *
+   * This used to make a project out of a typed title and client name, which
+   * produced an empty shell: no deliverables to tick, no timeline, no price, so
+   * nothing to break down, nothing to show a client and nothing to invoice.
+   * Every part of Track reads off a quote, so this picks one.
+   */
+  async function handleTrack(briefId: string) {
     setWorking(true);
     setError("");
-    const result = await createManualProjectAction(title, client);
-    setWorking(false);
-    if (!result.ok) {
-      setError(result.error);
-      return;
+    try {
+      // The action redirects on success, and Next signals a redirect by
+      // throwing, so that one is expected.
+      await addBriefToTrackAction(briefId);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (!message.includes("NEXT_REDIRECT")) setError(t.brief.addToTrackFailed);
+      setWorking(false);
     }
-    router.push(`/track/${result.data.projectId}`);
   }
 
   async function handleUploadFile(file: File) {
@@ -168,15 +191,59 @@ export function TrackDashboard({ projects }: { projects: TrackProject[] }) {
         </div>
       )}
       {showAdd && (
-        <Card className="flex gap-2.5 items-center">
-          <TextField value={title} onChange={setTitle} placeholder={t.track.projectTitle} />
-          <TextField value={client} onChange={setClient} placeholder={t.track.clientName} />
-          <Button disabled={working} onClick={handleAdd}>
-            {t.common.add}
-          </Button>
-          <Button variant="ghost" onClick={() => setShowAdd(false)}>
-            <X size={14} />
-          </Button>
+        <Card className="flex flex-col gap-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="font-body font-bold text-small text-ink">{t.track.addFromQuote}</div>
+              <p className="text-meta text-text-muted mt-0.5 mb-0 text-pretty">
+                {t.track.addFromQuoteHint}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowAdd(false)}
+              aria-label={t.common.close}
+              className="shrink-0 text-text-muted hover:text-ink bg-none border-none cursor-pointer p-0 tap"
+            >
+              <X size={15} />
+            </button>
+          </div>
+
+          {untracked.length === 0 ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-small text-slate">{t.track.noQuotesToTrack}</span>
+              <Button size="sm" variant="outline" onClick={() => router.push("/quote")}>
+                {t.track.makeAQuote}
+              </Button>
+            </div>
+          ) : (
+            <ul className="list-none p-0 m-0 flex flex-col">
+              {untracked.map((q) => (
+                <li key={q.id} className="border-b border-line/70 last:border-b-0">
+                  <button
+                    type="button"
+                    disabled={working}
+                    onClick={() => handleTrack(q.id)}
+                    className="w-full flex items-center justify-between gap-3 text-left bg-none border-none cursor-pointer px-0 py-2.5 tap-row hover:opacity-80 transition-opacity disabled:opacity-50"
+                  >
+                    <span className="min-w-0">
+                      <span className="block font-body font-semibold text-small text-ink truncate">
+                        {q.title}
+                      </span>
+                      <span className="block text-caption text-text-muted truncate">
+                        {q.client}
+                      </span>
+                    </span>
+                    <span className="font-body font-semibold text-small text-slate shrink-0 tabular-nums">
+                      {currencySymbol(q.currency)}
+                      {q.price.toLocaleString()}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <ActionError error={error} />
         </Card>
       )}
       {error && <div className="text-overdue text-small">{error}</div>}
