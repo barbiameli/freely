@@ -39,16 +39,36 @@ export interface Funnel {
  * the one before it.
  */
 export function funnel(events: EventRow[]): Funnel {
-  const distinct = (kind: EventKind) =>
-    new Set(events.filter((e) => e.kind === kind && e.subjectId).map((e) => e.subjectId)).size;
-
   return {
-    generated: distinct("quote_generated"),
-    published: distinct("quote_published"),
-    accepted: distinct("quote_accepted"),
-    tracked: distinct("project_tracked"),
-    invoiced: distinct("invoice_created"),
+    generated: distinct(events, "quote_generated"),
+    published: distinct(events, "quote_published"),
+    accepted: distinct(events, "quote_accepted"),
+    tracked: distinct(events, "project_tracked"),
+    invoiced: distinct(events, "invoice_created"),
   };
+}
+
+/**
+ * How many different quotes reached one step.
+ *
+ * A module-level function taking the rows as an argument, which looks like the
+ * more verbose way to write it, and is not optional.
+ *
+ * This was a local arrow closing over `events`. When the production build
+ * inlined `funnel` into the Insights page, the first call had `events` renamed
+ * to the caller's variable and the other four kept the literal name, which by
+ * then referred to nothing. The page died with "events is not defined" while
+ * every test passed, because the bug did not exist until the minifier made it.
+ *
+ * Nothing here may close over a parameter of the function it is called from.
+ * Pass the rows in. Verified by tests/metrics-closure.test.ts.
+ */
+function distinct(events: EventRow[], kind: EventKind): number {
+  const seen = new Set<string>();
+  for (const event of events) {
+    if (event.kind === kind && event.subjectId) seen.add(event.subjectId);
+  }
+  return seen.size;
 }
 
 /**
