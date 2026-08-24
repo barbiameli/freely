@@ -130,6 +130,7 @@ export function QuoteWizard({
   userCurrency,
   hasBrand,
   savedLocation,
+  savedCountry,
   savedRate,
   savedRateUnit,
   industry,
@@ -147,6 +148,8 @@ export function QuoteWizard({
   userCurrency?: string | null;
   hasBrand?: boolean;
   savedLocation?: string;
+  /** ISO 3166-1 alpha-2 from Memory, so the rate helper opens answered. */
+  savedCountry?: string | null;
   /** The rate saved in Memory, prefilled so it is not retyped each time. */
   savedRate?: number;
   savedRateUnit?: string;
@@ -872,6 +875,7 @@ export function QuoteWizard({
             keptRows={keptRows}
             brandUpload={brandUpload}
             pricedFor={pricedForFields}
+            savedCountry={savedCountry}
           />
 
           {generating && (

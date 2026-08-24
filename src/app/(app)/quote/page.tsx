@@ -125,6 +125,7 @@ export default async function QuotePage({
       userCurrency={user.currency}
       hasBrand={hasOwnBranding(user)}
       savedLocation={(user as unknown as { location: string | null }).location ?? ""}
+      savedCountry={(user as unknown as { country: string | null }).country ?? null}
       savedRate={(user as unknown as { defaultRate: number | null }).defaultRate ?? 0}
       savedRateUnit={
         (user as unknown as { defaultRateUnit: string | null }).defaultRateUnit ?? "HOUR"

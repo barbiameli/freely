@@ -870,6 +870,17 @@ model MarketRateCache {
   // straight into the generation prompt on a cache hit, the same shape a
   // live web_search aside used to produce inline.
   note        String   @db.Text
+
+  // The same answer as numbers: { "Junior": { low, high }, ... } for all four
+  // levels. Prose cannot fill a field, so somebody who does not know what to
+  // charge still had to read a paragraph and decide. One call answers for
+  // every level, which is why it is cached whole rather than per level.
+  //
+  // Nullable because rows written before this existed have prose only, and a
+  // missing blob simply means the numbers are unavailable rather than wrong.
+  // Validated on read by lib/market-rate, since a Json column holds whatever
+  // was put in it.
+  levels      Json?
   refreshedAt DateTime @default(now())
 
   @@unique([country, industry, currency, rateUnit])

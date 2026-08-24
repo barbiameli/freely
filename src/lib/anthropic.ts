@@ -3,6 +3,7 @@ import { z } from "zod";
 import { scanBrandGuide, scanIsComplete } from "@/lib/brand-scan";
 import { currencySymbol } from "@/lib/currencies";
 import { countryName } from "@/lib/countries";
+import { parseLevels, type RateLevels } from "@/lib/market-rate";
 import type { SectionNotes } from "@/lib/quote-prompts";
 import type { Locale } from "@/lib/i18n/types";
 import { dict } from "@/lib/i18n";
@@ -893,10 +894,12 @@ export interface MarketRateQuery {
  * rate or range, and where it came from, the same shape a live web_search
  * aside used to produce inline inside generateBriefFromDraft.
  */
-export async function researchMarketRate(query: MarketRateQuery): Promise<string> {
+export async function researchMarketRate(query: MarketRateQuery): Promise<MarketRateAnswer> {
   const promptWords = dict("en").publicQuote;
   const system =
-    "You research freelance market rates. Use web search, then answer in one short paragraph: the going rate as a number or a realistic range, and a short clause on where it came from (the kind of source, not a URL or citation). Research the rate freelancers based in the country given actually charge, and say the country in your answer so it can be checked. Cover the range from junior to expert, since the answer is reused for freelancers at every level. No preamble, no markdown, no bullet points.";
+    'You research freelance market rates. Use web search, then answer with JSON and nothing else, in this exact shape: {"note": "...", "levels": {"Junior": {"low": 0, "high": 0}, "Mid-level": {"low": 0, "high": 0}, "Senior": {"low": 0, "high": 0}, "Expert": {"low": 0, "high": 0}}}. ' +
+    "The note is one short paragraph: the going rate as a number or a realistic range, and a short clause on where it came from (the kind of source, not a URL or citation). Research the rate freelancers based in the country given actually charge, and say the country in the note so it can be checked. " +
+    "Every number is a whole amount in the currency and rate unit given, with no symbols, no thousands separators and no text. All four levels are required, since one answer is reused for freelancers at every level. No preamble, no markdown, no code fences.";
   const user = `Country: ${
     countryName(query.country) ?? query.country
   }\nIndustry: ${query.industry}\nCurrency: ${query.currency}\nRate unit: per ${unitNoun(
@@ -908,9 +911,38 @@ export async function researchMarketRate(query: MarketRateQuery): Promise<string
   // defensible rate/range — not a transcription or short-rewrite job.
   const text = await callClaude("researchMarketRate", system, user, {
     webSearch: true,
-    maxTokens: 600,
+    maxTokens: 900,
   });
-  return text.trim();
+
+  // The prose is the part that must survive. A model that ignores the JSON
+  // shape still usually writes a usable paragraph, and losing the whole answer
+  // over a malformed blob would mean no rate note in the quote either.
+  const parsed = readJson(text);
+  const note = typeof parsed?.note === "string" && parsed.note.trim() ? parsed.note.trim() : text.trim();
+  return { note, levels: parseLevels(parsed?.levels) };
+}
+
+/** The research, as a paragraph and as numbers. Numbers may be null. */
+export interface MarketRateAnswer {
+  note: string;
+  levels: RateLevels | null;
+}
+
+/**
+ * The JSON out of a reply, tolerantly.
+ *
+ * Models add a code fence about one time in twenty however plainly the prompt
+ * says not to, and that is not a reason to throw away a good answer.
+ */
+function readJson(text: string): { note?: unknown; levels?: unknown } | null {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start === -1 || end <= start) return null;
+  try {
+    return JSON.parse(text.slice(start, end + 1));
+  } catch {
+    return null;
+  }
 }
 
 /**

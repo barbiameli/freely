@@ -23,7 +23,7 @@ import {
   type Strategy,
   type BriefExtras,
 } from "@/lib/anthropic";
-import { getOrResearchMarketRate } from "@/lib/market-rate-cache";
+import { getMarketRateNote } from "@/lib/market-rate-cache";
 
 export type ActionResult<T = undefined> =
   | { ok: true; data: T }
@@ -222,7 +222,7 @@ export async function generateBriefAction(
     // freelancer with the same industry/currency/rateUnit combination is
     // reused here rather than running web_search again.
     const marketRateNote = needsMarketRateNote(draft, pricingHistory)
-      ? await getOrResearchMarketRate({
+      ? await getMarketRateNote({
           // Asked of anybody who said they do not know what to charge, and
           // guessed from the currency for everybody else, so the research is
           // always against somewhere rather than against nowhere.

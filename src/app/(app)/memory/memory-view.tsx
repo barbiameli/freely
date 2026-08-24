@@ -244,7 +244,7 @@ export function MemoryView({
         {/* What a quote starts with, and what it looks like. */}
         {tab === "quotes" && (
           <>
-            <QuoteSetupCard saved={saved} hasBrand={hasBrand}>
+            <QuoteSetupCard saved={saved} hasBrand={hasBrand} country={country}>
               <QuoteLanguage initial={quoteLocale} />
             </QuoteSetupCard>
             <BrandingCard

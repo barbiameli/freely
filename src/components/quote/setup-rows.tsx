@@ -2,10 +2,12 @@
 
 import { useEffect, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronRight, Check, RotateCcw } from "lucide-react";
+import { ChevronDown, ChevronRight, Check, RotateCcw, Search } from "lucide-react";
 import { Chip } from "@/components/ui/chip";
+import { Button } from "@/components/ui/button";
 import { SubLabel } from "@/components/ui/label";
 import { CURRENCIES, currencySymbol } from "@/lib/currencies";
+import { COUNTRIES, currencyForCountry } from "@/lib/countries";
 import { rateSuffix, type RateUnit } from "@/lib/rate-unit";
 import { TemplatePreview } from "@/components/quote/template-preview";
 import { SECTION_QUESTIONS, type SectionNotes } from "@/lib/quote-prompts";
@@ -25,6 +27,7 @@ import {
 import { useT } from "@/lib/i18n/context";
 import type { Dictionary } from "@/lib/i18n";
 import type { QuoteDraftPayload } from "@/actions/briefs";
+import { researchRateAction, type ResearchedRate } from "@/actions/rate";
 
 /**
  * The quote setup, as four readable lines.
@@ -67,6 +70,7 @@ export function SetupRows({
   keptRows,
   brandUpload,
   pricedFor,
+  savedCountry,
 }: {
   draft: QuoteDraftPayload;
   setDraft: Dispatch<SetStateAction<QuoteDraftPayload>>;
@@ -89,6 +93,9 @@ export function SetupRows({
   brandUpload?: ReactNode;
   /** The market questions, shown under the rate when there is no rate. */
   pricedFor?: ReactNode;
+  /** The country already on the account, so the rate helper does not ask
+   * for something Memory already knows. */
+  savedCountry?: string | null;
 }) {
   const t = useT();
   const decided = decidedRows(saved);
@@ -270,6 +277,7 @@ export function SetupRows({
                     // Only when the level was read rather than stated, so the
                     // note explains where a value nobody typed came from.
                     readLevel={saved.expertiseLevel ? null : saved.inferredExpertise ?? null}
+                    savedCountry={savedCountry}
                   />
                 )}
                 {row === "payment" && <PaymentBody draft={draft} setDraft={setDraft} />}
@@ -308,6 +316,7 @@ export function RateBody({
   setRateHelpOpen,
   pricedFor,
   readLevel,
+  savedCountry,
 }: {
   draft: QuoteDraftPayload;
   setDraft: Dispatch<SetStateAction<QuoteDraftPayload>>;
@@ -316,9 +325,35 @@ export function RateBody({
   pricedFor?: ReactNode;
   /** A level inferred from Memory rather than stated, if there is one. */
   readLevel?: string | null;
+  /** The country already on the account, so it is not asked again. */
+  savedCountry?: string | null;
 }) {
   const t = useT();
   const unit = (draft.rateUnit ?? "HOUR") as RateUnit;
+  const [country, setCountry] = useState(savedCountry ?? "");
+  const [researching, setResearching] = useState(false);
+  const [researched, setResearched] = useState<ResearchedRate | null>(null);
+  const [rateError, setRateError] = useState("");
+
+  async function research() {
+    setRateError("");
+    setResearching(true);
+    try {
+      const result = await researchRateAction({
+        expertise: draft.expertiseLevel ?? "",
+        country,
+        currency: draft.currency ?? "USD",
+        rateUnit: unit,
+      });
+      if (result.ok) setResearched(result.data);
+      else setRateError(result.error);
+    } catch {
+      setRateError(t.common.noConnection);
+    } finally {
+      setResearching(false);
+    }
+  }
+
   return (
     <>
       {/* Plenty of freelancers price in days, and converting to an hourly
@@ -398,7 +433,11 @@ export function RateBody({
               <Chip
                 key={level}
                 active={draft.expertiseLevel === level}
-                onClick={() => setDraft((d) => ({ ...d, expertiseLevel: level }))}
+                onClick={() => {
+                  setDraft((d) => ({ ...d, expertiseLevel: level }));
+                  // The old answer is about the old level, so it goes.
+                  setResearched(null);
+                }}
               >
                 {level}
               </Chip>
@@ -409,6 +448,84 @@ export function RateBody({
               ? t.quote.expertiseRead.replace("{level}", readLevel)
               : t.quote.expertiseHint}
           </p>
+
+          {/* Where, then the button that turns the two answers into numbers.
+              This is the whole point of the branch: somebody who says they do
+              not know what to charge should leave it knowing, rather than
+              having filled in two fields that quietly affect a price later. */}
+          <div className="mt-4">
+            <SubLabel>{t.onboarding.whereBased}</SubLabel>
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={country}
+                onChange={(e) => {
+                  setCountry(e.target.value);
+                  setResearched(null);
+                  const next = currencyForCountry(e.target.value);
+                  if (e.target.value) setDraft((d) => ({ ...d, currency: next }));
+                }}
+                className="flex-1 min-w-[180px] bg-paper rounded-lg border-none px-3 py-2.5 text-sm text-ink outline-none cursor-pointer"
+              >
+                <option value="">{t.onboarding.pickCountry}</option>
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <Button
+                size="sm"
+                variant="outline"
+                icon={Search}
+                disabled={!country || !draft.expertiseLevel || researching}
+                onClick={research}
+              >
+                {researching ? t.common.working : t.quote.findMyRate}
+              </Button>
+            </div>
+          </div>
+
+          {rateError && <p className="text-caption text-overdue mt-2 mb-0">{rateError}</p>}
+
+          {researched && (
+            <div className="mt-4">
+              {researched.options.length > 0 ? (
+                <>
+                  <SubLabel>{t.quote.pickARate}</SubLabel>
+                  <div className="flex flex-wrap gap-1.5">
+                    {researched.options.map((amount, index) => (
+                      <Chip
+                        key={amount}
+                        active={draft.hourlyRate === amount}
+                        onClick={() => setDraft((d) => ({ ...d, hourlyRate: amount }))}
+                      >
+                        {`${currencySymbol(draft.currency)}${amount.toLocaleString()}${rateSuffix(
+                          unit,
+                          t.publicQuote
+                        )}`}
+                        {/* Only the ends are labelled. Naming the middle one
+                            "typical" would recommend it, and the point of a
+                            range is that the choice is theirs. */}
+                        {index === 0 && researched.options.length > 1
+                          ? ` · ${t.quote.rateLower}`
+                          : index === researched.options.length - 1 && researched.options.length > 1
+                          ? ` · ${t.quote.rateUpper}`
+                          : ""}
+                      </Chip>
+                    ))}
+                  </div>
+                </>
+              ) : null}
+
+              {/* The paragraph, always. Numbers with no provenance are numbers
+                  nobody believes, and this is somebody deciding what to charge
+                  for their work. */}
+              <p className="text-caption text-text-muted mt-2.5 mb-0 text-pretty">
+                {researched.note}
+              </p>
+            </div>
+          )}
+
           {pricedFor}
         </div>
       )}

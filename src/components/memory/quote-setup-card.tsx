@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Check, ChevronDown, ChevronRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Chip } from "@/components/ui/chip";
 import {
   RateBody,
   PaymentBody,
@@ -12,12 +11,7 @@ import {
   PresentationBody,
   setupFromDraft,
 } from "@/components/quote/setup-rows";
-import {
-  everything,
-  resolveSetup,
-  type AccountDefaults,
-  type ExpertiseLevel,
-} from "@/lib/quote-defaults";
+import { everything, resolveSetup, type AccountDefaults } from "@/lib/quote-defaults";
 import { saveQuoteSetupAction } from "@/actions/quote-defaults";
 import type { SectionNotes } from "@/lib/quote-prompts";
 import type { QuoteDraftPayload } from "@/actions/briefs";
@@ -40,10 +34,13 @@ import { useT } from "@/lib/i18n/context";
 export function QuoteSetupCard({
   saved,
   hasBrand,
+  country,
   children,
 }: {
   saved: AccountDefaults;
   hasBrand?: boolean;
+  /** ISO 3166-1 alpha-2, so the rate helper does not ask again. */
+  country?: string | null;
   /** Currency and quote language, which belong to this decision rather than to
    * branding, where they used to live. */
   children?: React.ReactNode;
@@ -86,6 +83,9 @@ export function QuoteSetupCard({
   // first, because two open sections is most of the way back to the wall of
   // controls this replaced.
   const [open, setOpen] = useState<string | null>(null);
+  // Held here rather than inside RateBody, so opening the Rate row and pressing
+  // "Not sure what to charge" survive each other.
+  const [rateHelpOpen, setRateHelpOpen] = useState(false);
 
   // Debounced, because the notes are typed into. A save per keystroke would be
   // a write per character.
@@ -130,34 +130,27 @@ export function QuoteSetupCard({
           says what it holds, which is enough to find the one you came for. */}
       <div className="flex flex-col">
         <Section id="rate" open={open} onToggle={setOpen} label={t.quote.setupRate}>
-          {/* No rate helper here: researching a rate is something a quote does
-              with a market and a brief in front of it, not a preference. */}
+          {/* The same helper the wizard has, rather than a dead prop.
+              It used to be switched off here on the reasoning that researching
+              a rate belongs to a quote. That left "Your expertise level" as a
+              row of its own, which is a question with no visible purpose: on
+              its own it changes nothing, and it only means anything inside the
+              branch where somebody says they do not know what to charge. So it
+              lives there now, with a country and a button, and this row is the
+              one place a rate gets decided either way. */}
           <RateBody
             draft={draft}
             setDraft={setDraft}
-            rateHelpOpen={false}
-            setRateHelpOpen={() => {}}
+            rateHelpOpen={rateHelpOpen}
+            setRateHelpOpen={(next) => {
+              setRateHelpOpen(next);
+              // Choosing a level in here is stating one, the same as it is in
+              // the wizard, so the account stops reading it off the persona.
+              if (next) setStated(true);
+            }}
+            readLevel={readLevel}
+            savedCountry={country ?? null}
           />
-        </Section>
-
-        <Section id="level" open={open} onToggle={setOpen} label={t.quote.expertise}>
-          <div className="flex flex-wrap gap-1.5">
-            {(["Junior", "Mid-level", "Senior", "Expert"] as const).map((level) => (
-              <Chip
-                key={level}
-                active={draft.expertiseLevel === level}
-                onClick={() => {
-                  setStated(true);
-                  setDraft((d) => ({ ...d, expertiseLevel: level as ExpertiseLevel }));
-                }}
-              >
-                {level}
-              </Chip>
-            ))}
-          </div>
-          <p className="text-caption text-text-muted mt-1.5 mb-0">
-            {readLevel ? t.quote.expertiseRead.replace("{level}", readLevel) : t.quote.expertiseHint}
-          </p>
         </Section>
 
         <Section id="payment" open={open} onToggle={setOpen} label={t.quote.setupPayment}>

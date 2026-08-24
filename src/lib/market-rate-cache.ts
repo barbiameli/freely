@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { researchMarketRate, type MarketRateQuery } from "@/lib/anthropic";
+import { researchMarketRate, type MarketRateQuery, type MarketRateAnswer } from "@/lib/anthropic";
 import { resolveCountry } from "@/lib/countries";
+import { parseLevels } from "@/lib/market-rate";
 
 /** How long a cached note is trusted before being re-researched — ADR-0001's
  * "quarterly" cadence, since rates for a given industry/currency/rateUnit
@@ -24,7 +25,7 @@ export async function getOrResearchMarketRate(
     /** Their stated country, or null to fall back to what the currency implies. */
     country: string | null;
   }
-): Promise<string> {
+): Promise<MarketRateAnswer> {
   const key: MarketRateQuery = {
     // A rate is a local number, so the country leads the key. Without it every
     // euro country shared one answer, which is an average of Lisbon and
@@ -42,21 +43,40 @@ export async function getOrResearchMarketRate(
   // it stops being needed the moment the client catches up.
   const table = prisma as unknown as {
     marketRateCache: {
-      findUnique(args: { where: unknown }): Promise<{ note: string; refreshedAt: Date } | null>;
+      findUnique(args: {
+        where: unknown;
+      }): Promise<{ note: string; levels: unknown; refreshedAt: Date } | null>;
       upsert(args: { where: unknown; update: unknown; create: unknown }): Promise<unknown>;
     };
   };
 
   const cached = await table.marketRateCache.findUnique({ where });
   if (cached && Date.now() - cached.refreshedAt.getTime() < REFRESH_INTERVAL_MS) {
-    return cached.note;
+    return { note: cached.note, levels: parseLevels(cached.levels) };
   }
 
-  const note = await researchMarketRate(key);
+  const answer = await researchMarketRate(key);
   await table.marketRateCache.upsert({
     where,
-    update: { note, refreshedAt: new Date() },
-    create: { ...key, note },
+    // The numbers are written as given or not at all. Writing a half-parsed
+    // blob would put an invented figure in front of somebody deciding what to
+    // charge, and a null simply means the chips are unavailable this time.
+    update: { note: answer.note, levels: answer.levels ?? undefined, refreshedAt: new Date() },
+    create: { ...key, note: answer.note, levels: answer.levels ?? undefined },
   });
-  return note;
+  return answer;
+}
+
+/**
+ * Just the paragraph, for the generation prompt.
+ *
+ * The quote generator wants prose to fold into a system prompt and has no use
+ * for the numbers. A separate function rather than callers reaching for .note,
+ * so the two readers of this cache stay honest about which part they need.
+ */
+export async function getMarketRateNote(
+  query: Parameters<typeof getOrResearchMarketRate>[0]
+): Promise<string> {
+  const answer = await getOrResearchMarketRate(query);
+  return answer.note;
 }

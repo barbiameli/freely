@@ -17,7 +17,18 @@ vi.mock("@/lib/anthropic", () => ({
 }));
 
 beforeEach(() => {
-  anthropicMocks.researchMarketRate.mockResolvedValue("$60-90/hr, per industry job boards.");
+  // The research now answers with prose and numbers. The prose is what the
+  // generation prompt folds in; the numbers are what the rate helper offers as
+  // chips. Both come back from one call so the cache holds one row.
+  anthropicMocks.researchMarketRate.mockResolvedValue({
+    note: "$60-90/hr, per industry job boards.",
+    levels: {
+      Junior: { low: 40, high: 55 },
+      "Mid-level": { low: 55, high: 75 },
+      Senior: { low: 75, high: 100 },
+      Expert: { low: 100, high: 140 },
+    },
+  });
 });
 
 afterEach(async () => {
@@ -27,14 +38,14 @@ afterEach(async () => {
 
 describe("getOrResearchMarketRate", () => {
   it("researches and caches on a miss", async () => {
-    const note = await getOrResearchMarketRate({
+    const answer = await getOrResearchMarketRate({
       country: "US",
       industry: "ux-designer",
       currency: "USD",
       rateUnit: "HOUR",
     });
 
-    expect(note).toBe("$60-90/hr, per industry job boards.");
+    expect(answer.note).toBe("$60-90/hr, per industry job boards.");
     expect(anthropicMocks.researchMarketRate).toHaveBeenCalledTimes(1);
     expect(anthropicMocks.researchMarketRate).toHaveBeenCalledWith({
       country: "US",
@@ -68,14 +79,14 @@ describe("getOrResearchMarketRate", () => {
       },
     });
 
-    const note = await getOrResearchMarketRate({
+    const answer = await getOrResearchMarketRate({
       country: "US",
       industry: "ux-designer",
       currency: "USD",
       rateUnit: "HOUR",
     });
 
-    expect(note).toBe("cached note");
+    expect(answer.note).toBe("cached note");
     expect(anthropicMocks.researchMarketRate).not.toHaveBeenCalled();
   });
 
@@ -92,14 +103,14 @@ describe("getOrResearchMarketRate", () => {
       },
     });
 
-    const note = await getOrResearchMarketRate({
+    const answer = await getOrResearchMarketRate({
       country: "US",
       industry: "ux-designer",
       currency: "USD",
       rateUnit: "HOUR",
     });
 
-    expect(note).toBe("$60-90/hr, per industry job boards.");
+    expect(answer.note).toBe("$60-90/hr, per industry job boards.");
     expect(anthropicMocks.researchMarketRate).toHaveBeenCalledTimes(1);
 
     const row = await testDb.marketRateCache.findUniqueOrThrow({
@@ -123,7 +134,7 @@ describe("getOrResearchMarketRate", () => {
       currency: "USD",
       rateUnit: "HOUR",
     });
-    anthropicMocks.researchMarketRate.mockResolvedValueOnce("EUR day rate note");
+    anthropicMocks.researchMarketRate.mockResolvedValueOnce({ note: "EUR day rate note", levels: null });
     await getOrResearchMarketRate({
       country: "US",
       industry: "ux-designer",
@@ -144,7 +155,7 @@ describe("getOrResearchMarketRate", () => {
       currency: "EUR",
       rateUnit: "HOUR",
     });
-    anthropicMocks.researchMarketRate.mockResolvedValueOnce("German hourly note");
+    anthropicMocks.researchMarketRate.mockResolvedValueOnce({ note: "German hourly note", levels: null });
     await getOrResearchMarketRate({
       country: "DE",
       industry: "ux-designer",
@@ -172,14 +183,14 @@ describe("getOrResearchMarketRate", () => {
   });
 
   it("falls back to a shared bucket when the account has no industry set", async () => {
-    const note = await getOrResearchMarketRate({
+    const answer = await getOrResearchMarketRate({
       country: "US",
       industry: null,
       currency: "USD",
       rateUnit: "HOUR",
     });
 
-    expect(note).toBe("$60-90/hr, per industry job boards.");
+    expect(answer.note).toBe("$60-90/hr, per industry job boards.");
     expect(anthropicMocks.researchMarketRate).toHaveBeenCalledWith(
       expect.objectContaining({ industry: "general freelance work" })
     );
