@@ -873,6 +873,8 @@ export const en = {
     gotIt: "Got it",
     quoteTitle: "Start with a brief",
     quoteBody: "Paste what the client sent you, or upload it. You get back a quote with scope, deliverables, a timeline and a price.",
+    generateTitle: "That is everything it needs",
+    generateBody: "Press Generate and it writes the quote. It takes half a minute, and you can edit every line afterwards.",
     publishTitle: "Send it to your client",
     publishBody: "Publishing gives you a link they open in a browser, with your name and colours on it. They can accept it there.",
     trackTitle: "Put this into Track",

@@ -53,6 +53,8 @@ import {
 import { resolveSetup, type AccountDefaults, type SetupRowKey } from "@/lib/quote-defaults";
 
 import type { BriefSummary } from "@/components/brief-card";
+import { CoachMark } from "@/components/guide/coach-mark";
+import type { GuideStep } from "@/lib/guide";
 
 /** A visual reference held in wizard state. These can only be saved once the
  * brief exists (a BriefExample needs a briefId), so they're attached
@@ -132,6 +134,8 @@ export function QuoteWizard({
   savedRateUnit,
   industry,
   saved = {},
+  guideSeen = [],
+  firstQuote = false,
 }: {
   recentBriefs: BriefSummary[];
   /** Quotes old enough to have an answer, for the "did you land these?" prompt. */
@@ -151,6 +155,11 @@ export function QuoteWizard({
   /** The quote setup remembered on the account, prefilled into the draft and
    * used to tell a per-quote change from simply the answer. */
   saved?: AccountDefaults;
+  /** Guide steps already seen, so neither hint here reappears. */
+  guideSeen?: GuideStep[];
+  /** Whether this account has never made a quote, which is the only time
+   * either hint is worth showing. */
+  firstQuote?: boolean;
 }) {
   const router = useRouter();
   const t = useT();
@@ -447,6 +456,18 @@ export function QuoteWizard({
    * and refusing to explain. This used to run on Continue between the two
    * steps; with one screen it runs here, which is the only moment left.
    */
+  /**
+   * Which of the two first-quote hints is showing, if either.
+   *
+   * Only on a first quote, only one at a time, and the second only once the
+   * form would actually generate. Telling somebody to press a button that is
+   * going to reject them is worse than saying nothing.
+   */
+  const firstQuoteHint =
+    firstQuote && !guideSeen.includes("quote") && !draft.sourceText.trim();
+  const generateHint =
+    firstQuote && !guideSeen.includes("generate") && !firstQuoteHint && !whatIsMissing();
+
   function whatIsMissing(): string {
     if (!draft.sourceText.trim()) return t.quote.addSource;
     // Either they price the work, or they say where it is being priced for,
@@ -624,6 +645,13 @@ export function QuoteWizard({
       {tab === "new" && (
         <>
           <Topbar />
+          {/* The two halves of a first quote, one at a time.
+              "Start with a brief" until there is one, then "now press this"
+              once the form has everything it needs. Shown from here rather
+              than from GuideMount because the second condition is about what
+              is on the form, which only this component knows. */}
+          {firstQuoteHint && <CoachMark step="quote" />}
+          {generateHint && <CoachMark step="generate" />}
           <SignedBanner signed={signed} />
           <LandedPrompt quotes={landedQuotes} />
           <QuoteTabs value={tab} onChange={setTab} count={recentBriefs.length} />
@@ -637,8 +665,16 @@ export function QuoteWizard({
           </div>
           {/* One bordered container: the two choices sit side by side as a
               toggle at the top, and the input for whichever is selected
-              expands underneath, inside the same box. */}
-          <div className="bg-white border border-line rounded-card overflow-hidden">
+              expands underneath, inside the same box.
+
+              The guide points here rather than at the Generate button. "Paste
+              what the client sent you, or upload it" was ringing the button at
+              the bottom of the form, which is the last thing you press, not
+              the first. */}
+          <div
+            data-guide="quote"
+            className="bg-white border border-line rounded-card overflow-hidden"
+          >
             <div className="flex flex-col sm:flex-row">
               {(
                 [
@@ -860,7 +896,7 @@ export function QuoteWizard({
                 {t.quote.stop}
               </Button>
             ) : (
-              <Button icon={Sparkles} onClick={handleGenerate} data-guide="quote">
+              <Button icon={Sparkles} onClick={handleGenerate} data-guide="generate">
                 {t.quote.generate}
               </Button>
             )}

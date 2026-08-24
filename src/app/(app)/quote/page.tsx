@@ -5,6 +5,7 @@ import { teamScopeWhere } from "@/lib/team-scope";
 import { hasOwnBranding } from "@/lib/branding";
 import { quotesToAskAbout, type QuoteOutcome } from "@/lib/quote-outcome";
 import type { AccountDefaults } from "@/lib/quote-defaults";
+import type { GuideStep } from "@/lib/guide";
 import { QuoteWizard } from "./quote-wizard";
 
 /**
@@ -44,6 +45,9 @@ export default async function QuotePage({
   searchParams?: { tab?: string };
 }) {
   const user = await requireFullUser();
+  // Read here rather than through GuideMount: the wizard needs the list
+  // itself, since it decides between two hints from what is on the form.
+  const guideSeen = ((user as unknown as { guideSeen?: string[] }).guideSeen ?? []) as GuideStep[];
   const scope = teamScopeWhere(user);
   // No select: the outcome and acceptance columns are newer than the generated
   // Prisma client here, and narrowing to the columns the stub knows about
@@ -130,8 +134,14 @@ export default async function QuotePage({
       // knows would return them undefined, so every row would look undecided
       // and the wizard would ask everything again on every quote.
       saved={user as unknown as AccountDefaults}
+      // The two first-quote hints are shown by the wizard rather than by
+      // GuideMount, because the second one waits on the form being filled in.
+      guideSeen={guideSeen}
+      firstQuote={briefs.length === 0}
     />
-      <GuideMount screen="/quote" />
+      {/* Everything else this screen might say. The first-quote pair is
+          excluded because the wizard owns them. */}
+      <GuideMount screen="/quote" exclude={["quote", "generate"]} />
     </>
   );
 }

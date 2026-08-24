@@ -866,6 +866,8 @@ export const es: Dictionary = {
     gotIt: "Entendido",
     quoteTitle: "Empieza por el encargo",
     quoteBody: "Pega lo que te ha mandado el cliente, o subelo. Recibes un presupuesto con alcance, entregables, plazos y precio.",
+    generateTitle: "Ya tiene todo lo que necesita",
+    generateBody: "Dale a Generar y escribe el presupuesto. Tarda medio minuto y despues puedes cambiar cada linea.",
     publishTitle: "Enviaselo a tu cliente",
     publishBody: "Al publicarlo tienes un enlace que abre en el navegador, con tu nombre y tus colores. Puede aceptarlo ahi mismo.",
     trackTitle: "Pasa esto a Track",

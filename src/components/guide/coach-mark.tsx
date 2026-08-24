@@ -113,6 +113,8 @@ function wording(step: GuideStep, t: Dictionary): { title: string; body: string 
   switch (step) {
     case "quote":
       return { title: t.guide.quoteTitle, body: t.guide.quoteBody };
+    case "generate":
+      return { title: t.guide.generateTitle, body: t.guide.generateBody };
     case "publish":
       return { title: t.guide.publishTitle, body: t.guide.publishBody };
     case "track":

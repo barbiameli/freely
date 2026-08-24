@@ -31,7 +31,22 @@ export const GUIDE_STEPS = [
   "invoice",
 ] as const;
 
-export type GuideStep = (typeof GUIDE_STEPS)[number];
+/**
+ * Steps a screen shows for itself.
+ *
+ * Everything in GUIDE_STEPS is decided from counts in the database, which is
+ * what lets the decision happen on the server in the same round trip as the
+ * page. "generate" cannot work that way: its moment is "the form is now filled
+ * in enough to press the button", and the server has no idea what is in a
+ * textarea somebody is still typing into.
+ *
+ * So it is kept out of nextHint entirely and the wizard shows it, at the one
+ * moment it can tell. It still records itself as seen in the same place as the
+ * rest, so it never appears twice.
+ */
+export const LOCAL_STEPS = ["generate"] as const;
+
+export type GuideStep = (typeof GUIDE_STEPS)[number] | (typeof LOCAL_STEPS)[number];
 
 /**
  * How much ticking counts as having used the tracker.
@@ -73,7 +88,12 @@ export interface GuideState {
 export function isReady(step: GuideStep, state: GuideState): boolean {
   switch (step) {
     // Nothing at all yet. The only thing worth pointing at is the first quote.
+    //
+    // "generate" shares the condition, because it is the second half of the
+    // same first quote. The wizard adds the part this cannot see: whether the
+    // form is actually ready to be pressed.
     case "quote":
+    case "generate":
       return state.quotes === 0;
 
     // A quote exists and has never been sent. A draft nobody has seen is the
@@ -146,8 +166,10 @@ export function nextHint(state: GuideState): GuideStep | null {
  * which is on a different page and cannot be pointed at from here.
  */
 export const STEP_SCREEN: Record<GuideStep, string> = {
-  // The wizard, where the Generate button is.
+  // The wizard. "quote" points at where the brief goes in, "generate" at the
+  // button, and both are shown by the wizard rather than by nextHint.
   quote: "/quote",
+  generate: "/quote",
   // The finished quote, where Publish is.
   publish: "/quote/brief",
   // The quote list, where a landed quote offers Send to Track.

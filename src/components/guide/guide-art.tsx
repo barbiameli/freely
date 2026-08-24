@@ -52,6 +52,18 @@ function art(step: GuideStep) {
         </>
       );
 
+    // A wand with three sparks: the moment the brief becomes a quote.
+    case "generate":
+      return (
+        <>
+          <path d="M8 38 30 16" />
+          <path d="m27 13 6 6" />
+          <path d="M33 7v6M30 10h6" stroke={CORAL} />
+          <path d="M37 20v4M35 22h4" stroke={CORAL} />
+          <path d="M22 8v3M20.5 9.5h3" stroke={CORAL} />
+        </>
+      );
+
     // A paper plane, mid flight, with its trail.
     case "publish":
       return (
