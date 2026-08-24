@@ -140,6 +140,7 @@ export const es: Dictionary = {
     notSureWhatToCharge: "¿No sabes cuánto cobrar?",
     findMyRate: "Buscar mi tarifa",
     pickARate: "Elige una, o escribe la tuya",
+    rateFilledIn: "La del medio ya esta puesta. Cambiala por otra, o escribe la que quieras.",
     rateLower: "la mas baja",
     rateUpper: "la mas alta",
     iKnowMyRate: "Sé cuál es mi tarifa",

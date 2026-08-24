@@ -49,11 +49,11 @@ export interface RoadmapItem {
 export const ROADMAP: RoadmapItem[] = [
   // Next.
   {
-    id: "quote-speed",
+    id: "quote-stream",
     kind: "feature",
     state: "next",
-    title: "The quote builder is slow",
-    note: "Thirty to forty seconds of one long call. Two ways out: generate the sections in parallel and stream them in, or write a short version first and fill it in behind. Neither is started, and it deserves its own sitting.",
+    title: "Show the quote as it is written",
+    note: "The two halves now run side by side, which roughly halves the wait. The next step is a streaming endpoint so the core appears the moment it is ready rather than both halves landing together. Bigger change: Server Actions cannot stream.",
   },
   {
     id: "brief-page",
@@ -144,6 +144,20 @@ export const ROADMAP: RoadmapItem[] = [
     state: "done",
     title: "\"The table public.RateLimitHit does not exist\"",
     note: "Not the database. .env.production.local is gitignored and had never existed in the second clone, so the schema push had never once run from there.",
+  },
+  {
+    id: "d-quote-split",
+    kind: "decision",
+    state: "done",
+    title: "A quote is written in two calls at once",
+    note: "Output tokens are produced one after another, so length is the wait, and most of the length was the add-on sections. None of them depend on the quote, so both halves are written side by side and the wait is the longer one rather than the sum. If the sections fail to parse, the quote survives without them.",
+  },
+  {
+    id: "b-signin-spinner",
+    kind: "bug",
+    state: "done",
+    title: "Sign in stopped spinning before the page arrived",
+    note: "setLoading(false) ran before the redirect, so the button said \"Sign in\" again through the longest wait on the screen. Google had no loading state at all.",
   },
   {
     id: "b-coach-anchor",

@@ -5,13 +5,21 @@ import { requireFullUser } from "@/lib/session";
 import { getOrResearchMarketRate } from "@/lib/market-rate-cache";
 import { enforceLlmRateLimit } from "@/lib/rate-limit";
 import { isKnownCountry, countryName } from "@/lib/countries";
-import { asLevel, pickThree } from "@/lib/market-rate";
+import { asLevel, pickThree, midpoint } from "@/lib/market-rate";
 import { parseRateUnit } from "@/lib/rate-unit";
 import type { ActionResult } from "@/actions/briefs";
 
 export interface ResearchedRate {
   /** Two or three figures to choose between, lowest first. */
   options: number[];
+  /**
+   * The one already filled in, or zero when the numbers could not be read.
+   *
+   * A researched rate nobody adopted is not a rate, so the middle is taken
+   * rather than left blank. The other two are one press away, and the field
+   * stays typeable, so this is a starting point rather than an answer.
+   */
+  suggested: number;
   /** The paragraph, so the numbers can be checked rather than trusted. */
   note: string;
   /** Written out, for saying which market this is. */
@@ -77,7 +85,12 @@ export async function researchRateAction(input: {
       // cannot be pressed.
       return {
         ok: true,
-        data: { options: [], note: answer.note, country: countryName(input.country) ?? input.country },
+        data: {
+          options: [],
+          suggested: 0,
+          note: answer.note,
+          country: countryName(input.country) ?? input.country,
+        },
       };
     }
 
@@ -85,6 +98,7 @@ export async function researchRateAction(input: {
       ok: true,
       data: {
         options: pickThree(answer.levels[level]),
+        suggested: midpoint(answer.levels[level]),
         note: answer.note,
         country: countryName(input.country) ?? input.country,
       },

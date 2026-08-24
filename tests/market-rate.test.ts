@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pickThree, roundToStep, parseLevels, asLevel } from "@/lib/market-rate";
+import { pickThree, roundToStep, parseLevels, asLevel, midpoint } from "@/lib/market-rate";
 
 describe("pickThree", () => {
   it("offers a low, a middle and a high", () => {
@@ -109,5 +109,29 @@ describe("asLevel", () => {
     expect(asLevel("junior")).toBeNull();
     expect(asLevel("Principal")).toBeNull();
     expect(asLevel(undefined)).toBeNull();
+  });
+});
+
+describe("midpoint", () => {
+  // A researched rate nobody adopted is not a rate, so one is filled in.
+  it("is the middle of the spread", () => {
+    expect(midpoint({ low: 300, high: 700 })).toBe(500);
+  });
+
+  it("does not care which way round the range came", () => {
+    expect(midpoint({ low: 700, high: 300 })).toBe(500);
+  });
+
+  // Taken from the range rather than the chips: the chips are rounded and
+  // deduplicated, and the middle of two survivors is not the middle of the
+  // spread they came from.
+  it("can sit between the chips rather than on one", () => {
+    const range = { low: 61, high: 63 };
+    expect(pickThree(range)).toEqual([60, 65]);
+    expect(midpoint(range)).toBe(60);
+  });
+
+  it("rounds like every other figure", () => {
+    expect(midpoint({ low: 400, high: 455 })).toBe(430);
   });
 });

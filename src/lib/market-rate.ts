@@ -48,6 +48,21 @@ export function pickThree(range: RateRange): number[] {
 }
 
 /**
+ * The one to start on.
+ *
+ * Offering three numbers and filling in none of them leaves somebody exactly
+ * where they were: a researched rate nobody adopted is not a rate. So the
+ * middle is chosen for them and the other two stay one press away.
+ *
+ * Taken from the range rather than from the chips, because the chips are
+ * rounded and deduplicated, and the midpoint of two survivors is not the
+ * midpoint of the spread they came from.
+ */
+export function midpoint(range: RateRange): number {
+  return roundToStep((Math.min(range.low, range.high) + Math.max(range.low, range.high)) / 2);
+}
+
+/**
  * To the nearest 5, 10 or 50, depending on size.
  *
  * The step grows with the number because the meaningful precision does. Five

@@ -1,7 +1,7 @@
 "use client";
 
 import { ButtonHTMLAttributes } from "react";
-import type { LucideIcon } from "lucide-react";
+import { Loader2, type LucideIcon } from "lucide-react";
 import clsx from "@/lib/clsx";
 
 /**
@@ -24,6 +24,20 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: Size;
   icon?: LucideIcon;
   spinIcon?: boolean;
+  /**
+   * Working, and saying so.
+   *
+   * Swaps the icon for a spinner and stops the button being pressed again.
+   * Here rather than at each call site because the alternative was every
+   * button inventing its own answer, and most of them inventing nothing: a
+   * press that produces no visible change for two seconds reads as a press
+   * that did not land, and the second press is how something gets sent twice.
+   *
+   * Deliberately separate from `disabled`. A button can be unavailable
+   * because a form is incomplete, which looks the same and means something
+   * else entirely.
+   */
+  loading?: boolean;
 }
 
 const variantClasses: Record<Variant, string> = {
@@ -45,24 +59,36 @@ export function Button({
   size = "md",
   icon: Icon,
   spinIcon,
+  loading,
   disabled,
   className,
   children,
   ...rest
 }: ButtonProps) {
+  const held = disabled || loading;
   return (
     <button
-      disabled={disabled}
+      disabled={held}
+      aria-busy={loading || undefined}
       className={clsx(
         "font-body font-bold inline-flex items-center justify-center gap-2 transition-[opacity,background-color,border-color,color]",
         sizeClasses[size],
-        disabled ? "opacity-50 cursor-default pointer-events-none" : "cursor-pointer opacity-100",
+        // A loading button stays at full strength. Fading it out says
+        // "unavailable", and the spinner is already saying "in a moment".
+        held ? "cursor-default pointer-events-none" : "cursor-pointer",
+        disabled && !loading ? "opacity-50" : "opacity-100",
         variantClasses[variant],
         className
       )}
       {...rest}
     >
-      {Icon && <Icon size={size === "sm" ? 13 : 14} className={spinIcon ? "animate-spin-slow" : undefined} />}
+      {loading ? (
+        <Loader2 size={size === "sm" ? 13 : 14} className="animate-spin" />
+      ) : (
+        Icon && (
+          <Icon size={size === "sm" ? 13 : 14} className={spinIcon ? "animate-spin-slow" : undefined} />
+        )
+      )}
       {children}
     </button>
   );

@@ -17,6 +17,9 @@ export default function SignInPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // Separate, because the two are different waits and only one of them can be
+  // happening. Sharing a flag would spin both buttons at once.
+  const [google, setGoogle] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -27,11 +30,15 @@ export default function SignInPage() {
       password,
       redirect: false,
     });
-    setLoading(false);
     if (res?.error) {
+      setLoading(false);
       setError("Couldn't sign in, check your email and password.");
       return;
     }
+    // Deliberately left spinning. It used to stop here, so the button said
+    // "Sign in" again while the app was still loading behind it: the longest
+    // wait on the screen, with the one thing that could explain it switched
+    // off. It goes when the page does.
     router.push("/quote");
     router.refresh();
   }
@@ -53,7 +60,12 @@ export default function SignInPage() {
           <input type="hidden" />
           <TextFieldPassword value={password} onChange={setPassword} />
           {error && <div className="text-overdue text-xs">{error}</div>}
-          <Button type="submit" disabled={loading || !email || !password} className="justify-center mt-1">
+          <Button
+            type="submit"
+            loading={loading}
+            disabled={google || !email || !password}
+            className="justify-center mt-1"
+          >
             {loading ? t.auth.signingIn : t.auth.signInAction}
           </Button>
         </form>
@@ -64,11 +76,20 @@ export default function SignInPage() {
               <span className="text-xs text-text-muted">{t.auth.or}</span>
               <div className="flex-1 h-px bg-line" />
             </div>
+            {/* Google leaves the page entirely, so there is a moment where
+                nothing has changed and nothing is happening yet. Spinning
+                through it is the difference between a slow sign-in and a
+                button that appears not to work. */}
             <Button
               type="button"
               variant="outline"
               className="w-full justify-center"
-              onClick={() => signIn("google", { callbackUrl: "/quote" })}
+              loading={google}
+              disabled={loading}
+              onClick={() => {
+                setGoogle(true);
+                void signIn("google", { callbackUrl: "/quote" });
+              }}
             >
               {t.auth.continueWithGoogle}
             </Button>

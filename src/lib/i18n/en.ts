@@ -135,6 +135,7 @@ export const en = {
     notSureWhatToCharge: "Not sure what to charge?",
     findMyRate: "Find my rate",
     pickARate: "Pick one, or type your own",
+    rateFilledIn: "The middle one is in the field. Change it to either end, or type something else.",
     rateLower: "lower end",
     rateUpper: "upper end",
     iKnowMyRate: "I know my rate",

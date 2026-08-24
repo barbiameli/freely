@@ -345,8 +345,17 @@ export function RateBody({
         currency: draft.currency ?? "USD",
         rateUnit: unit,
       });
-      if (result.ok) setResearched(result.data);
-      else setRateError(result.error);
+      if (result.ok) {
+        setResearched(result.data);
+        // Filled in rather than offered and ignored. Somebody who pressed this
+        // said they do not know what to charge, and handing them three numbers
+        // to choose between is still asking them to decide. The middle is a
+        // defensible answer, the ends are one press away, and the field is
+        // still a field.
+        if (result.data.suggested > 0) {
+          setDraft((d) => ({ ...d, hourlyRate: result.data.suggested }));
+        }
+      } else setRateError(result.error);
     } catch {
       setRateError(t.common.noConnection);
     } finally {
@@ -492,6 +501,7 @@ export function RateBody({
               {researched.options.length > 0 ? (
                 <>
                   <SubLabel>{t.quote.pickARate}</SubLabel>
+                  <p className="text-caption text-text-muted mt-0 mb-2">{t.quote.rateFilledIn}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {researched.options.map((amount, index) => (
                       <Chip

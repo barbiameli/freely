@@ -409,13 +409,31 @@ function languageInstruction(language?: Locale): string {
   return 'Write the entire quote in Spanish, in neutral Latin American and European Spanish that reads naturally to both. Address the client as "tú", not "usted": freelance work is a relationship between two people, and "usted" puts a desk between them. Only use "usted" if this freelancer\'s saved tone notes ask for it. Keep industry terms that are normally used in English in English (brief, UX, PDF, Figma, sprint) rather than translating them into something less clear. This applies to every field you return, including titles, section text and open questions. The source material may be in another language; translate the meaning, do not copy its wording.';
 }
 
+/**
+ * Which half of a quote a prompt is asking for.
+ *
+ * "all" is the old behaviour, kept because refine and the tests still want one
+ * object. The split exists because output tokens are generated one after
+ * another: a quote with strategy, terms, an SOW and a staged timeline was one
+ * call writing three thousand tokens in series, and most of them were the
+ * add-on sections rather than the quote itself.
+ *
+ * Nothing in the extras depends on the core. Findings and open questions come
+ * from the brief, terms and revisions and availability describe how this
+ * freelancer works, and the AI disclosure is about the kind of work rather than
+ * the exact deliverable list. So the two can be written at the same time, and
+ * the wait becomes the longer of the two instead of the sum.
+ */
+export type PromptPart = "all" | "core" | "extras";
+
 export function buildGenerateUserPrompt(
   draft: QuoteDraftInput,
   pricingHistory: PricingHistoryEntry[] = [],
   /** A market-rate figure already researched (live or from the Postgres
    * cache — see ADR-0001 and lib/market-rate-cache), so the prompt can state
    * it directly instead of asking the model to run its own web_search. */
-  marketRateNote?: string
+  marketRateNote?: string,
+  part: PromptPart = "all"
 ): string {
   const hasHistory = pricingHistory.length > 0;
   const currencyCode = draft.currency || "USD";
@@ -589,7 +607,8 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
     ? `\n${extraSections.join("\n")}`
     : "";
 
-  return [
+  // What both halves need to know: the brief itself, and how to write.
+  const shared = [
     languageInstruction(draft.language),
     `Client brief / source material:\n${
       draft.sourceText ? truncateSourceText(draft.sourceText) : "(no source text provided)"
@@ -598,19 +617,61 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
     `Reference past projects to draw style from: ${
       draft.memoryProjectTitles.length ? draft.memoryProjectTitles.join(", ") : "none"
     }`,
+  ];
+
+  // The add-on sections, written on their own when asked for on their own.
+  // The instruction to return nothing else is load-bearing: without it the
+  // model helpfully writes a whole quote again, which is the cost this split
+  // exists to avoid.
+  if (part === "extras") {
+    return [
+      ...shared,
+      `Output format requested: ${draft.format}. Include Statement of Work: ${draft.includeSOW}. Include AI-use disclosure: ${draft.includeAI}.`,
+      strategyInstruction,
+      extraSectionsInstruction,
+      `\nReturn ONLY a JSON object containing the keys named above and nothing else. Do not include a title, client, scope, deliverables, timeline, price or hours: those are being written separately and anything you add here is discarded.`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  return [
+    ...shared,
     `Output format requested: ${draft.format}. Include Statement of Work: ${draft.includeSOW}. Include AI-use disclosure: ${draft.includeAI}.`,
     `\n${pricingInstruction}`,
     formatPricingHistory(pricingHistory, symbol),
-    strategyInstruction,
+    // Skipped on the core half, since the other call is writing them.
+    part === "all" ? strategyInstruction : "",
     timelineInstruction,
     fixedPriceInstruction,
     paymentInstruction,
     milestoneInstruction,
-    extraSectionsInstruction,
+    part === "all" ? extraSectionsInstruction : "",
     `\nWrite a project quote based on this. Keep deliverables as a list of short, concrete items (4-7 items), name actual artifacts, not phases. Give a realistic timeline, a price in ${currencyCode}, and estimated hours that are consistent with the pricing approach above.`,
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+/**
+ * Whether this quote has a second half worth a second call.
+ *
+ * All of these off is a bare quote: scope, deliverables, timeline, price. That
+ * is one short call and already fast, so the split would only add a round trip
+ * to something that does not need one.
+ */
+export function wantsExtras(draft: QuoteDraftInput): boolean {
+  const hasAvailability =
+    Boolean(draft.includeAvailability) &&
+    (draft.availability?.facts.some((f) => f.trim()) ?? false);
+  return Boolean(
+    draft.includeStrategy ||
+      draft.includeTerms ||
+      draft.includeRevisions ||
+      draft.includeAI ||
+      draft.includeSOW ||
+      hasAvailability
+  );
 }
 
 export function buildRefineUserPrompt(
@@ -711,7 +772,8 @@ type LlmJob =
   | "refineBrief"
   | "breakDownDeliverable"
   | "plainDeliverableNames"
-  | "researchMarketRate";
+  | "researchMarketRate"
+  | "generateQuoteExtras";
 
 interface LlmCallLog {
   job: LlmJob;
@@ -857,20 +919,89 @@ export async function generateBriefFromDraft(
   marketRateNote?: string
 ): Promise<GeneratedBrief> {
   const system = buildSystemPrompt(memory);
-  const user = buildGenerateUserPrompt(draft, pricingHistory, marketRateNote);
-  const text = await callClaude("generateBriefFromDraft", system, user, {
-    webSearch: shouldResearchMarketRates(draft, pricingHistory) && !marketRateNote,
-    // A quote with strategy, terms, an SOW and a staged timeline is already
-    // long, and the research path writes a preamble before the JSON. At 2000
-    // it was being truncated mid-object.
-    maxTokens: 8000,
-  });
-  return applyHourlyRate(
-    parseBriefResponse(text, draft.language),
-    draft.hourlyRate,
-    draft.rateUnit ?? "HOUR"
-  );
+  const webSearch = shouldResearchMarketRates(draft, pricingHistory) && !marketRateNote;
+  const split = wantsExtras(draft);
+
+  // Both halves at once. Output tokens are written one after another, so a
+  // quote that used to be one call producing three thousand of them now
+  // produces roughly half that in each of two calls running side by side, and
+  // the wait is the longer one rather than the total.
+  //
+  // Only the core half can search. The web search is for a market rate, which
+  // only the pricing instruction reads, and running it twice would pay for the
+  // same lookup in both calls.
+  const [coreText, extrasText] = await Promise.all([
+    callClaude("generateBriefFromDraft", system, buildGenerateUserPrompt(
+      draft,
+      pricingHistory,
+      marketRateNote,
+      split ? "core" : "all"
+    ), {
+      webSearch,
+      // A quote with strategy, terms, an SOW and a staged timeline is already
+      // long, and the research path writes a preamble before the JSON. At 2000
+      // it was being truncated mid-object.
+      maxTokens: 8000,
+    }),
+    split
+      ? callClaude(
+          "generateQuoteExtras",
+          system,
+          buildGenerateUserPrompt(draft, pricingHistory, marketRateNote, "extras"),
+          { maxTokens: 4000 }
+        )
+      : Promise.resolve(""),
+  ]);
+
+  const core = parseBriefResponse(coreText, draft.language);
+
+  // Merged after parsing, and never over a value the core already produced.
+  // A failure here loses the add-on sections and keeps the quote, which is the
+  // right way round: a quote with no terms is still a quote, and throwing away
+  // a generation somebody waited for because a revisions string came back
+  // malformed would be the worse trade.
+  const merged = extrasText ? { ...core, ...parseExtrasResponse(extrasText) } : core;
+
+  return applyHourlyRate(merged, draft.hourlyRate, draft.rateUnit ?? "HOUR");
 }
+
+/**
+ * The add-on sections, or nothing.
+ *
+ * Never throws. Everything it returns is optional in the schema, so an
+ * unreadable reply costs the sections and nothing else. The alternative is
+ * discarding a quote that has already been paid for and waited on.
+ */
+export function parseExtrasResponse(text: string): Partial<GeneratedBrief> {
+  try {
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start === -1 || end <= start) return {};
+    const parsed = extrasOnlySchema.safeParse(JSON.parse(text.slice(start, end + 1)));
+    if (!parsed.success) {
+      console.error("[parseExtrasResponse] failed validation", parsed.error.issues);
+      return {};
+    }
+    // Only keys that actually arrived, so a missing one cannot overwrite
+    // something the core produced with undefined.
+    return Object.fromEntries(
+      Object.entries(parsed.data).filter(([, value]) => value !== undefined)
+    ) as Partial<GeneratedBrief>;
+  } catch (err) {
+    console.error("[parseExtrasResponse] could not read the reply", err);
+    return {};
+  }
+}
+
+/** The second half's shape. Every key optional, since every section is. */
+const extrasOnlySchema = z.object({
+  strategy: strategySchema.optional(),
+  terms: briefExtrasSchema.shape.terms,
+  revisions: briefExtrasSchema.shape.revisions,
+  availability: briefExtrasSchema.shape.availability,
+  paymentTerms: briefExtrasSchema.shape.paymentTerms,
+  aiUsage: briefExtrasSchema.shape.aiUsage,
+});
 
 export interface MarketRateQuery {
   /** ISO 3166-1 alpha-2. Their stated country, or the one their currency
