@@ -47,9 +47,48 @@ export default async function InsightsPage() {
   })) as EventRow[];
 
   const steps = funnel(rows);
-  const [accounts, tracked] = await Promise.all([
+  const [accounts, tracked, subscribers, sends] = await Promise.all([
     prisma.user.count(),
     prisma.project.count(),
+    // Who said yes to product news. Both columns are newer than the generated
+    // client here, so the select goes through a cast. See lib/mail-db.
+    (
+      prisma as unknown as {
+        user: {
+          findMany(args: Record<string, unknown>): Promise<
+            {
+              email: string;
+              marketingOptInAt: Date | null;
+              marketingOptInSource: string | null;
+            }[]
+          >;
+        };
+      }
+    ).user.findMany({
+      where: { marketingOptIn: true },
+      select: { email: true, marketingOptInAt: true, marketingOptInSource: true },
+      orderBy: { marketingOptInAt: "desc" },
+    }),
+    (
+      prisma as unknown as {
+        emailLog: {
+          findMany(args: Record<string, unknown>): Promise<
+            {
+              to: string;
+              kind: string;
+              status: "SENT" | "FAILED" | "SKIPPED";
+              createdAt: Date;
+              error: string | null;
+            }[]
+          >;
+        };
+      }
+    ).emailLog.findMany({
+      where: { createdAt: { gte: since } },
+      orderBy: { createdAt: "desc" },
+      take: 200,
+      select: { to: true, kind: true, status: true, createdAt: true, error: true },
+    }),
   ]);
 
   return (
@@ -71,6 +110,13 @@ export default async function InsightsPage() {
       quotesPerDay={perDay(rows, "quote_generated", 14)}
       kinds={byKind(rows).slice(0, 10)}
       empty={rows.length === 0}
+      accountsTotal={accounts}
+      subscribers={subscribers.map((u) => ({
+        email: u.email,
+        since: u.marketingOptInAt,
+        source: u.marketingOptInSource,
+      }))}
+      sends={sends}
     />
   );
 }
