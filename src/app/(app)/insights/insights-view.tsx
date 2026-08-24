@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import type { Funnel, Retention, DayCount } from "@/lib/metrics";
 import type { Subscriber, SendRow, Account } from "@/lib/mailing";
 import { MailingList } from "./mailing-list";
+import { RoadmapCard } from "./roadmap-card";
 
 /**
  * The product's numbers, read rather than explored.
@@ -172,6 +173,9 @@ export function InsightsView({
       {/* Outside the empty check. A brand new install has no events and can
           still have somebody who ticked the box on the signup form, and that
           is exactly when knowing is useful. */}
+      {/* First, because it is the only thing on this page that is a decision
+          rather than a number. */}
+      <RoadmapCard />
       <MailingList
         subscribers={subscribers}
         accounts={accountsTotal}

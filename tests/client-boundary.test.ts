@@ -106,6 +106,7 @@ describe("the pages outside the app shell read every string from the dictionary"
     // Worth revisiting the moment anybody else is given the address.
     "src/app/(app)/insights/insights-view.tsx",
     "src/app/(app)/insights/mailing-list.tsx",
+    "src/app/(app)/insights/roadmap-card.tsx",
   ];
   const exemptText = ["Freely"];
 
