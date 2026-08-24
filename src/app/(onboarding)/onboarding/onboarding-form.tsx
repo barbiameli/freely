@@ -41,6 +41,7 @@ import type { ConnectState } from "@/lib/stripe-connect";
 import { useT } from "@/lib/i18n/context";
 import { SubLabel } from "@/components/ui/label";
 import { CURRENCIES, currencySymbol } from "@/lib/currencies";
+import { COUNTRIES, currencyForCountry } from "@/lib/countries";
 
 type StepId = "industry" | "instructions" | "toneNotes" | "storyNotes" | "contextNotes";
 
@@ -107,6 +108,10 @@ export function OnboardingForm({ stripeState }: { stripeState: ConnectState }) {
   const [rate, setRate] = useState(0);
   const [rateUnit, setRateUnit] = useState<"HOUR" | "DAY" | "FIXED">("HOUR");
   const [currency, setCurrency] = useState("USD");
+  // Null until asked, and only asked on the branch where somebody says they do
+  // not know what to charge. Everywhere it is read it falls back to what the
+  // currency implies, so null is a fine resting state rather than a gap.
+  const [country, setCountry] = useState<string | null>(null);
   const [paymentPlan, setPaymentPlan] = useState<"UPFRONT" | "SPLIT" | "MILESTONE">("SPLIT");
   const [upfrontPercent, setUpfrontPercent] = useState(50);
   const [expertise, setExpertise] = useState<string | null>(null);
@@ -149,6 +154,7 @@ export function OnboardingForm({ stripeState }: { stripeState: ConnectState }) {
           // Only sent when they chose one, which only happens on the branch
           // where they said they do not know their rate.
           ...(expertise ? { expertiseLevel: expertise } : {}),
+          ...(country ? { country } : {}),
         });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -221,6 +227,8 @@ export function OnboardingForm({ stripeState }: { stripeState: ConnectState }) {
           setUpfrontPercent={setUpfrontPercent}
           expertise={expertise}
           setExpertise={setExpertise}
+          country={country}
+          setCountry={setCountry}
         />
       ) : onReferencesStep ? (
         <ReferencesStep
@@ -298,6 +306,8 @@ function PricingStep({
   setUpfrontPercent,
   expertise,
   setExpertise,
+  country,
+  setCountry,
 }: {
   onBack: () => void;
   onContinue: () => void;
@@ -307,6 +317,8 @@ function PricingStep({
   setRateUnit: (u: "HOUR" | "DAY" | "FIXED") => void;
   currency: string;
   setCurrency: (c: string) => void;
+  country: string | null;
+  setCountry: (c: string | null) => void;
   paymentPlan: "UPFRONT" | "SPLIT" | "MILESTONE";
   setPaymentPlan: (p: "UPFRONT" | "SPLIT" | "MILESTONE") => void;
   upfrontPercent: number;
@@ -366,7 +378,10 @@ function PricingStep({
         </div>
       )}
 
-      {/* The branch where the level matters. */}
+      {/* The branch where the level matters, and the only branch where where
+          they live is asked. Somebody who already knows their rate is never
+          researched for, so the question would be collected and never read;
+          their country is guessed from their currency instead. */}
       {unsure && (
         <div>
           <SubLabel>{t.quote.expertise}</SubLabel>
@@ -377,7 +392,45 @@ function PricingStep({
               </Chip>
             ))}
           </div>
-          <p className="text-caption text-text-muted mt-1.5 mb-0">
+
+          <div className="mt-4">
+            <SubLabel>{t.onboarding.whereBased}</SubLabel>
+            <div className="flex items-center gap-2">
+              <select
+                value={country ?? ""}
+                onChange={(e) => {
+                  const code = e.target.value || null;
+                  setCountry(code);
+                  // The currency follows, because somewhere to live and
+                  // something to bill in are one decision to a person and
+                  // asking twice is asking them to repeat themselves. Still
+                  // editable next to it, for anybody billing abroad.
+                  if (code) setCurrency(currencyForCountry(code));
+                }}
+                className="flex-1 min-w-0 bg-paper rounded-lg border-none px-3 py-2.5 text-sm text-ink outline-none cursor-pointer"
+              >
+                <option value="">{t.onboarding.pickCountry}</option>
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="bg-paper rounded-lg border-none px-2 py-2.5 text-sm text-ink outline-none cursor-pointer"
+              >
+                {CURRENCIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.code}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <p className="text-caption text-text-muted mt-2 mb-0">
             {t.onboarding.pricingResearched}
           </p>
         </div>
@@ -434,7 +487,15 @@ function PricingStep({
         <Button variant="ghost" icon={ChevronLeft} onClick={onBack}>
           {t.common.back}
         </Button>
-        <Button icon={ArrowRight} onClick={onContinue}>
+        {/* Both answers on this branch are load-bearing: without them a rate
+            gets researched for nobody in particular, which is worse than
+            asking. On the other branch nothing is required, because a rate
+            they gave answers the same question. */}
+        <Button
+          icon={ArrowRight}
+          disabled={unsure && (!expertise || !country)}
+          onClick={onContinue}
+        >
           {t.common.continue}
         </Button>
       </div>

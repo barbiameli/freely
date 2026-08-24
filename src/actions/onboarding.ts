@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { track } from "@/lib/events";
 import { requireUser } from "@/lib/session";
 import { INDUSTRY_OPTIONS } from "@/lib/industries";
+import { isKnownCountry } from "@/lib/countries";
 
 export interface OnboardingMemoryInput {
   industry: string;
@@ -28,6 +29,10 @@ export interface OnboardingMemoryInput {
   /** Only asked when they said they do not know their rate, since that is the
    * only case where it changes a number. */
   expertiseLevel?: string;
+  /** ISO 3166-1 alpha-2, and asked on the same branch and for the same reason:
+   * a researched rate has to be researched somewhere. Anybody who gave a rate
+   * is never asked, and their country is inferred from their currency. */
+  country?: string;
 }
 
 /** Completes onboarding — industry is required, everything else is
@@ -57,6 +62,10 @@ export async function completeOnboardingAction(input: OnboardingMemoryInput) {
         ...(input.paymentPlan ? { defaultPaymentPlan: input.paymentPlan } : {}),
         ...(input.upfrontPercent ? { defaultUpfrontPercent: input.upfrontPercent } : {}),
         ...(input.expertiseLevel ? { expertiseLevel: input.expertiseLevel } : {}),
+        // Checked against the list rather than trusted, since it becomes a
+        // cache key and a line in a prompt. Anything unrecognised is dropped,
+        // which leaves the currency fallback to answer instead.
+        ...(isKnownCountry(input.country) ? { country: input.country } : {}),
       } as Record<string, unknown>),
     },
   });

@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { scanBrandGuide, scanIsComplete } from "@/lib/brand-scan";
 import { currencySymbol } from "@/lib/currencies";
+import { countryName } from "@/lib/countries";
 import type { SectionNotes } from "@/lib/quote-prompts";
 import type { Locale } from "@/lib/i18n/types";
 import { dict } from "@/lib/i18n";
@@ -871,6 +872,11 @@ export async function generateBriefFromDraft(
 }
 
 export interface MarketRateQuery {
+  /** ISO 3166-1 alpha-2. Their stated country, or the one their currency
+   * implies. The single biggest thing that moves the answer: the same job
+   * pays multiples more in one place than another, and a rate researched
+   * without it is an average of the world. */
+  country: string;
   /** Onboarding's industry key (or free-text "other" value). Callers pass a
    * shared fallback string, not null, so accounts with no industry set still
    * land in one cache bucket rather than skipping the cache. */
@@ -880,9 +886,9 @@ export interface MarketRateQuery {
 }
 
 /**
- * Researches the going rate for one (industry, currency, rateUnit)
+ * Researches the going rate for one (country, industry, currency, rateUnit)
  * combination — independent of any one freelancer's expertise level, client,
- * or location, so the result in lib/market-rate-cache can be reused across
+ * or city, so the result in lib/market-rate-cache can be reused across
  * every freelancer who shares that combination (ADR-0001). Returns prose: a
  * rate or range, and where it came from, the same shape a live web_search
  * aside used to produce inline inside generateBriefFromDraft.
@@ -890,8 +896,10 @@ export interface MarketRateQuery {
 export async function researchMarketRate(query: MarketRateQuery): Promise<string> {
   const promptWords = dict("en").publicQuote;
   const system =
-    "You research freelance market rates. Use web search, then answer in one short paragraph: the going rate as a number or a realistic range, and a short clause on where it came from (the kind of source, not a URL or citation). Cover the range from junior to expert, since the answer is reused for freelancers at every level. No preamble, no markdown, no bullet points.";
-  const user = `Industry: ${query.industry}\nCurrency: ${query.currency}\nRate unit: per ${unitNoun(
+    "You research freelance market rates. Use web search, then answer in one short paragraph: the going rate as a number or a realistic range, and a short clause on where it came from (the kind of source, not a URL or citation). Research the rate freelancers based in the country given actually charge, and say the country in your answer so it can be checked. Cover the range from junior to expert, since the answer is reused for freelancers at every level. No preamble, no markdown, no bullet points.";
+  const user = `Country: ${
+    countryName(query.country) ?? query.country
+  }\nIndustry: ${query.industry}\nCurrency: ${query.currency}\nRate unit: per ${unitNoun(
     query.rateUnit,
     promptWords
   )}\n\nWhat is the going rate?`;

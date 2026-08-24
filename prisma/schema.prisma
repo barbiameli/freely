@@ -58,6 +58,13 @@ model User {
   // differ by multiples. Asked once and reused.
   location           String?
 
+  // The same thing as a code (ISO 3166-1 alpha-2), which `location` cannot be
+  // because it is free text somebody typed and a cache cannot be keyed on
+  // that. Only ever asked of people who said they do not know what to charge,
+  // since they are the ones a rate gets researched for; for everybody else it
+  // is guessed from their currency. See lib/countries.
+  country            String?
+
   // AI-synthesized persona — a short summary of who this freelancer is and
   // how they work, inferred from Story/Tone/Context/Files/industry/past
   // projects. Regenerated on demand; user can hand-edit to correct it.
@@ -835,13 +842,25 @@ model Event {
   @@index([userId, createdAt])
 }
 
-// Cached market-rate research (ADR-0001), keyed by industry/currency/rateUnit
-// rather than per-freelancer or per-quote: rates for a given combination move
-// slowly (quarters, not days), so the same web_search result is reused across
-// every freelancer who shares it instead of researching it fresh every time.
-// Deliberately coarser than a full pricing context (no location, no
+// Cached market-rate research (ADR-0001), keyed by country/industry/currency/
+// rateUnit rather than per-freelancer or per-quote: rates for a given
+// combination move slowly (quarters, not days), so the same web_search result
+// is reused across every freelancer who shares it instead of researching it
+// fresh every time.
+//
+// Country was added because without it the cache was answering a question
+// nobody asked. A rate is a local number, and one bucket per currency meant a
+// designer in Lisbon and a designer in Munich were handed the same euro
+// figure. Country is the coarsest key that still moves the number: cities are
+// more accurate and there are far too many of them for a cache to hold.
+//
+// Still deliberately coarser than a full pricing context (no city, no
 // expertise level) — see the ADR for why that's an accepted tradeoff.
 model MarketRateCache {
+  // ISO 3166-1 alpha-2. Rows written before this existed have no country, so
+  // "??" stands for one rather than the column being nullable: a nullable
+  // column in a unique key does not behave the way anybody expects.
+  country  String @default("??")
   id       String @id @default(cuid())
   industry String
   currency String
@@ -853,7 +872,7 @@ model MarketRateCache {
   note        String   @db.Text
   refreshedAt DateTime @default(now())
 
-  @@unique([industry, currency, rateUnit])
+  @@unique([country, industry, currency, rateUnit])
 }
 
 // A fixed-window rate-limit counter (see lib/rate-limit.ts) — one row per

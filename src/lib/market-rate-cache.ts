@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { researchMarketRate, type MarketRateQuery } from "@/lib/anthropic";
+import { resolveCountry } from "@/lib/countries";
 
 /** How long a cached note is trusted before being re-researched — ADR-0001's
  * "quarterly" cadence, since rates for a given industry/currency/rateUnit
@@ -18,22 +19,41 @@ const UNSPECIFIED_INDUSTRY = "general freelance work";
  * web_search once a note comes back from here.
  */
 export async function getOrResearchMarketRate(
-  query: Omit<MarketRateQuery, "industry"> & { industry: string | null }
+  query: Omit<MarketRateQuery, "industry" | "country"> & {
+    industry: string | null;
+    /** Their stated country, or null to fall back to what the currency implies. */
+    country: string | null;
+  }
 ): Promise<string> {
   const key: MarketRateQuery = {
+    // A rate is a local number, so the country leads the key. Without it every
+    // euro country shared one answer, which is an average of Lisbon and
+    // Zurich and describes neither.
+    country: resolveCountry(query.country, query.currency),
     industry: query.industry?.trim() || UNSPECIFIED_INDUSTRY,
     currency: query.currency,
     rateUnit: query.rateUnit,
   };
-  const where = { industry_currency_rateUnit: key };
+  const where = { country_industry_currency_rateUnit: key };
 
-  const cached = await prisma.marketRateCache.findUnique({ where });
+  // Cast, because the unique key gained a country and the generated client in
+  // this workspace still describes the three-column one. Contained to these
+  // two calls, the same way lib/track-db and lib/invoice-db contain theirs, so
+  // it stops being needed the moment the client catches up.
+  const table = prisma as unknown as {
+    marketRateCache: {
+      findUnique(args: { where: unknown }): Promise<{ note: string; refreshedAt: Date } | null>;
+      upsert(args: { where: unknown; update: unknown; create: unknown }): Promise<unknown>;
+    };
+  };
+
+  const cached = await table.marketRateCache.findUnique({ where });
   if (cached && Date.now() - cached.refreshedAt.getTime() < REFRESH_INTERVAL_MS) {
     return cached.note;
   }
 
   const note = await researchMarketRate(key);
-  await prisma.marketRateCache.upsert({
+  await table.marketRateCache.upsert({
     where,
     update: { note, refreshedAt: new Date() },
     create: { ...key, note },

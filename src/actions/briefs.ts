@@ -223,6 +223,10 @@ export async function generateBriefAction(
     // reused here rather than running web_search again.
     const marketRateNote = needsMarketRateNote(draft, pricingHistory)
       ? await getOrResearchMarketRate({
+          // Asked of anybody who said they do not know what to charge, and
+          // guessed from the currency for everybody else, so the research is
+          // always against somewhere rather than against nowhere.
+          country: (user as unknown as { country?: string | null }).country ?? null,
           industry: user.industry,
           currency: draft.currency || "USD",
           rateUnit: draft.rateUnit ?? "HOUR",
