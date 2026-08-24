@@ -1,0 +1,580 @@
+diff --git a/src/app/(app)/insights/insights-view.tsx b/src/app/(app)/insights/insights-view.tsx
+index f83f3c7..ad79c8f 100644
+--- a/src/app/(app)/insights/insights-view.tsx
++++ b/src/app/(app)/insights/insights-view.tsx
+@@ -4,7 +4,7 @@ import { Topbar } from "@/components/topbar";
+ import { Card } from "@/components/ui/card";
+ import { Label } from "@/components/ui/label";
+ import type { Funnel, Retention, DayCount } from "@/lib/metrics";
+-import type { Subscriber, SendRow } from "@/lib/mailing";
++import type { Subscriber, SendRow, Account } from "@/lib/mailing";
+ import { MailingList } from "./mailing-list";
+ 
+ /**
+@@ -33,6 +33,7 @@ export function InsightsView({
+   accountsTotal,
+   subscribers,
+   sends,
++  everyone,
+ }: {
+   windowDays: number;
+   accounts: number;
+@@ -53,6 +54,9 @@ export function InsightsView({
+   accountsTotal: number;
+   subscribers: Subscriber[];
+   sends: SendRow[];
++  /** Every account, so the page answers "who is using this" as well as
++   * "who agreed to hear from us". */
++  everyone: Account[];
+ }) {
+   const busiest = Math.max(1, ...quotesPerDay.map((d) => d.count));
+ 
+@@ -168,7 +172,12 @@ export function InsightsView({
+       {/* Outside the empty check. A brand new install has no events and can
+           still have somebody who ticked the box on the signup form, and that
+           is exactly when knowing is useful. */}
+-      <MailingList subscribers={subscribers} accounts={accountsTotal} sends={sends} />
++      <MailingList
++        subscribers={subscribers}
++        accounts={accountsTotal}
++        sends={sends}
++        everyone={everyone}
++      />
+     </>
+   );
+ }
+diff --git a/src/app/(app)/insights/mailing-list.tsx b/src/app/(app)/insights/mailing-list.tsx
+index 103fc34..95338e8 100644
+--- a/src/app/(app)/insights/mailing-list.tsx
++++ b/src/app/(app)/insights/mailing-list.tsx
+@@ -10,8 +10,11 @@ import {
+   summarise,
+   failures,
+   sourceLabel,
++  recentAccounts,
++  subscribedCount,
+   type Subscriber,
+   type SendRow,
++  type Account,
+ } from "@/lib/mailing";
+ import { formatDay } from "@/lib/schedule";
+ 
+@@ -33,11 +36,15 @@ export function MailingList({
+   subscribers,
+   accounts,
+   sends,
++  everyone,
+ }: {
+   subscribers: Subscriber[];
+   accounts: number;
+   /** The recent send log, newest first. */
+   sends: SendRow[];
++  /** Every account, opted in or not. A different question from the list above,
++   * and kept visibly separate for that reason. */
++  everyone: Account[];
+ }) {
+   const [copied, setCopied] = useState(false);
+   const summary = summarise(sends);
+@@ -50,8 +57,54 @@ export function MailingList({
+     setTimeout(() => setCopied(false), 1800);
+   }
+ 
++  const people = recentAccounts(everyone);
++
+   return (
+     <>
++      {/* Everybody, before the subset who agreed to hear from you. This order
++          on purpose: the first question is who is using Freely, and the
++          mailing list is a narrower thing that happens to be made of the same
++          addresses. */}
++      <Card>
++        <Label>Accounts</Label>
++        <p className="text-caption text-text-muted mt-1 mb-0 text-pretty">
++          Everyone who has signed up. {subscribedCount(everyone)} of these also said yes to
++          product news, which is the only thing that permits sending them one.
++        </p>
++
++        {people.length === 0 ? (
++          <p className="text-small text-text-muted mt-4 mb-0">Nobody has signed up yet.</p>
++        ) : (
++          <div className="flex flex-col mt-3">
++            {people.map((person) => (
++              <div
++                key={person.email}
++                className="flex items-baseline justify-between gap-3 py-2 border-b border-line/70 last:border-b-0"
++              >
++                <span className="text-small text-ink truncate">{person.email}</span>
++                <span className="flex items-baseline gap-3 shrink-0">
++                  {person.subscribed && (
++                    <span className="text-caption text-success">Subscribed</span>
++                  )}
++                  <span className="text-caption text-text-muted tabular-nums">
++                    {formatDay(new Date(person.since), "en-GB")}
++                  </span>
++                </span>
++              </div>
++            ))}
++          </div>
++        )}
++
++        {/* No Copy addresses here, and that is the point of having two cards
++            rather than one list with a filter. Every address on this page is
++            one paste away from a send, and the only list it is lawful to paste
++            is the one below. Reading is what this card is for. */}
++        <p className="text-caption text-text-muted mt-4 mb-0 text-pretty">
++          Addresses here cannot be copied in bulk. Knowing who your users are is one thing, and
++          writing to them is another, so the copy button lives on the mailing list below.
++        </p>
++      </Card>
++
+       <Card>
+         <div className="flex flex-wrap items-start justify-between gap-3">
+           <div className="min-w-0">
+diff --git a/src/app/(app)/insights/page.tsx b/src/app/(app)/insights/page.tsx
+index 2166abd..775db2e 100644
+--- a/src/app/(app)/insights/page.tsx
++++ b/src/app/(app)/insights/page.tsx
+@@ -47,7 +47,7 @@ export default async function InsightsPage() {
+   })) as EventRow[];
+ 
+   const steps = funnel(rows);
+-  const [accounts, tracked, subscribers, sends] = await Promise.all([
++  const [accounts, tracked, subscribers, sends, everyone] = await Promise.all([
+     prisma.user.count(),
+     prisma.project.count(),
+     // Who said yes to product news. Both columns are newer than the generated
+@@ -89,6 +89,33 @@ export default async function InsightsPage() {
+       take: 200,
+       select: { to: true, kind: true, status: true, createdAt: true, error: true },
+     }),
++    /**
++     * Everybody with an account, opted in or not.
++     *
++     * A different question from the mailing list and answered from the same
++     * column, which is exactly why the two are kept apart everywhere below.
++     * Knowing who is using Freely is what running Freely requires, and no
++     * consent is involved in that. Sending any of these people a message they
++     * did not ask for is a separate act needing a separate answer, which is
++     * what marketingOptIn is.
++     *
++     * Newest first and capped, because this is a page for reading rather than
++     * an export, and an unbounded list of every account is a query that gets
++     * slower every week.
++     */
++    (
++      prisma as unknown as {
++        user: {
++          findMany(args: Record<string, unknown>): Promise<
++            { email: string; createdAt: Date; marketingOptIn: boolean }[]
++          >;
++        };
++      }
++    ).user.findMany({
++      orderBy: { createdAt: "desc" },
++      take: 200,
++      select: { email: true, createdAt: true, marketingOptIn: true },
++    }),
+   ]);
+ 
+   return (
+@@ -117,6 +144,11 @@ export default async function InsightsPage() {
+         source: u.marketingOptInSource,
+       }))}
+       sends={sends}
++      everyone={everyone.map((u) => ({
++        email: u.email,
++        since: u.createdAt,
++        subscribed: u.marketingOptIn,
++      }))}
+     />
+   );
+ }
+diff --git a/src/app/(app)/quote/page.tsx b/src/app/(app)/quote/page.tsx
+index e5bc34b..307a0af 100644
+--- a/src/app/(app)/quote/page.tsx
++++ b/src/app/(app)/quote/page.tsx
+@@ -5,6 +5,7 @@ import { teamScopeWhere } from "@/lib/team-scope";
+ import { hasOwnBranding } from "@/lib/branding";
+ import { quotesToAskAbout, type QuoteOutcome } from "@/lib/quote-outcome";
+ import type { AccountDefaults } from "@/lib/quote-defaults";
++import type { GuideStep } from "@/lib/guide";
+ import { QuoteWizard } from "./quote-wizard";
+ 
+ /**
+@@ -44,6 +45,9 @@ export default async function QuotePage({
+   searchParams?: { tab?: string };
+ }) {
+   const user = await requireFullUser();
++  // Read here rather than through GuideMount: the wizard needs the list
++  // itself, since it decides between two hints from what is on the form.
++  const guideSeen = ((user as unknown as { guideSeen?: string[] }).guideSeen ?? []) as GuideStep[];
+   const scope = teamScopeWhere(user);
+   // No select: the outcome and acceptance columns are newer than the generated
+   // Prisma client here, and narrowing to the columns the stub knows about
+@@ -130,8 +134,14 @@ export default async function QuotePage({
+       // knows would return them undefined, so every row would look undecided
+       // and the wizard would ask everything again on every quote.
+       saved={user as unknown as AccountDefaults}
++      // The two first-quote hints are shown by the wizard rather than by
++      // GuideMount, because the second one waits on the form being filled in.
++      guideSeen={guideSeen}
++      firstQuote={briefs.length === 0}
+     />
+-      <GuideMount screen="/quote" />
++      {/* Everything else this screen might say. The first-quote pair is
++          excluded because the wizard owns them. */}
++      <GuideMount screen="/quote" exclude={["quote", "generate"]} />
+     </>
+   );
+ }
+diff --git a/src/app/(app)/quote/quote-wizard.tsx b/src/app/(app)/quote/quote-wizard.tsx
+index 99a05f4..a814cf2 100644
+--- a/src/app/(app)/quote/quote-wizard.tsx
++++ b/src/app/(app)/quote/quote-wizard.tsx
+@@ -53,6 +53,8 @@ import {
+ import { resolveSetup, type AccountDefaults, type SetupRowKey } from "@/lib/quote-defaults";
+ 
+ import type { BriefSummary } from "@/components/brief-card";
++import { CoachMark } from "@/components/guide/coach-mark";
++import type { GuideStep } from "@/lib/guide";
+ 
+ /** A visual reference held in wizard state. These can only be saved once the
+  * brief exists (a BriefExample needs a briefId), so they're attached
+@@ -132,6 +134,8 @@ export function QuoteWizard({
+   savedRateUnit,
+   industry,
+   saved = {},
++  guideSeen = [],
++  firstQuote = false,
+ }: {
+   recentBriefs: BriefSummary[];
+   /** Quotes old enough to have an answer, for the "did you land these?" prompt. */
+@@ -151,6 +155,11 @@ export function QuoteWizard({
+   /** The quote setup remembered on the account, prefilled into the draft and
+    * used to tell a per-quote change from simply the answer. */
+   saved?: AccountDefaults;
++  /** Guide steps already seen, so neither hint here reappears. */
++  guideSeen?: GuideStep[];
++  /** Whether this account has never made a quote, which is the only time
++   * either hint is worth showing. */
++  firstQuote?: boolean;
+ }) {
+   const router = useRouter();
+   const t = useT();
+@@ -447,6 +456,18 @@ export function QuoteWizard({
+    * and refusing to explain. This used to run on Continue between the two
+    * steps; with one screen it runs here, which is the only moment left.
+    */
++  /**
++   * Which of the two first-quote hints is showing, if either.
++   *
++   * Only on a first quote, only one at a time, and the second only once the
++   * form would actually generate. Telling somebody to press a button that is
++   * going to reject them is worse than saying nothing.
++   */
++  const firstQuoteHint =
++    firstQuote && !guideSeen.includes("quote") && !draft.sourceText.trim();
++  const generateHint =
++    firstQuote && !guideSeen.includes("generate") && !firstQuoteHint && !whatIsMissing();
++
+   function whatIsMissing(): string {
+     if (!draft.sourceText.trim()) return t.quote.addSource;
+     // Either they price the work, or they say where it is being priced for,
+@@ -624,6 +645,13 @@ export function QuoteWizard({
+       {tab === "new" && (
+         <>
+           <Topbar />
++          {/* The two halves of a first quote, one at a time.
++              "Start with a brief" until there is one, then "now press this"
++              once the form has everything it needs. Shown from here rather
++              than from GuideMount because the second condition is about what
++              is on the form, which only this component knows. */}
++          {firstQuoteHint && <CoachMark step="quote" />}
++          {generateHint && <CoachMark step="generate" />}
+           <SignedBanner signed={signed} />
+           <LandedPrompt quotes={landedQuotes} />
+           <QuoteTabs value={tab} onChange={setTab} count={recentBriefs.length} />
+@@ -637,8 +665,16 @@ export function QuoteWizard({
+           </div>
+           {/* One bordered container: the two choices sit side by side as a
+               toggle at the top, and the input for whichever is selected
+-              expands underneath, inside the same box. */}
+-          <div className="bg-white border border-line rounded-card overflow-hidden">
++              expands underneath, inside the same box.
++
++              The guide points here rather than at the Generate button. "Paste
++              what the client sent you, or upload it" was ringing the button at
++              the bottom of the form, which is the last thing you press, not
++              the first. */}
++          <div
++            data-guide="quote"
++            className="bg-white border border-line rounded-card overflow-hidden"
++          >
+             <div className="flex flex-col sm:flex-row">
+               {(
+                 [
+@@ -860,7 +896,7 @@ export function QuoteWizard({
+                 {t.quote.stop}
+               </Button>
+             ) : (
+-              <Button icon={Sparkles} onClick={handleGenerate} data-guide="quote">
++              <Button icon={Sparkles} onClick={handleGenerate} data-guide="generate">
+                 {t.quote.generate}
+               </Button>
+             )}
+diff --git a/src/components/guide/coach-mark.tsx b/src/components/guide/coach-mark.tsx
+index cebb91d..6de707d 100644
+--- a/src/components/guide/coach-mark.tsx
++++ b/src/components/guide/coach-mark.tsx
+@@ -113,6 +113,8 @@ function wording(step: GuideStep, t: Dictionary): { title: string; body: string
+   switch (step) {
+     case "quote":
+       return { title: t.guide.quoteTitle, body: t.guide.quoteBody };
++    case "generate":
++      return { title: t.guide.generateTitle, body: t.guide.generateBody };
+     case "publish":
+       return { title: t.guide.publishTitle, body: t.guide.publishBody };
+     case "track":
+diff --git a/src/components/guide/guide-art.tsx b/src/components/guide/guide-art.tsx
+index 98421af..1ca071d 100644
+--- a/src/components/guide/guide-art.tsx
++++ b/src/components/guide/guide-art.tsx
+@@ -52,6 +52,18 @@ function art(step: GuideStep) {
+         </>
+       );
+ 
++    // A wand with three sparks: the moment the brief becomes a quote.
++    case "generate":
++      return (
++        <>
++          <path d="M8 38 30 16" />
++          <path d="m27 13 6 6" />
++          <path d="M33 7v6M30 10h6" stroke={CORAL} />
++          <path d="M37 20v4M35 22h4" stroke={CORAL} />
++          <path d="M22 8v3M20.5 9.5h3" stroke={CORAL} />
++        </>
++      );
++
+     // A paper plane, mid flight, with its trail.
+     case "publish":
+       return (
+diff --git a/src/components/guide/guide-mount.tsx b/src/components/guide/guide-mount.tsx
+index 1f71427..a4eb680 100644
+--- a/src/components/guide/guide-mount.tsx
++++ b/src/components/guide/guide-mount.tsx
+@@ -1,5 +1,6 @@
+ import { hintForScreen } from "@/actions/guide";
+ import { CoachMark } from "@/components/guide/coach-mark";
++import type { GuideStep } from "@/lib/guide";
+ 
+ /**
+  * Decides on the server whether this screen has anything to say.
+@@ -7,9 +8,21 @@ import { CoachMark } from "@/components/guide/coach-mark";
+  * Server side so that a page with no hint ships no guide code at all, and so
+  * the counts behind the decision are read in the same round trip as the page
+  * rather than as a request the browser makes after painting.
++ *
++ * A screen can claim a step for itself and exclude it here. The quote wizard
++ * does, for the two first-quote hints: whether to show the second one depends
++ * on what is typed into the form, which is not something a server component
++ * can know. Excluding rather than letting both render is what keeps the "one
++ * at a time" rule true.
+  */
+-export async function GuideMount({ screen }: { screen: string }) {
++export async function GuideMount({
++  screen,
++  exclude = [],
++}: {
++  screen: string;
++  exclude?: GuideStep[];
++}) {
+   const step = await hintForScreen(screen);
+-  if (!step) return null;
++  if (!step || exclude.includes(step)) return null;
+   return <CoachMark step={step} />;
+ }
+diff --git a/src/lib/guide.ts b/src/lib/guide.ts
+index b356adc..169ce2c 100644
+--- a/src/lib/guide.ts
++++ b/src/lib/guide.ts
+@@ -31,7 +31,22 @@ export const GUIDE_STEPS = [
+   "invoice",
+ ] as const;
+ 
+-export type GuideStep = (typeof GUIDE_STEPS)[number];
++/**
++ * Steps a screen shows for itself.
++ *
++ * Everything in GUIDE_STEPS is decided from counts in the database, which is
++ * what lets the decision happen on the server in the same round trip as the
++ * page. "generate" cannot work that way: its moment is "the form is now filled
++ * in enough to press the button", and the server has no idea what is in a
++ * textarea somebody is still typing into.
++ *
++ * So it is kept out of nextHint entirely and the wizard shows it, at the one
++ * moment it can tell. It still records itself as seen in the same place as the
++ * rest, so it never appears twice.
++ */
++export const LOCAL_STEPS = ["generate"] as const;
++
++export type GuideStep = (typeof GUIDE_STEPS)[number] | (typeof LOCAL_STEPS)[number];
+ 
+ /**
+  * How much ticking counts as having used the tracker.
+@@ -73,7 +88,12 @@ export interface GuideState {
+ export function isReady(step: GuideStep, state: GuideState): boolean {
+   switch (step) {
+     // Nothing at all yet. The only thing worth pointing at is the first quote.
++    //
++    // "generate" shares the condition, because it is the second half of the
++    // same first quote. The wizard adds the part this cannot see: whether the
++    // form is actually ready to be pressed.
+     case "quote":
++    case "generate":
+       return state.quotes === 0;
+ 
+     // A quote exists and has never been sent. A draft nobody has seen is the
+@@ -146,8 +166,10 @@ export function nextHint(state: GuideState): GuideStep | null {
+  * which is on a different page and cannot be pointed at from here.
+  */
+ export const STEP_SCREEN: Record<GuideStep, string> = {
+-  // The wizard, where the Generate button is.
++  // The wizard. "quote" points at where the brief goes in, "generate" at the
++  // button, and both are shown by the wizard rather than by nextHint.
+   quote: "/quote",
++  generate: "/quote",
+   // The finished quote, where Publish is.
+   publish: "/quote/brief",
+   // The quote list, where a landed quote offers Send to Track.
+diff --git a/src/lib/i18n/en.ts b/src/lib/i18n/en.ts
+index 63de9bd..f159eed 100644
+--- a/src/lib/i18n/en.ts
++++ b/src/lib/i18n/en.ts
+@@ -873,6 +873,8 @@ export const en = {
+     gotIt: "Got it",
+     quoteTitle: "Start with a brief",
+     quoteBody: "Paste what the client sent you, or upload it. You get back a quote with scope, deliverables, a timeline and a price.",
++    generateTitle: "That is everything it needs",
++    generateBody: "Press Generate and it writes the quote. It takes half a minute, and you can edit every line afterwards.",
+     publishTitle: "Send it to your client",
+     publishBody: "Publishing gives you a link they open in a browser, with your name and colours on it. They can accept it there.",
+     trackTitle: "Put this into Track",
+diff --git a/src/lib/i18n/es.ts b/src/lib/i18n/es.ts
+index cb189b7..2dec322 100644
+--- a/src/lib/i18n/es.ts
++++ b/src/lib/i18n/es.ts
+@@ -866,6 +866,8 @@ export const es: Dictionary = {
+     gotIt: "Entendido",
+     quoteTitle: "Empieza por el encargo",
+     quoteBody: "Pega lo que te ha mandado el cliente, o subelo. Recibes un presupuesto con alcance, entregables, plazos y precio.",
++    generateTitle: "Ya tiene todo lo que necesita",
++    generateBody: "Dale a Generar y escribe el presupuesto. Tarda medio minuto y despues puedes cambiar cada linea.",
+     publishTitle: "Enviaselo a tu cliente",
+     publishBody: "Al publicarlo tienes un enlace que abre en el navegador, con tu nombre y tus colores. Puede aceptarlo ahi mismo.",
+     trackTitle: "Pasa esto a Track",
+diff --git a/src/lib/mailing.ts b/src/lib/mailing.ts
+index 46beb8f..67249b2 100644
+--- a/src/lib/mailing.ts
++++ b/src/lib/mailing.ts
+@@ -104,6 +104,47 @@ export function failures(rows: SendRow[], take = 10): SendRow[] {
+     .slice(0, take);
+ }
+ 
++/**
++ * Somebody with an account, which is everybody.
++ *
++ * Deliberately a different type from Subscriber, with no source and no opt-in
++ * date, so the two lists cannot be passed to each other's functions. The whole
++ * risk in showing every account's address on the same page as the mailing list
++ * is that one gets used as the other, and a type is a cheaper guard than
++ * remembering.
++ */
++export interface Account {
++  email: string;
++  since: Date;
++  /** Whether they also said yes to product news. */
++  subscribed: boolean;
++}
++
++/**
++ * How many accounts said yes, counted off the accounts themselves.
++ *
++ * Reads the flag on the list in front of you rather than a separate count, so
++ * the number under the list always agrees with the list.
++ */
++export function subscribedCount(accounts: Account[]): number {
++  return accounts.filter((a) => a.subscribed).length;
++}
++
++/**
++ * Accounts, newest first.
++ *
++ * There is no addressList equivalent for these on purpose. Copying every
++ * address to a clipboard is one paste away from a send nobody consented to,
++ * and the reason to look at this list is to see who is using Freely, which
++ * reading does perfectly well.
++ */
++export function recentAccounts(accounts: Account[], take = 200): Account[] {
++  return accounts
++    .slice()
++    .sort((a, b) => b.since.getTime() - a.since.getTime())
++    .slice(0, take);
++}
++
+ /** How a source reads on screen, since the stored value is an identifier. */
+ export function sourceLabel(source: string | null): string {
+   if (!source) return "Unknown";
+diff --git a/tests/mailing.test.ts b/tests/mailing.test.ts
+index 98ae78d..686b946 100644
+--- a/tests/mailing.test.ts
++++ b/tests/mailing.test.ts
+@@ -1,4 +1,49 @@
+ import { describe, it, expect } from "vitest";
++import { recentAccounts, subscribedCount, type Account } from "@/lib/mailing";
++
++/**
++ * The two lists on Insights, and why they stay two lists.
++ *
++ * Every account's address is stored, because signing in needs one, and looking
++ * at them is how you know who is using Freely. Writing to any of them is a
++ * separate act that needs a separate yes. The danger is not the storing, it is
++ * the moment somebody copies the wrong list into a mail tool, so the copying
++ * only exists on the list that consented.
++ */
++describe("accounts, which is everybody", () => {
++  const accounts: Account[] = [
++    { email: "a@example.com", since: new Date("2026-01-10"), subscribed: false },
++    { email: "b@example.com", since: new Date("2026-03-02"), subscribed: true },
++    { email: "c@example.com", since: new Date("2026-02-14"), subscribed: false },
++  ];
++
++  it("counts the ones who agreed to hear from you", () => {
++    expect(subscribedCount(accounts)).toBe(1);
++  });
++
++  it("counts nobody in an empty list rather than throwing", () => {
++    expect(subscribedCount([])).toBe(0);
++  });
++
++  it("puts the newest signup first", () => {
++    expect(recentAccounts(accounts).map((a) => a.email)).toEqual([
++      "b@example.com",
++      "c@example.com",
++      "a@example.com",
++    ]);
++  });
++
++  it("does not reorder the list it was given", () => {
++    const original = [...accounts];
++    recentAccounts(accounts);
++    expect(accounts).toEqual(original);
++  });
++
++  it("caps the list, since this is a page rather than an export", () => {
++    expect(recentAccounts(accounts, 2)).toHaveLength(2);
++  });
++});
++
+ import {
+   addressList,
+   reach,

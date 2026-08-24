@@ -104,6 +104,47 @@ export function failures(rows: SendRow[], take = 10): SendRow[] {
     .slice(0, take);
 }
 
+/**
+ * Somebody with an account, which is everybody.
+ *
+ * Deliberately a different type from Subscriber, with no source and no opt-in
+ * date, so the two lists cannot be passed to each other's functions. The whole
+ * risk in showing every account's address on the same page as the mailing list
+ * is that one gets used as the other, and a type is a cheaper guard than
+ * remembering.
+ */
+export interface Account {
+  email: string;
+  since: Date;
+  /** Whether they also said yes to product news. */
+  subscribed: boolean;
+}
+
+/**
+ * How many accounts said yes, counted off the accounts themselves.
+ *
+ * Reads the flag on the list in front of you rather than a separate count, so
+ * the number under the list always agrees with the list.
+ */
+export function subscribedCount(accounts: Account[]): number {
+  return accounts.filter((a) => a.subscribed).length;
+}
+
+/**
+ * Accounts, newest first.
+ *
+ * There is no addressList equivalent for these on purpose. Copying every
+ * address to a clipboard is one paste away from a send nobody consented to,
+ * and the reason to look at this list is to see who is using Freely, which
+ * reading does perfectly well.
+ */
+export function recentAccounts(accounts: Account[], take = 200): Account[] {
+  return accounts
+    .slice()
+    .sort((a, b) => b.since.getTime() - a.since.getTime())
+    .slice(0, take);
+}
+
 /** How a source reads on screen, since the stored value is an identifier. */
 export function sourceLabel(source: string | null): string {
   if (!source) return "Unknown";

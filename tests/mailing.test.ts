@@ -1,4 +1,49 @@
 import { describe, it, expect } from "vitest";
+import { recentAccounts, subscribedCount, type Account } from "@/lib/mailing";
+
+/**
+ * The two lists on Insights, and why they stay two lists.
+ *
+ * Every account's address is stored, because signing in needs one, and looking
+ * at them is how you know who is using Freely. Writing to any of them is a
+ * separate act that needs a separate yes. The danger is not the storing, it is
+ * the moment somebody copies the wrong list into a mail tool, so the copying
+ * only exists on the list that consented.
+ */
+describe("accounts, which is everybody", () => {
+  const accounts: Account[] = [
+    { email: "a@example.com", since: new Date("2026-01-10"), subscribed: false },
+    { email: "b@example.com", since: new Date("2026-03-02"), subscribed: true },
+    { email: "c@example.com", since: new Date("2026-02-14"), subscribed: false },
+  ];
+
+  it("counts the ones who agreed to hear from you", () => {
+    expect(subscribedCount(accounts)).toBe(1);
+  });
+
+  it("counts nobody in an empty list rather than throwing", () => {
+    expect(subscribedCount([])).toBe(0);
+  });
+
+  it("puts the newest signup first", () => {
+    expect(recentAccounts(accounts).map((a) => a.email)).toEqual([
+      "b@example.com",
+      "c@example.com",
+      "a@example.com",
+    ]);
+  });
+
+  it("does not reorder the list it was given", () => {
+    const original = [...accounts];
+    recentAccounts(accounts);
+    expect(accounts).toEqual(original);
+  });
+
+  it("caps the list, since this is a page rather than an export", () => {
+    expect(recentAccounts(accounts, 2)).toHaveLength(2);
+  });
+});
+
 import {
   addressList,
   reach,

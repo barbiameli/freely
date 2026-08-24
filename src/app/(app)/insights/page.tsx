@@ -47,7 +47,7 @@ export default async function InsightsPage() {
   })) as EventRow[];
 
   const steps = funnel(rows);
-  const [accounts, tracked, subscribers, sends] = await Promise.all([
+  const [accounts, tracked, subscribers, sends, everyone] = await Promise.all([
     prisma.user.count(),
     prisma.project.count(),
     // Who said yes to product news. Both columns are newer than the generated
@@ -89,6 +89,33 @@ export default async function InsightsPage() {
       take: 200,
       select: { to: true, kind: true, status: true, createdAt: true, error: true },
     }),
+    /**
+     * Everybody with an account, opted in or not.
+     *
+     * A different question from the mailing list and answered from the same
+     * column, which is exactly why the two are kept apart everywhere below.
+     * Knowing who is using Freely is what running Freely requires, and no
+     * consent is involved in that. Sending any of these people a message they
+     * did not ask for is a separate act needing a separate answer, which is
+     * what marketingOptIn is.
+     *
+     * Newest first and capped, because this is a page for reading rather than
+     * an export, and an unbounded list of every account is a query that gets
+     * slower every week.
+     */
+    (
+      prisma as unknown as {
+        user: {
+          findMany(args: Record<string, unknown>): Promise<
+            { email: string; createdAt: Date; marketingOptIn: boolean }[]
+          >;
+        };
+      }
+    ).user.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 200,
+      select: { email: true, createdAt: true, marketingOptIn: true },
+    }),
   ]);
 
   return (
@@ -117,6 +144,11 @@ export default async function InsightsPage() {
         source: u.marketingOptInSource,
       }))}
       sends={sends}
+      everyone={everyone.map((u) => ({
+        email: u.email,
+        since: u.createdAt,
+        subscribed: u.marketingOptIn,
+      }))}
     />
   );
 }

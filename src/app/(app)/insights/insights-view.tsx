@@ -4,7 +4,7 @@ import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import type { Funnel, Retention, DayCount } from "@/lib/metrics";
-import type { Subscriber, SendRow } from "@/lib/mailing";
+import type { Subscriber, SendRow, Account } from "@/lib/mailing";
 import { MailingList } from "./mailing-list";
 
 /**
@@ -33,6 +33,7 @@ export function InsightsView({
   accountsTotal,
   subscribers,
   sends,
+  everyone,
 }: {
   windowDays: number;
   accounts: number;
@@ -53,6 +54,9 @@ export function InsightsView({
   accountsTotal: number;
   subscribers: Subscriber[];
   sends: SendRow[];
+  /** Every account, so the page answers "who is using this" as well as
+   * "who agreed to hear from us". */
+  everyone: Account[];
 }) {
   const busiest = Math.max(1, ...quotesPerDay.map((d) => d.count));
 
@@ -168,7 +172,12 @@ export function InsightsView({
       {/* Outside the empty check. A brand new install has no events and can
           still have somebody who ticked the box on the signup form, and that
           is exactly when knowing is useful. */}
-      <MailingList subscribers={subscribers} accounts={accountsTotal} sends={sends} />
+      <MailingList
+        subscribers={subscribers}
+        accounts={accountsTotal}
+        sends={sends}
+        everyone={everyone}
+      />
     </>
   );
 }

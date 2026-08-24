@@ -10,8 +10,11 @@ import {
   summarise,
   failures,
   sourceLabel,
+  recentAccounts,
+  subscribedCount,
   type Subscriber,
   type SendRow,
+  type Account,
 } from "@/lib/mailing";
 import { formatDay } from "@/lib/schedule";
 
@@ -33,11 +36,15 @@ export function MailingList({
   subscribers,
   accounts,
   sends,
+  everyone,
 }: {
   subscribers: Subscriber[];
   accounts: number;
   /** The recent send log, newest first. */
   sends: SendRow[];
+  /** Every account, opted in or not. A different question from the list above,
+   * and kept visibly separate for that reason. */
+  everyone: Account[];
 }) {
   const [copied, setCopied] = useState(false);
   const summary = summarise(sends);
@@ -50,8 +57,54 @@ export function MailingList({
     setTimeout(() => setCopied(false), 1800);
   }
 
+  const people = recentAccounts(everyone);
+
   return (
     <>
+      {/* Everybody, before the subset who agreed to hear from you. This order
+          on purpose: the first question is who is using Freely, and the
+          mailing list is a narrower thing that happens to be made of the same
+          addresses. */}
+      <Card>
+        <Label>Accounts</Label>
+        <p className="text-caption text-text-muted mt-1 mb-0 text-pretty">
+          Everyone who has signed up. {subscribedCount(everyone)} of these also said yes to
+          product news, which is the only thing that permits sending them one.
+        </p>
+
+        {people.length === 0 ? (
+          <p className="text-small text-text-muted mt-4 mb-0">Nobody has signed up yet.</p>
+        ) : (
+          <div className="flex flex-col mt-3">
+            {people.map((person) => (
+              <div
+                key={person.email}
+                className="flex items-baseline justify-between gap-3 py-2 border-b border-line/70 last:border-b-0"
+              >
+                <span className="text-small text-ink truncate">{person.email}</span>
+                <span className="flex items-baseline gap-3 shrink-0">
+                  {person.subscribed && (
+                    <span className="text-caption text-success">Subscribed</span>
+                  )}
+                  <span className="text-caption text-text-muted tabular-nums">
+                    {formatDay(new Date(person.since), "en-GB")}
+                  </span>
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* No Copy addresses here, and that is the point of having two cards
+            rather than one list with a filter. Every address on this page is
+            one paste away from a send, and the only list it is lawful to paste
+            is the one below. Reading is what this card is for. */}
+        <p className="text-caption text-text-muted mt-4 mb-0 text-pretty">
+          Addresses here cannot be copied in bulk. Knowing who your users are is one thing, and
+          writing to them is another, so the copy button lives on the mailing list below.
+        </p>
+      </Card>
+
       <Card>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
