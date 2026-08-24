@@ -176,10 +176,21 @@ export function SetupRows({
               type="button"
               onClick={() => toggle(row)}
               aria-expanded={isOpen}
-              className="w-full flex items-center justify-between gap-3 text-left bg-none border-none cursor-pointer px-5 py-3.5 hover:bg-paper transition-colors"
+              className="w-full flex items-center justify-between gap-3 text-left bg-none border-none cursor-pointer px-5 py-4 hover:bg-paper transition-colors"
             >
               <span className="flex items-center gap-2 min-w-0 shrink-0">
-                <span className="text-small text-slate">{rowLabel(row, t)}</span>
+                {/* The open row is the heading of what is below it, so it is
+                    weighted like one. Closed rows stay quiet: four bold labels
+                    in a column is a list with no hierarchy at all. */}
+                <span
+                  className={
+                    isOpen
+                      ? "font-body font-bold text-body text-ink"
+                      : "font-body text-small text-slate"
+                  }
+                >
+                  {rowLabel(row, t)}
+                </span>
                 {isChanged && (
                   <span className="text-caption font-semibold text-violet bg-violet-tint rounded-md px-1.5 py-0.5">
                     {t.quote.setupJustThis}
@@ -239,17 +250,16 @@ export function SetupRows({
             )}
 
             {isOpen && (
-              <div className="px-5 pb-4">
-                {/* Only on a row nobody has answered yet, and only while it is
-                    open, so the promise sits next to the work it is asking for
-                    rather than as a banner over four closed lines. It stops
-                    appearing the moment the row has an answer, which is also
-                    the moment it stops being true. */}
-                {!decided.includes(row) && (
-                  <p className="text-caption text-text-muted bg-paper rounded-lg px-3 py-2 mt-0 mb-3 text-pretty">
-                    {t.quote.setupSavedOnce}
-                  </p>
-                )}
+              <div className="px-5 pb-6">
+                {/* What this row is for, in one line, under the heading it
+                    belongs to. This replaced a grey box repeating "Asked once.
+                    Saved to Memory" on every row: the same sentence four times
+                    is furniture, and it explained the mechanism rather than the
+                    question. Somebody opening "What the client gets" wants to
+                    know what that means, not where it will be stored. */}
+                <p className="text-caption text-slate mt-0 mb-4 text-pretty">
+                  {rowHint(row, t)}
+                </p>
                 {row === "rate" && (
                   <RateBody
                     draft={draft}
@@ -628,17 +638,19 @@ export function PresentationBody({
                 <Chip
                   key={value}
                   active={draft.branding === value}
-                  onClick={
-                    value === "own" && !hasBrand
-                      ? undefined
-                      : () => setDraft((d) => ({ ...d, branding: value }))
-                  }
+                  onClick={() => setDraft((d) => ({ ...d, branding: value }))}
                 >
                   {label}
                 </Chip>
               ))}
             </div>
-            {!hasBrand && <div className="mt-2">{brandUpload}</div>}
+            {/* Only once somebody has asked for their own brand and there is
+                none saved. It used to sit under the chips permanently, so every
+                quote carried an upload box for a thing most of them were not
+                using. "Your brand" is also pressable now even with nothing
+                saved: a chip that ignores you teaches you nothing, and pressing
+                it is exactly how somebody says they want this. */}
+            {draft.branding === "own" && !hasBrand && <div className="mt-3">{brandUpload}</div>}
           </div>
 
           <div className="mt-4">
@@ -684,6 +696,25 @@ function rowLabel(row: SetupRowKey, t: Dictionary): string {
       return t.quote.setupSections;
     case "presentation":
       return t.quote.setupPresentation;
+  }
+}
+
+/**
+ * What a row is asking, said once, under its heading.
+ *
+ * A switch rather than a lookup, so a row added without a line fails to
+ * compile instead of opening onto controls with no explanation.
+ */
+function rowHint(row: SetupRowKey, t: Dictionary): string {
+  switch (row) {
+    case "rate":
+      return t.quote.setupRateHint;
+    case "payment":
+      return t.quote.setupPaymentHint;
+    case "sections":
+      return t.quote.setupSectionsHint;
+    case "presentation":
+      return t.quote.setupPresentationHint;
   }
 }
 

@@ -216,16 +216,26 @@ function Section({
         type="button"
         onClick={() => onToggle(isOpen ? null : id)}
         aria-expanded={isOpen}
-        className="w-full flex items-center justify-between gap-3 text-left bg-none border-none cursor-pointer px-0 py-3 hover:text-violet transition-colors"
+        className="w-full flex items-center justify-between gap-3 text-left bg-none border-none cursor-pointer px-0 py-4 hover:text-violet transition-colors"
       >
-        <span className="font-body font-semibold text-small text-ink">{label}</span>
+        {/* Weighted as a heading once it is open, the same way the wizard's
+            rows are, so the two places these controls appear read alike. */}
+        <span
+          className={
+            isOpen
+              ? "font-body font-bold text-body text-ink"
+              : "font-body font-semibold text-small text-slate"
+          }
+        >
+          {label}
+        </span>
         {isOpen ? (
           <ChevronDown size={14} className="text-text-muted shrink-0" />
         ) : (
           <ChevronRight size={14} className="text-text-muted shrink-0" />
         )}
       </button>
-      {isOpen && <div className="pb-4">{children}</div>}
+      {isOpen && <div className="pb-6">{children}</div>}
     </div>
   );
 }

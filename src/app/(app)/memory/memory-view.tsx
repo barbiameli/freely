@@ -29,6 +29,7 @@ import { industryLabel } from "@/lib/industries";
 import { MAX_DOCUMENT_UPLOAD_BYTES, documentTooLargeError } from "@/lib/upload-limits";
 import { extractFileText } from "@/lib/extract-file";
 import { CURRENCIES } from "@/lib/currencies";
+import { COUNTRIES, currencyForCountry, resolveCountry } from "@/lib/countries";
 import { LOCALES, LOCALE_NAMES } from "@/lib/i18n";
 import { hostnameOf, normalizeUrl } from "@/lib/links";
 import {
@@ -121,6 +122,7 @@ export function MemoryView({
   brandHeadingFont,
   brandBodyFont,
   currency,
+  country,
   quoteLocale,
   hasBrand,
   saved,
@@ -142,6 +144,8 @@ export function MemoryView({
   brandHeadingFont: string | null;
   brandBodyFont: string | null;
   currency: string;
+  /** ISO 3166-1 alpha-2, or null for anybody who was never asked. */
+  country: string | null;
   /** null means quotes follow the interface language. */
   quoteLocale: string | null;
   /** Whether there is a logo or brand color saved, so "Your brand" is pickable. */
@@ -250,6 +254,7 @@ export function MemoryView({
               headingFont={brandHeadingFont}
               bodyFont={brandBodyFont}
               currency={currency}
+              country={country}
             />
           </>
         )}
@@ -660,6 +665,7 @@ function BrandingCard({
   headingFont,
   bodyFont,
   currency,
+  country,
 }: {
   primaryColor: string | null;
   accentColor: string | null;
@@ -667,6 +673,8 @@ function BrandingCard({
   headingFont: string | null;
   bodyFont: string | null;
   currency: string;
+  /** ISO 3166-1 alpha-2, or null for anybody who was never asked. */
+  country: string | null;
   /** null means follow the interface language. */
 }) {
   const t = useT();
@@ -675,6 +683,9 @@ function BrandingCard({
   const [logo, setLogo] = useState(logoDataUrl);
   const [logoError, setLogoError] = useState("");
   const [curr, setCurr] = useState(currency);
+  // Falls back to what the currency implies, so somebody who was never asked
+  // still sees a country rather than a blank select claiming they live nowhere.
+  const [ctry, setCtry] = useState(resolveCountry(country, currency));
   const [pending, startTransition] = useTransition();
 
   const [heading, setHeading] = useState(headingFont);
@@ -689,7 +700,12 @@ function BrandingCard({
     notes: string | null;
   } | null>(null);
 
-  function save(patch: { brandPrimaryColor?: string; brandAccentColor?: string; currency?: string }) {
+  function save(patch: {
+    brandPrimaryColor?: string;
+    brandAccentColor?: string;
+    currency?: string;
+    country?: string;
+  }) {
     startTransition(() => {
       updateBrandingAction(patch);
     });
@@ -862,6 +878,35 @@ function BrandingCard({
               {CURRENCIES.map((c) => (
                 <option key={c.code} value={c.code}>
                   {c.code} ({c.symbol})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Next to the currency, because it decides the currency and because
+              they are one question to a person. Editable here for the reason
+              anything is editable here: people move, and an answer given once
+              at signup should not be permanent. */}
+          <div>
+            <div className="text-caption font-semibold text-slate mb-2 uppercase tracking-wide">
+              {t.memory.country}
+            </div>
+            <select
+              value={ctry}
+              onChange={(e) => {
+                const code = e.target.value;
+                setCtry(code);
+                // The currency follows a change of country, the same way it
+                // does in onboarding, and stays changeable next to it.
+                const next = currencyForCountry(code);
+                setCurr(next);
+                save({ country: code, currency: next });
+              }}
+              className="h-9 rounded border border-line bg-paper px-2.5 text-sm text-ink cursor-pointer"
+            >
+              {COUNTRIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.name}
                 </option>
               ))}
             </select>

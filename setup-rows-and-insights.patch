@@ -1,0 +1,475 @@
+diff --git a/src/actions/memory.ts b/src/actions/memory.ts
+index d26929e..b705d10 100644
+--- a/src/actions/memory.ts
++++ b/src/actions/memory.ts
+@@ -14,6 +14,7 @@ import { extractDominantColor } from "@/lib/png-color";
+ import { sanitizeText } from "@/lib/sanitize-text";
+ import { enforceLlmRateLimit } from "@/lib/rate-limit";
+ import { parseLocale } from "@/lib/i18n";
++import { isKnownCountry } from "@/lib/countries";
+ import type { ActionResult } from "@/actions/briefs";
+ 
+ export async function updateMemoryInstructionsAction(
+@@ -180,10 +181,25 @@ export async function updateBrandingAction(patch: {
+   brandPrimaryColor?: string | null;
+   brandAccentColor?: string | null;
+   currency?: string;
++  /** ISO 3166-1 alpha-2. What a researched rate gets researched against, so
++   * somebody who moves can change it rather than being stuck with whatever
++   * they answered at signup. */
++  country?: string;
+ }): Promise<ActionResult<undefined>> {
+   const user = await requireUser();
+-  await prisma.user.update({ where: { id: user.id }, data: patch });
++  // Checked rather than trusted: it becomes a cache key and a line in a
++  // prompt, so an unrecognised value would poison a bucket other accounts
++  // share. Dropping it leaves the currency fallback to answer instead.
++  const { country, ...rest } = patch;
++  await prisma.user.update({
++    where: { id: user.id },
++    data: {
++      ...rest,
++      ...({ ...(isKnownCountry(country) ? { country } : {}) } as Record<string, unknown>),
++    },
++  });
+   revalidatePath("/memory");
++  revalidatePath("/quote");
+   return { ok: true, data: undefined };
+ }
+ 
+diff --git a/src/app/(app)/memory/memory-view.tsx b/src/app/(app)/memory/memory-view.tsx
+index 3c6ee3a..9c8e3e6 100644
+--- a/src/app/(app)/memory/memory-view.tsx
++++ b/src/app/(app)/memory/memory-view.tsx
+@@ -29,6 +29,7 @@ import { industryLabel } from "@/lib/industries";
+ import { MAX_DOCUMENT_UPLOAD_BYTES, documentTooLargeError } from "@/lib/upload-limits";
+ import { extractFileText } from "@/lib/extract-file";
+ import { CURRENCIES } from "@/lib/currencies";
++import { COUNTRIES, currencyForCountry, resolveCountry } from "@/lib/countries";
+ import { LOCALES, LOCALE_NAMES } from "@/lib/i18n";
+ import { hostnameOf, normalizeUrl } from "@/lib/links";
+ import {
+@@ -121,6 +122,7 @@ export function MemoryView({
+   brandHeadingFont,
+   brandBodyFont,
+   currency,
++  country,
+   quoteLocale,
+   hasBrand,
+   saved,
+@@ -142,6 +144,8 @@ export function MemoryView({
+   brandHeadingFont: string | null;
+   brandBodyFont: string | null;
+   currency: string;
++  /** ISO 3166-1 alpha-2, or null for anybody who was never asked. */
++  country: string | null;
+   /** null means quotes follow the interface language. */
+   quoteLocale: string | null;
+   /** Whether there is a logo or brand color saved, so "Your brand" is pickable. */
+@@ -250,6 +254,7 @@ export function MemoryView({
+               headingFont={brandHeadingFont}
+               bodyFont={brandBodyFont}
+               currency={currency}
++              country={country}
+             />
+           </>
+         )}
+@@ -660,6 +665,7 @@ function BrandingCard({
+   headingFont,
+   bodyFont,
+   currency,
++  country,
+ }: {
+   primaryColor: string | null;
+   accentColor: string | null;
+@@ -667,6 +673,8 @@ function BrandingCard({
+   headingFont: string | null;
+   bodyFont: string | null;
+   currency: string;
++  /** ISO 3166-1 alpha-2, or null for anybody who was never asked. */
++  country: string | null;
+   /** null means follow the interface language. */
+ }) {
+   const t = useT();
+@@ -675,6 +683,9 @@ function BrandingCard({
+   const [logo, setLogo] = useState(logoDataUrl);
+   const [logoError, setLogoError] = useState("");
+   const [curr, setCurr] = useState(currency);
++  // Falls back to what the currency implies, so somebody who was never asked
++  // still sees a country rather than a blank select claiming they live nowhere.
++  const [ctry, setCtry] = useState(resolveCountry(country, currency));
+   const [pending, startTransition] = useTransition();
+ 
+   const [heading, setHeading] = useState(headingFont);
+@@ -689,7 +700,12 @@ function BrandingCard({
+     notes: string | null;
+   } | null>(null);
+ 
+-  function save(patch: { brandPrimaryColor?: string; brandAccentColor?: string; currency?: string }) {
++  function save(patch: {
++    brandPrimaryColor?: string;
++    brandAccentColor?: string;
++    currency?: string;
++    country?: string;
++  }) {
+     startTransition(() => {
+       updateBrandingAction(patch);
+     });
+@@ -866,6 +882,35 @@ function BrandingCard({
+               ))}
+             </select>
+           </div>
++
++          {/* Next to the currency, because it decides the currency and because
++              they are one question to a person. Editable here for the reason
++              anything is editable here: people move, and an answer given once
++              at signup should not be permanent. */}
++          <div>
++            <div className="text-caption font-semibold text-slate mb-2 uppercase tracking-wide">
++              {t.memory.country}
++            </div>
++            <select
++              value={ctry}
++              onChange={(e) => {
++                const code = e.target.value;
++                setCtry(code);
++                // The currency follows a change of country, the same way it
++                // does in onboarding, and stays changeable next to it.
++                const next = currencyForCountry(code);
++                setCurr(next);
++                save({ country: code, currency: next });
++              }}
++              className="h-9 rounded border border-line bg-paper px-2.5 text-sm text-ink cursor-pointer"
++            >
++              {COUNTRIES.map((c) => (
++                <option key={c.code} value={c.code}>
++                  {c.name}
++                </option>
++              ))}
++            </select>
++          </div>
+         </div>
+       </div>
+ 
+diff --git a/src/app/(app)/memory/page.tsx b/src/app/(app)/memory/page.tsx
+index 2058b80..2c1f861 100644
+--- a/src/app/(app)/memory/page.tsx
++++ b/src/app/(app)/memory/page.tsx
+@@ -33,6 +33,7 @@ export default async function MemoryPage() {
+       brandHeadingFont={user.brandHeadingFont}
+       brandBodyFont={user.brandBodyFont}
+       currency={user.currency}
++      country={(user as unknown as { country: string | null }).country ?? null}
+       quoteLocale={(user as unknown as { quoteLocale: string | null }).quoteLocale ?? null}
+       hasBrand={hasOwnBranding(user)}
+       // Cast rather than selected: the quote setup columns are newer than the
+diff --git a/src/components/memory/quote-setup-card.tsx b/src/components/memory/quote-setup-card.tsx
+index 9c5614e..03b29a6 100644
+--- a/src/components/memory/quote-setup-card.tsx
++++ b/src/components/memory/quote-setup-card.tsx
+@@ -216,16 +216,26 @@ function Section({
+         type="button"
+         onClick={() => onToggle(isOpen ? null : id)}
+         aria-expanded={isOpen}
+-        className="w-full flex items-center justify-between gap-3 text-left bg-none border-none cursor-pointer px-0 py-3 hover:text-violet transition-colors"
++        className="w-full flex items-center justify-between gap-3 text-left bg-none border-none cursor-pointer px-0 py-4 hover:text-violet transition-colors"
+       >
+-        <span className="font-body font-semibold text-small text-ink">{label}</span>
++        {/* Weighted as a heading once it is open, the same way the wizard's
++            rows are, so the two places these controls appear read alike. */}
++        <span
++          className={
++            isOpen
++              ? "font-body font-bold text-body text-ink"
++              : "font-body font-semibold text-small text-slate"
++          }
++        >
++          {label}
++        </span>
+         {isOpen ? (
+           <ChevronDown size={14} className="text-text-muted shrink-0" />
+         ) : (
+           <ChevronRight size={14} className="text-text-muted shrink-0" />
+         )}
+       </button>
+-      {isOpen && <div className="pb-4">{children}</div>}
++      {isOpen && <div className="pb-6">{children}</div>}
+     </div>
+   );
+ }
+diff --git a/src/components/quote/setup-rows.tsx b/src/components/quote/setup-rows.tsx
+index 1746038..3338966 100644
+--- a/src/components/quote/setup-rows.tsx
++++ b/src/components/quote/setup-rows.tsx
+@@ -176,10 +176,21 @@ export function SetupRows({
+               type="button"
+               onClick={() => toggle(row)}
+               aria-expanded={isOpen}
+-              className="w-full flex items-center justify-between gap-3 text-left bg-none border-none cursor-pointer px-5 py-3.5 hover:bg-paper transition-colors"
++              className="w-full flex items-center justify-between gap-3 text-left bg-none border-none cursor-pointer px-5 py-4 hover:bg-paper transition-colors"
+             >
+               <span className="flex items-center gap-2 min-w-0 shrink-0">
+-                <span className="text-small text-slate">{rowLabel(row, t)}</span>
++                {/* The open row is the heading of what is below it, so it is
++                    weighted like one. Closed rows stay quiet: four bold labels
++                    in a column is a list with no hierarchy at all. */}
++                <span
++                  className={
++                    isOpen
++                      ? "font-body font-bold text-body text-ink"
++                      : "font-body text-small text-slate"
++                  }
++                >
++                  {rowLabel(row, t)}
++                </span>
+                 {isChanged && (
+                   <span className="text-caption font-semibold text-violet bg-violet-tint rounded-md px-1.5 py-0.5">
+                     {t.quote.setupJustThis}
+@@ -239,17 +250,16 @@ export function SetupRows({
+             )}
+ 
+             {isOpen && (
+-              <div className="px-5 pb-4">
+-                {/* Only on a row nobody has answered yet, and only while it is
+-                    open, so the promise sits next to the work it is asking for
+-                    rather than as a banner over four closed lines. It stops
+-                    appearing the moment the row has an answer, which is also
+-                    the moment it stops being true. */}
+-                {!decided.includes(row) && (
+-                  <p className="text-caption text-text-muted bg-paper rounded-lg px-3 py-2 mt-0 mb-3 text-pretty">
+-                    {t.quote.setupSavedOnce}
+-                  </p>
+-                )}
++              <div className="px-5 pb-6">
++                {/* What this row is for, in one line, under the heading it
++                    belongs to. This replaced a grey box repeating "Asked once.
++                    Saved to Memory" on every row: the same sentence four times
++                    is furniture, and it explained the mechanism rather than the
++                    question. Somebody opening "What the client gets" wants to
++                    know what that means, not where it will be stored. */}
++                <p className="text-caption text-slate mt-0 mb-4 text-pretty">
++                  {rowHint(row, t)}
++                </p>
+                 {row === "rate" && (
+                   <RateBody
+                     draft={draft}
+@@ -628,17 +638,19 @@ export function PresentationBody({
+                 <Chip
+                   key={value}
+                   active={draft.branding === value}
+-                  onClick={
+-                    value === "own" && !hasBrand
+-                      ? undefined
+-                      : () => setDraft((d) => ({ ...d, branding: value }))
+-                  }
++                  onClick={() => setDraft((d) => ({ ...d, branding: value }))}
+                 >
+                   {label}
+                 </Chip>
+               ))}
+             </div>
+-            {!hasBrand && <div className="mt-2">{brandUpload}</div>}
++            {/* Only once somebody has asked for their own brand and there is
++                none saved. It used to sit under the chips permanently, so every
++                quote carried an upload box for a thing most of them were not
++                using. "Your brand" is also pressable now even with nothing
++                saved: a chip that ignores you teaches you nothing, and pressing
++                it is exactly how somebody says they want this. */}
++            {draft.branding === "own" && !hasBrand && <div className="mt-3">{brandUpload}</div>}
+           </div>
+ 
+           <div className="mt-4">
+@@ -687,6 +699,25 @@ function rowLabel(row: SetupRowKey, t: Dictionary): string {
+   }
+ }
+ 
++/**
++ * What a row is asking, said once, under its heading.
++ *
++ * A switch rather than a lookup, so a row added without a line fails to
++ * compile instead of opening onto controls with no explanation.
++ */
++function rowHint(row: SetupRowKey, t: Dictionary): string {
++  switch (row) {
++    case "rate":
++      return t.quote.setupRateHint;
++    case "payment":
++      return t.quote.setupPaymentHint;
++    case "sections":
++      return t.quote.setupSectionsHint;
++    case "presentation":
++      return t.quote.setupPresentationHint;
++  }
++}
++
+ function sectionName(key: SectionKey, t: Dictionary): string {
+   switch (key) {
+     case "includeStrategy":
+diff --git a/src/lib/i18n/en.ts b/src/lib/i18n/en.ts
+index 6cd5369..63de9bd 100644
+--- a/src/lib/i18n/en.ts
++++ b/src/lib/i18n/en.ts
+@@ -142,12 +142,15 @@ export const en = {
+     setupTitle: "Your usual setup",
+     setupFirstTitle: "How this quote works",
+     setupFirstHint: "Answered once. These get saved to Memory and fill themselves in from now on.",
+-    setupSavedOnce: "Asked once. Saved to Memory and filled in for you on every quote after this.",
+     setupRemembered: "Kept from your last quote. Change any line for this one only.",
+     setupEditInMemory: "Edit in Memory",
+     setupRate: "Rate",
+     setupPayment: "Payment",
+     setupSections: "Sections",
++    setupRateHint: "What you charge, and the currency the quote is written in.",
++    setupPaymentHint: "When the money arrives, and how much of it arrives before you start.",
++    setupSectionsHint: "Which parts the finished quote includes. Terms, revisions and availability rest on things only you can say, so they are off until you write them.",
++    setupPresentationHint: "The file the client opens, and how it looks when they open it.",
+     setupPresentation: "What the client gets",
+     setupNotSet: "Not set yet",
+     setupJustThis: "Just this quote",
+@@ -481,6 +484,7 @@ export const en = {
+     headingFont: "Heading font",
+     bodyFont: "Body font",
+     currencyHint: "The default for new quotes. Each quote can still be changed on its own.",
++    country: "Country",
+     disconnect: "Disconnect",
+     tonePlaceholder: "e.g. warm but efficient, no exclamation points, avoid jargon...",
+     instructions: "Instructions",
+diff --git a/src/lib/i18n/es.ts b/src/lib/i18n/es.ts
+index aa0b03d..cb189b7 100644
+--- a/src/lib/i18n/es.ts
++++ b/src/lib/i18n/es.ts
+@@ -147,12 +147,15 @@ export const es: Dictionary = {
+     setupTitle: "Tu configuracion habitual",
+     setupFirstTitle: "Como funciona este presupuesto",
+     setupFirstHint: "Se responde una vez. Esto se guarda en Memoria y a partir de ahora se rellena solo.",
+-    setupSavedOnce: "Se pregunta una vez. Se guarda en Memoria y se rellena solo en los siguientes presupuestos.",
+     setupRemembered: "Guardado de tu ultimo presupuesto. Cambia cualquier linea solo para este.",
+     setupEditInMemory: "Editar en Memoria",
+     setupRate: "Tarifa",
+     setupPayment: "Pago",
+     setupSections: "Secciones",
++    setupRateHint: "Lo que cobras y la moneda en la que va el presupuesto.",
++    setupPaymentHint: "Cuando llega el dinero y cuanto llega antes de empezar.",
++    setupSectionsHint: "Que partes lleva el presupuesto. Condiciones, revisiones y disponibilidad dependen de cosas que solo sabes tu, asi que estan apagadas hasta que las escribas.",
++    setupPresentationHint: "El archivo que abre el cliente y como se ve al abrirlo.",
+     setupPresentation: "Que recibe el cliente",
+     setupNotSet: "Sin definir",
+     setupJustThis: "Solo este presupuesto",
+@@ -479,6 +482,7 @@ export const es: Dictionary = {
+     headingFont: "Tipografía de titulares",
+     bodyFont: "Tipografía de texto",
+     currencyHint: "La que se usa por defecto en los presupuestos nuevos. Cada uno se puede cambiar aparte.",
++    country: "Pais",
+     disconnect: "Desconectar",
+     tonePlaceholder: "p. ej. cercana pero directa, sin exclamaciones, nada de jerga...",
+     instructions: "Instrucciones",
+diff --git a/src/lib/metrics.ts b/src/lib/metrics.ts
+index 159e3dc..9944098 100644
+--- a/src/lib/metrics.ts
++++ b/src/lib/metrics.ts
+@@ -39,18 +39,38 @@ export interface Funnel {
+  * the one before it.
+  */
+ export function funnel(events: EventRow[]): Funnel {
+-  const distinct = (kind: EventKind) =>
+-    new Set(events.filter((e) => e.kind === kind && e.subjectId).map((e) => e.subjectId)).size;
+-
+   return {
+-    generated: distinct("quote_generated"),
+-    published: distinct("quote_published"),
+-    accepted: distinct("quote_accepted"),
+-    tracked: distinct("project_tracked"),
+-    invoiced: distinct("invoice_created"),
++    generated: distinct(events, "quote_generated"),
++    published: distinct(events, "quote_published"),
++    accepted: distinct(events, "quote_accepted"),
++    tracked: distinct(events, "project_tracked"),
++    invoiced: distinct(events, "invoice_created"),
+   };
+ }
+ 
++/**
++ * How many different quotes reached one step.
++ *
++ * A module-level function taking the rows as an argument, which looks like the
++ * more verbose way to write it, and is not optional.
++ *
++ * This was a local arrow closing over `events`. When the production build
++ * inlined `funnel` into the Insights page, the first call had `events` renamed
++ * to the caller's variable and the other four kept the literal name, which by
++ * then referred to nothing. The page died with "events is not defined" while
++ * every test passed, because the bug did not exist until the minifier made it.
++ *
++ * Nothing here may close over a parameter of the function it is called from.
++ * Pass the rows in. Verified by tests/metrics-closure.test.ts.
++ */
++function distinct(events: EventRow[], kind: EventKind): number {
++  const seen = new Set<string>();
++  for (const event of events) {
++    if (event.kind === kind && event.subjectId) seen.add(event.subjectId);
++  }
++  return seen.size;
++}
++
+ /**
+  * A step's conversion, or null when there is not enough to divide by.
+  *
+diff --git a/tests/metrics-closure.test.ts b/tests/metrics-closure.test.ts
+new file mode 100644
+index 0000000..f2353a3
+--- /dev/null
++++ b/tests/metrics-closure.test.ts
+@@ -0,0 +1,53 @@
++import { describe, it, expect } from "vitest";
++import { readFileSync } from "node:fs";
++import { join } from "node:path";
++
++/**
++ * The bug this exists to stop coming back.
++ *
++ * `funnel` used to declare a local arrow that closed over its `events`
++ * parameter and called it five times. That is ordinary JavaScript and every
++ * unit test passed. Then the production build inlined `funnel` into the
++ * Insights page, renamed `events` to the caller's variable for the first call
++ * only, and left the other four pointing at a name that no longer existed. The
++ * page threw "events is not defined" in production and nowhere else.
++ *
++ * A test that runs the function cannot catch this, because the function is
++ * correct. The defect is created by the minifier, so what is checked here is
++ * the shape of the source: no helper inside these functions may close over the
++ * rows. Pass them in as an argument instead.
++ */
++const SOURCE = readFileSync(join(process.cwd(), "src/lib/metrics.ts"), "utf8");
++
++describe("lib/metrics stays safe to inline", () => {
++  it("declares no local function that could close over a parameter", () => {
++    const lines = SOURCE.split("\n");
++    const offenders: string[] = [];
++
++    let depth = 0;
++    for (const line of lines) {
++      const trimmed = line.trim();
++      // Inside a function body, a `const x = (...) =>` or `function x(` is the
++      // shape that gets inlined wrongly. At the top level it is fine.
++      if (depth > 0 && /^(const|let|var)\s+\w+\s*(:[^=]+)?=\s*(\(|async\s*\(|function\b)/.test(trimmed)) {
++        // Only a problem when it is a function, rather than a value that
++        // happens to start with a bracket.
++        if (/=>|function\b/.test(trimmed)) offenders.push(trimmed);
++      }
++      if (depth > 0 && /^function\s+\w+/.test(trimmed)) offenders.push(trimmed);
++
++      depth += (line.match(/\{/g) ?? []).length;
++      depth -= (line.match(/\}/g) ?? []).length;
++      if (depth < 0) depth = 0;
++    }
++
++    expect(offenders).toEqual([]);
++  });
++
++  // The inner arrows passed to filter and map are fine: they are arguments to
++  // a call, not hoisted declarations, and the minifier keeps their scope. This
++  // is here so the rule above is not read as banning them.
++  it("still allows callbacks passed straight to array methods", () => {
++    expect(SOURCE).toMatch(/\.filter\(/);
++  });
++});

@@ -33,6 +33,7 @@ export default async function MemoryPage() {
       brandHeadingFont={user.brandHeadingFont}
       brandBodyFont={user.brandBodyFont}
       currency={user.currency}
+      country={(user as unknown as { country: string | null }).country ?? null}
       quoteLocale={(user as unknown as { quoteLocale: string | null }).quoteLocale ?? null}
       hasBrand={hasOwnBranding(user)}
       // Cast rather than selected: the quote setup columns are newer than the

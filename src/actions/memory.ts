@@ -14,6 +14,7 @@ import { extractDominantColor } from "@/lib/png-color";
 import { sanitizeText } from "@/lib/sanitize-text";
 import { enforceLlmRateLimit } from "@/lib/rate-limit";
 import { parseLocale } from "@/lib/i18n";
+import { isKnownCountry } from "@/lib/countries";
 import type { ActionResult } from "@/actions/briefs";
 
 export async function updateMemoryInstructionsAction(
@@ -180,10 +181,25 @@ export async function updateBrandingAction(patch: {
   brandPrimaryColor?: string | null;
   brandAccentColor?: string | null;
   currency?: string;
+  /** ISO 3166-1 alpha-2. What a researched rate gets researched against, so
+   * somebody who moves can change it rather than being stuck with whatever
+   * they answered at signup. */
+  country?: string;
 }): Promise<ActionResult<undefined>> {
   const user = await requireUser();
-  await prisma.user.update({ where: { id: user.id }, data: patch });
+  // Checked rather than trusted: it becomes a cache key and a line in a
+  // prompt, so an unrecognised value would poison a bucket other accounts
+  // share. Dropping it leaves the currency fallback to answer instead.
+  const { country, ...rest } = patch;
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      ...rest,
+      ...({ ...(isKnownCountry(country) ? { country } : {}) } as Record<string, unknown>),
+    },
+  });
   revalidatePath("/memory");
+  revalidatePath("/quote");
   return { ok: true, data: undefined };
 }
 
