@@ -7,6 +7,7 @@ import {
   rateSuffix,
 } from "@/lib/rate-unit";
 import { TimelineView } from "@/components/timeline-view";
+import { hasStrategyContent } from "@/lib/strategy";
 import type { BriefExtras } from "@/lib/anthropic";
 import { AcceptBlock } from "./accept-block";
 import { dict, type Dictionary } from "@/lib/i18n";
@@ -154,7 +155,7 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
             <p className="text-slate text-sm mt-1.5">{brief.client}</p>
           </div>
 
-          {brief.strategy && (
+          {hasStrategyContent(brief.strategy) && (
             <div className="rounded-lg p-4" style={{ background: "rgba(99,32,238,0.07)" }}>
               <div className="font-label text-xs text-slate uppercase mb-2">{q.strategy}</div>
               <p className="text-body text-ink m-0 leading-relaxed font-medium">{brief.strategy.goal}</p>
@@ -298,7 +299,7 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
           )}
         </div>
 
-        {brief.strategy && (
+        {hasStrategyContent(brief.strategy) && (
           <div className="py-10 border-b" style={{ borderColor: "#E8EAEF" }}>
             <h2 className="font-display italic text-2xl m-0 mb-4" style={{ color: brand.primary }}>
               {q.strategy}
@@ -428,7 +429,7 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
           )}
         </div>
 
-        {brief.strategy && (
+        {hasStrategyContent(brief.strategy) && (
           <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
             <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{q.strategy}</div>
             <p className="text-body leading-relaxed m-0">{brief.strategy.goal}</p>
@@ -549,7 +550,7 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
           )}
         </div>
 
-        {brief.strategy && (
+        {hasStrategyContent(brief.strategy) && (
           <div className="py-6 border-b border-line">
             <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{q.strategy}</div>
             <p className="text-body leading-relaxed m-0">{brief.strategy.goal}</p>

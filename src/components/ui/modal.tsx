@@ -28,8 +28,9 @@ import clsx from "@/lib/clsx";
  * panel and ended outside it is a drag, not a dismissal, and closing on that
  * loses whatever they were typing.
  *
- * The page behind stops scrolling. An overlay over a moving page reads as a
- * banner rather than as something waiting for an answer.
+ * The page behind stops scrolling, and goes slightly out of focus. An overlay
+ * over a sharp, moving page reads as a banner rather than as something waiting
+ * for an answer.
  *
  * Focus moves into the panel on open. Without it, a keyboard user's next tab
  * goes to whatever was behind the overlay.
@@ -80,7 +81,7 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-ink/40 flex items-start sm:items-center justify-center p-4 overflow-y-auto animate-fade-in motion-reduce:animate-none"
+      className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-[3px] flex items-start sm:items-center justify-center p-4 overflow-y-auto animate-fade-in motion-reduce:animate-none"
       // Only a press that both started and ended on the backdrop is a dismissal.
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();

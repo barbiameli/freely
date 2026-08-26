@@ -105,12 +105,19 @@ export function BeforeYouSend({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 hover:bg-white/20 transition-colors text-white/85 px-3 py-1.5 cursor-pointer tap-row"
+        aria-expanded={open}
+        // Held bright while the list is up, so the overlay reads as belonging
+        // to this control rather than as something the page did on its own.
+        className={`inline-flex items-center gap-1.5 rounded-full border transition-colors px-3 py-1.5 cursor-pointer tap-row ${
+          open
+            ? "border-white bg-white text-ink"
+            : "border-white/25 bg-white/10 hover:bg-white/20 text-white/85"
+        }`}
       >
         <Lightbulb size={13} className="shrink-0" />
         <span className="font-body font-semibold text-caption">{t.brief.beforeYouSend}</span>
         {unchecked > 0 && (
-          <span className="font-body font-bold text-caption bg-coral text-white rounded-full min-w-[17px] h-[17px] px-1 flex items-center justify-center">
+          <span className="font-body font-bold text-caption bg-coral text-white rounded-full min-w-[17px] h-[17px] px-1 flex items-center justify-center shrink-0">
             {unchecked}
           </span>
         )}

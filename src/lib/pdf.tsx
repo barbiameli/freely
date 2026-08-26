@@ -21,6 +21,7 @@ import {
 import { parseTimelineStages, isRoadmapWorthy, stageTick } from "@/lib/timeline";
 import { dict, fill } from "@/lib/i18n";
 import type { BriefExtras } from "@/lib/anthropic";
+import { hasStrategyContent } from "@/lib/strategy";
 
 export interface StrategyPdfData {
   goal: string;
@@ -518,7 +519,7 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
         </View>
 
         <View style={styles.content}>
-          {brief.strategy && (
+          {hasStrategyContent(brief.strategy) && (
             <View style={[styles.section, styles.sectionViolet]}>
               <Pill text={w.strategy} tint="rgba(99,32,238,0.12)" color={FREELY_VIOLET} />
               <Text style={[styles.body, styles.semibold]}>{brief.strategy.goal}</Text>
@@ -651,7 +652,7 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
         </View>
 
         <View style={styles.content}>
-          {brief.strategy && (
+          {hasStrategyContent(brief.strategy) && (
             <View style={styles.edSection}>
               <SectionHeading>
               <Text style={[styles.edSectionTitle, { color: primary }]}>{w.strategy}</Text>
@@ -768,7 +769,7 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
         </View>
 
         <View style={styles.content}>
-          {brief.strategy && (
+          {hasStrategyContent(brief.strategy) && (
             <View style={styles.minSection}>
               <SectionHeading>
               <Text style={styles.minLabel}>{w.strategy}</Text>
@@ -895,7 +896,7 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
         </View>
 
         <View style={styles.content}>
-          {brief.strategy && (
+          {hasStrategyContent(brief.strategy) && (
             <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }}>
               <SectionHeading>
                   <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, color: ink }}>

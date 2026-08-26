@@ -52,6 +52,7 @@ import { RenderedQuote } from "@/components/quote/rendered-quote";
 import { QuotePreview } from "@/components/quote/quote-preview";
 import { BeforeYouSend } from "@/components/quote/before-you-send";
 import { applyHiddenSections, type HideableSection } from "@/lib/hidden-sections";
+import { hasStrategyContent } from "@/lib/strategy";
 import type { BrandSource } from "@/lib/branding";
 import type { PublicBrief } from "@/app/q/[slug]/templates";
 import { useT } from "@/lib/i18n/context";
@@ -591,7 +592,7 @@ export function BriefView({
           {brief.published && (
             <p className="text-caption text-overdue m-0 text-pretty">{t.brief.editingLive}</p>
           )}
-          {content.strategy && (
+          {hasStrategyContent(content.strategy) && (
             <Section eyebrow={t.publicQuote.strategy} tint="violet" accent="violet" {...removable("strategy")}>
               <p className="text-meta text-slate mb-3">
                 {t.brief.whatTheAiUnderstood}

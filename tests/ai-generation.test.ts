@@ -134,14 +134,20 @@ describe("buildGenerateUserPrompt", () => {
     expect(prompt).not.toContain("That rate is fixed");
   });
 
-  it("asks for a Strategy section only when includeStrategy is set, without any AI-usage split", () => {
+  it("asks for a client-facing Approach only when includeStrategy is set, without any AI-usage split", () => {
     const withStrategy = buildGenerateUserPrompt({ ...draft, includeStrategy: true });
     expect(withStrategy).toContain('"strategy"');
+    expect(withStrategy).toContain('"findings"');
     expect(withStrategy).not.toContain('"aiWill"');
     expect(withStrategy).not.toContain('"aiWillNot"');
 
+    // The object is still asked for with the section off, because the open
+    // questions inside it are notes to the freelancer and never reach the
+    // client. What goes away is the half the client would have read.
     const withoutStrategy = buildGenerateUserPrompt({ ...draft, includeStrategy: false });
-    expect(withoutStrategy).not.toContain('strategy" object');
+    expect(withoutStrategy).toContain("openQuestions");
+    expect(withoutStrategy).toContain('Set "goal" to an empty string');
+    expect(withoutStrategy).not.toContain('"findings" is 2-4 concrete');
   });
 
   it("asks for a concrete staged timeline when includeTimeline is set", () => {
