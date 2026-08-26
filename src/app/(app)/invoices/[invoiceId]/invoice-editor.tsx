@@ -11,10 +11,11 @@ import { INVOICE_NOTES, hasNote, toggleNote } from "@/lib/invoice-notes";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { CURRENCIES, currencySymbol } from "@/lib/currencies";
+import { invoiceTotals, formatAmount } from "@/lib/money";
 import { BRANDING_OPTIONS } from "@/lib/branding";
 import { updateInvoiceAction, deleteInvoiceAction, type InvoicePatch } from "@/actions/invoices";
 import type { InvoiceLineItem } from "@/lib/invoice-pdf";
-import { useT } from "@/lib/i18n/context";
+import { useT, useLocale } from "@/lib/i18n/context";
 
 interface EditorInvoice {
   id: string;
@@ -122,6 +123,7 @@ export function InvoiceEditor({
   const router = useRouter();
   const t = useT();
   const [form, setForm] = useState(invoice);
+  const locale = useLocale();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [downloading, setDownloading] = useState(false);
@@ -242,9 +244,17 @@ export function InvoiceEditor({
     setDownloading(false);
   }
 
-  const subtotal = form.lineItems.reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
-  const total = subtotal * (1 + (Number(form.taxRate) || 0) / 100);
+  // The same function the PDF uses, on purpose. This screen used to multiply
+  // the subtotal by (1 + rate), and the PDF added a separately rounded tax
+  // line, so the two could differ by a penny on the same invoice: the
+  // freelancer saw one total and the client received another.
+  const { subtotal, total } = invoiceTotals(
+    form.lineItems.map((i) => Number(i.amount) || 0),
+    Number(form.taxRate) || 0,
+    form.currency
+  );
   const symbol = currencySymbol(form.currency);
+  const shown = (amount: number) => formatAmount(amount, form.currency, locale);
 
   return (
     <>
@@ -537,11 +547,11 @@ export function InvoiceEditor({
         <div className="flex flex-wrap justify-start md:justify-end gap-4 md:gap-8 mt-4 pt-4 border-t border-line">
           <span className="text-small text-slate">
             Subtotal {symbol}
-            {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            {shown(subtotal)}
           </span>
           <span className="font-body font-bold text-lead text-ink">
             Total due {symbol}
-            {total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            {shown(total)}
           </span>
         </div>
       </Card>

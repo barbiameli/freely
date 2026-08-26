@@ -73,6 +73,13 @@ export const ROADMAP: RoadmapItem[] = [
 
   // Later.
   {
+    id: "a11y-rest",
+    kind: "feature",
+    state: "later",
+    title: "The rest of the accessibility pass",
+    note: "Contrast is done and guarded. Still unlooked-at: focus visibility on the custom buttons that set outline-none, aria-labels on icon-only buttons, and whether the .tap target expansion actually reaches 44px everywhere it is used.",
+  },
+  {
     id: "country-list",
     kind: "feature",
     state: "later",
@@ -157,6 +164,13 @@ export const ROADMAP: RoadmapItem[] = [
   },
 
   // Fixed, kept so the same report is recognised rather than re-investigated.
+  {
+    id: "b-money-format",
+    kind: "bug",
+    state: "done",
+    title: "Invoices printed money in the wrong format",
+    note: "Four faults in one place. The PDF localised its dates and not its numbers, so a Spanish invoice read \"26 de agosto de 2026\" beside \"1,234.50\". Yen printed two decimal places, which the yen does not have. The on-screen formatter asked for no decimals at all, so 1234.5 showed as \"1,234.5\". And the editor multiplied by (1 + rate) while the PDF added a rounded tax line, so the same invoice could show 121.00 on screen and 120.99 to the client. One lib/money now, used by both.",
+  },
   {
     id: "b-contrast",
     kind: "bug",

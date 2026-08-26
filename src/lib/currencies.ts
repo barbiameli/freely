@@ -36,8 +36,12 @@ export function currencyName(code?: string | null): string {
   return BY_CODE.get(code)?.name ?? code;
 }
 
-/** Formats a price with the right symbol and thousands separators, e.g.
- * formatMoney(4500, "EUR") -> "€4,500". */
-export function formatMoney(amount: number, code?: string | null): string {
-  return `${currencySymbol(code)}${amount.toLocaleString()}`;
-}
+/**
+ * Moved to lib/money.
+ *
+ * This asked for no fraction digits, so 1234.5 rendered as "£1,234.5", and it
+ * passed no locale, so it followed whichever machine happened to run it.
+ * Re-exported here so the old import path keeps working, with the language
+ * defaulting to English as it effectively did before.
+ */
+export { formatMoney } from "@/lib/money";

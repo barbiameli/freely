@@ -8,7 +8,8 @@ import {
   Font,
   renderToBuffer,
 } from "@react-pdf/renderer";
-import { currencySymbol } from "@/lib/currencies";
+import { formatMoney, invoiceTotals, localeTag } from "@/lib/money";
+import { parseLocale } from "@/lib/i18n";
 import { dict } from "@/lib/i18n";
 
 /**
@@ -111,16 +112,21 @@ function formatShortDate(iso: string, locale: string): string {
     .toUpperCase();
 }
 
-function money(amount: number, currency: string): string {
-  return `${currencySymbol(currency)}${amount.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
+/**
+ * Deleted, and replaced by lib/money.
+ *
+ * It called toLocaleString with no locale, which on a server is the server's
+ * locale rather than the reader's, so a Spanish invoice printed its dates in
+ * Spanish and its numbers in English. It also forced two decimal places onto
+ * every currency, including the yen, which has none.
+ */
 
 export async function renderInvoicePdf(invoice: InvoicePdfData): Promise<Buffer> {
   const w = dict(invoice.language).invoicePdf;
-  const locale = invoice.language === "es" ? "es-ES" : "en-GB";
+  // One place decides which language this document is in, and both the
+  // dates and the numbers read it. They used to disagree.
+  const language = parseLocale(invoice.language ?? "en");
+  const locale = localeTag(language);
   const ink = invoice.dark ? "#FFFFFF" : "#111111";
   const bg = invoice.dark ? "#0B0B0C" : "#FFFFFF";
   const muted = invoice.dark ? "#9A9AA0" : "#8A8990";
@@ -220,12 +226,17 @@ export async function renderInvoicePdf(invoice: InvoicePdfData): Promise<Buffer>
     footerSite: { fontSize: 8.5, color: muted },
   });
 
-  const subtotal = invoice.lineItems.reduce((sum, item) => sum + item.amount, 0);
   // Defaults to itemised: an older invoice with no flag stored was written
   // when every invoice showed the breakdown, so that is what it showed.
   const itemised = invoice.itemised !== false;
-  const tax = invoice.taxRate > 0 ? (subtotal * invoice.taxRate) / 100 : 0;
-  const total = subtotal + tax;
+  // Rounded before they are summed, so the printed lines add up to the
+  // printed total. An invoice is added up by the person paying it.
+  const { subtotal, tax, total } = invoiceTotals(
+    invoice.lineItems.map((item) => item.amount),
+    invoice.taxRate,
+    invoice.currency
+  );
+  const money = (amount: number) => formatMoney(amount, invoice.currency, language);
 
   const doc = (
     <Document>
@@ -296,11 +307,11 @@ export async function renderInvoicePdf(invoice: InvoicePdfData): Promise<Buffer>
             </View>
             {itemised ? (
               <Text style={styles.cellNum}>
-                {item.rate ? `${currencySymbol(invoice.currency)}${item.rate}/hr` : "-"}
+                {item.rate ? `${money(item.rate)}/hr` : "-"}
               </Text>
             ) : null}
             {itemised ? <Text style={styles.cellNum}>{item.hours ? item.hours : "-"}</Text> : null}
-            <Text style={styles.cellAmount}>{money(item.amount, invoice.currency)}</Text>
+            <Text style={styles.cellAmount}>{money(item.amount)}</Text>
           </View>
         ))}
 
@@ -308,18 +319,18 @@ export async function renderInvoicePdf(invoice: InvoicePdfData): Promise<Buffer>
           <View style={styles.totalsRule} />
           <View style={styles.totalsRow}>
             <Text style={styles.totalsLabel}>{w.subtotal}</Text>
-            <Text style={styles.totalsValue}>{money(subtotal, invoice.currency)}</Text>
+            <Text style={styles.totalsValue}>{money(subtotal)}</Text>
           </View>
           {invoice.taxRate > 0 && (
             <View style={styles.totalsRow}>
               <Text style={styles.totalsLabel}>{w.tax} ({invoice.taxRate}%)</Text>
-              <Text style={styles.totalsValue}>{money(tax, invoice.currency)}</Text>
+              <Text style={styles.totalsValue}>{money(tax)}</Text>
             </View>
           )}
           <View style={styles.totalsRule} />
           <View style={styles.totalsRow}>
             <Text style={styles.dueLabel}>{w.totalDue}</Text>
-            <Text style={styles.dueValue}>{money(total, invoice.currency)}</Text>
+            <Text style={styles.dueValue}>{money(total)}</Text>
           </View>
         </View>
 
