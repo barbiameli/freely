@@ -7,6 +7,7 @@ import { Download, Trash2, Check, Plus, ShieldOff } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { Label, SubLabel } from "@/components/ui/label";
+import { INVOICE_NOTES, hasNote, toggleNote } from "@/lib/invoice-notes";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { CURRENCIES, currencySymbol } from "@/lib/currencies";
@@ -569,7 +570,25 @@ export function InvoiceEditor({
 
       <Card>
         <SectionHeading>{t.invoices.closingNote}</SectionHeading>
-        <div className="mt-1">
+        {/* Lines to tap rather than a paragraph to write.
+            This was an empty box with a label, and everything that belongs in
+            it is the same on every invoice somebody sends and none of it is
+            obvious: when payment is due, what happens if it is late, who
+            accounts for the tax. So it got left blank, and an invoice with no
+            payment term is the one that gets paid whenever. */}
+        <p className="text-meta text-text-muted mt-1 mb-2.5">{t.invoices.closingHint}</p>
+        <div className="flex flex-wrap gap-1.5">
+          {INVOICE_NOTES.map((note) => (
+            <Chip
+              key={note.id}
+              active={hasNote(form.notes, note.id)}
+              onClick={() => set("notes", toggleNote(form.notes, note.id))}
+            >
+              {note.label}
+            </Chip>
+          ))}
+        </div>
+        <div className="mt-3">
           <Field
             label={t.invoices.shownAtFoot}
             value={form.notes}

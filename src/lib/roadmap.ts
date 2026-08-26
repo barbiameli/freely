@@ -62,13 +62,6 @@ export const ROADMAP: RoadmapItem[] = [
     title: "Rework the finished quote page",
     note: "Raised a while back and never scoped. Worth deciding what the page is for before touching it: reading a quote, editing one, and sending one are three different jobs sharing one screen.",
   },
-  {
-    id: "invoice-terms",
-    kind: "feature",
-    state: "next",
-    title: "Invoice terms content, and what is required",
-    note: "The required and optional marks on the invoice form, plus what the terms section should actually say by default.",
-  },
 
   {
     id: "dpa",
@@ -139,6 +132,14 @@ export const ROADMAP: RoadmapItem[] = [
     note: "A compulsory \"I agree\" checkbox produces a click and no knowledge, and adds a step before the thing somebody came for. A sentence next to the button, with a link to the detail, is the honest version.",
   },
 
+  {
+    id: "d-invoice-notes",
+    kind: "decision",
+    state: "done",
+    title: "The closing note is chips, not a blank box",
+    note: "Everything that belongs at the foot of an invoice is the same every time and none of it is obvious, so the box got left empty and invoices went out with no payment term. Eight lines to tap, all editable underneath. Changing the due date swaps the matching line rather than leaving one the invoice contradicts.",
+  },
+
   // Fixed, kept so the same report is recognised rather than re-investigated.
   {
     id: "b-events",
@@ -174,6 +175,13 @@ export const ROADMAP: RoadmapItem[] = [
     state: "done",
     title: "Sign in stopped spinning before the page arrived",
     note: "setLoading(false) ran before the redirect, so the button said \"Sign in\" again through the longest wait on the screen. Google had no loading state at all.",
+  },
+  {
+    id: "b-terms-contradiction",
+    kind: "bug",
+    state: "done",
+    title: "The terms page looked like it contradicted itself",
+    note: "It said invoices are stored and bank details are not, without saying why both are true. The record is a row; the PDF is built at download time and never kept. Now stated.",
   },
   {
     id: "b-coach-anchor",

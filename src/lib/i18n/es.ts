@@ -574,6 +574,7 @@ export const es: Dictionary = {
     billedTo: "Facturar a",
     lineItems: "Conceptos",
     closingNote: "Nota final",
+    closingHint: "Toca lo que aplique. Todo se puede editar, y sale al pie de la factura.",
     datesAndCurrency: "Fechas y moneda",
     issued: "Emitida",
     reference: "Referencia",
@@ -949,9 +950,9 @@ export const es: Dictionary = {
 
     notStoredTitle: "Qué no guardamos",
     notStoredPayment:
-      "Números de cuenta, IBAN, datos de tarjeta ni ninguna otra credencial de pago. Las facturas no tienen campos en la base de datos para eso. Los escribes en el momento de descargar la factura, se imprimen en ese PDF y se descartan.",
-    notStoredRemembered:
-      "Si marcas \"recordar en este dispositivo\", se quedan en el almacenamiento de tu navegador y no llegan hasta nosotros. Si borras los datos del navegador, desaparecen.",
+      "Números de cuenta, IBAN, datos de tarjeta ni ninguna otra credencial de pago. La tabla de facturas tiene columnas para el número, las fechas, a quién va y de quién viene, las líneas, la moneda, el impuesto y tu nota final. No tiene ninguna columna para nada de lo anterior.",
+    notStoredPaymentHow:
+      "El PDF de una factura se genera de nuevo cada vez que la descargas, y no se guarda ninguna copia. Escribes los datos de pago en ese momento, se imprimen en el archivo que recibe tu navegador, y nada de eso llega a la base de datos. Así que el registro de la factura sí se guarda y los datos para pagarla no.",
 
     publicTitle: "Los presupuestos publicados son públicos",
     publicBody:
@@ -970,12 +971,16 @@ export const es: Dictionary = {
       "Hay tres empresas implicadas y ninguna más. Neon aloja la base de datos, en la Unión Europea. Vercel ejecuta la aplicación y no guarda nada de tu contenido. Anthropic recibe el texto descrito arriba cuando se está escribiendo un presupuesto.",
     whereNoOthers:
       "Ninguna empresa de analítica, red publicitaria ni intermediario de datos recibe nada sobre ti, tus proyectos o tus clientes. Freely registra qué funciones se usan, como recuentos sin nombres ni texto libre, y esos datos nunca salen de la base de datos.",
+    whereHow:
+      "Cada una de las tres está sujeta a un acuerdo de tratamiento de datos, no a una promesa, y cada una pasa una auditoría independiente SOC 2 Type 2 cada año. El acuerdo de Vercel dice sin rodeos que no accederán, usarán ni cederán los datos de cliente salvo lo necesario para prestar el servicio o para cumplir la ley. Los términos de Neon incluyen un acuerdo de tratamiento conforme al RGPD y publican su propia lista de subencargados. La postura de Anthropic sobre retención y entrenamiento está descrita arriba.",
+    whereRead:
+      "Merece la pena leer las tres en lugar de fiarse: vercel.com/legal/dpa, neon.com/dpa y neon.com/subprocessors.",
 
-    accessTitle: "Quién puede ver tu trabajo en Freely",
+    accessTitle: "Quién tiene acceso",
     accessBody:
-      "No hay ninguna pantalla en Freely que nos muestre tus presupuestos, tus proyectos, tu Memoria ni tus clientes. La vista de administración muestra recuentos de uso y direcciones de correo de las cuentas, y nada de lo que hayas escrito.",
+      "Una persona: quien gestiona Freely. Ninguna otra empresa tiene una cuenta en esta base de datos.",
     accessAdmin:
-      "El acceso directo a la base de datos está limitado a la persona que gestiona Freely, y solo se usa para mantener el servicio en marcha, arreglar un fallo, o donde lo exija la ley.",
+      "Ese acceso se usa para mantener el servicio en marcha, para mirar un fallo que hayas reportado, para frenar un uso indebido, y donde lo exija la ley. Esas son las únicas razones.",
 
     acceptTitle: "Aceptar un presupuesto",
     acceptBody:

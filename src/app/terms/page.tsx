@@ -56,9 +56,14 @@ export default async function TermsPage() {
           <p>{s.storeFiles}</p>
         </Section>
 
+        {/* The obvious follow-up question, answered before it is asked: if the
+            invoice is stored, how are the bank details on it not? Because the
+            PDF is built at download time and never kept, so the two live in
+            different places. Leaving that unsaid made the section read as a
+            contradiction. */}
         <Section title={s.notStoredTitle}>
           <p>{s.notStoredPayment}</p>
-          <p>{s.notStoredRemembered}</p>
+          <p>{s.notStoredPaymentHow}</p>
         </Section>
 
         <Section title={s.publicTitle}>
@@ -77,6 +82,12 @@ export default async function TermsPage() {
         <Section title={s.whereTitle}>
           <p>{s.whereBody}</p>
           <p>{s.whereNoOthers}</p>
+          {/* "How do you know they are not using it?" is the right
+              follow-up, and the answer is that it is contractual and
+              audited rather than a promise. Naming the documents lets
+              somebody check instead of believing us. */}
+          <p>{s.whereHow}</p>
+          <p>{s.whereRead}</p>
         </Section>
 
         {/* The question every careful person asks and most policies avoid.

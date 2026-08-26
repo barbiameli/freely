@@ -576,6 +576,7 @@ export const en = {
     billedTo: "Billed to",
     lineItems: "Line items",
     closingNote: "Closing note",
+    closingHint: "Tap what applies. Everything here is editable, and it prints at the foot of the invoice.",
     datesAndCurrency: "Dates and currency",
     issued: "Issued",
     reference: "Reference",
@@ -956,9 +957,9 @@ export const en = {
 
     notStoredTitle: "What we do not store",
     notStoredPayment:
-      "Bank account numbers, sort codes, IBANs, card details and any other payment credentials. Invoices have no database fields for them. You enter them at the moment you download an invoice, they are written into that PDF, and they are discarded.",
-    notStoredRemembered:
-      "If you tick \"remember these on this device\", they are kept in your own browser storage and are not sent to us. Clearing your browser data removes them.",
+      "Bank account numbers, sort codes, IBANs, card details and any other payment credentials. The Invoice table has columns for the number, the dates, who it is to and from, the line items, the currency, the tax rate and your closing note. It has no column for any of the above.",
+    notStoredPaymentHow:
+      "An invoice PDF is built fresh each time you download one, and no copy of it is kept. You type the payment block at that moment, it is written into the file your browser receives, and nothing about it reaches the database. So the record of the invoice is stored and the details for paying it are not.",
 
     publicTitle: "Published quotes are public",
     publicBody:
@@ -977,12 +978,16 @@ export const en = {
       "Three companies are involved and no others. Neon host the database, in the European Union. Vercel run the application and store none of your content. Anthropic receive the text described above when a quote is being written.",
     whereNoOthers:
       "No analytics company, advertising network or data broker receives anything about you, your projects or your clients. Freely records which features are used, as counts with no names or free text in them, and that data never leaves the database.",
+    whereHow:
+      "Each of the three is bound by a data processing agreement rather than a promise, and each is independently audited to SOC 2 Type 2 every year. Vercel's agreement says plainly that they will not access, use or disclose customer data except as needed to run the service or to comply with the law. Neon's terms include a GDPR data processing agreement and they publish their own list of subprocessors. Anthropic's retention and training position is described above.",
+    whereRead:
+      "All three are worth reading rather than taking on trust: vercel.com/legal/dpa, neon.com/dpa and neon.com/subprocessors.",
 
-    accessTitle: "Who at Freely can see your work",
+    accessTitle: "Who has access",
     accessBody:
-      "There is no screen anywhere in Freely that shows us your quotes, your briefs, your Memory or your clients. The administrative view shows usage counts and account email addresses, and nothing you have written.",
+      "One person: whoever runs Freely. No other company holds an account on this database.",
     accessAdmin:
-      "Direct access to the database is limited to the person who runs Freely, and is used only to keep the service working, to fix a fault, or where the law requires it.",
+      "That access is used to keep the service running, to look into a fault you have reported, to stop misuse, and where the law requires it. Those are the only reasons.",
 
     acceptTitle: "Accepting a quote",
     acceptBody:
