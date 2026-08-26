@@ -23,13 +23,6 @@ export default async function BriefPage({ params }: { params: { briefId: string 
     acceptedEmail: string | null;
   };
 
-  const history = await prisma.brief.findMany({
-    where: scope,
-    orderBy: { createdAt: "desc" },
-    select: { id: true, title: true, status: true },
-    take: 12,
-  });
-
   return (
     <>
 
@@ -93,7 +86,6 @@ export default async function BriefPage({ params }: { params: { briefId: string 
           caption: e.caption,
         })),
       }}
-      history={history}
       brand={{
         brandPrimaryColor: user.brandPrimaryColor,
         brandAccentColor: user.brandAccentColor,

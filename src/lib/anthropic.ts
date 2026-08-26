@@ -972,13 +972,15 @@ export async function generateBriefFromDraft(
   // Only the core half can search. The web search is for a market rate, which
   // only the pricing instruction reads, and running it twice would pay for the
   // same lookup in both calls.
+  const corePrompt = buildGenerateUserPrompt(
+    draft,
+    pricingHistory,
+    marketRateNote,
+    split ? "core" : "all"
+  );
+
   const [coreText, extrasText] = await Promise.all([
-    callClaude("generateBriefFromDraft", system, buildGenerateUserPrompt(
-      draft,
-      pricingHistory,
-      marketRateNote,
-      split ? "core" : "all"
-    ), {
+    callClaude("generateBriefFromDraft", system, corePrompt, {
       webSearch,
       // A quote with strategy, terms, an SOW and a staged timeline is already
       // long, and the research path writes a preamble before the JSON. At 2000
@@ -995,7 +997,36 @@ export async function generateBriefFromDraft(
       : Promise.resolve(""),
   ]);
 
-  const core = parseBriefResponse(coreText, draft.language);
+  /**
+   * One retry when the reply is not the JSON we asked for.
+   *
+   * The model occasionally narrates before answering, or answers in a shape
+   * the schema rejects, and the person waiting has done nothing wrong: they
+   * see an error, lose the wait they already spent, and press the button
+   * again. That is the retry, so do it here where the prompt is already
+   * built and can be made blunter.
+   *
+   * Only for shape failures. A rate limit, a refusal or a truncated reply
+   * says something real and is passed straight through, because retrying
+   * those spends money to produce the same message twice.
+   */
+  const core = await (async () => {
+    try {
+      return parseBriefResponse(coreText, draft.language);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "";
+      const shapeFailure =
+        message.includes("did not return valid JSON") || message.includes("failed validation");
+      if (!shapeFailure) throw err;
+      const retry = await callClaude(
+        "generateBriefFromDraft",
+        system,
+        `${corePrompt}\n\nReturn ONLY the JSON object described above. No preamble, no explanation, no code fences, no text of any kind before or after it.`,
+        { maxTokens: 8000 }
+      );
+      return parseBriefResponse(retry, draft.language);
+    }
+  })();
 
   // Merged after parsing, and never over a value the core already produced.
   // A failure here loses the add-on sections and keeps the quote, which is the

@@ -214,11 +214,9 @@ const LAYOUTS = [
 
 export function BriefView({
   brief,
-  history,
   brand,
 }: {
   brief: Brief;
-  history: { id: string; title: string; status: string }[];
   /** The account's saved colours and logo, for the "own branding" preview. */
   brand: BrandSource;
 }) {
@@ -1020,29 +1018,9 @@ export function BriefView({
               )}
             </Card>
           )}
-          <Card className="flex-1 overflow-y-auto">
-            <Label>{t.quote.briefHistory}</Label>
-            <div className="flex flex-col gap-2.5">
-              {history.map((b) => (
-                <button
-                  key={b.id}
-                  onClick={() => router.push(`/quote/${b.id}`)}
-                  className="bg-none border-none text-left cursor-pointer p-0 tap flex justify-between gap-2"
-                >
-                  <span
-                    className={`text-xs ${
-                      b.id === brief.id ? "font-bold text-ink" : "font-medium text-slate"
-                    }`}
-                  >
-                    {b.title}
-                  </span>
-                  <span className="font-body font-semibold text-caption text-violet">
-                    {b.status}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </Card>
+          {/* No list of past quotes here. This column is for working on this
+              quote, and a dozen other titles under it was navigation wearing
+              the same card as the editor. Quote > All does that job. */}
         </div>
 
         {/* The quote as the client will see it, in the template that will be

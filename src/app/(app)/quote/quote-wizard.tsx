@@ -220,7 +220,6 @@ export function QuoteWizard({
   const [sourceMode, setSourceMode] = useState<"paste" | "upload">("upload");
   // Whether the notes field is showing while pasting. Always shown when
   // uploading, where it is the only way to say anything about the job.
-  const [notesOpen, setNotesOpen] = useState(false);
   const [fileName, setFileName] = useState("");
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -806,62 +805,49 @@ export function QuoteWizard({
                 paste box, because the quote page shows sourceText as "Original
                 request" and your instructions are not what the client sent.
 
-                Open when uploading, since a file leaves no way to say anything.
-                Collapsed when pasting, because you almost certainly added it to
-                the text already. */}
+                Open either way. It was collapsed when pasting, on the theory
+                that anything worth saying had already gone into the box, but
+                the box holds what the client sent and this holds what you want
+                done with it. Behind a press, the field that shapes the quote
+                most was the one nobody opened. */}
             <div className="border-t border-line px-5 py-4 bg-paper">
-              {sourceMode === "upload" || notesOpen ? (
-                <>
-                  <SubLabel>{t.quote.howShouldItRun}</SubLabel>
-                  <p className="text-caption text-text-muted mt-0 mb-2.5 text-pretty">
-                    {t.quote.howShouldItRunHint}
-                  </p>
-                  <TextField
-                    value={draft.instructions}
-                    onChange={(v) => setDraft((d) => ({ ...d, instructions: v }))}
-                    placeholder={t.quote.howShouldItRunPlaceholder}
-                    multiline
-                    rows={3}
-                  />
-                  <div className="mt-3">
-                    <div className="text-caption text-text-muted mb-1.5">{t.common.commonOnes}</div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {projectPresets(industry).map(({ labelKey, textKey }) => {
-                        const line = t.quote[textKey];
-                        const picked = pickedExamples.includes(labelKey);
-                        return (
-                          <Chip
-                            key={labelKey}
-                            active={picked}
-                            onClick={() => {
-                              setPickedExamples((prev) =>
-                                picked ? prev.filter((k) => k !== labelKey) : [...prev, labelKey]
-                              );
-                              setDraft((d) => ({
-                                ...d,
-                                instructions: toggleExampleLine(d.instructions, line, !picked),
-                              }));
-                            }}
-                          >
-                            {t.quote[labelKey]}
-                          </Chip>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setNotesOpen(true)}
-                  className="w-full flex items-center justify-between gap-3 text-left bg-none border-none cursor-pointer p-0 tap-row"
-                >
-                  <span className="text-small text-slate">{t.quote.howShouldItRun}</span>
-                  <span className="font-body font-semibold text-caption text-violet shrink-0">
-                    {draft.instructions.trim() ? t.common.edit : t.common.add}
-                  </span>
-                </button>
-              )}
+              <SubLabel>{t.quote.howShouldItRun}</SubLabel>
+              <p className="text-caption text-text-muted mt-0 mb-2.5 text-pretty">
+                {t.quote.howShouldItRunHint}
+              </p>
+              <TextField
+                value={draft.instructions}
+                onChange={(v) => setDraft((d) => ({ ...d, instructions: v }))}
+                placeholder={t.quote.howShouldItRunPlaceholder}
+                multiline
+                rows={3}
+              />
+              <div className="mt-3">
+                <div className="text-caption text-text-muted mb-1.5">{t.common.commonOnes}</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {projectPresets(industry).map(({ labelKey, textKey }) => {
+                    const line = t.quote[textKey];
+                    const picked = pickedExamples.includes(labelKey);
+                    return (
+                      <Chip
+                        key={labelKey}
+                        active={picked}
+                        onClick={() => {
+                          setPickedExamples((prev) =>
+                            picked ? prev.filter((k) => k !== labelKey) : [...prev, labelKey]
+                          );
+                          setDraft((d) => ({
+                            ...d,
+                            instructions: toggleExampleLine(d.instructions, line, !picked),
+                          }));
+                        }}
+                      >
+                        {t.quote[labelKey]}
+                      </Chip>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
 
