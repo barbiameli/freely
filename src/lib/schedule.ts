@@ -128,6 +128,63 @@ export function relativeDay(target: Date, now: Date = new Date(), locale = "en")
 }
 
 /**
+ * Dates that are days, not moments.
+ *
+ * An invoice due date comes from `<input type="date">`, which produces
+ * "2026-08-26" with no time and no place in it. `new Date("2026-08-26")` reads
+ * that as midnight UTC, which is a real instant, and from then on it drifts:
+ * in New York that instant is eight in the evening on the 25th. So the invoice
+ * list showed a due date one day earlier than the one that was typed, and the
+ * overdue check fired at 8pm the night before it was due.
+ *
+ * A due date is a day. It is due on the 26th wherever you are reading it, so
+ * it is formatted and compared in the zone it was stored in.
+ *
+ * Timestamps are different and stay as they are. When a file was uploaded is a
+ * moment, and showing it in the reader's own time is right.
+ */
+export function formatCalendarDay(date: Date, locale: string = "en"): string {
+  return date.toLocaleDateString(locale === "es" ? "es-ES" : "en-GB", {
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  });
+}
+
+/** The same day, spelled out, for a document somebody keeps. */
+export function formatCalendarLongDay(date: Date, locale: string = "en"): string {
+  return date.toLocaleDateString(locale === "es" ? "es-ES" : "en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+/**
+ * Whether a due day has actually passed.
+ *
+ * Something due on the 26th is not late during the 26th. Comparing the stored
+ * instant against now made it late from the first minute of that day in UTC,
+ * and earlier still for anybody west of it.
+ */
+export function isPastDue(dueAt: Date, now: Date = new Date()): boolean {
+  const endOfDueDay = Date.UTC(
+    dueAt.getUTCFullYear(),
+    dueAt.getUTCMonth(),
+    dueAt.getUTCDate() + 1
+  );
+  return now.getTime() >= endOfDueDay;
+}
+
+/** Whole days until a due day, negative once it has passed. */
+export function daysUntilDue(dueAt: Date, now: Date = new Date()): number {
+  const due = Date.UTC(dueAt.getUTCFullYear(), dueAt.getUTCMonth(), dueAt.getUTCDate());
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  return Math.round((due - today) / DAY_MS);
+}
+
+/**
  * A short date, in the reader's language.
  *
  * The locale was hardcoded to en-GB, which put English month names on a

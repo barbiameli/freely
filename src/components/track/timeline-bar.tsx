@@ -1,14 +1,17 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { formatDay, relativeDay, daysBetween } from "@/lib/schedule";
+import { formatDay, relativeDay, daysBetween, isPastDue } from "@/lib/schedule";
 import { cheerFor } from "@/lib/cheer";
 import { useT, useLocale } from "@/lib/i18n/context";
 
 /** Due, and not ticked. A named helper because the guard against hardcoded JSX
  * text reads an inline `<` comparison as text between tags. */
 function isLate(marker: TimelineMarker, now: Date): boolean {
-  return !marker.done && marker.dueAt.getTime() - now.getTime() < 0;
+  // Not late during the day it is due. Comparing instants made something due
+  // on the 26th turn red at midnight UTC, which is the evening of the 25th
+  // for anybody in the Americas.
+  return !marker.done && isPastDue(marker.dueAt, now);
 }
 
 export interface TimelineMarker {

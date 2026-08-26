@@ -165,6 +165,13 @@ export const ROADMAP: RoadmapItem[] = [
 
   // Fixed, kept so the same report is recognised rather than re-investigated.
   {
+    id: "b-due-dates",
+    kind: "bug",
+    state: "done",
+    title: "Invoices went overdue the evening before they were due",
+    note: "A date input gives \"2026-08-26\", which new Date() reads as midnight UTC, which is an instant rather than a day. West of UTC that instant is the evening of the 25th, so the list showed the wrong day and the overdue check fired hours early. Due dates are now formatted and compared in UTC. The PDF was right only because Vercel happens to run there, which is luck rather than a decision, so it says so now.",
+  },
+  {
     id: "b-money-format",
     kind: "bug",
     state: "done",

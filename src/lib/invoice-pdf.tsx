@@ -98,17 +98,30 @@ const S7 = 44;
 
 const BOLD = "Helvetica-Bold";
 
+/**
+ * Issued and due are days, not instants.
+ *
+ * UTC is stated rather than assumed. These read correctly today because Vercel
+ * happens to run in UTC, which is luck rather than a decision, and the same
+ * dates rendered in a browser were already coming out a day early west of it.
+ */
 function formatDate(iso: string, locale: string): string {
   return new Date(iso).toLocaleDateString(locale, {
     day: "numeric",
     month: "long",
     year: "numeric",
+    timeZone: "UTC",
   });
 }
 
 function formatShortDate(iso: string, locale: string): string {
   return new Date(iso)
-    .toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" })
+    .toLocaleDateString(locale, {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      timeZone: "UTC",
+    })
     .toUpperCase();
 }
 

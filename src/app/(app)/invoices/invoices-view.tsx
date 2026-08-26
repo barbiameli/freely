@@ -1,11 +1,13 @@
 "use client";
 
+import { formatCalendarDay, isPastDue } from "@/lib/schedule";
+
 import { useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { currencySymbol } from "@/lib/currencies";
 import { Tabs } from "@/components/ui/tabs";
-import { useT } from "@/lib/i18n/context";
+import { useT, useLocale } from "@/lib/i18n/context";
 import { InvoiceQueueList, type QueueRow } from "./invoice-queue-list";
 import { NewInvoiceButton } from "./new-invoice-button";
 
@@ -43,6 +45,7 @@ export function InvoicesView({
   projects: { id: string; title: string; client: string }[];
 }) {
   const t = useT();
+  const locale = useLocale();
   const readyCount = queue.filter((q) => q.lines.length > 0).length;
   const [tab, setTab] = useState<Tab>(readyCount > 0 ? "queue" : "invoices");
 
@@ -75,7 +78,9 @@ export function InvoicesView({
       ) : (
         <div className="flex flex-col gap-2.5">
           {invoices.map((inv) => {
-            const overdue = !inv.paid && new Date(inv.dueAt).getTime() < Date.now();
+            // Not late during the day it is due, and not late a day early
+            // for anybody west of UTC. See lib/schedule.
+            const overdue = !inv.paid && isPastDue(new Date(inv.dueAt));
             return (
               <Link key={inv.id} href={`/invoices/${inv.id}`} className="no-underline">
                 <Card className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 cursor-pointer">
@@ -87,8 +92,8 @@ export function InvoicesView({
                       <span className="text-body text-slate">{inv.clientName}</span>
                     </div>
                     <div className="text-meta text-text-muted mt-1">
-                      {new Date(inv.issuedAt).toLocaleDateString("en-GB")} ·{" "}
-                      {new Date(inv.dueAt).toLocaleDateString("en-GB")}
+                      {formatCalendarDay(new Date(inv.issuedAt), locale)} ·{" "}
+                      {formatCalendarDay(new Date(inv.dueAt), locale)}
                     </div>
                   </div>
                   <div className="flex items-center gap-4 shrink-0">
