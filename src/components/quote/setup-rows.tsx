@@ -269,12 +269,14 @@ export function SetupRows({
               <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 px-5 pb-3 -mt-1">
                 {/* Not on sections. A rate or a payment split is one value and
                     reads in three words; the usual sections spell out a list of
-                    names that the row above is already showing. */}
-                <span className="text-caption text-text-muted">
-                  {row === "sections"
-                    ? ""
-                    : t.quote.setupUsually.replace("{value}", describeRow(row, usual, words, symbol))}
-                </span>
+                    names that the row above is already showing. Left out
+                    entirely rather than emptied, so the two buttons close up
+                    instead of sitting beside a blank. */}
+                {row !== "sections" && (
+                  <span className="text-caption text-text-muted">
+                    {t.quote.setupUsually.replace("{value}", describeRow(row, usual, words, symbol))}
+                  </span>
+                )}
                 <span className="flex items-center gap-4">
                   <button
                     type="button"
