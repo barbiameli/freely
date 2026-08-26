@@ -765,6 +765,8 @@ export const en = {
     unsubscribedBody: "No more product news. Emails about your own work, like a password reset or a signed quote, still come through.",
     backToFreely: "Back to Freely",
     marketingOptIn: "Send me occasional product news",
+    dataNote: "Creating an account means you accept how Freely handles your data.",
+    dataNoteLink: "Read what that means",
     marketingOptInHint: "A few times a year. Unsubscribe from any of them.",
     forgotPassword: "Forgot your password?",
     forgotTitle: "Reset your password",
@@ -964,9 +966,23 @@ export const en = {
 
     aiTitle: "AI generation",
     aiBody:
-      "Quotes are drafted by an AI model from the brief you provide and the context in your Memory. That content is sent to the model provider to produce the draft.",
+      "Quotes are drafted by an AI model from the brief you provide and whatever in your Memory is relevant to that job. That content is sent to Anthropic, who provide the model, to produce the draft.",
+    aiRetention:
+      "Anthropic delete API inputs and outputs within 30 days, and under the commercial terms Freely uses they do not train models on them. Their own descriptions are at docs.anthropic.com/en/docs/build-with-claude/zero-data-retention and support.anthropic.com/en/articles/7996885-how-do-you-use-personal-data-in-model-training.",
     aiDrafts:
       "Drafts can be wrong. Prices, hours and timelines are estimates and every quote is yours to check and edit before you send it.",
+
+    whereTitle: "Where it is kept, and who else touches it",
+    whereBody:
+      "Three companies are involved and no others. Neon host the database, in the European Union. Vercel run the application and store none of your content. Anthropic receive the text described above when a quote is being written.",
+    whereNoOthers:
+      "No analytics company, advertising network or data broker receives anything about you, your projects or your clients. Freely records which features are used, as counts with no names or free text in them, and that data never leaves the database.",
+
+    accessTitle: "Who at Freely can see your work",
+    accessBody:
+      "There is no screen anywhere in Freely that shows us your quotes, your briefs, your Memory or your clients. The administrative view shows usage counts and account email addresses, and nothing you have written.",
+    accessAdmin:
+      "Direct access to the database is limited to the person who runs Freely, and is used only to keep the service working, to fix a fault, or where the law requires it.",
 
     acceptTitle: "Accepting a quote",
     acceptBody:

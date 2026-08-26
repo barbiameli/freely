@@ -70,6 +70,14 @@ export const ROADMAP: RoadmapItem[] = [
     note: "The required and optional marks on the invoice form, plus what the terms section should actually say by default.",
   },
 
+  {
+    id: "dpa",
+    kind: "feature",
+    state: "next",
+    title: "A Data Processing Agreement",
+    note: "The terms page now says what happens to your data. A DPA is the countersignable version, which is what a company evaluating Freely actually asks for. Needs a lawyer's eye before it goes out.",
+  },
+
   // Later.
   {
     id: "country-list",
@@ -121,6 +129,14 @@ export const ROADMAP: RoadmapItem[] = [
     state: "done",
     title: "Track and Diary became one project with two tabs",
     note: "They were the same information entered twice. The client page is now derived from the tracker, so it is right the moment a box is ticked and nobody has to write an update.",
+  },
+
+  {
+    id: "d-no-consent-checkbox",
+    kind: "decision",
+    state: "done",
+    title: "Signup says what accepting means, with no tickbox",
+    note: "A compulsory \"I agree\" checkbox produces a click and no knowledge, and adds a step before the thing somebody came for. A sentence next to the button, with a link to the detail, is the honest version.",
   },
 
   // Fixed, kept so the same report is recognised rather than re-investigated.

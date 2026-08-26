@@ -67,7 +67,25 @@ export default async function TermsPage() {
 
         <Section title={s.aiTitle}>
           <p>{s.aiBody}</p>
+          <p>{s.aiRetention}</p>
           <p>{s.aiDrafts}</p>
+        </Section>
+
+        {/* Named, rather than "our providers". Somebody asking this question
+            is asking who exactly, and a list of three companies answers it
+            where a category does not. */}
+        <Section title={s.whereTitle}>
+          <p>{s.whereBody}</p>
+          <p>{s.whereNoOthers}</p>
+        </Section>
+
+        {/* The question every careful person asks and most policies avoid.
+            Both halves are here: the product shows nobody your work, and the
+            person running it holds database credentials. Saying only the first
+            would be true and misleading. */}
+        <Section title={s.accessTitle}>
+          <p>{s.accessBody}</p>
+          <p>{s.accessAdmin}</p>
         </Section>
 
         <Section title={s.acceptTitle}>

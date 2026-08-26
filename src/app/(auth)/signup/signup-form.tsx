@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
@@ -97,9 +99,24 @@ export function SignUpForm() {
         </span>
       </label>
       {error && <div className="text-overdue text-xs">{error}</div>}
+
+      {/* A line rather than a tickbox nobody reads.
+          A compulsory "I agree" checkbox is a ritual: it produces a click and
+          no knowledge, and it adds a step between somebody and the thing they
+          came for. Saying what accepting means, next to the button that does
+          the accepting, is the honest version of the same thing, and the link
+          is there for anybody who wants the detail before they press it. */}
+      <p className="text-caption text-text-muted -mt-1 mb-0 text-pretty">
+        {t.auth.dataNote}{" "}
+        <Link href="/terms" target="_blank" className="text-violet font-semibold">
+          {t.auth.dataNoteLink}
+        </Link>
+      </p>
+
       <Button
         type="submit"
-        disabled={loading || !name.trim() || !email || password.length < 8}
+        loading={loading}
+        disabled={!name.trim() || !email || password.length < 8}
         className="justify-center mt-1"
       >
         {loading ? t.auth.creatingAccount : t.auth.createAccount}

@@ -758,6 +758,8 @@ export const es: Dictionary = {
     unsubscribedBody: "No mas novedades del producto. Los correos sobre tu trabajo, como recuperar la contrasena o un presupuesto firmado, siguen llegando.",
     backToFreely: "Volver a Freely",
     marketingOptIn: "Mandame novedades del producto de vez en cuando",
+    dataNote: "Al crear una cuenta aceptas como Freely trata tus datos.",
+    dataNoteLink: "Lee que significa eso",
     marketingOptInHint: "Unas pocas veces al ano. Te puedes dar de baja en cualquiera.",
     forgotPassword: "Olvidaste tu contrasena?",
     forgotTitle: "Recupera tu contrasena",
@@ -957,9 +959,23 @@ export const es: Dictionary = {
 
     aiTitle: "Generación con IA",
     aiBody:
-      "Los presupuestos los redacta un modelo de IA a partir del proyecto que le das y del contexto de tu Memoria. Ese contenido se envía al proveedor del modelo para producir el borrador.",
+      "Los presupuestos los redacta un modelo de IA a partir del proyecto que le das y de lo que haya en tu Memoria que sea relevante para ese trabajo. Ese contenido se envía a Anthropic, que provee el modelo, para producir el borrador.",
+    aiRetention:
+      "Anthropic borra las entradas y salidas de su API en 30 días, y bajo los términos comerciales que usa Freely no entrena modelos con ellas. Lo explican ellos mismos en docs.anthropic.com/en/docs/build-with-claude/zero-data-retention y en support.anthropic.com/en/articles/7996885-how-do-you-use-personal-data-in-model-training.",
     aiDrafts:
       "Los borradores pueden equivocarse. Los precios, las horas y los plazos son estimaciones, y cada presupuesto es tuyo para revisarlo y editarlo antes de enviarlo.",
+
+    whereTitle: "Dónde se guarda y quién más lo toca",
+    whereBody:
+      "Hay tres empresas implicadas y ninguna más. Neon aloja la base de datos, en la Unión Europea. Vercel ejecuta la aplicación y no guarda nada de tu contenido. Anthropic recibe el texto descrito arriba cuando se está escribiendo un presupuesto.",
+    whereNoOthers:
+      "Ninguna empresa de analítica, red publicitaria ni intermediario de datos recibe nada sobre ti, tus proyectos o tus clientes. Freely registra qué funciones se usan, como recuentos sin nombres ni texto libre, y esos datos nunca salen de la base de datos.",
+
+    accessTitle: "Quién puede ver tu trabajo en Freely",
+    accessBody:
+      "No hay ninguna pantalla en Freely que nos muestre tus presupuestos, tus proyectos, tu Memoria ni tus clientes. La vista de administración muestra recuentos de uso y direcciones de correo de las cuentas, y nada de lo que hayas escrito.",
+    accessAdmin:
+      "El acceso directo a la base de datos está limitado a la persona que gestiona Freely, y solo se usa para mantener el servicio en marcha, arreglar un fallo, o donde lo exija la ley.",
 
     acceptTitle: "Aceptar un presupuesto",
     acceptBody:
