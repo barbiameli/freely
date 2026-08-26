@@ -975,6 +975,10 @@ export const es: Dictionary = {
       "Cada una de las tres está sujeta a un acuerdo de tratamiento de datos, no a una promesa, y cada una pasa una auditoría independiente SOC 2 Type 2 cada año. El acuerdo de Vercel dice sin rodeos que no accederán, usarán ni cederán los datos de cliente salvo lo necesario para prestar el servicio o para cumplir la ley. Los términos de Neon incluyen un acuerdo de tratamiento conforme al RGPD y publican su propia lista de subencargados. La postura de Anthropic sobre retención y entrenamiento está descrita arriba.",
     whereRead:
       "Merece la pena leer las tres en lugar de fiarse: vercel.com/legal/dpa, neon.com/dpa y neon.com/subprocessors.",
+    dpaTitle: "Si necesitas esto como contrato",
+    dpaBody:
+      "Esta página describe lo que hace Freely. Cuando metes los datos de otra persona, la ley exige que eso quede por escrito como un acuerdo y no como una descripción, y lo hay.",
+    dpaLink: "Leer el Data Processing Agreement (en inglés)",
 
     accessTitle: "Quién tiene acceso",
     accessBody:

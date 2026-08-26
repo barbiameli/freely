@@ -107,6 +107,17 @@ export default async function TermsPage() {
           <p>{s.yourDataBody}</p>
         </Section>
 
+        {/* Where the question usually gets asked, so the answer is one
+            click from it rather than something to be told about. */}
+        <Section title={s.dpaTitle}>
+          <p>{s.dpaBody}</p>
+          <p className="m-0">
+            <Link href="/dpa" className="text-violet font-semibold">
+              {s.dpaLink}
+            </Link>
+          </p>
+        </Section>
+
         <Section title={s.liabilityTitle}>
           <p>{s.liabilityBody}</p>
         </Section>

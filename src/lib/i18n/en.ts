@@ -982,6 +982,10 @@ export const en = {
       "Each of the three is bound by a data processing agreement rather than a promise, and each is independently audited to SOC 2 Type 2 every year. Vercel's agreement says plainly that they will not access, use or disclose customer data except as needed to run the service or to comply with the law. Neon's terms include a GDPR data processing agreement and they publish their own list of subprocessors. Anthropic's retention and training position is described above.",
     whereRead:
       "All three are worth reading rather than taking on trust: vercel.com/legal/dpa, neon.com/dpa and neon.com/subprocessors.",
+    dpaTitle: "If you need this as a contract",
+    dpaBody:
+      "This page describes what Freely does. Where you enter another person's details, the law requires that to be written down as an agreement rather than a description, and there is one.",
+    dpaLink: "Read the Data Processing Agreement",
 
     accessTitle: "Who has access",
     accessBody:

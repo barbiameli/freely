@@ -64,11 +64,11 @@ export const ROADMAP: RoadmapItem[] = [
   },
 
   {
-    id: "dpa",
+    id: "dpa-review",
     kind: "feature",
     state: "next",
-    title: "A Data Processing Agreement",
-    note: "The terms page now says what happens to your data. A DPA is the countersignable version, which is what a company evaluating Freely actually asks for. Needs a lawyer's eye before it goes out.",
+    title: "Get three DPA clauses reviewed",
+    note: "The agreement is written and published at /dpa, and nine of its twelve clauses are close to the standard wording. Audit, liability and governing language are marked as awaiting review on the page itself. A couple of hours of a lawyer's time, not a couple of days.",
   },
 
   // Later.
@@ -146,6 +146,14 @@ export const ROADMAP: RoadmapItem[] = [
     state: "done",
     title: "A working button spins rather than greying out",
     note: "Disabled alone reads as a control that has stopped working, so the second press happens, and the second press is how something gets sent twice. Sixteen buttons converted. Guarded by tests/loading-states, which only flags buttons whose own label already flips on the flag.",
+  },
+
+  {
+    id: "d-dpa-published",
+    kind: "decision",
+    state: "done",
+    title: "One published DPA rather than one per customer",
+    note: "The same shape Neon and Vercel use: a single document incorporated into the terms by reference, downloadable by anybody whose procurement wants a signature. Per-customer redlines scale to about four customers. English only, which is the reverse of the terms page and for the opposite reason: a mistranslated liability clause is a liability of its own.",
   },
 
   // Fixed, kept so the same report is recognised rather than re-investigated.

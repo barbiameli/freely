@@ -101,6 +101,10 @@ describe("the pages outside the app shell read every string from the dictionary"
    */
   const exemptFiles = [
     "src/app/terms/page.tsx",
+    // A contract, in one governing language on purpose. See lib/dpa: a
+    // mistranslated liability or audit clause is a liability of its own,
+    // which is the reverse of the reasoning for the terms page.
+    "src/app/dpa/page.tsx",
     // The product's own dashboard, behind ADMIN_EMAIL. One reader, who is the
     // person writing the app, so translating it would be work with no audience.
     // Worth revisiting the moment anybody else is given the address.
