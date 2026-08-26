@@ -914,6 +914,7 @@ export function setupWords(t: Dictionary): SetupWords {
     byMilestone: t.quote.paymentMilestone,
     and: t.common.and,
     nothingYet: t.quote.setupNotSet,
+    sectionsNone: t.quote.setupSectionsNone,
     sectionNames: {
       includeStrategy: t.quote.sectionStrategy,
       includeTimeline: t.quote.sectionTimeline,

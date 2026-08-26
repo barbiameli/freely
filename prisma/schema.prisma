@@ -308,6 +308,18 @@ model Brief {
   // things worth confirming before sending, so being able to clear them one by
   // one is what turns a block of text into something you finish.
   clearedQuestions String[] @default([])
+
+  // Sections taken out of this quote after it was written.
+  //
+  // Removing rather than deleting. The content stays exactly where it was and
+  // simply stops being sent, so putting a section back is one press and loses
+  // nothing. Deleting would make "remove" an irreversible act performed on a
+  // paragraph the AI spent real money writing.
+  //
+  // Only removal lives here. Adding a section that was never generated would
+  // produce an empty heading, because there is nothing behind it: that needs a
+  // refine, which the page already offers.
+  hiddenSections   String[] @default([])
   price          Float
   hours          Float
   hourlyRate     Float?

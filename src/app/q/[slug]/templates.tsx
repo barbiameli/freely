@@ -199,10 +199,12 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
             </div>
           </div>
 
-          <div className="rounded-lg p-4 bg-paper">
-            <div className="font-label text-xs text-slate uppercase mb-2">{q.timeline}</div>
-            <TimelineView timeline={brief.timeline} accent={brand.accent} className="text-ink" />
-          </div>
+          {brief.timeline && (
+            <div className="rounded-lg p-4 bg-paper">
+              <div className="font-label text-xs text-slate uppercase mb-2">{q.timeline}</div>
+              <TimelineView timeline={brief.timeline} accent={brand.accent} className="text-ink" />
+            </div>
+          )}
 
           {brief.examples.length > 0 && (
             <div>
@@ -349,12 +351,14 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
           </div>
         </div>
 
-        <div className="py-10 border-b" style={{ borderColor: "#E8EAEF" }}>
-          <h2 className="font-display italic text-2xl m-0 mb-4" style={{ color: brand.primary }}>
-            {q.timeline}
-          </h2>
-          <TimelineView timeline={brief.timeline} accent={brand.primary} className="text-ink" />
-        </div>
+        {brief.timeline && (
+          <div className="py-10 border-b" style={{ borderColor: "#E8EAEF" }}>
+            <h2 className="font-display italic text-2xl m-0 mb-4" style={{ color: brand.primary }}>
+              {q.timeline}
+            </h2>
+            <TimelineView timeline={brief.timeline} accent={brand.primary} className="text-ink" />
+          </div>
+        )}
 
         {brief.examples.length > 0 && (
           <div className="py-10 border-b" style={{ borderColor: "#E8EAEF" }}>
@@ -467,10 +471,12 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
           </div>
         </div>
 
-        <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
-          <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{q.timeline}</div>
-          <TimelineView timeline={brief.timeline} accent={ink} muted={muted} />
-        </div>
+        {brief.timeline && (
+          <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
+            <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{q.timeline}</div>
+            <TimelineView timeline={brief.timeline} accent={ink} muted={muted} />
+          </div>
+        )}
 
         {brief.examples.length > 0 && (
           <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
@@ -580,10 +586,12 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
           </div>
         </div>
 
-        <div className="py-6 border-b border-line">
-          <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{q.timeline}</div>
-          <TimelineView timeline={brief.timeline} accent="#181722" />
-        </div>
+        {brief.timeline && (
+          <div className="py-6 border-b border-line">
+            <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{q.timeline}</div>
+            <TimelineView timeline={brief.timeline} accent="#181722" />
+          </div>
+        )}
 
         {brief.examples.length > 0 && (
           <div className="py-6 border-b border-line">

@@ -65,6 +65,7 @@ describe("resolveSetup", () => {
     expect(setup.rate).toBe(0);
     expect(setup.paymentPlan).toBe("SPLIT");
     expect(setup.sections).toEqual(FALLBACK_SECTIONS);
+    expect(FALLBACK_SECTIONS).toEqual([]);
     expect(setup.termsNote).toBe("");
   });
 
@@ -197,6 +198,7 @@ const WORDS: SetupWords = {
   byMilestone: "By milestone",
   and: "and",
   nothingYet: "Not set",
+  sectionsNone: "None picked",
   sectionNames: {
     includeStrategy: "Strategy",
     includeTimeline: "Timeline",

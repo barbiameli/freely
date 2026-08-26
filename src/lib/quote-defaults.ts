@@ -51,18 +51,14 @@ export const ALL_SECTIONS: SectionKey[] = [
 ];
 
 /**
- * What a quote gets when nothing has ever been decided.
+ * What a quote gets when nothing has ever been decided: nothing.
  *
- * Strategy, Timeline and a Statement of Work: the three that describe the work
- * and what is being agreed. The other four rest on something only the
- * freelancer can say, so defaulting them on would mean generating terms and a
- * revision policy out of nothing.
+ * Every section is off until it is turned on. Pre-lighting three of them put
+ * words in the freelancer's mouth, and this audience knows what belongs in
+ * their own quote better than a default does. The first quote asks; from then
+ * on the account remembers what was picked.
  */
-export const FALLBACK_SECTIONS: SectionKey[] = [
-  "includeStrategy",
-  "includeTimeline",
-  "includeSOW",
-];
+export const FALLBACK_SECTIONS: SectionKey[] = [];
 
 export const FALLBACK_PAYMENT_PLAN: PaymentPlan = "SPLIT";
 export const FALLBACK_UPFRONT_PERCENT = 50;
@@ -355,6 +351,8 @@ export interface SetupWords {
   byMilestone: string;
   and: string;
   nothingYet: string;
+  /** Sections specifically: none picked is a real state, not a blank. */
+  sectionsNone: string;
   sectionNames: Record<SectionKey, string>;
   formats: Record<QuoteFormat, string>;
   templates: Record<QuoteTemplate, string>;
@@ -387,7 +385,7 @@ export function describeRow(
       return words.splitTemplate.replace("{n}", String(setup.upfrontPercent));
     case "sections": {
       const names = setup.sections.map((key) => words.sectionNames[key]).filter(Boolean);
-      if (names.length === 0) return words.nothingYet;
+      if (names.length === 0) return words.sectionsNone;
       return joinWords(names, words.and);
     }
     case "presentation":

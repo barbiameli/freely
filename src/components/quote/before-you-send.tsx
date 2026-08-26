@@ -1,24 +1,49 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Check, Lightbulb } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { CardHeader } from "@/components/ui/label";
+import { Modal } from "@/components/ui/modal";
 import { clearQuestionAction } from "@/actions/briefs";
 import { useT } from "@/lib/i18n/context";
+
+/** One flag per quote, so the overlay arrives once and never again. */
+function seenKey(briefId: string): string {
+  return `freely.beforeYouSend.${briefId}`;
+}
+
+function alreadySeen(briefId: string): boolean {
+  try {
+    return window.localStorage.getItem(seenKey(briefId)) === "1";
+  } catch {
+    // Private browsing, or storage full. Not being able to remember is a
+    // reason to stay quiet rather than to interrupt on every visit.
+    return true;
+  }
+}
+
+function markSeen(briefId: string): void {
+  try {
+    window.localStorage.setItem(seenKey(briefId), "1");
+  } catch {
+    // Nothing to do. Worst case it opens again next time.
+  }
+}
 
 /**
  * The questions the AI raised, as a list you can finish.
  *
- * These were a dashed-bordered block sitting inline among the sections that do
- * go to the client, which is a weak signal for "this one is invisible to them"
- * and puts your private notes inside their document. They were also read-only,
- * so a list of five where you had dealt with three looked exactly like a list
- * of five where you had dealt with none.
+ * These used to hold a column of their own beside the quote, which gave five
+ * private notes the same weight as the document going to the client and left
+ * a wall of text where the quote should be. So they moved into an overlay.
  *
- * So they come out of the document and sit before it, ticked off one at a time
- * and remembered. That gives the page a shape: here is what to check, here is
- * the quote, here is Publish.
+ * It opens itself once, a couple of seconds after the quote first appears,
+ * because that is the moment the questions are worth reading and nobody goes
+ * looking for a button they have not seen yet. After that it is a small
+ * "Before you send" control carrying the count, and the list is one press away
+ * whenever it is wanted.
+ *
+ * Dismissing is escape, the close, or the backdrop, and dismissing settles
+ * nothing: the count stays until each line is actually ticked.
  *
  * Publishing is never blocked. You are the one who knows whether a question
  * matters, and half of them will be things you already had in hand. A count
@@ -37,11 +62,31 @@ export function BeforeYouSend({
 }) {
   const t = useT();
   const [cleared, setCleared] = useState<string[]>(initialCleared);
+  const [open, setOpen] = useState(false);
   const [, startTransition] = useTransition();
 
-  if (questions.length === 0) return null;
+  const unchecked = questions.filter((q) => !cleared.includes(q)).length;
+  const hasQuestions = questions.length > 0;
 
-  const open = questions.filter((q) => !cleared.includes(q)).length;
+  useEffect(() => {
+    if (!hasQuestions) return;
+    // Only when something is still outstanding, and only the first time this
+    // quote is opened. A checklist that reopens itself after you have been
+    // through it is nagging.
+    if (unchecked === 0) return;
+    if (alreadySeen(briefId)) return;
+
+    const timer = window.setTimeout(() => {
+      markSeen(briefId);
+      setOpen(true);
+    }, 2200);
+    return () => window.clearTimeout(timer);
+    // Deliberately keyed on the quote alone: ticking a box mid-timer should
+    // not restart the wait.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [briefId, hasQuestions]);
+
+  if (!hasQuestions) return null;
 
   function toggle(question: string) {
     const next = cleared.includes(question)
@@ -56,51 +101,63 @@ export function BeforeYouSend({
   }
 
   return (
-    <Card tone={open > 0 ? "loud" : "plain"}>
-      <CardHeader
-        title={
-          <span className="flex items-center gap-1.5">
-            <Lightbulb size={13} className="text-violet" />
-            {t.brief.beforeYouSend}
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 hover:bg-white/20 transition-colors text-white/85 px-3 py-1.5 cursor-pointer tap-row"
+      >
+        <Lightbulb size={13} className="shrink-0" />
+        <span className="font-body font-semibold text-caption">{t.brief.beforeYouSend}</span>
+        {unchecked > 0 && (
+          <span className="font-body font-bold text-caption bg-coral text-white rounded-full min-w-[17px] h-[17px] px-1 flex items-center justify-center">
+            {unchecked}
           </span>
-        }
+        )}
+      </button>
+
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title={t.brief.beforeYouSend}
         hint={
-          open > 0
-            ? t.brief.beforeYouSendOpen.replace("{count}", String(open))
+          unchecked > 0
+            ? t.brief.beforeYouSendOpen.replace("{count}", String(unchecked))
             : t.brief.beforeYouSendDone
         }
-      />
-
-      <ul className="list-none p-0 m-0 flex flex-col">
-        {questions.map((question) => {
-          const done = cleared.includes(question);
-          return (
-            <li key={question} className="border-b border-line/70 last:border-b-0">
-              <button
-                type="button"
-                onClick={() => toggle(question)}
-                aria-pressed={done}
-                className="w-full flex items-start gap-2.5 text-left bg-none border-none cursor-pointer p-0 py-2.5 tap-row"
-              >
-                <span
-                  className={`mt-[2px] w-[15px] h-[15px] rounded border shrink-0 flex items-center justify-center transition-colors ${
-                    done ? "bg-violet border-violet" : "bg-white border-line"
-                  }`}
+        wide
+      >
+        <ul className="list-none p-0 m-0 flex flex-col">
+          {questions.map((question) => {
+            const done = cleared.includes(question);
+            return (
+              <li key={question} className="border-b border-line/70 last:border-b-0">
+                <button
+                  type="button"
+                  onClick={() => toggle(question)}
+                  aria-pressed={done}
+                  className="w-full flex items-start gap-2.5 text-left bg-none border-none cursor-pointer p-0 py-3 tap-row"
                 >
-                  {done && <Check size={10} strokeWidth={3.5} className="text-white" />}
-                </span>
-                <span
-                  className={`text-small leading-relaxed text-pretty ${
-                    done ? "text-text-muted line-through" : "text-slate"
-                  }`}
-                >
-                  {question}
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-    </Card>
+                  <span
+                    className={`mt-[2px] w-[15px] h-[15px] rounded border shrink-0 flex items-center justify-center transition-colors ${
+                      done ? "bg-violet border-violet" : "bg-white border-line"
+                    }`}
+                  >
+                    {done && <Check size={10} strokeWidth={3.5} className="text-white" />}
+                  </span>
+                  <span
+                    className={`text-small leading-relaxed text-pretty ${
+                      done ? "text-text-muted line-through" : "text-slate"
+                    }`}
+                  >
+                    {question}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </Modal>
+    </>
   );
 }

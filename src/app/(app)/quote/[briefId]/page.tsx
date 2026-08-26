@@ -60,6 +60,8 @@ export default async function BriefPage({ params }: { params: { briefId: string 
         signable: Boolean((brief.settings as { includeSOW?: boolean } | null)?.includeSOW),
         clearedQuestions:
           (brief as unknown as { clearedQuestions?: string[] }).clearedQuestions ?? [],
+        hiddenSections:
+          (brief as unknown as { hiddenSections?: string[] }).hiddenSections ?? [],
         // The milestone split, so it can be checked before the quote goes out.
         // Stored on the quote at generation, because that is what the client
         // agrees to.

@@ -562,6 +562,49 @@ export async function updateQuoteLookAction(
 }
 
 /**
+ * Takes a section out of the quote, or puts it back.
+ *
+ * Removing rather than deleting: the content stays where it is and stops being
+ * sent, so putting it back is one press. Deleting would make "remove" an
+ * irreversible act on a paragraph that cost real money to write, and there is
+ * no reason for it to be irreversible.
+ *
+ * Only removal. A section that was never generated has nothing behind it, so
+ * adding one would produce an empty heading; that needs a refine, which the
+ * page already offers.
+ */
+export async function toggleSectionAction(
+  briefId: string,
+  section: string,
+  hidden: boolean
+): Promise<ActionResult<string[]>> {
+  const user = await requireFullUser();
+  const brief = await prisma.brief.findFirst({
+    where: { id: briefId, ...teamScopeWhere(user) },
+  });
+  if (!brief) return { ok: false, error: "Quote not found." };
+
+  const current = (brief as unknown as { hiddenSections?: string[] }).hiddenSections ?? [];
+  const key = sanitizeText(section);
+  const next = hidden
+    ? Array.from(new Set([...current, key]))
+    : current.filter((s) => s !== key);
+
+  try {
+    await prisma.brief.update({
+      where: { id: brief.id },
+      data: { hiddenSections: next } as unknown as Record<string, unknown>,
+    });
+  } catch (err) {
+    console.error("[toggleSectionAction] failed", err);
+    return { ok: false, error: "Couldn't change that." };
+  }
+
+  revalidatePath(`/quote/${briefId}`);
+  return { ok: true, data: next };
+}
+
+/**
  * Ticks one of the AI's open questions off, or puts it back.
  *
  * Stored by the question's text rather than its position, because editing the

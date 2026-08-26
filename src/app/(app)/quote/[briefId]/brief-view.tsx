@@ -25,6 +25,7 @@ import {
   setBriefPublishedAction,
   updateBriefContentAction,
   updateQuoteLookAction,
+  toggleSectionAction,
   deleteBriefExampleAction,
 } from "@/actions/briefs";
 import { currencySymbol } from "@/lib/currencies";
@@ -50,6 +51,7 @@ import { SubLabel } from "@/components/ui/label";
 import { RenderedQuote } from "@/components/quote/rendered-quote";
 import { QuotePreview } from "@/components/quote/quote-preview";
 import { BeforeYouSend } from "@/components/quote/before-you-send";
+import { applyHiddenSections, type HideableSection } from "@/lib/hidden-sections";
 import type { BrandSource } from "@/lib/branding";
 import type { PublicBrief } from "@/app/q/[slug]/templates";
 import { useT } from "@/lib/i18n/context";
@@ -95,6 +97,7 @@ interface Brief {
   signable?: boolean;
   /** Open questions already ticked off, by their text. */
   clearedQuestions?: string[];
+  hiddenSections?: string[];
   /**
    * How the work splits into billable chunks, when the quote is billed that
    * way. Shown so it can be checked before the quote goes out: the split is
@@ -113,27 +116,69 @@ interface Brief {
   examples: Example[];
 }
 
-/** A section card with an eyebrow label, a tinted background, and a colored
+/**
+ * A section card with an eyebrow label, a tinted background, and a colored
  * left rule — the "give every section a distinct block" treatment, so the
- * page reads as separated cards instead of one flat scroll of text. */
+ * page reads as separated cards instead of one flat scroll of text.
+ *
+ * Sections that can be taken out carry a Remove, and when removed they stay
+ * on the page as a single line offering to put them back. The written content
+ * is never deleted, so the offer costs nothing and always works.
+ */
 function Section({
   eyebrow,
   tint,
   accent,
   children,
+  removed,
+  onRemove,
+  words,
 }: {
   eyebrow: string;
   tint: "coral" | "violet" | "paper";
   accent: "coral" | "violet";
   children: React.ReactNode;
+  /** Present only on sections that can be taken out. */
+  onRemove?: (removed: boolean) => void;
+  removed?: boolean;
+  words?: { remove: string; removed: string; restore: string };
 }) {
   const tintClass = tint === "coral" ? "bg-coral-tint" : tint === "violet" ? "bg-violet-tint" : "bg-paper";
   const accentClass = accent === "coral" ? "border-coral" : "border-violet";
+
+  if (removed && onRemove && words) {
+    return (
+      <div className="rounded-card border border-dashed border-line px-5 py-3 flex flex-wrap items-center justify-between gap-2">
+        <span className="font-body font-bold text-caption tracking-[0.08em] uppercase text-text-muted">
+          {eyebrow} · {words.removed}
+        </span>
+        <button
+          type="button"
+          onClick={() => onRemove(false)}
+          className="font-body font-semibold text-caption text-violet hover:underline bg-none border-none p-0 cursor-pointer tap-row"
+        >
+          {words.restore}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className={`${tintClass} rounded-card border-l-[3px] ${accentClass} px-5 py-4`}>
-      <span className="font-body font-bold text-caption tracking-[0.08em] uppercase text-slate">
-        {eyebrow}
-      </span>
+      <div className="flex items-start justify-between gap-3">
+        <span className="font-body font-bold text-caption tracking-[0.08em] uppercase text-slate">
+          {eyebrow}
+        </span>
+        {onRemove && words && (
+          <button
+            type="button"
+            onClick={() => onRemove(true)}
+            className="font-body text-caption text-text-muted hover:text-overdue bg-none border-none p-0 cursor-pointer shrink-0 tap-row"
+          >
+            {words.remove}
+          </button>
+        )}
+      </div>
       <div className="mt-2">{children}</div>
     </div>
   );
@@ -202,6 +247,35 @@ export function BriefView({
   function setLook(patch: Partial<typeof look>) {
     setLookState((current) => ({ ...current, ...patch }));
     void updateQuoteLookAction(brief.id, patch);
+  }
+
+  /**
+   * Which sections have been taken out, held locally so a removal is instant.
+   *
+   * Same reasoning as the look: the content is untouched either way, so the
+   * worst case of a failed save is a section reappearing on reload, which is
+   * the safe direction for something that decides what the client receives.
+   */
+  const [hidden, setHidden] = useState<string[]>(brief.hiddenSections ?? []);
+
+  const sectionWords = {
+    remove: t.brief.sectionRemove,
+    removed: t.brief.sectionRemoved,
+    restore: t.brief.sectionRestore,
+  };
+
+  /** The remove/restore props for one section, or nothing when it is core. */
+  function removable(key: HideableSection) {
+    return {
+      removed: hidden.includes(key),
+      words: sectionWords,
+      onRemove: (off: boolean) => {
+        setHidden((current) =>
+          off ? Array.from(new Set([...current, key])) : current.filter((k) => k !== key)
+        );
+        void toggleSectionAction(brief.id, key, off);
+      },
+    };
   }
 
   /**
@@ -335,7 +409,7 @@ export function BriefView({
    * Built from `content`, which is what the editor writes when a section is
    * saved, so the preview redraws as edits land rather than on every keystroke.
    */
-  const previewBrief: PublicBrief = {
+  const previewBrief: PublicBrief = applyHiddenSections({
     title: content.title,
     client: content.client,
     scope: content.scope,
@@ -355,7 +429,7 @@ export function BriefView({
     accepted: brief.accepted
       ? { name: brief.accepted.name, at: brief.accepted.at }
       : null,
-  };
+  }, hidden);
 
   return (
     <>
@@ -391,14 +465,11 @@ export function BriefView({
         </div>
       )}
 
-      {/* The cover and the checklist share a row.
-          The checklist used to sit at the top of the editor column, which
-          pushed every section down by its height and left the two columns
-          misaligned: the thing being edited no longer sat opposite the thing
-          it renders to, which is the entire point of putting them side by
-          side. Up here it costs the columns nothing. */}
-      <div className="flex flex-col xl:flex-row gap-4 items-stretch">
-      <div className="flex-1 min-w-0 bg-ink rounded-card px-5 py-5 md:px-7 md:py-6 flex justify-between items-start gap-4">
+      {/* The cover, full width, with the checklist reduced to one control in
+          its corner. The checklist held a column beside this and gave five
+          private notes the same room as the quote itself. It opens itself
+          once, a couple of seconds in, and lives in an overlay after that. */}
+      <div className="bg-ink rounded-card px-5 py-5 md:px-7 md:py-6 flex justify-between items-start gap-4">
         <div>
           <span className="font-body font-bold text-caption tracking-[0.08em] uppercase text-coral-light">
             {published ? "Quotation, published" : "Quotation, draft"}
@@ -476,12 +547,10 @@ export function BriefView({
             </div>
           </EditableSection>
         </div>
-        <span className="font-body font-semibold text-caption uppercase tracking-wide text-white/60 shrink-0">
-          {brief.accepted ? "Accepted" : published ? "Published" : "Draft"}
-        </span>
-      </div>
-
-        <div className="xl:w-[320px] shrink-0">
+        <div className="shrink-0 flex flex-col items-end gap-3">
+          <span className="font-body font-semibold text-caption uppercase tracking-wide text-white/60">
+            {brief.accepted ? "Accepted" : published ? "Published" : "Draft"}
+          </span>
           <BeforeYouSend
             briefId={brief.id}
             questions={content.strategy?.openQuestions ?? []}
@@ -523,7 +592,7 @@ export function BriefView({
             <p className="text-caption text-overdue m-0 text-pretty">{t.brief.editingLive}</p>
           )}
           {content.strategy && (
-            <Section eyebrow={t.publicQuote.strategy} tint="violet" accent="violet">
+            <Section eyebrow={t.publicQuote.strategy} tint="violet" accent="violet" {...removable("strategy")}>
               <p className="text-meta text-slate mb-3">
                 {t.brief.whatTheAiUnderstood}
               </p>
@@ -644,7 +713,7 @@ export function BriefView({
             </Section>
           )}
 
-          <Section eyebrow={t.publicQuote.timeline} tint="paper" accent="violet">
+          <Section eyebrow={t.publicQuote.timeline} tint="paper" accent="violet" {...removable("timeline")}>
             <EditableBlock
               value={content.timeline}
               onSave={(timeline) => saveContent({ timeline })}
@@ -656,7 +725,7 @@ export function BriefView({
           </Section>
 
           {content.extras?.paymentTerms && (
-            <Section eyebrow={t.publicQuote.paymentTerms} tint="paper" accent="violet">
+            <Section eyebrow={t.publicQuote.paymentTerms} tint="paper" accent="violet" {...removable("paymentTerms")}>
               <EditableBlock
                 value={content.extras.paymentTerms}
                 onSave={(next) =>
@@ -672,7 +741,7 @@ export function BriefView({
           )}
 
           {content.extras?.revisions && (
-            <Section eyebrow={t.publicQuote.revisions} tint="paper" accent="violet">
+            <Section eyebrow={t.publicQuote.revisions} tint="paper" accent="violet" {...removable("revisions")}>
               <EditableBlock
                 value={content.extras.revisions}
                 onSave={(next) =>
@@ -685,7 +754,7 @@ export function BriefView({
           )}
 
           {content.extras?.availability && (
-            <Section eyebrow={t.publicQuote.availability} tint="paper" accent="violet">
+            <Section eyebrow={t.publicQuote.availability} tint="paper" accent="violet" {...removable("availability")}>
               <EditableBlock
                 value={content.extras.availability}
                 onSave={(next) =>
@@ -698,7 +767,7 @@ export function BriefView({
           )}
 
           {content.extras?.aiUsage && (
-            <Section eyebrow={t.quote.sectionAi} tint="paper" accent="violet">
+            <Section eyebrow={t.quote.sectionAi} tint="paper" accent="violet" {...removable("aiUsage")}>
               <EditableSection
                 editLabel="Edit AI use"
                 fields={[
@@ -752,7 +821,7 @@ export function BriefView({
           )}
 
           {content.extras?.terms && (
-            <Section eyebrow={t.quote.sectionTerms} tint="paper" accent="violet">
+            <Section eyebrow={t.quote.sectionTerms} tint="paper" accent="violet" {...removable("terms")}>
               <div className="flex flex-col gap-2.5">
                 {(
                   [

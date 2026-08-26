@@ -5,6 +5,7 @@ import { LocaleProvider } from "@/lib/i18n/context";
 import { parseLocale } from "@/lib/i18n";
 import type { PublicBrief } from "./templates";
 import { RenderedQuote } from "@/components/quote/rendered-quote";
+import { applyHiddenSections } from "@/lib/hidden-sections";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,10 @@ export default async function PublicQuotePage({ params }: { params: { slug: stri
   // client predates these columns, though the schema has them.
   const acceptance = brief as unknown as { acceptedAt: Date | null; acceptedName: string | null };
 
-  const publicBrief: PublicBrief = {
+  const hiddenSections =
+    (brief as unknown as { hiddenSections?: string[] }).hiddenSections ?? [];
+
+  const publicBrief: PublicBrief = applyHiddenSections({
     title: brief.title,
     client: brief.client,
     scope: brief.scope,
@@ -57,7 +61,7 @@ export default async function PublicQuotePage({ params }: { params: { slug: stri
           at: acceptance.acceptedAt.toISOString(),
         }
       : null,
-  };
+  }, hiddenSections);
 
   // The same component the editing page previews with, so the freelancer is
   // looking at this rather than at an approximation of it.
