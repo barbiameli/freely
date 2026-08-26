@@ -267,8 +267,13 @@ export function SetupRows({
                 the thing this whole block exists to prevent. */}
             {isChanged && !kept && (
               <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 px-5 pb-3 -mt-1">
+                {/* Not on sections. A rate or a payment split is one value and
+                    reads in three words; the usual sections spell out a list of
+                    names that the row above is already showing. */}
                 <span className="text-caption text-text-muted">
-                  {t.quote.setupUsually.replace("{value}", describeRow(row, usual, words, symbol))}
+                  {row === "sections"
+                    ? ""
+                    : t.quote.setupUsually.replace("{value}", describeRow(row, usual, words, symbol))}
                 </span>
                 <span className="flex items-center gap-4">
                   <button

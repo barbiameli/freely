@@ -61,8 +61,13 @@ function getClient(): Anthropic {
  * page) can lay it out as real headed sections with bullets, not a wall of
  * text with numbers embedded in the sentence. */
 export const strategySchema = z.object({
-  goal: z.string().min(1),
-  findings: z.array(z.string()).min(1),
+  // Both empty is a valid quote, not a failed one. The object is asked for on
+  // every quote because openQuestions are notes to the freelancer, and a quote
+  // with the Approach section switched off has no goal or findings to write.
+  // Requiring them here rejected the whole response over the half nobody
+  // asked for.
+  goal: z.string().default(""),
+  findings: z.array(z.string()).default([]),
   // Kept for backward compatibility with briefs generated before AI-use
   // disclosure was split out as its own standalone toggle — no longer asked
   // for or rendered anywhere, so these will simply be empty on new briefs.

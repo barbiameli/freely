@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { buildGenerateUserPrompt, type QuoteDraftInput } from "@/lib/anthropic";
+import {
+  buildGenerateUserPrompt,
+  strategySchema,
+  type QuoteDraftInput,
+} from "@/lib/anthropic";
 import { hasStrategyContent } from "@/lib/strategy";
 
 const DRAFT: QuoteDraftInput = {
@@ -60,5 +64,37 @@ describe("hasStrategyContent", () => {
   it("is false for nothing at all", () => {
     expect(hasStrategyContent(null)).toBe(false);
     expect(hasStrategyContent(undefined)).toBe(false);
+  });
+});
+
+describe("the strategy object with no Approach in it", () => {
+  /**
+   * The schema used to demand a goal and at least one finding. With the
+   * Approach section off, the model is told to send neither, so the whole
+   * quote was rejected over the half nobody asked for.
+   */
+  it("accepts questions with an empty goal and no findings", () => {
+    const parsed = strategySchema.safeParse({
+      goal: "",
+      findings: [],
+      openQuestions: ["Who signs off on the copy?"],
+    });
+    expect(parsed.success).toBe(true);
+    expect(parsed.success && parsed.data.openQuestions).toHaveLength(1);
+  });
+
+  it("fills both halves in when they are missing entirely", () => {
+    const parsed = strategySchema.parse({ openQuestions: [] });
+    expect(parsed.goal).toBe("");
+    expect(parsed.findings).toEqual([]);
+  });
+
+  it("still takes a full Approach", () => {
+    const parsed = strategySchema.parse({
+      goal: "Sell more without discounting",
+      findings: ["Checkout is four steps"],
+      openQuestions: [],
+    });
+    expect(parsed.findings).toHaveLength(1);
   });
 });
