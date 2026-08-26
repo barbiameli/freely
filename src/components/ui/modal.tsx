@@ -30,7 +30,12 @@ import clsx from "@/lib/clsx";
  *
  * The page behind stops scrolling, and goes slightly out of focus. An overlay
  * over a sharp, moving page reads as a banner rather than as something waiting
- * for an answer.
+ * for an answer. Slightly: the page stays readable, because the whole point of
+ * an overlay on top of your own work is that you can still see the work.
+ *
+ * A caller can hold one control above the blur by giving it a z-index over
+ * this one, which is what the control that opened the dialog wants: blurring
+ * the thing you just pressed loses the connection between the two.
  *
  * Focus moves into the panel on open. Without it, a keyboard user's next tab
  * goes to whatever was behind the overlay.
@@ -81,7 +86,7 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-[3px] flex items-start sm:items-center justify-center p-4 overflow-y-auto animate-fade-in motion-reduce:animate-none"
+      className="fixed inset-0 z-50 bg-ink/25 backdrop-blur-[1.5px] flex items-start sm:items-center justify-center p-4 overflow-y-auto animate-fade-in motion-reduce:animate-none"
       // Only a press that both started and ended on the backdrop is a dismissal.
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();

@@ -104,11 +104,15 @@ export function BeforeYouSend({
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
         // Held bright while the list is up, so the overlay reads as belonging
         // to this control rather than as something the page did on its own.
-        className={`inline-flex items-center gap-1.5 rounded-full border transition-colors px-3 py-1.5 cursor-pointer tap-row ${
+        // Above the overlay, so it stays sharp while everything behind it
+        // softens and the list reads as belonging to this control. Pressing it
+        // again closes, since that is what a control that looks pressed should
+        // do.
+        className={`relative z-[60] inline-flex items-center gap-1.5 rounded-full border transition-colors px-3 py-1.5 cursor-pointer tap-row ${
           open
             ? "border-white bg-white text-ink"
             : "border-white/25 bg-white/10 hover:bg-white/20 text-white/85"
