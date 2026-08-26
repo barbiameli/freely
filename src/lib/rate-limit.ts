@@ -47,10 +47,30 @@ function sweepExpiredHits(windowMs: number): void {
 export async function checkRateLimit(
   scope: string,
   identifier: string,
-  { limit, windowMs }: { limit: number; windowMs: number }
+  {
+    limit,
+    windowMs,
+    now = Date.now(),
+  }: {
+    limit: number;
+    windowMs: number;
+    /**
+     * The current time, for tests.
+     *
+     * A fixed window is a division of the wall clock, so two calls a
+     * millisecond apart land in different buckets whenever a boundary falls
+     * between them. A test that made two quick calls and expected the second
+     * to be refused was therefore correct most of the time and wrong whenever
+     * the clock happened to tick over mid-test, which is exactly the kind of
+     * failure that gets rerun rather than read.
+     *
+     * Passing the time makes the arithmetic testable without sleeping and
+     * without luck. Nothing in the product passes it.
+     */
+    now?: number;
+  }
 ): Promise<void> {
-  const now = Date.now();
-  const bucket = Math.floor(now / windowMs);
+  const bucket = windowFor(now, windowMs);
   const key = `${scope}:${identifier}:${bucket}`;
 
   const hit = await prisma.rateLimitHit.upsert({
@@ -62,9 +82,29 @@ export async function checkRateLimit(
   sweepExpiredHits(windowMs);
 
   if (hit.count > limit) {
-    const retryAfterSeconds = Math.max(1, Math.ceil(((bucket + 1) * windowMs - now) / 1000));
-    throw new RateLimitError(retryAfterSeconds);
+    throw new RateLimitError(retryAfterFor(now, windowMs));
   }
+}
+
+/**
+ * Which window a moment falls in.
+ *
+ * The window is a slice of the wall clock rather than a timer started by the
+ * first request. That is what makes the check a single atomic upsert with no
+ * read-modify-write race, and it is worth being clear about the cost: at a
+ * boundary somebody can make up to twice the limit in quick succession, once
+ * at the end of one window and once at the start of the next. For protecting
+ * an API tier from a runaway loop that is a fine trade, and a sliding window
+ * would mean reading before writing, which is the race this design avoids.
+ */
+export function windowFor(now: number, windowMs: number): number {
+  return Math.floor(now / windowMs);
+}
+
+/** How long until the current window ends, in whole seconds, never zero. */
+export function retryAfterFor(now: number, windowMs: number): number {
+  const endsAt = (windowFor(now, windowMs) + 1) * windowMs;
+  return Math.max(1, Math.ceil((endsAt - now) / 1000));
 }
 
 /** Every LLM-calling server action shares this one budget per user, rather

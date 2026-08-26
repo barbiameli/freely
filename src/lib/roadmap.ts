@@ -158,6 +158,13 @@ export const ROADMAP: RoadmapItem[] = [
 
   // Fixed, kept so the same report is recognised rather than re-investigated.
   {
+    id: "b-rate-limit-flake",
+    kind: "bug",
+    state: "done",
+    title: "CI failed on a rate-limit test that was right",
+    note: "The test made two calls a millisecond apart with a 50ms window and expected the second to be refused. A fixed window is a slice of the wall clock, so whenever a boundary fell between them the second call started a fresh bucket and was allowed. Correct limiter, flaky test. checkRateLimit now takes the time as an argument, the bucket maths is extracted and unit tested, and the boundary behaviour is asserted rather than discovered.",
+  },
+  {
     id: "b-events",
     kind: "bug",
     state: "done",

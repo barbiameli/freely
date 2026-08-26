@@ -59,17 +59,40 @@ describe("checkRateLimit", () => {
     ).resolves.toBeUndefined();
   });
 
+  // The time is passed rather than waited for.
+  //
+  // This used to make two quick calls with a 50ms window and expect the second
+  // to be refused, then sleep and expect a third to pass. A fixed window is a
+  // slice of the wall clock, so the first two landed in different buckets
+  // whenever a boundary happened to fall between them, and the second call was
+  // allowed. Correct code, failing test, roughly one run in ten.
   it("resets once the window has passed", async () => {
-    const windowMs = 50;
-    await checkRateLimit("test-scope", "user-1", { limit: 1, windowMs });
+    const windowMs = 60_000;
+    // Deliberately mid-window, so nothing here depends on where the real
+    // clock happens to be when the suite runs.
+    const start = 1_000_000 * windowMs + windowMs / 2;
+
+    await checkRateLimit("test-scope", "user-1", { limit: 1, windowMs, now: start });
     await expect(
-      checkRateLimit("test-scope", "user-1", { limit: 1, windowMs })
+      checkRateLimit("test-scope", "user-1", { limit: 1, windowMs, now: start + 1 })
     ).rejects.toThrow(RateLimitError);
 
-    await new Promise((resolve) => setTimeout(resolve, windowMs * 2));
-
     await expect(
-      checkRateLimit("test-scope", "user-1", { limit: 1, windowMs })
+      checkRateLimit("test-scope", "user-1", { limit: 1, windowMs, now: start + windowMs })
+    ).resolves.toBeUndefined();
+  });
+
+  // The cost of a fixed window, stated rather than discovered. Somebody at a
+  // boundary gets up to twice the limit in quick succession. That is an
+  // accepted trade for the check being one atomic upsert with no
+  // read-modify-write race, and it should fail loudly if it ever changes.
+  it("allows twice the limit across a boundary, which is the known trade", async () => {
+    const windowMs = 60_000;
+    const boundary = 1_000_000 * windowMs;
+
+    await checkRateLimit("test-scope", "user-1", { limit: 1, windowMs, now: boundary - 1 });
+    await expect(
+      checkRateLimit("test-scope", "user-1", { limit: 1, windowMs, now: boundary })
     ).resolves.toBeUndefined();
   });
 });
