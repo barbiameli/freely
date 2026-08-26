@@ -40,8 +40,8 @@ import { startStripeConnectAction } from "@/actions/account";
 import type { ConnectState } from "@/lib/stripe-connect";
 import { useT } from "@/lib/i18n/context";
 import { SubLabel } from "@/components/ui/label";
-import { CURRENCIES, currencySymbol } from "@/lib/currencies";
-import { COUNTRIES, currencyForCountry } from "@/lib/countries";
+import { RateBody } from "@/components/quote/setup-rows";
+import type { QuoteDraftPayload } from "@/actions/briefs";
 
 type StepId = "industry" | "instructions" | "toneNotes" | "storyNotes" | "contextNotes";
 
@@ -108,10 +108,9 @@ export function OnboardingForm({ stripeState }: { stripeState: ConnectState }) {
   const [rate, setRate] = useState(0);
   const [rateUnit, setRateUnit] = useState<"HOUR" | "DAY" | "FIXED">("HOUR");
   const [currency, setCurrency] = useState("USD");
-  // Null until asked, and only asked on the branch where somebody says they do
-  // not know what to charge. Everywhere it is read it falls back to what the
-  // currency implies, so null is a fine resting state rather than a gap.
-  const [country, setCountry] = useState<string | null>(null);
+  // No country state here any more. RateBody asks for it and researchRateAction
+  // saves it, which is also true in Memory and in the quote wizard, so there is
+  // one path rather than three.
   const [paymentPlan, setPaymentPlan] = useState<"UPFRONT" | "SPLIT" | "MILESTONE">("SPLIT");
   const [upfrontPercent, setUpfrontPercent] = useState(50);
   const [expertise, setExpertise] = useState<string | null>(null);
@@ -154,7 +153,6 @@ export function OnboardingForm({ stripeState }: { stripeState: ConnectState }) {
           // Only sent when they chose one, which only happens on the branch
           // where they said they do not know their rate.
           ...(expertise ? { expertiseLevel: expertise } : {}),
-          ...(country ? { country } : {}),
         });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -227,8 +225,6 @@ export function OnboardingForm({ stripeState }: { stripeState: ConnectState }) {
           setUpfrontPercent={setUpfrontPercent}
           expertise={expertise}
           setExpertise={setExpertise}
-          country={country}
-          setCountry={setCountry}
         />
       ) : onReferencesStep ? (
         <ReferencesStep
@@ -306,8 +302,6 @@ function PricingStep({
   setUpfrontPercent,
   expertise,
   setExpertise,
-  country,
-  setCountry,
 }: {
   onBack: () => void;
   onContinue: () => void;
@@ -317,8 +311,6 @@ function PricingStep({
   setRateUnit: (u: "HOUR" | "DAY" | "FIXED") => void;
   currency: string;
   setCurrency: (c: string) => void;
-  country: string | null;
-  setCountry: (c: string | null) => void;
   paymentPlan: "UPFRONT" | "SPLIT" | "MILESTONE";
   setPaymentPlan: (p: "UPFRONT" | "SPLIT" | "MILESTONE") => void;
   upfrontPercent: number;
@@ -329,6 +321,27 @@ function PricingStep({
   const t = useT();
   const [unsure, setUnsure] = useState(false);
 
+  // RateBody speaks draft, this step speaks separate values. Rather than give
+  // the step a second way to hold the same four things, the draft is assembled
+  // here and taken apart again on the way back.
+  const rateDraft = {
+    sourceText: "",
+    instructions: "",
+    memoryProjectTitles: [],
+    hourlyRate: rate,
+    rateUnit,
+    currency,
+    expertiseLevel: expertise ?? undefined,
+  } as unknown as QuoteDraftPayload;
+
+  function setRateDraft(update: SetStateAction<QuoteDraftPayload>) {
+    const next = typeof update === "function" ? update(rateDraft) : update;
+    if (next.hourlyRate !== rate) setRate(next.hourlyRate ?? 0);
+    if (next.rateUnit && next.rateUnit !== rateUnit) setRateUnit(next.rateUnit);
+    if (next.currency && next.currency !== currency) setCurrency(next.currency);
+    if (next.expertiseLevel !== expertise) setExpertise(next.expertiseLevel ?? null);
+  }
+
   return (
     <>
       <div>
@@ -336,118 +349,23 @@ function PricingStep({
         <p className="text-small text-slate mt-1 mb-0">{t.onboarding.pricingSubtitle}</p>
       </div>
 
-      {!unsure && (
-        <div>
-          <SubLabel>{t.quote.setupRate}</SubLabel>
-          <div className="flex flex-wrap gap-1.5 mb-2.5">
-            {(
-              [
-                ["HOUR", t.quote.perHour],
-                ["DAY", t.quote.perDay],
-                ["FIXED", t.quote.rateFixed],
-              ] as const
-            ).map(([value, label]) => (
-              <Chip key={value} active={rateUnit === value} onClick={() => setRateUnit(value)}>
-                {label}
-              </Chip>
-            ))}
-          </div>
-          <div className="flex items-center gap-2">
-            <select
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
-              className="bg-paper rounded-lg border-none px-2 py-2.5 text-sm text-ink outline-none cursor-pointer"
-            >
-              {CURRENCIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.code}
-                </option>
-              ))}
-            </select>
-            <span className="text-slate text-sm">{currencySymbol(currency)}</span>
-            <input
-              type="number"
-              min={0}
-              step={5}
-              value={rate || ""}
-              onChange={(e) => setRate(Number(e.target.value))}
-              placeholder={rateUnit === "FIXED" ? "2400" : rateUnit === "DAY" ? "520" : "65"}
-              className="w-full bg-paper rounded-lg border-none px-3 py-2.5 text-sm text-ink outline-none"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* The branch where the level matters, and the only branch where where
-          they live is asked. Somebody who already knows their rate is never
-          researched for, so the question would be collected and never read;
-          their country is guessed from their currency instead. */}
-      {unsure && (
-        <div>
-          <SubLabel>{t.quote.expertise}</SubLabel>
-          <div className="flex flex-wrap gap-1.5">
-            {(["Junior", "Mid-level", "Senior", "Expert"] as const).map((level) => (
-              <Chip key={level} active={expertise === level} onClick={() => setExpertise(level)}>
-                {level}
-              </Chip>
-            ))}
-          </div>
-
-          <div className="mt-4">
-            <SubLabel>{t.onboarding.whereBased}</SubLabel>
-            <div className="flex items-center gap-2">
-              <select
-                value={country ?? ""}
-                onChange={(e) => {
-                  const code = e.target.value || null;
-                  setCountry(code);
-                  // The currency follows, because somewhere to live and
-                  // something to bill in are one decision to a person and
-                  // asking twice is asking them to repeat themselves. Still
-                  // editable next to it, for anybody billing abroad.
-                  if (code) setCurrency(currencyForCountry(code));
-                }}
-                className="flex-1 min-w-0 bg-paper rounded-lg border-none px-3 py-2.5 text-sm text-ink outline-none cursor-pointer"
-              >
-                <option value="">{t.onboarding.pickCountry}</option>
-                {COUNTRIES.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-                className="bg-paper rounded-lg border-none px-2 py-2.5 text-sm text-ink outline-none cursor-pointer"
-              >
-                {CURRENCIES.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.code}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <p className="text-caption text-text-muted mt-2 mb-0">
-            {t.onboarding.pricingResearched}
-          </p>
-        </div>
-      )}
-
-      <button
-        type="button"
-        onClick={() => {
-          setUnsure(!unsure);
-          if (!unsure) setRate(0);
+      {/* The wizard's own rate control, rather than a second copy of it.
+          This step used to be hand-rolled: it asked for a level and a country
+          and then did nothing with them, so somebody who said they did not
+          know what to charge answered two questions and left with no rate.
+          Meanwhile Memory and the quote wizard both had a working Find my
+          rate. Rendering the same component in all three places is what makes
+          "it works the same everywhere" true rather than aspirational. */}
+      <RateBody
+        draft={rateDraft}
+        setDraft={setRateDraft}
+        rateHelpOpen={unsure}
+        setRateHelpOpen={(next) => {
+          setUnsure(next);
+          if (next) setRate(0);
           else setExpertise(null);
         }}
-        className="self-start text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
-      >
-        {unsure ? t.quote.iKnowMyRate : t.quote.notSureWhatToCharge}
-      </button>
-
+      />
       <div>
         <SubLabel>{t.quote.paymentWhen}</SubLabel>
         <div className="flex flex-wrap gap-1.5">
@@ -487,13 +405,14 @@ function PricingStep({
         <Button variant="ghost" icon={ChevronLeft} onClick={onBack}>
           {t.common.back}
         </Button>
-        {/* Both answers on this branch are load-bearing: without them a rate
-            gets researched for nobody in particular, which is worse than
-            asking. On the other branch nothing is required, because a rate
+        {/* A level is load-bearing on this branch: without it a rate gets
+            researched for nobody in particular. The country is asked inside
+            RateBody and saved when the research runs, so it is not gated here
+            as well. On the other branch nothing is required, because a rate
             they gave answers the same question. */}
         <Button
           icon={ArrowRight}
-          disabled={unsure && (!expertise || !country)}
+          disabled={unsure && !expertise}
           onClick={onContinue}
         >
           {t.common.continue}

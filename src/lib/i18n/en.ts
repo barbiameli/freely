@@ -159,6 +159,7 @@ export const en = {
     setupPresentation: "What the client gets",
     setupNotSet: "Not set yet",
     setupJustThis: "Just this quote",
+    setupNeeded: "Needed",
     setupUsually: "Usually {value}",
     setupPutBack: "Put it back",
     setupMakeUsual: "Make this my usual",

@@ -2,7 +2,7 @@
 
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { CardHeader } from "@/components/ui/label";
 import type { Funnel, Retention, DayCount } from "@/lib/metrics";
 import type { Subscriber, SendRow, Account } from "@/lib/mailing";
 import { MailingList } from "./mailing-list";
@@ -90,10 +90,7 @@ export function InsightsView({
               rate against the total would make later steps look broken when
               they are only downstream. */}
           <Card>
-            <Label>From quote to invoice</Label>
-            <p className="text-caption text-text-muted mt-1 mb-4">
-              Each percentage is of the step above it.
-            </p>
+            <CardHeader title={<>From quote to invoice</>} hint={<>Each percentage is of the step above it.</>} />
             <div className="flex flex-col">
               <Step name="Quotes made" count={funnel.generated} share={null} of={funnel.generated} />
               <Step name="Sent to a client" count={funnel.published} share={rates.published} of={funnel.generated} />
@@ -105,10 +102,7 @@ export function InsightsView({
 
           <div className="flex flex-col lg:flex-row gap-5">
             <Card className="flex-1 min-w-0">
-              <Label>New accounts</Label>
-              <p className="text-caption text-text-muted mt-1 mb-3">
-                Signing in is not using it, so activated means one real action.
-              </p>
+              <CardHeader title={<>New accounts</>} hint={<>Signing in is not using it, so activated means one real action.</>} />
               <div className="flex flex-col">
                 <Step name="Signed up" count={retention.joined} share={null} of={retention.joined} />
                 <Step
@@ -127,10 +121,7 @@ export function InsightsView({
             </Card>
 
             <Card className="flex-1 min-w-0">
-              <Label>Quotes per day</Label>
-              <p className="text-caption text-text-muted mt-1 mb-3">
-                Last 14 days, quiet days included.
-              </p>
+              <CardHeader title={<>Quotes per day</>} hint={<>Last 14 days, quiet days included.</>} />
               {/* Bars rather than a line, because a line between two points
                   implies values in between that were never measured. */}
               <div className="flex items-end gap-1 h-24">
@@ -151,10 +142,7 @@ export function InsightsView({
           </div>
 
           <Card>
-            <Label>What gets used</Label>
-            <p className="text-caption text-text-muted mt-1 mb-3">
-              Every recorded event in the window, busiest first.
-            </p>
+            <CardHeader title={<>What gets used</>} hint={<>Every recorded event in the window, busiest first.</>} />
             <div className="flex flex-col">
               {kinds.map((row) => (
                 <div

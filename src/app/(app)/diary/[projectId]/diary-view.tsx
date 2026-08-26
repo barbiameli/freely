@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Copy, Check as CheckIcon, ExternalLink, Globe } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { Label, CardHeader } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ActionError } from "@/components/ui/action-error";
 import { StatRow } from "@/components/track/stat-row";
@@ -154,8 +154,7 @@ export function DiaryView({
 
       <div className="flex flex-col lg:flex-row gap-5">
         <Card className="flex-1 min-w-0">
-          <Label>{t.diary.entries}</Label>
-          <p className="text-caption text-text-muted mt-1 mb-3">{t.diary.writeUpdate}</p>
+          <CardHeader title={<>{t.diary.entries}</>} hint={<>{t.diary.writeUpdate}</>} />
 
           {/* Here, above the entries, rather than at the foot of the tracker
               card on the right. It changes what the client reads, so it
@@ -218,8 +217,7 @@ export function DiaryView({
         {/* The tracker's deliverables, not a copy of them. Same component, so
             the steps, dates and editing come with it. */}
         <Card className="w-full lg:w-[380px] lg:shrink-0">
-          <Label>{t.diary.fromTracker}</Label>
-          <p className="text-caption text-text-muted mt-1 mb-2">{t.diary.fromTrackerHint}</p>
+          <CardHeader title={<>{t.diary.fromTracker}</>} hint={<>{t.diary.fromTrackerHint}</>} />
           {total === 0 ? (
             <p className="text-small text-text-muted m-0">{t.track.nothingDated}</p>
           ) : (

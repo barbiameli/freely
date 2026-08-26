@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Copy, Check } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { Label, CardHeader } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
   addressList,
@@ -159,11 +159,7 @@ export function MailingList({
       </Card>
 
       <Card>
-        <Label>Email sent</Label>
-        <p className="text-caption text-text-muted mt-1 mb-3">
-          Every message Freely has tried to send. Skipped means consent said no, or a nudge was
-          held back as too soon.
-        </p>
+        <CardHeader title={<>Email sent</>} hint={<>Every message Freely has tried to send. Skipped means consent said no, or a nudge was held back as too soon.</>} />
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           {[

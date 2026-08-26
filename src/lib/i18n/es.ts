@@ -164,6 +164,7 @@ export const es: Dictionary = {
     setupPresentation: "Que recibe el cliente",
     setupNotSet: "Sin definir",
     setupJustThis: "Solo este presupuesto",
+    setupNeeded: "Falta",
     setupUsually: "Normalmente {value}",
     setupPutBack: "Dejarlo como estaba",
     setupMakeUsual: "Que sea lo habitual",

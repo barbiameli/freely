@@ -4,7 +4,7 @@ import { useState } from "react";
 import { signOut } from "next-auth/react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { Label, CardHeader } from "@/components/ui/label";
 import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
 import { Trash2, Save, KeyRound } from "lucide-react";
@@ -231,10 +231,7 @@ function DangerZoneCard() {
 
   return (
     <Card className="border-overdue/30">
-      <Label>{t.account.dangerZone}</Label>
-      <p className="text-caption text-text-muted mt-1 mb-2.5">
-        {t.account.deleteWarning}
-      </p>
+      <CardHeader title={<>{t.account.dangerZone}</>} hint={<>{t.account.deleteWarning}</>} />
       {error && <div className="text-overdue text-xs mb-2.5">{error}</div>}
       <Button variant="danger" icon={Trash2} disabled={deleting} onClick={() => setConfirming(true)}>
         {t.common.confirmDeleteAccountAction}

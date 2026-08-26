@@ -11,6 +11,7 @@ import {
   Trash2,
   Check,
 } from "lucide-react";
+import clsx from "@/lib/clsx";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { Label, SubLabel } from "@/components/ui/label";
@@ -223,6 +224,16 @@ export function QuoteWizard({
   const [statusMessage, setStatusMessage] = useState(GENERATION_STATUS_MESSAGES[0]);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
+  // Which row is missing something, and what to say. Kept apart from
+  // `error`, which is for a request that failed rather than a field that
+  // is empty: the two look the same and mean different things.
+  const [problem, setProblem] = useState<{ row: SetupRowKey | null; message: string }>({
+    row: null,
+    message: "",
+  });
+  // A missing brief is the one required thing with no setup row to live in.
+  // Cleared by typing, so the warning goes when the reason does.
+  const missingBrief = Boolean(problem.message) && problem.row === null;
   const [references, setReferences] = useState<ReferenceImage[]>([]);
   // Which interpretation presets are currently in the instructions, so they
   // read as selected and clicking again takes them out rather than pasting a
@@ -274,17 +285,22 @@ export function QuoteWizard({
     }
     setFileName(result.fileName);
     setDraft((d) => ({ ...d, sourceText: result.text }));
+    // The reason is gone, so the warning goes with it.
+    setProblem((p) => (p.row === null ? { row: null, message: "" } : p));
   }
 
   async function handleGenerate() {
-    const missing = whatIsMissing();
-    if (missing) {
-      // The rate is the likely offender, and it is the one row that may be
-      // closed, so open the helper along with the message.
-      if (missing === t.quote.addRateOrLocationLong) setShowRateHelp(true);
-      setError(missing);
+    const { message, row } = whatIsMissingWhere();
+    if (message) {
+      // The card opens the row, tints it, and prints the sentence next to the
+      // control. Only a missing brief has no row, and that box is at the top
+      // of the page where it cannot be missed.
+      setProblem({ row, message });
+      if (row === "rate") setShowRateHelp(true);
+      if (!row) setError(message);
       return;
     }
+    setProblem({ row: null, message: "" });
     setGenerating(true);
     setError("");
     setProgress(0);
@@ -368,6 +384,8 @@ export function QuoteWizard({
     const { selectionStart, selectionEnd, value } = target;
     const next = value.slice(0, selectionStart) + text + value.slice(selectionEnd);
     setDraft((d) => ({ ...d, sourceText: next }));
+    // The reason is gone, so the warning goes with it.
+    setProblem((p) => (p.row === null ? { row: null, message: "" } : p));
     // Put the caret after what was just pasted.
     requestAnimationFrame(() => {
       const caret = selectionStart + text.length;
@@ -472,7 +490,19 @@ export function QuoteWizard({
     firstQuote && !guideSeen.includes("generate") && !firstQuoteHint && !whatIsMissing();
 
   function whatIsMissing(): string {
-    if (!draft.sourceText.trim()) return t.quote.addSource;
+    return whatIsMissingWhere().message;
+  }
+
+  /**
+   * What is missing, and which control holds it.
+   *
+   * The row matters as much as the message. "Add your rate" printed by the
+   * Generate button is naming a problem and hiding it, because the rate lives
+   * three rows up inside a panel that may be shut. Returning the row lets the
+   * card open it, tint it, and put the sentence beside the field.
+   */
+  function whatIsMissingWhere(): { message: string; row: SetupRowKey | null } {
+    if (!draft.sourceText.trim()) return { message: t.quote.addSource, row: null };
     // Either they price the work, or they say where it is being priced for,
     // since a rate cannot be researched without a market.
     if (
@@ -480,10 +510,11 @@ export function QuoteWizard({
       !draft.pricing?.yourLocation?.trim() &&
       !draft.pricing?.clientLocation?.trim()
     ) {
-      return t.quote.addRateOrLocationLong;
+      return { message: t.quote.addRateOrLocationLong, row: "rate" };
     }
-    return "";
+    return { message: "", row: null };
   }
+
 
   /** "Make this my usual", for the row that was changed. */
   async function handleKeepRow(row: SetupRowKey) {
@@ -676,7 +707,12 @@ export function QuoteWizard({
               the first. */}
           <div
             data-guide="quote"
-            className="bg-white border border-line rounded-card overflow-hidden"
+            className={clsx(
+              "bg-white border rounded-card overflow-hidden transition-colors",
+              // The only required field with no row of its own, so it says so
+              // itself rather than through a message at the bottom of a form.
+              missingBrief ? "border-overdue border-[1.5px]" : "border-line"
+            )}
           >
             <div className="flex flex-col sm:flex-row">
               {(
@@ -876,6 +912,8 @@ export function QuoteWizard({
             brandUpload={brandUpload}
             pricedFor={pricedForFields}
             savedCountry={savedCountry}
+            problemRow={problem.row}
+            problemMessage={problem.message}
           />
 
           {generating && (

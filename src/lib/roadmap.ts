@@ -96,6 +96,27 @@ export const ROADMAP: RoadmapItem[] = [
 
   // Decisions, so they stop being reopened.
   {
+    id: "d-progressive-disclosure",
+    kind: "decision",
+    state: "done",
+    title: "One setup row open at a time",
+    note: "Every unanswered row used to open at once, so a first quote arrived as four expanded panels, which is the form the card replaced. One open row is a question; four are a wall. Closed rows still state their value, so nothing is hidden.",
+  },
+  {
+    id: "d-error-at-the-field",
+    kind: "decision",
+    state: "done",
+    title: "A missing field says so where it is",
+    note: "\"Add your rate\" printed by the Generate button names a problem and hides it, because the rate is three rows up inside a panel that may be shut. The card now opens the row, tints it, and puts the sentence beside the control.",
+  },
+  {
+    id: "d-three-tones",
+    kind: "decision",
+    state: "done",
+    title: "Three card tones, and only three",
+    note: "Plain for an ordinary section, quiet for something subordinate to the card it sits in, loud for the one thing being asked for. A fourth would be a decision to make every time rather than a rule to follow, which is how the same heading ended up with eight different margins.",
+  },
+  {
     id: "d-stripe-connect",
     kind: "decision",
     state: "done",
@@ -164,6 +185,13 @@ export const ROADMAP: RoadmapItem[] = [
   },
 
   // Fixed, kept so the same report is recognised rather than re-investigated.
+  {
+    id: "b-onboarding-rate",
+    kind: "bug",
+    state: "done",
+    title: "Onboarding asked for a level and a country and did nothing",
+    note: "The pricing step was a hand-rolled copy of the wizard's rate control. It collected an expertise level and a country and never researched anything, so somebody who said they did not know what to charge answered two questions and left with no rate, while the identical-looking control in Memory would have found one. All three now render the same RateBody, guarded by tests/rate-everywhere.",
+  },
   {
     id: "b-due-dates",
     kind: "bug",

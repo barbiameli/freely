@@ -3,6 +3,7 @@
 import { useEffect, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronRight, Check, RotateCcw, Search } from "lucide-react";
+import clsx from "@/lib/clsx";
 import { Chip } from "@/components/ui/chip";
 import { Button } from "@/components/ui/button";
 import { SubLabel } from "@/components/ui/label";
@@ -71,6 +72,8 @@ export function SetupRows({
   brandUpload,
   pricedFor,
   savedCountry,
+  problemRow,
+  problemMessage,
 }: {
   draft: QuoteDraftPayload;
   setDraft: Dispatch<SetStateAction<QuoteDraftPayload>>;
@@ -96,6 +99,13 @@ export function SetupRows({
   /** The country already on the account, so the rate helper does not ask
    * for something Memory already knows. */
   savedCountry?: string | null;
+  /** A row that is missing something, and what to say about it.
+   *
+   * Shown inside the row rather than at the foot of the form. A message by the
+   * button saying "add your rate" is pointing at a control that may be three
+   * rows up and closed, which is a message that names a problem and hides it. */
+  problemRow?: SetupRowKey | null;
+  problemMessage?: string;
 }) {
   const t = useT();
   const decided = decidedRows(saved);
@@ -105,28 +115,33 @@ export function SetupRows({
   const words = setupWords(t);
   const symbol = currencySymbol(draft.currency);
 
-  // Closed once there is something to summarise, open when there is not.
+  // One at a time, starting on the first thing nobody has answered.
   //
-  // A closed row states its value, which is right when that value is something
-  // this person chose last time. On a first quote there is no such value, and
-  // the row was stating a fallback: a brand new account opened the wizard to
-  // find sections and a template apparently already picked, under a heading
-  // saying they had been kept from a previous quote. Nothing had been kept and
-  // nothing had been picked.
+  // Every undecided row used to open at once, so a first quote arrived as four
+  // expanded panels of controls, which is the form this card replaced. One
+  // open row is a question; four are a wall.
   //
-  // So an undecided row opens, and says nothing until it is answered.
-  const [open, setOpen] = useState<SetupRowKey[]>(
-    SETUP_ROWS.filter((row) => !decided.includes(row))
+  // A closed row still states its value where there is one, and says "Choose"
+  // where there is not, so nothing is hidden. It just is not all shouting at
+  // once. Memory's copy of this card already worked this way, so the two now
+  // behave alike as well as looking alike.
+  const [open, setOpen] = useState<SetupRowKey | null>(
+    () => SETUP_ROWS.find((row) => !decided.includes(row)) ?? null
   );
 
   // Except when generating was refused for want of a rate. The message would
   // otherwise point at a control inside a closed row.
   useEffect(() => {
-    if (rateHelpOpen) setOpen((rows) => (rows.includes("rate") ? rows : [...rows, "rate"]));
+    if (rateHelpOpen) setOpen("rate");
   }, [rateHelpOpen]);
 
+  // And when something required is missing, the row holding it comes forward.
+  useEffect(() => {
+    if (problemRow) setOpen(problemRow);
+  }, [problemRow]);
+
   function toggle(row: SetupRowKey) {
-    setOpen((rows) => (rows.includes(row) ? rows.filter((r) => r !== row) : [...rows, row]));
+    setOpen((current) => (current === row ? null : row));
   }
 
   function putBack(row: SetupRowKey) {
@@ -174,11 +189,24 @@ export function SetupRows({
       </div>
 
       {SETUP_ROWS.map((row) => {
-        const isOpen = open.includes(row);
+        const isOpen = open === row;
+        const hasProblem = problemRow === row;
         const isChanged = changed.includes(row);
         const kept = keptRows.includes(row);
         return (
-          <div key={row} className="border-t border-line">
+          <div
+            key={row}
+            className={clsx(
+              "border-t border-line transition-colors",
+              // A tone rather than another rule. Hairlines alone gave every row
+              // the same weight whether it was open or shut, so an expanded
+              // panel read as loose controls between two lines instead of as
+              // one block. Faint on purpose: enough to group, not enough to
+              // shout.
+              isOpen && "bg-paper",
+              hasProblem && "bg-overdue-tint"
+            )}
+          >
             <button
               type="button"
               onClick={() => toggle(row)}
@@ -198,6 +226,11 @@ export function SetupRows({
                 >
                   {rowLabel(row, t)}
                 </span>
+                {hasProblem && (
+                  <span className="text-caption font-semibold text-overdue">
+                    {t.quote.setupNeeded}
+                  </span>
+                )}
                 {isChanged && (
                   <span className="text-caption font-semibold text-violet bg-violet-tint rounded-md px-1.5 py-0.5">
                     {t.quote.setupJustThis}
@@ -264,9 +297,15 @@ export function SetupRows({
                     is furniture, and it explained the mechanism rather than the
                     question. Somebody opening "What the client gets" wants to
                     know what that means, not where it will be stored. */}
-                <p className="text-caption text-slate mt-0 mb-4 text-pretty">
-                  {rowHint(row, t)}
-                </p>
+                {hasProblem && problemMessage ? (
+                  <p className="font-body font-semibold text-caption text-overdue mt-0 mb-4 text-pretty">
+                    {problemMessage}
+                  </p>
+                ) : (
+                  <p className="text-caption text-slate mt-0 mb-4 text-pretty">
+                    {rowHint(row, t)}
+                  </p>
+                )}
                 {row === "rate" && (
                   <RateBody
                     draft={draft}
