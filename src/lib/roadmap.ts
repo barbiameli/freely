@@ -64,6 +64,14 @@ export const ROADMAP: RoadmapItem[] = [
     note: "The agreement is written and published at /dpa, and nine of its twelve clauses are close to the standard wording. Audit, liability and governing language are marked as awaiting review on the page itself. A couple of hours of a lawyer's time, not a couple of days.",
   },
 
+  {
+    id: "sections-on-the-quote-page",
+    kind: "feature",
+    state: "next",
+    title: "Turn sections off on the quote page",
+    note: "Same argument as the layout: you choose which sections a quote includes before the quote exists. Removing one afterwards is cheap, since it only hides content that is already written. Adding one is not, because a section that was never generated has nothing in it, so it needs a refine rather than a toggle. Worth doing as removal only.",
+  },
+
   // Later.
   {
     id: "a11y-rest",
@@ -206,6 +214,13 @@ export const ROADMAP: RoadmapItem[] = [
   },
 
   // Fixed, kept so the same report is recognised rather than re-investigated.
+  {
+    id: "b-mono-ignores-template",
+    kind: "bug",
+    state: "done",
+    title: "Picking a Minimal colour silently threw away the layout",
+    note: "resolveBrand returns mono for the two Minimal presets and the renderer short-circuits to MonoTemplate before it reads the template, so Editorial plus Minimal dark produced neither and nothing said why. They were being offered as a colour while behaving as a layout. The picker now lists them under Layout, and the colour question disappears when one is chosen, since a mono layout is black and white by definition.",
+  },
   {
     id: "b-onboarding-rate",
     kind: "bug",

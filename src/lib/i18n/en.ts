@@ -309,6 +309,8 @@ export const en = {
     buildingPdf: "Building PDF...",
     pdfFailed: "Couldn't build the PDF. Try again in a moment.",
     addToTrack: "Add to Track",
+    lookLayout: "Layout",
+    lookColour: "Colour",
     tabEdit: "Edit",
     tabPreview: "Preview",
     beforeYouSend: "Before you send",

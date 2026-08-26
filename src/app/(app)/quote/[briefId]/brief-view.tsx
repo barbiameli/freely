@@ -46,6 +46,7 @@ import { TimelineView } from "@/components/timeline-view";
 import type { BriefExtras } from "@/lib/anthropic";
 import { EditableBlock, EditableSection } from "@/components/editable-text";
 import { Chip } from "@/components/ui/chip";
+import { SubLabel } from "@/components/ui/label";
 import { RenderedQuote } from "@/components/quote/rendered-quote";
 import { QuotePreview } from "@/components/quote/quote-preview";
 import { BeforeYouSend } from "@/components/quote/before-you-send";
@@ -151,6 +152,20 @@ function Bullets({ items, dense }: { items: string[]; dense?: boolean }) {
   );
 }
 
+/**
+ * The five layouts, in the order they read from most to least dressed.
+ *
+ * The two mono presets are stored as a branding and behave as a layout, so
+ * this is where the two ideas are reconciled. See chooseLayout.
+ */
+const LAYOUTS = [
+  { id: "classic", labelKey: "templateClassic" },
+  { id: "editorial", labelKey: "templateEditorial" },
+  { id: "minimal", labelKey: "templateMinimal" },
+  { id: "mono-light", labelKey: "brandMonoLight" },
+  { id: "mono-dark", labelKey: "brandMonoDark" },
+] as const;
+
 export function BriefView({
   brief,
   history,
@@ -187,6 +202,29 @@ export function BriefView({
   function setLook(patch: Partial<typeof look>) {
     setLookState((current) => ({ ...current, ...patch }));
     void updateQuoteLookAction(brief.id, patch);
+  }
+
+  /**
+   * Layout and colour, as the two questions they actually are.
+   *
+   * The mono presets are stored as a branding, which is what they are in the
+   * database, and they behave as a layout, because resolveBrand short-circuits
+   * to MonoTemplate and the chosen template is never read. Offering them as a
+   * colour meant Editorial plus Minimal dark silently produced neither.
+   *
+   * So the picker is honest about the behaviour and the storage is left alone:
+   * choosing a mono layout sets the branding and choosing a real layout puts
+   * the branding back to something that has colour in it.
+   */
+  const isMono = look.branding === "mono-light" || look.branding === "mono-dark";
+  const layout = isMono ? look.branding : look.template;
+
+  function chooseLayout(next: string) {
+    if (next === "mono-light" || next === "mono-dark") {
+      setLook({ branding: next });
+      return;
+    }
+    setLook({ template: next, ...(isMono ? { branding: "freely" } : {}) });
   }
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
@@ -353,8 +391,14 @@ export function BriefView({
         </div>
       )}
 
-      {/* Hero, mirrors a real quotation cover: dark block, big number stats */}
-      <div className="bg-ink rounded-card px-5 py-5 md:px-7 md:py-6 flex justify-between items-start gap-4">
+      {/* The cover and the checklist share a row.
+          The checklist used to sit at the top of the editor column, which
+          pushed every section down by its height and left the two columns
+          misaligned: the thing being edited no longer sat opposite the thing
+          it renders to, which is the entire point of putting them side by
+          side. Up here it costs the columns nothing. */}
+      <div className="flex flex-col xl:flex-row gap-4 items-stretch">
+      <div className="flex-1 min-w-0 bg-ink rounded-card px-5 py-5 md:px-7 md:py-6 flex justify-between items-start gap-4">
         <div>
           <span className="font-body font-bold text-caption tracking-[0.08em] uppercase text-coral-light">
             {published ? "Quotation, published" : "Quotation, draft"}
@@ -437,6 +481,15 @@ export function BriefView({
         </span>
       </div>
 
+        <div className="xl:w-[320px] shrink-0">
+          <BeforeYouSend
+            briefId={brief.id}
+            questions={content.strategy?.openQuestions ?? []}
+            cleared={brief.clearedQuestions ?? []}
+          />
+        </div>
+      </div>
+
       {/* Two halves on a laptop, one at a time on a phone. */}
       <div className="flex lg:hidden gap-1.5 mt-5">
         {([
@@ -463,15 +516,6 @@ export function BriefView({
             mobileTab === "edit" ? "flex" : "hidden"
           } lg:flex`}
         >
-          {/* What to check, then the quote, then Publish. The questions used
-              to sit inline among the client-facing sections behind a dashed
-              border, which put your private notes inside their document. */}
-          <BeforeYouSend
-            briefId={brief.id}
-            questions={content.strategy?.openQuestions ?? []}
-            cleared={brief.clearedQuestions ?? []}
-          />
-
           {/* Said once, where the editing happens. Changing a published quote
               is allowed, because unpublishing to fix a comma is a thing people
               route around. Doing it silently is not. */}
@@ -938,29 +982,49 @@ export function BriefView({
             real templates. */}
         <div className={`min-w-0 flex-1 ${mobileTab === "preview" ? "block" : "hidden"} lg:block`}>
           <div className="lg:sticky lg:top-5 flex flex-col gap-3">
-            {/* The look, chosen where the result is visible. These used to be
-                asked in the wizard, before the document existed. */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              {([
-                ["classic", t.quote.templateClassic],
-                ["editorial", t.quote.templateEditorial],
-                ["minimal", t.quote.templateMinimal],
-              ] as const).map(([value, label]) => (
-                <Chip key={value} active={look.template === value} onClick={() => setLook({ template: value })}>
-                  {label}
-                </Chip>
-              ))}
-              <span className="w-px h-4 bg-line mx-1" />
-              {([
-                ["freely", t.quote.brandFreely],
-                ["own", t.quote.brandOwn],
-                ["mono-light", t.quote.brandMonoLight],
-                ["mono-dark", t.quote.brandMonoDark],
-              ] as const).map(([value, label]) => (
-                <Chip key={value} active={look.branding === value} onClick={() => setLook({ branding: value })}>
-                  {label}
-                </Chip>
-              ))}
+            {/* Two questions, labelled, because eight chips in one row read as
+                one list of eight equal things and they are not.
+
+                The two Minimal options live under Layout rather than Colour,
+                which is where they actually belong: they render their own
+                template and ignore whichever layout is chosen, so offering
+                them as a colour meant picking Editorial and Minimal dark
+                together and quietly getting neither. Now they are layouts, and
+                choosing one is choosing a layout. */}
+            <div className="flex flex-col gap-2.5">
+              <div>
+                <SubLabel className="mb-1.5">{t.brief.lookLayout}</SubLabel>
+                <div className="flex flex-wrap gap-1.5">
+                  {LAYOUTS.map(({ id, labelKey }) => (
+                    <Chip key={id} active={layout === id} onClick={() => chooseLayout(id)}>
+                      {t.quote[labelKey]}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
+
+              {/* Only where it can do anything. The mono layouts are black and
+                  white by definition, so a colour picker beside one is a
+                  control that does nothing. */}
+              {!isMono && (
+                <div>
+                  <SubLabel className="mb-1.5">{t.brief.lookColour}</SubLabel>
+                  <div className="flex flex-wrap gap-1.5">
+                    {([
+                      ["freely", t.quote.brandFreely],
+                      ["own", t.quote.brandOwn],
+                    ] as const).map(([value, label]) => (
+                      <Chip
+                        key={value}
+                        active={look.branding === value}
+                        onClick={() => setLook({ branding: value })}
+                      >
+                        {label}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             <QuotePreview>
               <RenderedQuote

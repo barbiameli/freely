@@ -309,6 +309,8 @@ export const es: Dictionary = {
     buildingPdf: "Generando el PDF...",
     pdfFailed: "No hemos podido generar el PDF. Prueba en un momento.",
     addToTrack: "Pasar a Seguimiento",
+    lookLayout: "Diseño",
+    lookColour: "Color",
     tabEdit: "Editar",
     tabPreview: "Vista previa",
     beforeYouSend: "Antes de enviarlo",
