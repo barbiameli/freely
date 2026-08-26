@@ -47,7 +47,7 @@ export function InvoiceActions({
 
   return (
     <div className="flex flex-col gap-2">
-      <Button icon={CreditCard} disabled={working} onClick={handleSend} className="justify-center">
+      <Button icon={CreditCard} loading={working} onClick={handleSend} className="justify-center">
         {working
           ? t.invoices.creatingCheckout
           : checkoutUrl

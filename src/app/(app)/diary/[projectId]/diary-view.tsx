@@ -104,7 +104,7 @@ export function DiaryView({
           </div>
           <Button
             variant={project.published ? "outline" : undefined}
-            disabled={pending}
+            loading={pending}
             onClick={() => run(() => setPublishedAction(project.id, !project.published))}
           >
             {pending

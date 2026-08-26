@@ -110,7 +110,7 @@ export function PaymentsCard({
           <p className="text-caption text-text-muted mt-0 mb-4">
             {t.account.paymentsSignupNote} {t.account.paymentsPdfAlways}
           </p>
-          <Button icon={CreditCard} onClick={connect} disabled={working}>
+          <Button icon={CreditCard} onClick={connect} loading={working}>
             {t.account.paymentsConnect}
           </Button>
         </>
@@ -125,7 +125,7 @@ export function PaymentsCard({
             {t.account.paymentsPendingHint}
           </p>
           <div className="flex flex-wrap items-center gap-3">
-            <Button icon={CreditCard} onClick={connect} disabled={working}>
+            <Button icon={CreditCard} onClick={connect} loading={working}>
               {t.account.paymentsFinish}
             </Button>
             <button
@@ -152,7 +152,7 @@ export function PaymentsCard({
             {t.account.paymentsReadyHint}
           </p>
           <div className="flex flex-wrap items-center gap-4">
-            <Button icon={ExternalLink} onClick={openDashboard} disabled={working}>
+            <Button icon={ExternalLink} onClick={openDashboard} loading={working}>
               {t.account.paymentsDashboard}
             </Button>
             <button

@@ -140,6 +140,14 @@ export const ROADMAP: RoadmapItem[] = [
     note: "Everything that belongs at the foot of an invoice is the same every time and none of it is obvious, so the box got left empty and invoices went out with no payment term. Eight lines to tap, all editable underneath. Changing the due date swaps the matching line rather than leaving one the invoice contradicts.",
   },
 
+  {
+    id: "d-loading-not-disabled",
+    kind: "decision",
+    state: "done",
+    title: "A working button spins rather than greying out",
+    note: "Disabled alone reads as a control that has stopped working, so the second press happens, and the second press is how something gets sent twice. Sixteen buttons converted. Guarded by tests/loading-states, which only flags buttons whose own label already flips on the flag.",
+  },
+
   // Fixed, kept so the same report is recognised rather than re-investigated.
   {
     id: "b-events",

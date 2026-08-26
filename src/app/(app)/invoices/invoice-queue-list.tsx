@@ -101,7 +101,7 @@ function QueueCard({ row }: { row: QueueRow }) {
               {row.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </span>
           </div>
-          <Button icon={FileText} onClick={invoice} disabled={pending} className="w-full justify-center">
+          <Button icon={FileText} onClick={invoice} loading={pending} className="w-full justify-center">
             {pending ? t.common.working : t.invoices.invoiceIt}
           </Button>
         </>
@@ -109,7 +109,7 @@ function QueueCard({ row }: { row: QueueRow }) {
         <Button
           variant="outline"
           icon={Check}
-          disabled={pending}
+          loading={pending}
           className="w-full justify-center"
           onClick={() => run(() => markProjectDoneAction(row.projectId))}
         >

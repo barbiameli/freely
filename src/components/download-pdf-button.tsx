@@ -53,7 +53,7 @@ export function DownloadPdfButton({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <Button variant="outline" icon={Download} spinIcon={busy} disabled={busy} onClick={download}>
+      <Button variant="outline" icon={Download} spinIcon={busy} loading={busy} onClick={download}>
         {busy ? t.brief.buildingPdf : label ?? t.brief.downloadPdf}
       </Button>
       <ActionError error={error} />

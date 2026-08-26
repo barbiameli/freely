@@ -1112,7 +1112,7 @@ function MemoryStep({
           >
             {value.trim() ? "Skip" : showSkipWarning ? "Skip anyway" : "Skip this step"}
           </button>
-          <Button icon={ArrowRight} spinIcon={pending} disabled={pending} onClick={onContinue}>
+          <Button icon={ArrowRight} spinIcon={pending} loading={pending} onClick={onContinue}>
             {pending ? "Setting up..." : isLast ? "Finish setup" : "Continue"}
           </Button>
         </div>

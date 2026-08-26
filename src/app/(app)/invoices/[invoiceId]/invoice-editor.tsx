@@ -274,7 +274,7 @@ export function InvoiceEditor({
           >
             {form.paid ? "Mark unpaid" : "Mark paid"}
           </Button>
-          <Button icon={Download} disabled={downloading} onClick={download}>
+          <Button icon={Download} loading={downloading} onClick={download}>
             {downloading ? "Building..." : "Download PDF"}
           </Button>
         </div>
@@ -666,10 +666,10 @@ export function InvoiceEditor({
           {t.invoices.deleteThisInvoice}
         </button>
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="outline" disabled={saving} onClick={() => save()}>
+          <Button variant="outline" loading={saving} onClick={() => save()}>
             {saving ? "Saving..." : "Save"}
           </Button>
-          <Button icon={Download} disabled={downloading} onClick={download}>
+          <Button icon={Download} loading={downloading} onClick={download}>
             {downloading ? "Building..." : "Download PDF"}
           </Button>
         </div>

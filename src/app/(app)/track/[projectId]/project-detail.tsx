@@ -115,7 +115,7 @@ function ScheduleControls({
           className="font-body text-small text-ink bg-paper border border-line rounded-lg px-2.5 py-2 outline-none"
         />
         <Button
-          disabled={pending}
+          loading={pending}
           onClick={() =>
             startTransition(async () => {
               const result = await scheduleProjectAction(projectId, start);

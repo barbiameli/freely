@@ -56,7 +56,7 @@ export function Confirm({
           <Button variant="ghost" size="sm" onClick={onClose} disabled={working}>
             {t.common.cancel}
           </Button>
-          <Button variant="danger" size="sm" onClick={onConfirm} disabled={working}>
+          <Button variant="danger" size="sm" onClick={onConfirm} loading={working}>
             {working ? t.common.deleting : confirmLabel}
           </Button>
         </>

@@ -77,7 +77,7 @@ export function ProjectTabs({
             </ul>
 
             <div className="flex flex-wrap items-center gap-3 mt-4">
-              <Button icon={Globe} disabled={pending} onClick={publish} data-guide="client">
+              <Button icon={Globe} loading={pending} onClick={publish} data-guide="client">
                 {pending ? t.common.working : t.track.clientPageOpen}
               </Button>
               <span className="text-caption text-text-muted">{t.track.clientPageNotYet}</span>
