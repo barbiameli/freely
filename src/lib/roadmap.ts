@@ -158,6 +158,13 @@ export const ROADMAP: RoadmapItem[] = [
 
   // Fixed, kept so the same report is recognised rather than re-investigated.
   {
+    id: "b-contrast",
+    kind: "bug",
+    state: "done",
+    title: "Most of the secondary text failed AA",
+    note: "text-muted was 3.46:1 on white and carried nearly every caption in the app at 11px, where AA wants 4.5. Darkened to #737279, which clears it and looks the same. Also: the notification badge was white on coral at 3.21, now violet at 7.07; the quote hero's label was coral on ink at 3.88, now a lighter coral; and the price block used text-white/50 at 4.42, now /60. Guarded by tests/contrast, which computes the ratios from the palette.",
+  },
+  {
     id: "b-rate-limit-flake",
     kind: "bug",
     state: "done",

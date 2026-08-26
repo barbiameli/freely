@@ -75,7 +75,7 @@ export function NotificationBell() {
         >
           <Bell size={16} />
           {count && (
-            <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-coral text-white font-body font-bold text-[10px] leading-4 text-center">
+            <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-violet text-white font-body font-bold text-[10px] leading-4 text-center">
               {count}
             </span>
           )}

@@ -288,7 +288,7 @@ export function BriefView({
       {/* Hero, mirrors a real quotation cover: dark block, big number stats */}
       <div className="bg-ink rounded-card px-5 py-5 md:px-7 md:py-6 flex justify-between items-start gap-4">
         <div>
-          <span className="font-body font-bold text-caption tracking-[0.08em] uppercase text-coral">
+          <span className="font-body font-bold text-caption tracking-[0.08em] uppercase text-coral-light">
             {published ? "Quotation, published" : "Quotation, draft"}
           </span>
           <EditableSection
@@ -340,13 +340,13 @@ export function BriefView({
                   {currencySymbol(brief.currency)}
                   {content.price.toLocaleString()}
                 </div>
-                <div className="text-caption uppercase tracking-[0.06em] text-white/50">{t.brief.total}</div>
+                <div className="text-caption uppercase tracking-[0.06em] text-white/60">{t.brief.total}</div>
               </div>
               <div>
                 <div className="font-body font-bold text-[20px] text-white">
                   {effortShort(content.hours, parseRateUnit(brief.rateUnit))}
                 </div>
-                <div className="text-caption uppercase tracking-[0.06em] text-white/50">
+                <div className="text-caption uppercase tracking-[0.06em] text-white/60">
                   {effortLabel(parseRateUnit(brief.rateUnit), t.publicQuote)}
                 </div>
               </div>
@@ -356,7 +356,7 @@ export function BriefView({
                     {currencySymbol(brief.currency)}
                     {brief.hourlyRate}
                   </div>
-                  <div className="text-caption uppercase tracking-[0.06em] text-white/50">
+                  <div className="text-caption uppercase tracking-[0.06em] text-white/60">
                     {rateLabel(parseRateUnit(brief.rateUnit), t.publicQuote)}
                   </div>
                 </div>
@@ -637,7 +637,7 @@ export function BriefView({
 
           <div className="bg-ink rounded-card px-5 py-4 flex justify-between items-start gap-6">
             <div className="min-w-0">
-              <span className="font-body font-bold text-caption tracking-[0.08em] uppercase text-white/50">
+              <span className="font-body font-bold text-caption tracking-[0.08em] uppercase text-white/60">
                 {t.publicQuote.investment}
               </span>
               <div className="mt-1 max-w-[160px]">

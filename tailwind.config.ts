@@ -12,6 +12,10 @@ const config: Config = {
         background: "var(--background)",
         foreground: "var(--foreground)",
         coral: "#F45B69",
+        // Coral is 3.88:1 on the ink hero block, which is fine for a large
+        // heading and not for an 11px label. Lightened just enough to clear
+        // 4.5 there. Only for coral text on a dark background.
+        "coral-light": "#F6737F",
         violet: "#6320EE",
         "violet-tint": "rgba(99,32,238,0.07)",
         ink: "#343434",
@@ -21,7 +25,12 @@ const config: Config = {
         mint: "#F1F7EE",
         "mint-solid": "#E1F9EB",
         success: "#065F46",
-        "text-muted": "#8A8990",
+        // Darkened from #8A8990, which was 3.46:1 on white and used at 11px
+        // for most of the secondary text in the app. That is below the 4.5:1
+        // WCAG AA needs for normal text, and it was the single most-used
+        // colour failing it. This clears 4.5 on white, paper and mint, and
+        // is close enough to the old value that nothing looks different.
+        "text-muted": "#737279",
         "coral-tint": "rgba(244,91,105,0.08)",
         overdue: "#C4302E",
         "overdue-tint": "rgba(196,48,46,0.08)",
