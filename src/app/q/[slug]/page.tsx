@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import type { Strategy, BriefExtras } from "@/lib/anthropic";
-import { resolveBrand } from "@/lib/branding";
 import { LocaleProvider } from "@/lib/i18n/context";
 import { parseLocale } from "@/lib/i18n";
-import { ClassicTemplate, EditorialTemplate, MinimalTemplate, MonoTemplate, type PublicBrief } from "./templates";
+import type { PublicBrief } from "./templates";
+import { RenderedQuote } from "@/components/quote/rendered-quote";
 
 export const dynamic = "force-dynamic";
 
@@ -59,17 +59,15 @@ export default async function PublicQuotePage({ params }: { params: { slug: stri
       : null,
   };
 
-  const resolved = resolveBrand(brief.branding, brief.user);
-  const brand = { primary: resolved.primary, accent: resolved.accent, logoDataUrl: resolved.logoDataUrl };
-
-  const template = resolved.mono ? (
-    <MonoTemplate brief={publicBrief} dark={resolved.dark} />
-  ) : brief.template === "editorial" ? (
-    <EditorialTemplate brief={publicBrief} brand={brand} />
-  ) : brief.template === "minimal" ? (
-    <MinimalTemplate brief={publicBrief} brand={brand} />
-  ) : (
-    <ClassicTemplate brief={publicBrief} brand={brand} />
+  // The same component the editing page previews with, so the freelancer is
+  // looking at this rather than at an approximation of it.
+  const template = (
+    <RenderedQuote
+      brief={publicBrief}
+      branding={brief.branding}
+      template={brief.template}
+      user={brief.user}
+    />
   );
 
   /**

@@ -55,13 +55,6 @@ export const ROADMAP: RoadmapItem[] = [
     title: "Show the quote as it is written",
     note: "The two halves now run side by side, which roughly halves the wait. The next step is a streaming endpoint so the core appears the moment it is ready rather than both halves landing together. Bigger change: Server Actions cannot stream.",
   },
-  {
-    id: "brief-page",
-    kind: "feature",
-    state: "next",
-    title: "Rework the finished quote page",
-    note: "Raised a while back and never scoped. Worth deciding what the page is for before touching it: reading a quote, editing one, and sending one are three different jobs sharing one screen.",
-  },
 
   {
     id: "dpa-review",
@@ -95,6 +88,34 @@ export const ROADMAP: RoadmapItem[] = [
   },
 
   // Decisions, so they stop being reopened.
+  {
+    id: "d-quote-page-split",
+    kind: "decision",
+    state: "done",
+    title: "The quote page shows the quote you are actually sending",
+    note: "It used to draw its own layout while the client received one of three real templates, so the screen where somebody decides a quote is good enough to send was showing them a different quote. Editor on the left, the real template on the right, scaled to full page width. Redraws on save rather than per keystroke, because rerendering a template on every character is typing lag.",
+  },
+  {
+    id: "d-look-on-the-page",
+    kind: "decision",
+    state: "done",
+    title: "Format, branding and style moved out of the wizard",
+    note: "All three describe how a finished document looks, and the wizard asked for them before the document existed. They live beside the preview now. What is left in the wizard all changes what gets written, which is the line.",
+  },
+  {
+    id: "d-notes-in-the-source-card",
+    kind: "decision",
+    state: "done",
+    title: "Your notes sit with the client's brief",
+    note: "\"How should this project run?\" was a separate card and the largest optional thing on the screen. It is essential when uploading a file, which leaves no other way to say anything, and ignored when pasting, where you would type it into the box. So it moved inside the source card: open when uploading, collapsed when pasting. Kept a separate field because the quote page shows sourceText as \"Original request\" and your instructions are not what the client sent.",
+  },
+  {
+    id: "d-questions-as-checklist",
+    kind: "decision",
+    state: "done",
+    title: "Open questions became a checklist before Publish",
+    note: "They sat inline among the client-facing sections behind a dashed border, which put private notes inside their document and made a list where three of five were handled look like one where none were. Now ticked off and remembered, stored by text rather than index so editing a question makes it a new one. Publish is never blocked: a count you can ignore is honest, a gate you cannot is Freely overruling you about your own quote.",
+  },
   {
     id: "d-progressive-disclosure",
     kind: "decision",

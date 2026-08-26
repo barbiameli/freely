@@ -117,6 +117,18 @@ export type SetupRowKey = "rate" | "payment" | "sections" | "presentation";
 export const SETUP_ROWS: SetupRowKey[] = ["rate", "payment", "sections", "presentation"];
 
 /**
+ * The rows the wizard asks about, which is not all of them.
+ *
+ * Presentation is format, branding and style: how the finished document looks.
+ * The wizard was asking for all three before the document existed, so the
+ * choice was made blind and its result was not seen until a client saw it.
+ * Those now live on the quote page, next to a preview.
+ *
+ * What is left all changes what gets written. That is the line.
+ */
+export const WIZARD_ROWS: SetupRowKey[] = SETUP_ROWS.filter((row) => row !== "presentation");
+
+/**
  * Seniority, resolved.
  *
  * What you said always beats what was guessed. The guess is read off your

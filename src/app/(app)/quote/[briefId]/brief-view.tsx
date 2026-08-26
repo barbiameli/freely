@@ -13,7 +13,6 @@ import {
   Copy,
   ExternalLink,
   Eye,
-  Lightbulb,
 } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
@@ -25,6 +24,7 @@ import {
   addBriefToTrackAction,
   setBriefPublishedAction,
   updateBriefContentAction,
+  updateQuoteLookAction,
   deleteBriefExampleAction,
 } from "@/actions/briefs";
 import { currencySymbol } from "@/lib/currencies";
@@ -45,6 +45,12 @@ import { DeliverableList } from "@/components/deliverable-list";
 import { TimelineView } from "@/components/timeline-view";
 import type { BriefExtras } from "@/lib/anthropic";
 import { EditableBlock, EditableSection } from "@/components/editable-text";
+import { Chip } from "@/components/ui/chip";
+import { RenderedQuote } from "@/components/quote/rendered-quote";
+import { QuotePreview } from "@/components/quote/quote-preview";
+import { BeforeYouSend } from "@/components/quote/before-you-send";
+import type { BrandSource } from "@/lib/branding";
+import type { PublicBrief } from "@/app/q/[slug]/templates";
 import { useT } from "@/lib/i18n/context";
 
 interface Strategy {
@@ -81,6 +87,13 @@ interface Brief {
   published: boolean;
   publicSlug: string;
   template?: string;
+  /** Everything the preview needs to draw the real client-facing page. */
+  branding?: string;
+  language?: string;
+  /** Whether the client can sign it, which the templates show. */
+  signable?: boolean;
+  /** Open questions already ticked off, by their text. */
+  clearedQuestions?: string[];
   /**
    * How the work splits into billable chunks, when the quote is billed that
    * way. Shown so it can be checked before the quote goes out: the split is
@@ -141,13 +154,40 @@ function Bullets({ items, dense }: { items: string[]; dense?: boolean }) {
 export function BriefView({
   brief,
   history,
+  brand,
 }: {
   brief: Brief;
   history: { id: string; title: string; status: string }[];
+  /** The account's saved colours and logo, for the "own branding" preview. */
+  brand: BrandSource;
 }) {
   const router = useRouter();
   const t = useT();
   const [refinePrompt, setRefinePrompt] = useState("");
+  /**
+   * Which half a phone is showing.
+   *
+   * Side by side is impossible at that width, and editing is the thing you
+   * would actually be doing on a phone. Checking how the document looks is a
+   * laptop job, done once before sending.
+   */
+  const [mobileTab, setMobileTab] = useState<"edit" | "preview">("edit");
+  /**
+   * The chosen style and brand, kept locally so the preview redraws at once.
+   *
+   * Saved in the background. Waiting on a round trip to see a different
+   * template would make trying three of them feel like three page loads, and
+   * the worst case is one chip out of step until a reload.
+   */
+  const [look, setLookState] = useState({
+    template: brief.template ?? "classic",
+    branding: brief.branding ?? "freely",
+  });
+
+  function setLook(patch: Partial<typeof look>) {
+    setLookState((current) => ({ ...current, ...patch }));
+    void updateQuoteLookAction(brief.id, patch);
+  }
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
   // Used for the actions that redirect, where a failure otherwise looks like
@@ -250,6 +290,34 @@ export function BriefView({
       setError(result.error);
     }
   }
+
+  /**
+   * The quote in the shape the templates read.
+   *
+   * Built from `content`, which is what the editor writes when a section is
+   * saved, so the preview redraws as edits land rather than on every keystroke.
+   */
+  const previewBrief: PublicBrief = {
+    title: content.title,
+    client: content.client,
+    scope: content.scope,
+    deliverables: content.deliverables,
+    timeline: content.timeline,
+    strategy: content.strategy ?? null,
+    extras: content.extras ?? null,
+    price: content.price,
+    hours: content.hours,
+    rateUnit: brief.rateUnit ?? "HOUR",
+    language: brief.language ?? "en",
+    hourlyRate: brief.hourlyRate ?? null,
+    currency: brief.currency ?? "USD",
+    examples: brief.examples ?? [],
+    slug: brief.publicSlug,
+    signable: Boolean(brief.signable),
+    accepted: brief.accepted
+      ? { name: brief.accepted.name, at: brief.accepted.at }
+      : null,
+  };
 
   return (
     <>
@@ -369,8 +437,47 @@ export function BriefView({
         </span>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-5 flex-1 min-h-0 mt-5">
-        <div className="flex-[2] flex flex-col gap-4 overflow-y-auto pr-1">
+      {/* Two halves on a laptop, one at a time on a phone. */}
+      <div className="flex lg:hidden gap-1.5 mt-5">
+        {([
+          ["edit", t.brief.tabEdit],
+          ["preview", t.brief.tabPreview],
+        ] as const).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setMobileTab(id)}
+            aria-pressed={mobileTab === id}
+            className={`flex-1 font-body font-semibold text-small rounded-lg py-2.5 border-none cursor-pointer tap-row transition-colors ${
+              mobileTab === id ? "bg-violet text-white" : "bg-paper text-slate"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0 mt-5">
+        <div
+          className={`min-w-0 flex-1 flex flex-col gap-[18px] ${
+            mobileTab === "edit" ? "flex" : "hidden"
+          } lg:flex`}
+        >
+          {/* What to check, then the quote, then Publish. The questions used
+              to sit inline among the client-facing sections behind a dashed
+              border, which put your private notes inside their document. */}
+          <BeforeYouSend
+            briefId={brief.id}
+            questions={content.strategy?.openQuestions ?? []}
+            cleared={brief.clearedQuestions ?? []}
+          />
+
+          {/* Said once, where the editing happens. Changing a published quote
+              is allowed, because unpublishing to fix a comma is a thing people
+              route around. Doing it silently is not. */}
+          {brief.published && (
+            <p className="text-caption text-overdue m-0 text-pretty">{t.brief.editingLive}</p>
+          )}
           {content.strategy && (
             <Section eyebrow={t.publicQuote.strategy} tint="violet" accent="violet">
               <p className="text-meta text-slate mb-3">
@@ -751,43 +858,11 @@ export function BriefView({
             </Section>
           )}
 
-          {/* For the freelancer, not the client. Kept visually distinct from
-              the quote sections above and never rendered on the public page or
-              in the PDF. */}
-          {content.strategy && content.strategy.openQuestions.length > 0 && (
-            <div className="rounded-card border border-dashed border-violet/40 bg-white px-5 py-4">
-              <div className="flex items-center gap-1.5">
-                <Lightbulb size={14} className="text-violet" />
-                <span className="font-body font-bold text-caption tracking-[0.08em] uppercase text-violet">
-                  {t.brief.worthThinkingAbout}
-                </span>
-              </div>
-              <p className="text-meta text-slate mt-1.5 mb-3">
-                {t.brief.notesForYouOnly}
-              </p>
-              <EditableBlock
-                value={content.strategy.openQuestions.join("\n")}
-                onSave={(next) =>
-                  saveContent({
-                    strategy: {
-                      ...content.strategy!,
-                      openQuestions: next
-                        .split("\n")
-                        .map((l) => l.replace(/^[-*\u2022\u00b7]\s*/, "").trim())
-                        .filter(Boolean),
-                    },
-                  })
-                }
-                ariaLabel="Notes and questions"
-                hint="One per line."
-              >
-                <Bullets items={content.strategy.openQuestions} dense />
-              </EditableBlock>
-            </div>
-          )}
-        </div>
 
-        <div className="w-full md:w-[300px] flex flex-col gap-[18px]">
+          {/* Where this came from and how to change it. Below the document
+              rather than beside it: these belong to editing, and a third
+              column would squeeze the preview until a scaled page is
+              unreadable. */}
           <Card>
             <Label>{t.brief.refine}</Label>
             <TextField
@@ -854,6 +929,48 @@ export function BriefView({
               ))}
             </div>
           </Card>
+        </div>
+
+        {/* The quote as the client will see it, in the template that will be
+            used, scaled to fit. This is the whole reason for the split: the
+            page where somebody decides a quote is good enough to send used to
+            draw its own approximation while the client received one of three
+            real templates. */}
+        <div className={`min-w-0 flex-1 ${mobileTab === "preview" ? "block" : "hidden"} lg:block`}>
+          <div className="lg:sticky lg:top-5 flex flex-col gap-3">
+            {/* The look, chosen where the result is visible. These used to be
+                asked in the wizard, before the document existed. */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              {([
+                ["classic", t.quote.templateClassic],
+                ["editorial", t.quote.templateEditorial],
+                ["minimal", t.quote.templateMinimal],
+              ] as const).map(([value, label]) => (
+                <Chip key={value} active={look.template === value} onClick={() => setLook({ template: value })}>
+                  {label}
+                </Chip>
+              ))}
+              <span className="w-px h-4 bg-line mx-1" />
+              {([
+                ["freely", t.quote.brandFreely],
+                ["own", t.quote.brandOwn],
+                ["mono-light", t.quote.brandMonoLight],
+                ["mono-dark", t.quote.brandMonoDark],
+              ] as const).map(([value, label]) => (
+                <Chip key={value} active={look.branding === value} onClick={() => setLook({ branding: value })}>
+                  {label}
+                </Chip>
+              ))}
+            </div>
+            <QuotePreview>
+              <RenderedQuote
+                brief={previewBrief}
+                branding={look.branding}
+                template={look.template}
+                user={brand}
+              />
+            </QuotePreview>
+          </div>
         </div>
       </div>
       {/* Sharing the quote is the point of the page, so publishing is a real

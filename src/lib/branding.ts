@@ -46,13 +46,22 @@ export function hasOwnBranding(user: {
   return Boolean(user.brandPrimaryColor || user.brandLogoDataUrl);
 }
 
+/**
+ * The saved brand on an account, as much of it as this needs.
+ *
+ * Named rather than written inline, so callers passing it around have
+ * something to import. The preview and the public page both need to hand it
+ * over and neither should be restating the shape.
+ */
+export interface BrandSource {
+  brandPrimaryColor?: string | null;
+  brandAccentColor?: string | null;
+  brandLogoDataUrl?: string | null;
+}
+
 export function resolveBrand(
   branding: string | null | undefined,
-  user: {
-    brandPrimaryColor?: string | null;
-    brandAccentColor?: string | null;
-    brandLogoDataUrl?: string | null;
-  }
+  user: BrandSource
 ): ResolvedBrand {
   if (branding === "own") {
     return {

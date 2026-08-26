@@ -218,6 +218,9 @@ export function QuoteWizard({
   // and be clicked again to take it back out.
   const [pickedExamples, setPickedExamples] = useState<ProjectPresetKey[]>([]);
   const [sourceMode, setSourceMode] = useState<"paste" | "upload">("upload");
+  // Whether the notes field is showing while pasting. Always shown when
+  // uploading, where it is the only way to say anything about the job.
+  const [notesOpen, setNotesOpen] = useState(false);
   const [fileName, setFileName] = useState("");
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -796,6 +799,70 @@ export function QuoteWizard({
                 )}
               </div>
             </div>
+
+            {/* Your notes about the job, in the same card as their material.
+                One question, "what are we quoting", answered in two parts.
+                They stay a separate field rather than being typed into the
+                paste box, because the quote page shows sourceText as "Original
+                request" and your instructions are not what the client sent.
+
+                Open when uploading, since a file leaves no way to say anything.
+                Collapsed when pasting, because you almost certainly added it to
+                the text already. */}
+            <div className="border-t border-line px-5 py-4 bg-paper">
+              {sourceMode === "upload" || notesOpen ? (
+                <>
+                  <SubLabel>{t.quote.howShouldItRun}</SubLabel>
+                  <p className="text-caption text-text-muted mt-0 mb-2.5 text-pretty">
+                    {t.quote.howShouldItRunHint}
+                  </p>
+                  <TextField
+                    value={draft.instructions}
+                    onChange={(v) => setDraft((d) => ({ ...d, instructions: v }))}
+                    placeholder={t.quote.howShouldItRunPlaceholder}
+                    multiline
+                    rows={3}
+                  />
+                  <div className="mt-3">
+                    <div className="text-caption text-text-muted mb-1.5">{t.common.commonOnes}</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {projectPresets(industry).map(({ labelKey, textKey }) => {
+                        const line = t.quote[textKey];
+                        const picked = pickedExamples.includes(labelKey);
+                        return (
+                          <Chip
+                            key={labelKey}
+                            active={picked}
+                            onClick={() => {
+                              setPickedExamples((prev) =>
+                                picked ? prev.filter((k) => k !== labelKey) : [...prev, labelKey]
+                              );
+                              setDraft((d) => ({
+                                ...d,
+                                instructions: toggleExampleLine(d.instructions, line, !picked),
+                              }));
+                            }}
+                          >
+                            {t.quote[labelKey]}
+                          </Chip>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setNotesOpen(true)}
+                  className="w-full flex items-center justify-between gap-3 text-left bg-none border-none cursor-pointer p-0 tap-row"
+                >
+                  <span className="text-small text-slate">{t.quote.howShouldItRun}</span>
+                  <span className="font-body font-semibold text-caption text-violet shrink-0">
+                    {draft.instructions.trim() ? t.common.edit : t.common.add}
+                  </span>
+                </button>
+              )}
+            </div>
           </div>
 
           <Card>
@@ -847,50 +914,6 @@ export function QuoteWizard({
             )}
           </Card>
 
-          <Card>
-            <FieldHeading>{t.quote.howShouldItRun}</FieldHeading>
-            <p className="text-meta text-slate mb-3 leading-relaxed">
-              {t.quote.howShouldItRunHint}
-            </p>
-            <TextField
-              value={draft.instructions}
-              onChange={(v) => setDraft((d) => ({ ...d, instructions: v }))}
-              placeholder={t.quote.howShouldItRunPlaceholder}
-              multiline
-              rows={4}
-            />
-            {/* The chip is a label; the sentence it writes is a different
-                string. They used to be the same string, so a row of them read
-                as one run-on paragraph and every label was a whole clause.
-                Clicking again takes the line back out, which a link could not
-                do: a link appended a second copy. */}
-            <div className="mt-3">
-              <div className="text-caption text-text-muted mb-1.5">{t.common.commonOnes}</div>
-              <div className="flex flex-wrap gap-1.5">
-                {projectPresets(industry).map(({ labelKey, textKey }) => {
-                  const line = t.quote[textKey];
-                  const picked = pickedExamples.includes(labelKey);
-                  return (
-                    <Chip
-                      key={labelKey}
-                      active={picked}
-                      onClick={() => {
-                        setPickedExamples((prev) =>
-                          picked ? prev.filter((k) => k !== labelKey) : [...prev, labelKey]
-                        );
-                        setDraft((d) => ({
-                          ...d,
-                          instructions: toggleExampleLine(d.instructions, line, !picked),
-                        }));
-                      }}
-                    >
-                      {t.quote[labelKey]}
-                    </Chip>
-                  );
-                })}
-              </div>
-            </div>
-          </Card>
 
           {/* Everything that used to be asked on every quote and is actually
               a property of the freelancer rather than of the job. Four

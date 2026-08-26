@@ -296,6 +296,18 @@ model Brief {
   // payment terms), kept as one JSON blob so adding another doesn't need a
   // schema change. Never holds bank details: see briefExtrasSchema.
   extras         Json?
+
+  // Which of the AI's open questions have been dealt with, by their text.
+  //
+  // By text rather than by index, because editing the list reorders it and an
+  // index would then point at a different question. Text is stable enough: an
+  // edited question is a different question and reappearing as unticked is the
+  // right behaviour for one.
+  //
+  // These are notes to the freelancer and never reach the client. They are the
+  // things worth confirming before sending, so being able to clear them one by
+  // one is what turns a block of text into something you finish.
+  clearedQuestions String[] @default([])
   price          Float
   hours          Float
   hourlyRate     Float?

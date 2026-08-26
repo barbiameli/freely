@@ -14,7 +14,7 @@ import { TemplatePreview } from "@/components/quote/template-preview";
 import { SECTION_QUESTIONS, type SectionNotes } from "@/lib/quote-prompts";
 import {
   ALL_SECTIONS,
-  SETUP_ROWS,
+  WIZARD_ROWS,
   changedRows,
   decidedRows,
   describeRow,
@@ -126,7 +126,7 @@ export function SetupRows({
   // once. Memory's copy of this card already worked this way, so the two now
   // behave alike as well as looking alike.
   const [open, setOpen] = useState<SetupRowKey | null>(
-    () => SETUP_ROWS.find((row) => !decided.includes(row)) ?? null
+    () => WIZARD_ROWS.find((row) => !decided.includes(row)) ?? null
   );
 
   // Except when generating was refused for want of a rate. The message would
@@ -188,7 +188,7 @@ export function SetupRows({
         </Link>
       </div>
 
-      {SETUP_ROWS.map((row) => {
+      {WIZARD_ROWS.map((row) => {
         const isOpen = open === row;
         const hasProblem = problemRow === row;
         const isChanged = changed.includes(row);

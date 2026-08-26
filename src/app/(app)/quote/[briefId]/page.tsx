@@ -53,6 +53,13 @@ export default async function BriefPage({ params }: { params: { briefId: string 
         published: brief.published,
         publicSlug: brief.publicSlug,
         template: brief.template,
+        // Everything the preview needs to draw the real thing rather than an
+        // approximation of it.
+        branding: brief.branding,
+        language: (brief as unknown as { language?: string }).language ?? "en",
+        signable: Boolean((brief.settings as { includeSOW?: boolean } | null)?.includeSOW),
+        clearedQuestions:
+          (brief as unknown as { clearedQuestions?: string[] }).clearedQuestions ?? [],
         // The milestone split, so it can be checked before the quote goes out.
         // Stored on the quote at generation, because that is what the client
         // agrees to.
@@ -85,6 +92,11 @@ export default async function BriefPage({ params }: { params: { briefId: string 
         })),
       }}
       history={history}
+      brand={{
+        brandPrimaryColor: user.brandPrimaryColor,
+        brandAccentColor: user.brandAccentColor,
+        brandLogoDataUrl: user.brandLogoDataUrl,
+      }}
     />
       <GuideMount screen="/quote/brief" />
     </>

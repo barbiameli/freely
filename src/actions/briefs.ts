@@ -520,6 +520,93 @@ export async function addBriefToTrackAction(briefId: string) {
  * therefore directly editable, and this is what persists it. Sanitized on the
  * way in like every other write.
  */
+/**
+ * How the finished quote looks.
+ *
+ * Moved here from the wizard, which asked for a style and a brand before the
+ * document existed. You were choosing how a thing would look without having
+ * seen it, and then never saw the result until a client did. Beside a preview
+ * these become choices with information behind them.
+ *
+ * Narrowed rather than trusted: both end up in a template lookup and an
+ * unrecognised value would render the fallback with no explanation.
+ */
+const TEMPLATES = ["classic", "editorial", "minimal"];
+const BRANDINGS = ["freely", "own", "mono-light", "mono-dark"];
+
+export async function updateQuoteLookAction(
+  briefId: string,
+  patch: { template?: string; branding?: string }
+): Promise<ActionResult<undefined>> {
+  const user = await requireFullUser();
+  const brief = await prisma.brief.findFirst({
+    where: { id: briefId, ...teamScopeWhere(user) },
+    select: { id: true },
+  });
+  if (!brief) return { ok: false, error: "Quote not found." };
+
+  const data: { template?: string; branding?: string } = {};
+  if (patch.template && TEMPLATES.includes(patch.template)) data.template = patch.template;
+  if (patch.branding && BRANDINGS.includes(patch.branding)) data.branding = patch.branding;
+  if (Object.keys(data).length === 0) return { ok: true, data: undefined };
+
+  try {
+    await prisma.brief.update({ where: { id: brief.id }, data });
+  } catch (err) {
+    console.error("[updateQuoteLookAction] failed", err);
+    return { ok: false, error: "Couldn't change that." };
+  }
+
+  revalidatePath(`/quote/${briefId}`);
+  return { ok: true, data: undefined };
+}
+
+/**
+ * Ticks one of the AI's open questions off, or puts it back.
+ *
+ * Stored by the question's text rather than its position, because editing the
+ * list reorders it and a position would then point at a different question. An
+ * edited question is a different question, and it reappearing unticked is the
+ * right behaviour: the thing that was checked is not the thing now written.
+ *
+ * These never reach the client. They are the notes worth confirming before
+ * sending, and clearing them one at a time is what turns a block of text into
+ * something that can be finished.
+ */
+export async function clearQuestionAction(
+  briefId: string,
+  question: string,
+  cleared: boolean
+): Promise<ActionResult<string[]>> {
+  const user = await requireFullUser();
+  // No select: the generated client in this workspace predates the column, so
+  // narrowing to it would return undefined. Same contained-cast situation as
+  // lib/track-db.
+  const brief = await prisma.brief.findFirst({
+    where: { id: briefId, ...teamScopeWhere(user) },
+  });
+  if (!brief) return { ok: false, error: "Quote not found." };
+
+  const current = (brief as unknown as { clearedQuestions?: string[] }).clearedQuestions ?? [];
+  const text = sanitizeText(question);
+  const next = cleared
+    ? Array.from(new Set([...current, text]))
+    : current.filter((q) => q !== text);
+
+  try {
+    await prisma.brief.update({
+      where: { id: brief.id },
+      data: { clearedQuestions: next } as unknown as Record<string, unknown>,
+    });
+  } catch (err) {
+    console.error("[clearQuestionAction] failed", err);
+    return { ok: false, error: "Couldn't save that." };
+  }
+
+  revalidatePath(`/quote/${briefId}`);
+  return { ok: true, data: next };
+}
+
 export async function updateBriefContentAction(
   briefId: string,
   patch: {
