@@ -24,6 +24,7 @@ import {
   type BriefExtras,
 } from "@/lib/anthropic";
 import { getMarketRateNote } from "@/lib/market-rate-cache";
+import { hasStrategyContent } from "@/lib/strategy";
 
 export type ActionResult<T = undefined> =
   | { ok: true; data: T }
@@ -182,7 +183,25 @@ export async function generateBriefAction(
   // resolved here rather than trusted from the client. Overwriting draft means
   // the prompt and the stored column cannot disagree about it.
   const quoteLanguage = resolveQuoteLocale(user);
-  const draft: QuoteDraftPayload = { ...draftInput, language: quoteLanguage };
+
+  /**
+   * Nothing ticked means the model decides, rather than a bare quote.
+   *
+   * Sections are all off until chosen, and a first quote from somebody who
+   * skipped the list would otherwise be scope, price and nothing else. What
+   * comes back is written into settings below, so the quote's sections are
+   * as settled afterwards as if they had been picked by hand.
+   */
+  const chooseSections =
+    !draftInput.includeStrategy &&
+    !draftInput.includeTimeline &&
+    !draftInput.includeSOW &&
+    !draftInput.includeTerms &&
+    !draftInput.includeRevisions &&
+    !draftInput.includeAvailability &&
+    !draftInput.includeAI;
+
+  const draft: QuoteDraftPayload = { ...draftInput, language: quoteLanguage, chooseSections };
 
   if (!draft.sourceText.trim()) {
     return { ok: false, error: "Add some source material before generating a brief." };
@@ -246,6 +265,37 @@ export async function generateBriefAction(
     };
   }
 
+  /**
+   * Which sections this quote ended up with.
+   *
+   * When they were ticked, this is just what was ticked. When the model chose,
+   * it is read back off what it actually wrote, because from here on the
+   * quote's sections are whatever is in the document: the PDF, the public page
+   * and the signing offer all read these flags, and a flag that disagrees with
+   * the content would show a heading with nothing under it.
+   */
+  const chosenSections = chooseSections
+    ? {
+        includeStrategy: hasStrategyContent(generated.strategy),
+        // Staged, one line per stage, is what makes Timeline its own section.
+        // A single summary sentence is the fallback shape and not a section.
+        includeTimeline: generated.timeline.includes("\n"),
+        includeSOW: Boolean(generated.paymentTerms),
+        includeTerms: Boolean(generated.terms),
+        includeRevisions: Boolean(generated.revisions),
+        includeAvailability: Boolean(generated.availability),
+        includeAI: Boolean(generated.aiUsage),
+      }
+    : {
+        includeStrategy: draft.includeStrategy,
+        includeTimeline: draft.includeTimeline,
+        includeSOW: draft.includeSOW,
+        includeTerms: draft.includeTerms ?? false,
+        includeRevisions: draft.includeRevisions ?? false,
+        includeAvailability: draft.includeAvailability ?? false,
+        includeAI: draft.includeAI,
+      };
+
   // Saving is wrapped separately from generation on purpose: by this point
   // the AI call has already succeeded and been paid for, so a failure here
   // (most often a schema/database mismatch after a deploy) should say what
@@ -290,10 +340,7 @@ export async function generateBriefAction(
           instructions: sanitizeText(draft.instructions),
           memoryProjectTitles: draft.memoryProjectTitles.map(sanitizeText),
           format: draft.format,
-          includeSOW: draft.includeSOW,
-          includeAI: draft.includeAI,
-          includeStrategy: draft.includeStrategy,
-          includeTimeline: draft.includeTimeline,
+          ...chosenSections,
           // How this bills, as agreed with the client. Kept on the brief
           // rather than only on the project, because the milestones are part
           // of what the client signed and the project is created from this.
@@ -316,9 +363,7 @@ export async function generateBriefAction(
                 amount: ms.amount,
               }))
             : undefined,
-          includeTerms: draft.includeTerms ?? false,
-          includeRevisions: draft.includeRevisions ?? false,
-          includeAvailability: draft.includeAvailability ?? false,
+
           usedPricingResearch: researched,
           // Kept so a quote can be explained later: which market the numbers
           // were researched against.

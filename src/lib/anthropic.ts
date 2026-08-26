@@ -214,6 +214,20 @@ export interface QuoteDraftInput {
   hourlyRate: number;
   /** Whether the rate above is per hour or per day. */
   rateUnit?: RateUnit;
+  /**
+   * Nobody picked any sections, so the model picks them.
+   *
+   * Set by the action when every include flag is false, which is now what a
+   * first quote looks like. The alternative was a bare scope-and-price quote
+   * for anyone who did not go through the list, and a freelancer who has not
+   * yet decided what their quotes carry is exactly the one with least reason
+   * to be handed the barest possible document.
+   *
+   * It stays a decision the model makes once, at generation: what came back
+   * is written into settings, so the quote's sections are as fixed afterwards
+   * as if they had been ticked by hand.
+   */
+  chooseSections?: boolean;
   /** The language the quote is written in. Not necessarily the language the
    * freelancer works in: a Spanish designer often has English clients. */
   language?: Locale;
@@ -542,7 +556,9 @@ Rules: every deliverable appears in exactly one milestone, never two and never n
   // freelancer that never reach the client, so making them depend on a
   // client-facing section being switched on meant a quote with Strategy off
   // arrived with nothing flagged at all.
-  const strategyInstruction = draft.includeStrategy
+  const strategyInstruction = draft.chooseSections
+    ? `\nInclude a "strategy" object. "openQuestions" is 2-4 notes for the freelancer only, never shown to the client: things worth confirming before starting, risks the brief glosses over, or a suggestion about how to approach the work they may not have considered. Always fill this in. "goal" and "findings" are the client-facing Approach section, and you decide whether this quote needs one: fill them in when the brief has enough substance that framing the problem adds something (a goal in one sentence, 2-4 concrete standalone observations drawn from the source material), and otherwise set "goal" to an empty string and "findings" to an empty array. Do not mention AI usage anywhere in this object, that's handled separately.`
+    : draft.includeStrategy
     ? `\nInclude a "strategy" object, written the way a senior consultant frames a proposal's approach: "goal" is one sentence naming the outcome this project is actually for. "findings" is 2-4 concrete, standalone observations drawn from the source material (what's currently true / what's missing / what was asked for), each its own bullet, not one merged sentence. "openQuestions" is 2-4 notes for the freelancer only, never shown to the client: things worth confirming before starting, risks the brief glosses over, or a suggestion about how to approach the work that they may not have considered. Do not mention AI usage anywhere in this object, that's handled separately.`
     : `\nInclude a "strategy" object holding only "openQuestions": 2-4 notes for the freelancer, never shown to the client: things worth confirming before starting, risks the brief glosses over, or a suggestion about how to approach the work that they may not have considered. Set "goal" to an empty string and "findings" to an empty array, because this quote does not carry an Approach section and anything written there would go unused.`;
 
@@ -553,6 +569,12 @@ Rules: every deliverable appears in exactly one milestone, never two and never n
   // Turned off, they get a short summary line, because a quote that
   // deliberately leaves Timeline out shouldn't smuggle a full schedule back
   // in through the same field.
+  //
+  // When nobody asked for anything, the model is told to choose instead.
+  // Everything section-shaped below then becomes "include this if it belongs",
+  // and what comes back is recorded as the quote's sections.
+  const decides = Boolean(draft.chooseSections);
+  const ifChosen = decides ? "Only if this quote needs it: " : "";
   const timelineInstruction = draft.includeTimeline
     ? `\nTimeline requirements. Return "timeline" as 4-6 stages, EACH ON ITS OWN LINE separated by a newline character, in the exact form "Week 1-2: Label - what actually happens". Rules:
 - Start every line with a concrete week or day range ("Week 1", "Week 2-3", "Day 1-3"). Never "Phase one" or "Later" with no timing.
@@ -562,24 +584,30 @@ Rules: every deliverable appears in exactly one milestone, never two and never n
 - The stages must add up to a total duration consistent with the estimated hours.
 Good: "Week 3-4: Design - wireframes for the 6 core screens, then two rounds of visual design on the strongest direction. Needs your sign-off on wireframes before visuals start."
 Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
+    : decides
+    ? `\nTimeline requirements. You are choosing whether Timeline is its own section. If it is, return "timeline" as 4-6 stages, EACH ON ITS OWN LINE, in the form "Week 1-2: Label - what actually happens", naming real activities and saying what is needed from the client and when. If it is not, return "timeline" as a single short sentence giving the overall duration and rough shape.`
     : `\nTimeline requirements. Timeline is NOT being broken out as its own section on this quote, so return "timeline" as a single short sentence giving the overall duration and rough shape, e.g. "About 6 weeks from kickoff to handover, with design in the first half and build in the second." Do not return a staged, line-by-line breakdown.`;
 
   // Optional sections. Each is off unless asked for, so the baseline quote
   // stays scope, deliverables and price rather than a wall of boilerplate.
+  const sectionChoiceInstruction = decides
+    ? `\nNo sections were chosen for this quote, so choose them yourself. Judge from the brief and from what you know about how this freelancer works, and include the ones that earn their place: an Approach when the problem is worth framing, a staged timeline when the work has real stages, payment terms and a statement of work when the money or the commitment needs pinning down, terms when the engagement carries risk worth naming, a revisions policy when the work is the kind that attracts rounds of changes, an AI-use disclosure when AI genuinely touches this work. Two to four of them is usually right. Omit the key entirely for anything you leave out, and never include a section you would have to invent facts to fill.`
+    : "";
+
   const notes = draft.sectionNotes ?? {};
   const extraSections: string[] = [];
-  if (draft.includeTerms) {
+  if (draft.includeTerms || decides) {
     extraSections.push(
-      `Include a "terms" object: {"cancellation": string, "ownership": string, "confidentiality": string}. Write each as one or two plain-English sentences a freelancer would actually stand behind, not legalese, and do not invent jurisdiction-specific clauses.${
+      `${ifChosen}Include a "terms" object: {"cancellation": string, "ownership": string, "confidentiality": string}. Write each as one or two plain-English sentences a freelancer would actually stand behind, not legalese, and do not invent jurisdiction-specific clauses.${
         notes.terms ? ` Build them around what they have stated: ${notes.terms}` : ""
       }`
     );
   }
-  if (draft.includeRevisions) {
+  if (draft.includeRevisions || decides) {
     extraSections.push(
       notes.revisions
-        ? `Include a "revisions" string built on what they have stated: ${notes.revisions}. Say which stages it applies to and what counts as new work priced separately.`
-        : 'Include a "revisions" string: how many rounds of changes are included at which stages, and what would count as new work priced separately. Base the number on the deliverables and hours, not a generic "two rounds".'
+        ? `${ifChosen}Include a "revisions" string built on what they have stated: ${notes.revisions}. Say which stages it applies to and what counts as new work priced separately.`
+        : `${ifChosen}Include a "revisions" string: how many rounds of changes are included at which stages, and what would count as new work priced separately. Base the number on the deliverables and hours, not a generic "two rounds".`
     );
   }
   // Only written when there is something to write it from. The old version
@@ -587,25 +615,25 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
   // of knowing, which is how a quote ends up promising something the
   // freelancer never agreed to.
   const availabilityFacts = draft.availability?.facts.filter((f) => f.trim()) ?? [];
-  if (draft.includeAvailability && availabilityFacts.length > 0) {
+  if ((draft.includeAvailability || decides) && availabilityFacts.length > 0) {
     extraSections.push(
-      `Include an "availability" string built ONLY from what this freelancer has stated about their availability:\n${availabilityFacts
+      `${ifChosen}Include an "availability" string built ONLY from what this freelancer has stated about their availability:\n${availabilityFacts
         .map((f) => `- ${f}`)
         .join(
           "\n"
         )}\nWrite it as one or two sentences in their voice. Do not add a start date, a weekly capacity, a response time or any other commitment that is not in that list.`
     );
   }
-  if (draft.includeAI) {
+  if (draft.includeAI || decides) {
     extraSections.push(
-      `Include an "aiUsage" object: {"will": string[], "willNot": string[]}. This is a disclosure of how AI is used on THIS project, so both lists must name specific tasks from this brief, not general statements about AI.${
+      `${ifChosen}Include an "aiUsage" object: {"will": string[], "willNot": string[]}. This is a disclosure of how AI is used on THIS project, so both lists must name specific tasks from this brief, not general statements about AI.${
         notes.aiUsage ? ` They have said: ${notes.aiUsage}. Build both lists around that.` : ""
       } "will" is 2-4 mechanical or repetitive parts of the work where AI genuinely helps, for example scaffolding file structure, generating repetitive variants, first-pass copy, or converting formats. "willNot" is 2-4 parts that stay entirely human because they are judgement, taste or client-specific reasoning, for example deciding what to build, visual design decisions, or interpreting research. Write each entry as a short phrase naming the actual task.`
     );
   }
-  if (draft.includeSOW) {
+  if (draft.includeSOW || decides) {
     extraSections.push(
-      `Include a "paymentTerms" string describing WHEN money is due.${
+      `${ifChosen}Include a "paymentTerms" string describing WHEN money is due.${
         notes.payment
           ? ` Use what they have stated: ${notes.payment}`
           : " For example a deposit split and invoicing points tied to the stages."
@@ -636,6 +664,7 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
     return [
       ...shared,
       `Output format requested: ${draft.format}. Include Statement of Work: ${draft.includeSOW}. Include AI-use disclosure: ${draft.includeAI}.`,
+      sectionChoiceInstruction,
       strategyInstruction,
       extraSectionsInstruction,
       `\nReturn ONLY a JSON object containing the keys named above and nothing else. Do not include a title, client, scope, deliverables, timeline, price or hours: those are being written separately and anything you add here is discarded.`,
@@ -650,6 +679,7 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
     `\n${pricingInstruction}`,
     formatPricingHistory(pricingHistory, symbol),
     // Skipped on the core half, since the other call is writing them.
+    part === "all" ? sectionChoiceInstruction : "",
     part === "all" ? strategyInstruction : "",
     timelineInstruction,
     fixedPriceInstruction,
@@ -674,7 +704,10 @@ export function wantsExtras(draft: QuoteDraftInput): boolean {
     Boolean(draft.includeAvailability) &&
     (draft.availability?.facts.some((f) => f.trim()) ?? false);
   return Boolean(
-    draft.includeStrategy ||
+    // Choosing means everything is on the table, so the second call has to
+    // happen: skipping it would decide "no sections" on the model's behalf.
+    draft.chooseSections ||
+      draft.includeStrategy ||
       draft.includeTerms ||
       draft.includeRevisions ||
       draft.includeAI ||

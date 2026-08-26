@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildGenerateUserPrompt,
   strategySchema,
+  wantsExtras,
   type QuoteDraftInput,
 } from "@/lib/anthropic";
 import { hasStrategyContent } from "@/lib/strategy";
@@ -96,5 +97,45 @@ describe("the strategy object with no Approach in it", () => {
       openQuestions: [],
     });
     expect(parsed.findings).toHaveLength(1);
+  });
+});
+
+describe("when nobody picked any sections", () => {
+  /**
+   * All sections are off by default, so a first quote from somebody who did
+   * not go through the list would be scope, price and nothing else. The model
+   * is told to choose instead, and what it writes is recorded as the quote's
+   * sections.
+   */
+  const choosing = { ...DRAFT, chooseSections: true };
+
+  it("hands the choice to the model", () => {
+    const prompt = buildGenerateUserPrompt(choosing);
+    expect(prompt).toContain("choose them yourself");
+    expect(prompt).toContain("never include a section you would have to invent facts to fill");
+  });
+
+  it("still describes every section, so a chosen one has a shape to follow", () => {
+    const prompt = buildGenerateUserPrompt(choosing);
+    for (const key of ['"terms"', '"revisions"', '"aiUsage"', '"paymentTerms"']) {
+      expect(prompt).toContain(key);
+    }
+    expect(prompt).toContain("Only if this quote needs it:");
+  });
+
+  it("leaves the timeline shape open", () => {
+    const prompt = buildGenerateUserPrompt(choosing);
+    expect(prompt).toContain("You are choosing whether Timeline is its own section");
+  });
+
+  it("makes the second call happen, since everything is on the table", () => {
+    expect(wantsExtras(choosing)).toBe(true);
+    expect(wantsExtras(DRAFT)).toBe(false);
+  });
+
+  it("says nothing about choosing when the sections were ticked", () => {
+    const prompt = buildGenerateUserPrompt({ ...DRAFT, includeTerms: true });
+    expect(prompt).not.toContain("choose them yourself");
+    expect(prompt).not.toContain("Only if this quote needs it:");
   });
 });
