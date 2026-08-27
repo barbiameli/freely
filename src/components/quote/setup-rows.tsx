@@ -30,6 +30,7 @@ import type { Dictionary } from "@/lib/i18n";
 import type { QuoteDraftPayload } from "@/actions/briefs";
 import { researchRateAction, type ResearchedRate } from "@/actions/rate";
 import { Reveal } from "@/components/ui/reveal";
+import { rateFor, disciplineLabel } from "@/lib/discipline-rates";
 
 /**
  * The quote setup, as four readable lines.
@@ -329,6 +330,7 @@ export function SetupRows({
                     readLevel={saved.expertiseLevel ? null : saved.inferredExpertise ?? null}
                     savedCountry={savedCountry}
                     disciplines={disciplines}
+                    account={saved}
                   />
                 )}
                 {row === "payment" && <PaymentBody draft={draft} setDraft={setDraft} />}
@@ -369,6 +371,7 @@ export function RateBody({
   readLevel,
   savedCountry,
   disciplines = [],
+  account,
 }: {
   draft: QuoteDraftPayload;
   setDraft: Dispatch<SetStateAction<QuoteDraftPayload>>;
@@ -388,13 +391,21 @@ export function RateBody({
    * one this rate is for rather than quietly answering for the first.
    */
   disciplines?: { key: string; label: string }[];
+  /** The account, for the rate saved against each kind of work. */
+  account?: AccountDefaults;
 }) {
   const t = useT();
   const unit = (draft.rateUnit ?? "HOUR") as RateUnit;
   const [country, setCountry] = useState(savedCountry ?? "");
-  // Their main one, which is the right default and a bad assumption to leave
-  // unsaid. The chooser below names it either way.
-  const [discipline, setDiscipline] = useState(disciplines[0]?.key ?? "");
+  /**
+   * Which kind of work this quote is.
+   *
+   * Chosen here rather than guessed later, because the rate follows it: every
+   * discipline has its own, and a marketing job quoted at a design rate is the
+   * mistake this exists to stop. Their main one by default, which is right for
+   * most quotes and is named rather than assumed.
+   */
+  const discipline = draft.discipline ?? disciplines[0]?.key ?? "";
   const [researching, setResearching] = useState(false);
   const [researched, setResearched] = useState<ResearchedRate | null>(null);
   const [rateError, setRateError] = useState("");
@@ -428,8 +439,81 @@ export function RateBody({
     }
   }
 
+  const savedForWork = account ? rateFor(discipline, account) : null;
+  const manyDisciplines = disciplines.length > 1;
+  /** They do more than one thing, and this one has no rate anywhere yet. */
+  const missingRateForWork =
+    manyDisciplines && !savedForWork && !rateHelpOpen && draft.hourlyRate <= 0;
+
+  function chooseDiscipline(key: string) {
+    const saved = account ? rateFor(key, account) : null;
+    setDraft((d) => ({
+      ...d,
+      discipline: key,
+      // The rate follows the work. Leaving the old number in place would
+      // price a marketing job at a design rate, which is the whole reason
+      // the rates are kept apart.
+      hourlyRate: saved ? saved.rate : 0,
+      rateUnit: saved ? saved.unit : d.rateUnit,
+    }));
+    // Whatever was researched was researched for the other kind of work.
+    setResearched(null);
+  }
+
   return (
     <>
+      {/* Which work, before what it costs.
+          A rate on its own is not a number a freelancer who does three things
+          can answer. Naming the work first makes the rate a fact they already
+          know rather than a blend they have to invent, and it is the same
+          question in Memory and in onboarding so the answer means one thing
+          everywhere. */}
+      {manyDisciplines && (
+        <div className="mb-4">
+          <SubLabel>{t.quote.rateForWhich}</SubLabel>
+          <div className="flex flex-wrap gap-1.5">
+            {disciplines.map((option) => (
+              <Chip
+                key={option.key}
+                active={discipline === option.key}
+                onClick={() => chooseDiscipline(option.key)}
+              >
+                {option.label}
+              </Chip>
+            ))}
+          </div>
+          <p className="text-caption text-text-muted mt-1.5 mb-0 text-pretty">
+            {t.quote.rateForWhichHint}
+          </p>
+        </div>
+      )}
+
+      {/* Said before they reach an empty rate field, rather than after they
+          press generate and it refuses. */}
+      {missingRateForWork && (
+        <Reveal
+          tone="coral"
+          title={t.quote.rateNoneForWork.replace(
+            "{work}",
+            disciplineLabel(discipline, disciplines)
+          )}
+          hint={t.quote.rateNoneForWorkHint.replace(
+            /* Both halves name the work, so the sentence still reads on its
+               own when somebody scrolls back to it. */
+            "{work}",
+            disciplineLabel(discipline, disciplines)
+          )}
+        >
+          <button
+            type="button"
+            onClick={() => setRateHelpOpen(true)}
+            className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
+          >
+            {t.quote.notSureWhatToCharge}
+          </button>
+        </Reveal>
+      )}
+
       {/* Plenty of freelancers price in days, and converting to an hourly
           figure to fit the form means inventing a day length. Fixed is a third
           thing again: one price, with no rate shown to the client at all. */}
@@ -479,7 +563,11 @@ export function RateBody({
           {unit === "FIXED"
             ? t.quote.rateFixedHint
             : draft.hourlyRate > 0
-            ? t.quote.usedAsTyped
+            ? // When they do more than one thing, saying which work this rate
+              // is for matters more than saying it is used as typed.
+              savedForWork && savedForWork.rate === draft.hourlyRate && manyDisciplines
+              ? t.quote.rateSavedFor.replace("{work}", disciplineLabel(discipline, disciplines))
+              : t.quote.usedAsTyped
             : t.quote.orResearched}
         </span>
         <button
@@ -501,32 +589,6 @@ export function RateBody({
           the one place it can affect anything. */}
       {rateHelpOpen && (
         <Reveal title={t.quote.rateHelpTitle} hint={t.quote.rateHelpHint}>
-          {/* Only when there is a choice to make. One discipline needs no
-              question, and asking it anyway would imply there was a decision. */}
-          {disciplines.length > 1 && (
-            <div className="mb-4">
-              <SubLabel>{t.quote.rateForWhich}</SubLabel>
-              <div className="flex flex-wrap gap-1.5">
-                {disciplines.map((option) => (
-                  <Chip
-                    key={option.key}
-                    active={discipline === option.key}
-                    onClick={() => {
-                      setDiscipline(option.key);
-                      // The old answer was about the old discipline.
-                      setResearched(null);
-                    }}
-                  >
-                    {option.label}
-                  </Chip>
-                ))}
-              </div>
-              <p className="text-caption text-text-muted mt-1.5 mb-0 text-pretty">
-                {t.quote.rateForWhichHint}
-              </p>
-            </div>
-          )}
-
           <SubLabel>{t.quote.expertise}</SubLabel>
           <div className="flex flex-wrap gap-1.5">
             {(["Junior", "Mid-level", "Senior", "Expert"] as const).map((level) => (

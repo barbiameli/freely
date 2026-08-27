@@ -45,6 +45,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { QuoteSetupCard } from "@/components/memory/quote-setup-card";
 import type { AccountDefaults } from "@/lib/quote-defaults";
 import { PageHeader } from "@/components/ui/page-header";
+import { allDisciplines } from "@/lib/industries";
 
 /**
  * Memory, in four tabs.
@@ -245,7 +246,15 @@ export function MemoryView({
         {/* What a quote starts with, and what it looks like. */}
         {tab === "quotes" && (
           <>
-            <QuoteSetupCard saved={saved} hasBrand={hasBrand} country={country}>
+            <QuoteSetupCard
+              saved={saved}
+              hasBrand={hasBrand}
+              country={country}
+              disciplines={allDisciplines(
+                saved.industry ?? "",
+                (saved as unknown as { otherIndustries?: string[] }).otherIndustries
+              ).map((key) => ({ key, label: industryLabel(key) }))}
+            >
               <QuoteLanguage initial={quoteLocale} />
             </QuoteSetupCard>
             <BrandingCard

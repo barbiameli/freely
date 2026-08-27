@@ -240,6 +240,15 @@ export interface QuoteDraftInput {
    */
   disciplines?: { key: string; label: string }[];
   /**
+   * Which of those the freelancer said this quote is.
+   *
+   * Chosen in the rate row, because the rate is per discipline and the two
+   * cannot be allowed to drift apart. Sent so the model writes the quote as
+   * that kind of work rather than inferring it a second time and disagreeing
+   * with the number it was given.
+   */
+  discipline?: string;
+  /**
    * Nobody picked any sections, so the model picks them.
    *
    * Set by the action when every include flag is false, which is now what a
@@ -649,8 +658,17 @@ Rules: every deliverable appears in exactly one milestone, never two and never n
    * and how the scope is framed. A guess that is wrong is one press to fix on
    * the quote page, which is cheaper than a question everybody answers.
    */
-  const disciplineInstruction =
-    (draft.disciplines?.length ?? 0) > 1
+  // Told, not guessed, whenever the freelancer said which work this is.
+  //
+  // They pick it in the rate row, and the rate they were given is that
+  // discipline's rate. A model free to decide otherwise would write a
+  // marketing quote priced at a design rate, which reads as a mistake to the
+  // one person who can see both numbers.
+  const chosenDiscipline = draft.disciplines?.find((d) => d.key === draft.discipline);
+
+  const disciplineInstruction = chosenDiscipline
+    ? `\nThis quote is for ${chosenDiscipline.key} (${chosenDiscipline.label}) work, and the rate you were given is this freelancer's rate for that work. Return "discipline" as exactly "${chosenDiscipline.key}". Write the whole quote as that kind of work: its deliverables, its vocabulary and the stages a client of that discipline expects.`
+    : (draft.disciplines?.length ?? 0) > 1
       ? `\nThis freelancer does more than one kind of work: ${draft
           .disciplines!.map((d) => `${d.key} (${d.label})`)
           .join(

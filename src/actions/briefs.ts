@@ -30,6 +30,8 @@ import { getMarketRateNote } from "@/lib/market-rate-cache";
 import { CURRENT_LAYOUT } from "@/lib/quote-layout";
 import { hasStrategyContent } from "@/lib/strategy";
 import { allDisciplines, disciplineLine, industryLabel } from "@/lib/industries";
+import { withRate } from "@/lib/discipline-rates";
+import type { RateUnit } from "@/lib/rate-unit";
 
 export type ActionResult<T = undefined> =
   | { ok: true; data: T }
@@ -302,6 +304,33 @@ export async function generateBriefAction(
 
   const pricingHistory = await buildPricingHistory(user);
   const researched = shouldResearchMarketRates(draft, pricingHistory);
+
+  // The rate they used, remembered against the work it was for.
+  //
+  // Without this, somebody who quotes a marketing job at 55 and a design job
+  // at 85 retypes both numbers every time, and the account learns nothing from
+  // the fact that they already answered. Written on every quote rather than
+  // only the first, because a rate per discipline is a thing people revise,
+  // and the last one they actually sent is the best guess at the next one.
+  const quotedDiscipline = draft.discipline?.trim();
+  if (quotedDiscipline && hasRate) {
+    const mine = allDisciplines(
+      user.industry,
+      (user as unknown as { otherIndustries?: string[] }).otherIndustries
+    );
+    if (mine.includes(quotedDiscipline)) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          ratesByDiscipline: withRate(
+            (user as unknown as { ratesByDiscipline?: unknown }).ratesByDiscipline,
+            quotedDiscipline,
+            { rate: draft.hourlyRate, unit: (draft.rateUnit ?? "HOUR") as RateUnit }
+          ) as unknown as Prisma.InputJsonValue,
+        } as unknown as Parameters<typeof prisma.user.update>[0]["data"],
+      });
+    }
+  }
 
   // Where they are based barely changes, so remember it and stop asking.
   const yourLocation = draft.pricing?.yourLocation?.trim();

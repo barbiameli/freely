@@ -152,8 +152,21 @@ model User {
   // brings it back. A boolean would mean one dismissal silently switches the
   // feature off for good, which is not what closing something means.
   quotePromptDismissedAt DateTime?
+  // The rate for the main discipline. Kept as its own columns because every
+  // account has one and most accounts only ever need this one.
   defaultRate        Float?
   defaultRateUnit    String   @default("HOUR")
+
+  // A rate for each of the other things they do.
+  //
+  // Shaped { "frontend-developer": { "rate": 75, "unit": "HOUR" } }. One rule,
+  // applied everywhere: each kind of work has its own rate, because a client
+  // buying a build is not buying design and the two do not pay the same.
+  //
+  // A map rather than columns, since the set of disciplines is a list in code
+  // that will grow, and a column per discipline would make adding one a
+  // migration.
+  ratesByDiscipline  Json?
 
   // The quote setup: everything the wizard used to ask on every quote that is
   // actually a property of the freelancer rather than of the job. Asking for

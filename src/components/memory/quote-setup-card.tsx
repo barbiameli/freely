@@ -35,10 +35,14 @@ export function QuoteSetupCard({
   saved,
   hasBrand,
   country,
+  disciplines = [],
   children,
 }: {
   saved: AccountDefaults;
   hasBrand?: boolean;
+  /** Everything this account does, main one first. The rate row shows one
+   * rate per kind of work, the same as the wizard does. */
+  disciplines?: { key: string; label: string }[];
   /** ISO 3166-1 alpha-2, so the rate helper does not ask again. */
   country?: string | null;
   /** Currency and quote language, which belong to this decision rather than to
@@ -68,6 +72,8 @@ export function QuoteSetupCard({
     paymentPlan: usual.paymentPlan,
     upfrontPercent: usual.upfrontPercent,
     expertiseLevel: usual.expertise,
+    // Their main one, which is the rate the account already holds.
+    discipline: saved.industry ?? undefined,
     template: usual.template,
     branding: usual.branding,
   }));
@@ -101,6 +107,19 @@ export function QuoteSetupCard({
         // reading the level off its Memory rather than freezing today's guess
         // into a stated fact.
         ...(stated ? { expertiseLevel: draft.expertiseLevel } : {}),
+        // Editing the rate while a second kind of work is selected edits that
+        // work's rate, and leaves the main one alone.
+        ...(draft.discipline && draft.discipline !== saved.industry
+          ? {
+              defaultRate: undefined,
+              defaultRateUnit: undefined,
+              rateForDiscipline: {
+                discipline: draft.discipline,
+                rate: draft.hourlyRate,
+                unit: draft.rateUnit ?? "HOUR",
+              },
+            }
+          : {}),
       }).then((result) => {
         if (result.ok) {
           setSavedAt(true);
@@ -150,6 +169,8 @@ export function QuoteSetupCard({
             }}
             readLevel={readLevel}
             savedCountry={country ?? null}
+            disciplines={disciplines}
+            account={saved}
           />
         </Section>
 

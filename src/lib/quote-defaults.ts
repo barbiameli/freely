@@ -89,6 +89,10 @@ export interface AccountDefaults {
   defaultBranding?: string | null;
   expertiseLevel?: string | null;
   inferredExpertise?: string | null;
+  /** The main kind of work, which is what defaultRate belongs to. */
+  industry?: string | null;
+  /** A rate for each of the other kinds of work. See lib/discipline-rates. */
+  ratesByDiscipline?: unknown;
 }
 
 /** A quote's setup, fully resolved, with no nulls left to think about. */

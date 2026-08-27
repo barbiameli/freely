@@ -199,6 +199,9 @@ export function QuoteWizard({
       // is read off Memory and only editable where it can matter, inside the
       // rate helper. See lib/quote-defaults.
       expertiseLevel: usual.expertise,
+      // The work this quote is for, and so which rate it uses. Their main one
+      // until they say otherwise in the rate row.
+      discipline: industry || undefined,
       template: usual.template,
       // Someone who has set up their own branding almost always wants to send
       // a quote under it, so that's the default whenever it's available.

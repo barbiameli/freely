@@ -1,6 +1,9 @@
 "use server";
 
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { withRate } from "@/lib/discipline-rates";
+import { allDisciplines } from "@/lib/industries";
 import { requireFullUser } from "@/lib/session";
 import {
   learn,
@@ -85,11 +88,48 @@ export async function keepQuoteDefaultAction(
  * involved.
  */
 export async function saveQuoteSetupAction(
-  patch: DefaultsPatch & { expertiseLevel?: string | null }
+  patch: DefaultsPatch & {
+    expertiseLevel?: string | null;
+    /**
+     * A rate for one of the other kinds of work they do.
+     *
+     * Sent instead of defaultRate when Memory is showing a discipline that is
+     * not their main one, because defaultRate belongs to the main one and
+     * overwriting it here would quietly reprice every quote they write.
+     */
+    rateForDiscipline?: { discipline: string; rate: number; unit: string } | null;
+  }
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     const user = await requireFullUser();
-    await writeDefaults(user.id, patch as DefaultsPatch);
+    const { rateForDiscipline, ...rest } = patch;
+    await writeDefaults(user.id, rest as DefaultsPatch);
+
+    if (rateForDiscipline && rateForDiscipline.rate > 0) {
+      // Only a discipline they actually said they do. The key arrives from the
+      // client, and a Json column will store whatever it is handed.
+      const mine = allDisciplines(
+        user.industry,
+        (user as unknown as { otherIndustries?: string[] }).otherIndustries
+      );
+      if (mine.includes(rateForDiscipline.discipline)) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            ratesByDiscipline: withRate(
+              (user as unknown as { ratesByDiscipline?: unknown }).ratesByDiscipline,
+              rateForDiscipline.discipline,
+              {
+                rate: rateForDiscipline.rate,
+                unit: rateForDiscipline.unit === "DAY" || rateForDiscipline.unit === "FIXED"
+                  ? rateForDiscipline.unit
+                  : "HOUR",
+              }
+            ) as unknown as Prisma.InputJsonValue,
+          } as unknown as Parameters<typeof prisma.user.update>[0]["data"],
+        });
+      }
+    }
     return { ok: true };
   } catch {
     return { ok: false, error: "Couldn't save that." };
