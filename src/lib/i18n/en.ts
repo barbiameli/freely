@@ -543,6 +543,7 @@ export const en = {
   },
 
   invoices: {
+    pageSubtitle: "What is ready to bill, and everything already sent.",
     allInvoices: "All invoices",
     dueInDays: "{days} days",
     currency: "Currency",
@@ -636,6 +637,8 @@ export const en = {
     copyLink: "Copy link",
     linkCopied: "Copied",
     unpublish: "Unpublish",
+    deleteEntryTitle: "Delete this update?",
+    deleteEntryHint: "It goes from your diary and from the client page.",
     deleteConfirm: "Really delete",
     entryTitle: "Update",
     title: "Diary",
@@ -650,6 +653,12 @@ export const en = {
   },
 
   account: {
+    groupYou: "You",
+    groupYouHint: "What goes on your quotes and how you sign in.",
+    groupRunning: "Getting paid, and being told things",
+    groupRunningHint: "Payment links on invoices, and which emails Freely sends you.",
+    groupEnding: "Leaving",
+    groupEndingHint: "Deleting the account takes everything with it, at once.",
     paymentsTitle: "Card payments",
     paymentsIntro: "Link your own Stripe account and clients can pay an invoice by card. The money goes from them to you, Freely never holds it.",
     paymentsConnect: "Connect Stripe",

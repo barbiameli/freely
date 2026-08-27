@@ -64,8 +64,17 @@ describe("the card vocabulary", () => {
     expect(tones.length).toBeLessThanOrEqual(3);
   });
 
-  it("gives a quiet card no border of its own", () => {
-    expect(card).toMatch(/quiet: "bg-paper border border-transparent"/);
+  // The canvas became paper, so a quiet card that carried its own tone and
+  // nothing else stopped being visible as a card at all. It keeps the edge and
+  // loses nothing else: the tone still separates it from the white cards.
+  it("gives a quiet card an edge, since the canvas is now the same tone", () => {
+    expect(card).toMatch(/quiet: "bg-paper border border-line"/);
+  });
+
+  it("puts the app on paper and the cards on white", () => {
+    const layout = readFileSync("src/app/(app)/layout.tsx", "utf8");
+    expect(layout).toContain("min-h-screen bg-paper");
+    expect(card).toMatch(/plain: "bg-white/);
   });
 });
 

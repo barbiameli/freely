@@ -27,9 +27,9 @@ type Tone = "plain" | "quiet" | "loud";
 
 const toneClasses: Record<Tone, string> = {
   plain: "bg-white border border-line",
-  // No border. The tone is the edge, and a tint inside a hairline inside
-  // another hairline is three edges to say one thing.
-  quiet: "bg-paper border border-transparent",
+  // Keeps its edge, because the canvas is now this same tone: without a border
+  // a quiet card would not read as a card at all, it would read as a gap.
+  quiet: "bg-paper border border-line",
   loud: "bg-white border-[1.5px] border-violet",
 };
 

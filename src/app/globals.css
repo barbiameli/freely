@@ -85,6 +85,66 @@ select:focus {
   }
 }
 
+/* Every control answers when you point at it.
+
+   About ninety buttons in this interface were written as `cursor-pointer` and
+   nothing else: a cursor that changes shape, and a control that then sits
+   there looking identical whether the mouse is on it or not. The pointer is a
+   promise that something will happen, and the element not reacting reads as a
+   dead label that happens to be clickable.
+
+   Rather than adding a hover class to ninety call sites and missing the
+   ninety-first, the two utilities already on almost all of them carry it. The
+   effect is deliberately quiet, a small lift in contrast, because plenty of
+   these controls already change their own background on hover and the two
+   should stack into "slightly more" rather than into a flash.
+
+   Only where there is a real pointer. On a touch screen there is no hover, and
+   the sticky :hover state phones fake would leave the last thing tapped
+   looking permanently held down. */
+@media (hover: hover) {
+  .tap,
+  .tap-row {
+    transition: opacity 120ms ease, color 120ms ease;
+  }
+  .tap:hover,
+  .tap-row:hover {
+    opacity: 0.78;
+  }
+  .tap:active,
+  .tap-row:active {
+    opacity: 0.62;
+  }
+  .tap:disabled:hover,
+  .tap-row:disabled:hover,
+  .tap[aria-disabled="true"]:hover,
+  .tap-row[aria-disabled="true"]:hover {
+    opacity: 1;
+  }
+}
+
+/* Where the keyboard is.
+
+   Most of these controls carry `outline-none`, which was written to stop the
+   browser's default ring appearing on a mouse click and never replaced with
+   anything for the people who never touch a mouse. :focus-visible is the
+   distinction the browser already makes: pointer clicks get nothing, tabbing
+   gets a ring.
+
+   Set on the elements rather than through a utility class, so it covers the
+   controls nobody remembered to mark up. */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline: 2px solid #6320ee;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);

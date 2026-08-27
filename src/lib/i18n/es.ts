@@ -541,6 +541,7 @@ export const es: Dictionary = {
   },
 
   invoices: {
+    pageSubtitle: "Lo que esta listo para facturar y todo lo ya enviado.",
     allInvoices: "Todas las facturas",
     dueInDays: "{days} días",
     currency: "Moneda",
@@ -634,6 +635,8 @@ export const es: Dictionary = {
     copyLink: "Copiar enlace",
     linkCopied: "Copiado",
     unpublish: "Dejar de publicar",
+    deleteEntryTitle: "¿Borrar esta actualizacion?",
+    deleteEntryHint: "Desaparece de tu diario y de la pagina del cliente.",
     deleteConfirm: "Seguro que si",
     entryTitle: "Novedad",
     title: "Diario",
@@ -648,6 +651,12 @@ export const es: Dictionary = {
   },
 
   account: {
+    groupYou: "Tu",
+    groupYouHint: "Lo que aparece en tus presupuestos y como entras.",
+    groupRunning: "Cobrar y enterarte de las cosas",
+    groupRunningHint: "Enlaces de pago en las facturas y que correos te manda Freely.",
+    groupEnding: "Marcharte",
+    groupEndingHint: "Borrar la cuenta se lo lleva todo, de una vez.",
     paymentsTitle: "Pagos con tarjeta",
     paymentsIntro: "Conecta tu propia cuenta de Stripe y tus clientes pueden pagar la factura con tarjeta. El dinero va de ellos a ti, Freely nunca lo retiene.",
     paymentsConnect: "Conectar Stripe",

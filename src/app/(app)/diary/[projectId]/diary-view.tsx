@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Label, CardHeader } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ActionError } from "@/components/ui/action-error";
+import { Confirm } from "@/components/ui/confirm";
 import { StatRow } from "@/components/track/stat-row";
 import { DeliverableItem, type DeliverableView } from "@/components/track/deliverable-item";
 import { Pencil, Trash2 } from "lucide-react";
@@ -350,6 +351,21 @@ function EntryRow({
         <span className={`w-2 h-2 rounded-full ${first ? "bg-violet" : "bg-line"}`} />
         {!last && <span className="w-px flex-1 bg-line mt-1.5" />}
       </div>
+      <Confirm
+        open={confirming}
+        onClose={() => setConfirming(false)}
+        onConfirm={() => {
+          setConfirming(false);
+          void run(() => deleteDiaryEntryAction(entry.id));
+        }}
+        working={pending}
+        title={t.diary.deleteEntryTitle}
+        hint={t.diary.deleteEntryHint}
+        confirmLabel={t.common.delete}
+      >
+        <p className="text-small text-ink m-0 text-pretty line-clamp-3">{entry.body}</p>
+      </Confirm>
+
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-3">
           <div className="text-caption text-text-muted">
@@ -370,22 +386,18 @@ function EntryRow({
                 <Pencil size={11} /> {t.common.edit}
               </button>
             )}
+            {/* The one delete in the app that asked by turning into its own
+                confirmation and forgetting the question on blur. Same dialog as
+                every other delete now: an update you wrote is worth a sentence
+                before it goes, and a click-twice control is one misclick away
+                from taking it silently. */}
             <button
               type="button"
               disabled={pending}
-              onClick={() => {
-                if (!confirming) {
-                  setConfirming(true);
-                  return;
-                }
-                void run(() => deleteDiaryEntryAction(entry.id));
-              }}
-              onBlur={() => setConfirming(false)}
-              className={`flex items-center gap-1 text-caption bg-none border-none cursor-pointer p-0 tap ${
-                confirming ? "text-overdue font-semibold" : "text-slate hover:text-overdue"
-              }`}
+              onClick={() => setConfirming(true)}
+              className="flex items-center gap-1 text-caption text-slate hover:text-overdue bg-none border-none cursor-pointer p-0 tap"
             >
-              <Trash2 size={11} /> {confirming ? t.diary.deleteConfirm : t.common.delete}
+              <Trash2 size={11} /> {t.common.delete}
             </button>
           </div>
         </div>

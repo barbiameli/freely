@@ -56,6 +56,7 @@ import { resolveSetup, type AccountDefaults, type SetupRowKey } from "@/lib/quot
 import type { BriefSummary } from "@/components/brief-card";
 import { CoachMark } from "@/components/guide/coach-mark";
 import type { GuideStep } from "@/lib/guide";
+import { PageHeader } from "@/components/ui/page-header";
 
 /** A visual reference held in wizard state. These can only be saved once the
  * brief exists (a BriefExample needs a briefId), so they're attached
@@ -691,14 +692,7 @@ export function QuoteWizard({
           <SignedBanner signed={signed} />
           <LandedPrompt quotes={landedQuotes} />
           <QuoteTabs value={tab} onChange={setTab} count={recentBriefs.length} />
-          <div>
-            <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">
-              {t.quote.titleStep1}
-            </h1>
-            <p className="text-slate text-lead mt-2">
-              {t.quote.subtitleStep1}
-            </p>
-          </div>
+          <PageHeader title={t.quote.titleStep1} subtitle={t.quote.subtitleStep1} />
           {/* One bordered container: the two choices sit side by side as a
               toggle at the top, and the input for whichever is selected
               expands underneath, inside the same box.

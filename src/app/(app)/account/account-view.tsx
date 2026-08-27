@@ -14,6 +14,7 @@ import { Confirm } from "@/components/ui/confirm";
 import { PaymentsCard } from "@/components/account/payments-card";
 import type { ConnectState } from "@/lib/stripe-connect";
 import { useT } from "@/lib/i18n/context";
+import { PageHeader, SectionHeading } from "@/components/ui/page-header";
 
 export function AccountView({
   name,
@@ -41,17 +42,20 @@ export function AccountView({
   return (
     <>
       <Topbar />
-      <div>
-        <h1 className="font-display italic text-[32px] text-coral m-0">{t.account.yourAccount}</h1>
-        <p className="text-slate text-small mt-2">
-          {t.account.basicInfoOnly}
-        </p>
-      </div>
+      <PageHeader title={t.account.yourAccount} subtitle={t.account.basicInfoOnly} />
+      {/* Five unrelated cards in one column read as a list of settings with no
+          shape. Three bands instead: who you are, how you get paid and get
+          told things, and the one that cannot be undone. */}
       <div className="flex flex-col gap-5 max-w-lg">
+        <SectionHeading title={t.account.groupYou} hint={t.account.groupYouHint} />
         <BasicInfoCard name={name} studioName={studioName} email={email} />
         <PasswordCard hasPassword={hasPassword} />
+
+        <SectionHeading title={t.account.groupRunning} hint={t.account.groupRunningHint} />
         <PaymentsCard state={stripeState} justReturned={justReturnedFromStripe} />
         <EmailSettingsCard nudgeEmails={nudgeEmails} marketingOptIn={marketingOptIn} />
+
+        <SectionHeading title={t.account.groupEnding} hint={t.account.groupEndingHint} />
         <DangerZoneCard />
       </div>
     </>

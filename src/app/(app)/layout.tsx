@@ -17,7 +17,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           on the left from md up. Bottom nav rather than a hamburger: five
           destinations that are all one tap away is better than five hidden
           behind a menu. */}
-      <div className="flex flex-col md:flex-row min-h-screen bg-white">
+      {/* The canvas is paper, the cards are white.
+          Everything sat on white with a hairline border, which made a page of
+          six cards read as one flat sheet with lines drawn on it. One tone
+          between the two is enough: the cards lift, the gaps between them
+          become real, and nothing needed a shadow to do it. */}
+      <div className="flex flex-col md:flex-row min-h-screen bg-paper">
         <Sidebar />
         {/* 56px each side was a lot of nothing next to a nav rail that already
             separates the content from the edge, and the project tracker is the

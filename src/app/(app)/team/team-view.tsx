@@ -12,6 +12,7 @@ import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
 import { createInviteAction, revokeInviteAction, removeMemberAction } from "@/actions/team";
 import { useT } from "@/lib/i18n/context";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface Member {
   id: string;
@@ -61,14 +62,7 @@ export function TeamView({
   return (
     <>
       <Topbar />
-      <div>
-        <h1 className="font-display italic text-[32px] text-coral m-0">
-          {teamName ?? "Your studio"}
-        </h1>
-        <p className="text-slate text-small mt-2">
-          {t.team.sharedWorkspace}
-        </p>
-      </div>
+      <PageHeader title={teamName ?? "Your studio"} subtitle={t.team.sharedWorkspace} />
 
       {isOwner || members.length <= 1 ? (
         <Card>

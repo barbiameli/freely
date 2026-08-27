@@ -44,6 +44,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Tabs } from "@/components/ui/tabs";
 import { QuoteSetupCard } from "@/components/memory/quote-setup-card";
 import type { AccountDefaults } from "@/lib/quote-defaults";
+import { PageHeader } from "@/components/ui/page-header";
 
 /**
  * Memory, in four tabs.
@@ -175,15 +176,15 @@ export function MemoryView({
   return (
     <>
       <Topbar />
-      <div>
-        <h1 className="font-display italic text-[32px] text-coral m-0">
-          {t.memory.whatItKnows}
-        </h1>
-        <p className="text-slate text-small mt-2">
-          {t.memory.shapesGeneration}
-          <span className="font-semibold text-slate">{industryLabel(industry)}</span>.
-        </p>
-      </div>
+      <PageHeader
+        title={t.memory.whatItKnows}
+        subtitle={
+          <>
+            {t.memory.shapesGeneration}
+            <span className="font-semibold text-slate">{industryLabel(industry)}</span>.
+          </>
+        }
+      />
       <Tabs
         items={TABS.map((tab) => ({ id: tab.id, label: t.memory[tab.labelKey] }))}
         value={tab}

@@ -10,6 +10,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { useT, useLocale } from "@/lib/i18n/context";
 import { InvoiceQueueList, type QueueRow } from "./invoice-queue-list";
 import { NewInvoiceButton } from "./new-invoice-button";
+import { PageHeader } from "@/components/ui/page-header";
 
 export interface InvoiceRowView {
   id: string;
@@ -56,14 +57,11 @@ export function InvoicesView({
 
   return (
     <>
-      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
-        <div>
-          <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">
-            {t.invoices.title}
-          </h1>
-        </div>
-        <NewInvoiceButton projects={projects} />
-      </div>
+      <PageHeader
+        title={t.invoices.title}
+        subtitle={t.invoices.pageSubtitle}
+        action={<NewInvoiceButton projects={projects} />}
+      />
 
       {/* The shared strip. This page had its own copy of the markup, which is
           how the same control came to look slightly different on three pages. */}

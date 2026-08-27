@@ -7,6 +7,7 @@ import type { Funnel, Retention, DayCount } from "@/lib/metrics";
 import type { Subscriber, SendRow, Account } from "@/lib/mailing";
 import { MailingList } from "./mailing-list";
 import { RoadmapCard } from "./roadmap-card";
+import { PageHeader } from "@/components/ui/page-header";
 
 /**
  * The product's numbers, read rather than explored.
@@ -64,12 +65,10 @@ export function InsightsView({
   return (
     <>
       <Topbar />
-      <div>
-        <h1 className="font-display italic text-[32px] text-coral m-0">Insights</h1>
-        <p className="text-slate text-small mt-2">
-          The last {windowDays} days. Counts across every account, never one person.
-        </p>
-      </div>
+      <PageHeader
+        title="Insights"
+        subtitle={`The last ${windowDays} days. Counts across every account, never one person.`}
+      />
 
       {empty ? (
         <Card>

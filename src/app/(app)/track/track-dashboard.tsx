@@ -20,6 +20,7 @@ import { extractFileText } from "@/lib/extract-file";
 import { currencySymbol } from "@/lib/currencies";
 import { useT } from "@/lib/i18n/context";
 import { fill } from "@/lib/i18n";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface TrackProject {
   id: string;
@@ -128,22 +129,19 @@ export function TrackDashboard({
   return (
     <>
       <Topbar />
-      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
-        <div>
-          <h1 className="font-display italic text-[32px] text-coral m-0">
-            {t.track.everythingRunning}
-          </h1>
-          <p className="text-slate text-small mt-2">
-            {visibleProjects.length === 1
-              ? t.track.projectCountOne
-              : fill(t.track.projectCount, { count: visibleProjects.length })}
-          </p>
-        </div>
-        <div className="flex gap-2.5">
-          {/* Both panels hang off their own button. They used to render further
-              down the page, after the stat cards, so what you had just summoned
-              appeared half a screen away and read as a section that had always
-              been there. */}
+      <PageHeader
+        title={t.track.everythingRunning}
+        subtitle={
+          visibleProjects.length === 1
+            ? t.track.projectCountOne
+            : fill(t.track.projectCount, { count: visibleProjects.length })
+        }
+        /* Both panels hang off their own button. They used to render further
+           down the page, after the stat cards, so what you had just summoned
+           appeared half a screen away and read as a section that had always
+           been there. */
+        action={
+          <>
           <Popover
             label={t.track.uploadSow}
             align="right"
@@ -238,8 +236,9 @@ export function TrackDashboard({
               </>
             )}
           </Popover>
-        </div>
-      </div>
+          </>
+        }
+      />
       {visibleProjects.length > 0 && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 lg:gap-[14px]">
           {[
