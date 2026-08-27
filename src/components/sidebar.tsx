@@ -30,7 +30,7 @@ export function Sidebar() {
     <nav
       className="
         fixed bottom-0 left-0 right-0 z-40 flex flex-row items-stretch justify-around
-        bg-white border-t border-line
+        bg-white border-t border-line safe-bottom
         md:static md:z-auto md:w-[104px] md:flex-col md:items-center md:justify-start
         md:border-t-0 md:border-r md:py-7 md:gap-11 md:flex-shrink-0 md:h-screen md:sticky md:top-0
       "

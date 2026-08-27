@@ -39,6 +39,13 @@ import clsx from "@/lib/clsx";
  *
  * Focus moves into the panel on open. Without it, a keyboard user's next tab
  * goes to whatever was behind the overlay.
+ *
+ * On a phone it is a sheet rather than a box: full width, pinned to the bottom,
+ * square along the bottom edge and rounded along the top. A centred 420px card
+ * on a 390px screen is a card with 16px of backdrop around it, which reads as a
+ * box that failed to fit, and its close sits at the top of the screen where the
+ * thumb holding the phone cannot reach it. The sheet also caps its height and
+ * scrolls inside itself, so a long list cannot push the actions off-screen.
  */
 export function Modal({
   open,
@@ -49,6 +56,14 @@ export function Modal({
   footer,
   /** Wider, for a dialog holding a list rather than a sentence. */
   wide,
+  /**
+   * No header of its own, and no padding around the content.
+   *
+   * For content that already carries its own heading and spacing, which is
+   * what a popover's panel is. Without this a popover shown as a sheet on a
+   * phone would arrive with two titles and two sets of padding.
+   */
+  bare,
 }: {
   open: boolean;
   onClose: () => void;
@@ -58,6 +73,7 @@ export function Modal({
   /** The actions. Laid out by the modal so every dialog puts them in one place. */
   footer?: ReactNode;
   wide?: boolean;
+  bare?: boolean;
 }) {
   const panel = useRef<HTMLDivElement>(null);
 
@@ -86,7 +102,7 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-ink/25 backdrop-blur-[1.5px] flex items-start sm:items-center justify-center p-4 overflow-y-auto animate-fade-in motion-reduce:animate-none"
+      className="fixed inset-0 z-50 bg-ink/25 backdrop-blur-[1.5px] flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto animate-fade-in motion-reduce:animate-none"
       // Only a press that both started and ended on the backdrop is a dismissal.
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
@@ -99,26 +115,41 @@ export function Modal({
         aria-modal="true"
         aria-label={title}
         className={clsx(
-          "bg-white rounded-card shadow-dialog w-full my-auto outline-none animate-dialog-in motion-reduce:animate-none",
-          wide ? "max-w-[560px]" : "max-w-[420px]"
+          "relative bg-white shadow-dialog w-full outline-none animate-dialog-in motion-reduce:animate-none",
+          "rounded-t-card sm:rounded-card",
+          "max-h-[88vh] sm:max-h-none overflow-y-auto sm:overflow-visible sm:my-auto",
+          "safe-bottom sm:pb-0",
+          wide ? "sm:max-w-[560px]" : "sm:max-w-[420px]"
         )}
       >
-        <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-3 border-b border-line">
-          <div className="min-w-0">
-            <div className="font-body font-bold text-body text-ink text-pretty">{title}</div>
-            {hint && <p className="text-caption text-slate mt-0.5 mb-0 text-pretty">{hint}</p>}
-          </div>
+        {bare ? (
+          // The content brings its own heading, so this only adds the way out.
           <button
             type="button"
             onClick={onClose}
             aria-label={title}
-            className="shrink-0 text-text-muted hover:text-ink bg-none border-none cursor-pointer p-0 tap"
+            className="absolute top-3 right-3 z-10 text-text-muted hover:text-ink bg-white/80 rounded-full border-none cursor-pointer p-1.5 tap"
           >
             <X size={16} />
           </button>
-        </div>
+        ) : (
+          <div className="sticky top-0 bg-white flex items-start justify-between gap-3 px-5 pt-4 pb-3 border-b border-line">
+            <div className="min-w-0">
+              <div className="font-body font-bold text-body text-ink text-pretty">{title}</div>
+              {hint && <p className="text-caption text-slate mt-0.5 mb-0 text-pretty">{hint}</p>}
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={title}
+              className="shrink-0 text-text-muted hover:text-ink bg-none border-none cursor-pointer p-0 tap"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        )}
 
-        {children && <div className="px-5 py-4">{children}</div>}
+        {children && <div className={bare ? "" : "px-5 py-4"}>{children}</div>}
 
         {footer && (
           // Actions on the right, and the same way round in every dialog: the

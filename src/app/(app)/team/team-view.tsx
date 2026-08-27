@@ -127,16 +127,20 @@ export function TeamView({
       {isOwner && pendingInvites.length > 0 && (
         <Card>
           <Label>{t.team.pendingInvites}</Label>
+          {/* min-w-0 and a truncate on the address: an invited email is often
+              longer than a phone is wide, and without them it pushed the copy
+              and revoke controls off the right of the card. */}
           <div className="flex flex-col gap-2">
             {pendingInvites.map((inv) => (
-              <div key={inv.id} className="flex justify-between items-center py-1.5">
-                <span className="text-body text-slate">
+              <div key={inv.id} className="flex justify-between items-center gap-3 py-1.5">
+                <span className="text-body text-slate min-w-0 truncate" title={inv.email ?? undefined}>
                   {inv.email ?? t.team.shareableLink}
                 </span>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 shrink-0">
                   <button
                     onClick={() => navigator.clipboard.writeText(inv.url)}
-                    className="text-violet"
+                    className="text-violet hover:text-ink transition-colors bg-none border-none cursor-pointer p-0 tap"
+                    aria-label={t.team.copyLink}
                     title={t.team.copyLink}
                   >
                     <Copy size={14} />

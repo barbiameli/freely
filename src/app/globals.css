@@ -145,6 +145,19 @@ summary:focus-visible {
   border-radius: 4px;
 }
 
+/* The strip iPhones keep for the home indicator.
+
+   A bar pinned to the bottom of the screen sits underneath it, so the last
+   8-10mm of a nav item, or of a sheet's final row, is behind a piece of system
+   furniture that swallows the swipe. env() is zero everywhere it does not
+   apply, so this is free on every other device.
+
+   As padding rather than margin: the nav keeps its white background all the
+   way down instead of leaving a strip of page showing under it. */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);

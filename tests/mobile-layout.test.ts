@@ -92,3 +92,51 @@ describe("mobile layout", () => {
     ).toEqual([]);
   });
 });
+
+/**
+ * The two panels, on a phone.
+ *
+ * Both were desktop shapes that had never been given a phone answer: a centred
+ * 420px card on a 390px screen, and a dropdown anchored to a button that is as
+ * wide as the screen anyway. Both become sheets, which is what the phone's own
+ * apps do, and which puts the way out under the thumb rather than at the top
+ * of the screen.
+ */
+describe("panels on a phone", () => {
+  const modal = readFileSync("src/components/ui/modal.tsx", "utf8");
+  const popover = readFileSync("src/components/ui/popover.tsx", "utf8");
+
+  it("pins the dialog to the bottom on a phone and centres it above", () => {
+    expect(modal).toContain("items-end sm:items-center");
+    expect(modal).toContain("rounded-t-card sm:rounded-card");
+  });
+
+  it("caps the sheet's height so the content scrolls inside it", () => {
+    expect(modal).toMatch(/max-h-\[\d+vh\]/);
+  });
+
+  it("turns a popover into a sheet on a phone", () => {
+    expect(popover).toContain("useIsPhone");
+    expect(popover).toContain("<Modal");
+  });
+
+  it("lets the sheet keep the popover's own heading rather than adding a second", () => {
+    expect(popover).toContain("bare");
+    expect(modal).toContain("bare ?");
+  });
+});
+
+describe("the home indicator", () => {
+  const css = readFileSync("src/app/globals.css", "utf8");
+
+  // A bar pinned to the bottom of an iPhone sits under the system's own strip,
+  // which swallows the last few millimetres of every tap.
+  it("keeps a safe area at the bottom", () => {
+    expect(css).toContain("env(safe-area-inset-bottom");
+  });
+
+  it("gives it to the nav and to the sheet", () => {
+    expect(readFileSync("src/components/sidebar.tsx", "utf8")).toContain("safe-bottom");
+    expect(readFileSync("src/components/ui/modal.tsx", "utf8")).toContain("safe-bottom");
+  });
+});

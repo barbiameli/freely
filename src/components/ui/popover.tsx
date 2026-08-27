@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import clsx from "@/lib/clsx";
+import { Modal } from "@/components/ui/modal";
+import { useIsPhone } from "@/lib/use-phone";
 
 /**
  * A panel that belongs to the button that opened it.
@@ -21,6 +23,13 @@ import clsx from "@/lib/clsx";
  * It handles the things a panel has to handle and callers should not repeat:
  * clicking away closes it, escape closes it, and the trigger keeps its own
  * aria-expanded so a screen reader is told the same story the eye is.
+ *
+ * On a phone it stops being a popover and becomes a sheet. Proximity is worth
+ * having on a wide screen, where the panel can sit under its button with room
+ * on both sides; at 390px the same panel is as wide as the screen anyway, so
+ * the only thing the anchoring still does is decide how much of the page it
+ * covers and how far the thumb has to travel. A sheet is the better answer to
+ * the same question, and it is the one the phone's own apps give.
  */
 export function Popover({
   trigger,
@@ -40,9 +49,12 @@ export function Popover({
 }) {
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
+  const phone = useIsPhone();
 
   useEffect(() => {
-    if (!open) return;
+    // The sheet does its own dismissing, and a click inside it would count as
+    // a click away from this wrapper.
+    if (!open || phone) return;
 
     function onAway(event: MouseEvent) {
       if (!wrap.current?.contains(event.target as Node)) setOpen(false);
@@ -57,7 +69,18 @@ export function Popover({
       document.removeEventListener("mousedown", onAway);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [open, phone]);
+
+  if (phone) {
+    return (
+      <>
+        {trigger({ open, toggle: () => setOpen((o) => !o) })}
+        <Modal open={open} onClose={() => setOpen(false)} title={label} bare>
+          {children({ close: () => setOpen(false) })}
+        </Modal>
+      </>
+    );
+  }
 
   return (
     <div ref={wrap} className="relative">
