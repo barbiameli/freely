@@ -133,7 +133,7 @@ export function QuoteWizard({
   hasBrand,
   savedLocation,
   savedCountry,
-  disciplines,
+  disciplines = [],
   savedRate,
   savedRateUnit,
   industry,
@@ -822,7 +822,10 @@ export function QuoteWizard({
               <div className="mt-3">
                 <div className="text-caption text-text-muted mb-1.5">{t.common.commonOnes}</div>
                 <div className="flex flex-wrap gap-1.5">
-                  {projectPresets(industry).map(({ labelKey, textKey }) => {
+                  {projectPresets(
+                    industry,
+                    disciplines.filter((d) => d.key !== industry).map((d) => d.key)
+                  ).map(({ labelKey, textKey }) => {
                     const line = t.quote[textKey];
                     const picked = pickedExamples.includes(labelKey);
                     return (

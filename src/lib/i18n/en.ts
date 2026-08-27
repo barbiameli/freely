@@ -333,6 +333,7 @@ export const en = {
     refineShowMe: "Show me",
     stillWriting: "Still writing the rest.",
     stillWritingHint: "The terms, revisions and anything else you asked for are on their way. Everything above is finished.",
+    quotedAs: "Quoted as",
     beforeYouSend: "Before you send",
     beforeYouSendOpen: "{count} still to check. Publishing is not blocked, these are notes for you.",
     beforeYouSendDone: "All checked. Nothing here reaches your client.",

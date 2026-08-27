@@ -333,6 +333,7 @@ export const es: Dictionary = {
     refineShowMe: "Ensenamelo",
     stillWriting: "Todavia escribiendo el resto.",
     stillWritingHint: "Las condiciones, las revisiones y lo demas que pediste estan en camino. Todo lo de arriba ya esta listo.",
+    quotedAs: "Presupuestado como",
     beforeYouSend: "Antes de enviarlo",
     beforeYouSendOpen: "Quedan {count} por revisar. No bloquea la publicacion, son notas para ti.",
     beforeYouSendDone: "Todo revisado. Nada de esto llega a tu cliente.",

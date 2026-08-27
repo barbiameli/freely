@@ -163,6 +163,15 @@ export const briefSchema = z.object({
   /** Optional structured "Strategy" section. Only populated when the
    * wizard's "Strategy" section is included. */
   strategy: strategySchema.optional(),
+  /**
+   * Which of the freelancer's disciplines this job mostly is.
+   *
+   * Only asked for when they do more than one. Optional and unvalidated
+   * against the list here on purpose: a key the app does not recognise is
+   * dropped where it is read, which is better than failing a whole quote over
+   * one word.
+   */
+  discipline: z.string().optional(),
   price: z.number().nonnegative(),
   hours: z.number().nonnegative(),
   /** Only present when the quote is being billed in milestones. */
@@ -179,6 +188,15 @@ export type GeneratedBrief = z.infer<typeof briefSchema>;
 /** A past quoted (and ideally tracked/accepted) project, used to anchor
  * pricing and hour estimates for a new quote. */
 export interface PricingHistoryEntry {
+  /**
+   * Which discipline that quote was for, where it is known.
+   *
+   * Blended history is how a design sprint gets anchored against a build. The
+   * model names the discipline of the job in front of it and can see which of
+   * these match, so the weighting happens where the judgment is rather than in
+   * a filter here that would throw away context when there are only two.
+   */
+  discipline?: string;
   title: string;
   price: number;
   hours: number;
@@ -214,6 +232,13 @@ export interface QuoteDraftInput {
   hourlyRate: number;
   /** Whether the rate above is per hour or per day. */
   rateUnit?: RateUnit;
+  /**
+   * What this person does, for the model to pick from.
+   *
+   * Only sent when there is more than one, because with one there is nothing to
+   * decide and asking would invite the model to disagree with a fact.
+   */
+  disciplines?: { key: string; label: string }[];
   /**
    * Nobody picked any sections, so the model picks them.
    *
@@ -363,7 +388,7 @@ export function buildSystemPrompt(memory: MemoryContext | string): string {
           .map((f) => `--- ${f.name} ---\n${f.text.slice(0, 4000)}`)
           .join("\n\n")}`
       : null,
-    'Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly this schema: {"title": string, "client": string, "scope": string, "deliverables": string[], "timeline": string, "strategy": {"goal": string, "findings": string[], "openQuestions": string[]} (always include this object; when Strategy was not requested, goal is "" and findings is []), "price": number, "hours": number, "terms": {"cancellation": string, "ownership": string, "confidentiality": string} (optional), "revisions": string (optional), "availability": string (optional), "paymentTerms": string (optional), "aiUsage": {"will": string[], "willNot": string[]} (optional)}. Omit any optional key entirely unless it was explicitly requested. "client" is the name of the person or company being quoted. Plenty of briefs never name one: when the brief does not say, put a short generic stand-in like "Client" rather than an empty string, and never invent a company name. The same goes for "title": describe the work in a few words if the brief does not title it. Never put bank account numbers, sort codes, IBANs, card details or any other payment credentials anywhere in the response, not even as an example or placeholder: quotes can be published to a public web address, so payment details belong only on an invoice. Each findings/openQuestions entry should be one short, standalone bullet point, not a run-on sentence with several ideas mashed together, and never numbered manually (e.g. no "(1)" prefixes) since the UI renders them as a real bulleted list. If you used web search to research rates, do not include citations or URLs in the JSON, fold the conclusion into your reasoning about price only.',
+    'Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly this schema: {"title": string, "client": string, "scope": string, "deliverables": string[], "timeline": string, "discipline": string (only when you were given a list of kinds of work to choose from; one of those keys), "strategy": {"goal": string, "findings": string[], "openQuestions": string[]} (always include this object; when Strategy was not requested, goal is "" and findings is []), "price": number, "hours": number, "terms": {"cancellation": string, "ownership": string, "confidentiality": string} (optional), "revisions": string (optional), "availability": string (optional), "paymentTerms": string (optional), "aiUsage": {"will": string[], "willNot": string[]} (optional)}. Omit any optional key entirely unless it was explicitly requested. "client" is the name of the person or company being quoted. Plenty of briefs never name one: when the brief does not say, put a short generic stand-in like "Client" rather than an empty string, and never invent a company name. The same goes for "title": describe the work in a few words if the brief does not title it. Never put bank account numbers, sort codes, IBANs, card details or any other payment credentials anywhere in the response, not even as an example or placeholder: quotes can be published to a public web address, so payment details belong only on an invoice. Each findings/openQuestions entry should be one short, standalone bullet point, not a run-on sentence with several ideas mashed together, and never numbered manually (e.g. no "(1)" prefixes) since the UI renders them as a real bulleted list. If you used web search to research rates, do not include citations or URLs in the JSON, fold the conclusion into your reasoning about price only.',
   ];
 
   return sections.filter(Boolean).join(" ");
@@ -402,14 +427,18 @@ function formatPricingHistory(history: PricingHistoryEntry[], symbol: string): s
       (h) =>
         `- "${h.title}": ${symbol}${h.price.toLocaleString()} for ${h.hours}h (≈${symbol}${h.impliedHourlyRate.toFixed(
           0
-        )}/hr)${label(h.outcome)}`
+        )}/hr)${h.discipline ? ` [${h.discipline}]` : ""}${label(h.outcome)}`
     )
     .join("\n");
+  const anyTagged = history.some((h) => h.discipline);
+  const byDiscipline = anyTagged
+    ? " Some entries are tagged with the kind of work they were, in square brackets. Anchor hardest on the ones matching the discipline you name for this job: a build priced against design sprints comes out wrong in both directions."
+    : "";
   const anyMarked = history.some((h) => h.outcome === "WON" || h.outcome === "LOST");
   const guidance = anyMarked
     ? " Weight the ones marked WON most heavily: those are prices this freelancer actually got paid. Treat the ones marked as turned down as evidence about what did not land, and do not reproduce their pricing without reason."
     : "";
-  return `\nPricing history, past projects this freelancer has quoted, use these as the primary anchor for price and hours on similarly-scoped work.${guidance}\n${rows}`;
+  return `\nPricing history, past projects this freelancer has quoted, use these as the primary anchor for price and hours on similarly-scoped work.${guidance}${byDiscipline}\n${rows}`;
 }
 
 // A big uploaded PDF (a past quote, a lengthy SOW) can extract to tens of
@@ -608,6 +637,27 @@ Rules: every deliverable appears in exactly one milestone, never two and never n
    */
   const required = (note?: string) =>
     note?.trim() ? "This quote includes this section, because the freelancer wrote it. " : ifChosen;
+  /**
+   * Which of their disciplines this job mostly is.
+   *
+   * Inferred rather than asked, because the alternative is another row on a
+   * form that is already long, and the brief usually says plainly enough: a
+   * request for six screens and a Webflow build is not a copywriting job.
+   *
+   * Named as a key so it can be stored and compared, and used for three things
+   * afterwards: which past quotes anchor the price, which saved rate applies,
+   * and how the scope is framed. A guess that is wrong is one press to fix on
+   * the quote page, which is cheaper than a question everybody answers.
+   */
+  const disciplineInstruction =
+    (draft.disciplines?.length ?? 0) > 1
+      ? `\nThis freelancer does more than one kind of work: ${draft
+          .disciplines!.map((d) => `${d.key} (${d.label})`)
+          .join(
+            ", "
+          )}. Return a "discipline" key naming which one this job mostly is, using exactly one of those keys. Judge it by what the client is actually buying, not by which words appear most. A job that spans two is named by whichever carries the larger share of the work, and if it is genuinely even, name the first. Write the whole quote as that kind of work: its deliverables, its vocabulary and the stages a client of that discipline expects. A build quoted in the language of a design sprint reads like it was written for somebody else.`
+      : "";
+
   const timelineInstruction = draft.includeTimeline
     ? `\nTimeline requirements. Return "timeline" as 4-6 stages, EACH ON ITS OWN LINE separated by a newline character, in the exact form "Week 1-2: Label - what actually happens". Rules:
 - Start every line with a concrete week or day range ("Week 1", "Week 2-3", "Day 1-3"). Never "Phase one" or "Later" with no timing.
@@ -713,6 +763,7 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
     `\n${pricingInstruction}`,
     formatPricingHistory(pricingHistory, symbol),
     // Skipped on the core half, since the other call is writing them.
+    disciplineInstruction,
     part === "all" ? sectionChoiceInstruction : "",
     part === "all" ? strategyInstruction : "",
     timelineInstruction,

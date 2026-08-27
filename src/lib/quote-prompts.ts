@@ -98,9 +98,23 @@ const BY_FAMILY: Record<string, ProjectPresetKey[]> = {
  * "get the direction signed off before detailed design starts" learns only
  * that the app was built for someone else.
  */
-export function projectPresetKeys(industry?: string | null): ProjectPresetKey[] {
-  const specific = (industry && BY_FAMILY[industry]) || [];
-  return [...specific, ...GENERAL];
+export function projectPresetKeys(
+  industry?: string | null,
+  /**
+   * The other things they do.
+   *
+   * A designer who also builds was being offered design presets only, so the
+   * one-press examples covered half their work. Main first, because the chips
+   * are read in order and the first few are the ones anybody uses.
+   */
+  others: string[] = []
+): ProjectPresetKey[] {
+  const specific = [industry, ...others]
+    .filter((key): key is string => Boolean(key))
+    .flatMap((key) => BY_FAMILY[key] ?? []);
+  // Deduped: two disciplines in the same family share presets, and offering
+  // the same chip twice reads as a bug.
+  return Array.from(new Set([...specific, ...GENERAL]));
 }
 
 /** The short label for a chip, and the sentence it writes into the field. */
@@ -109,8 +123,8 @@ export interface ProjectPreset {
   textKey: `${ProjectPresetKey}Text`;
 }
 
-export function projectPresets(industry?: string | null): ProjectPreset[] {
-  return projectPresetKeys(industry).map((key) => ({
+export function projectPresets(industry?: string | null, others: string[] = []): ProjectPreset[] {
+  return projectPresetKeys(industry, others).map((key) => ({
     labelKey: key,
     textKey: `${key}Text` as const,
   }));

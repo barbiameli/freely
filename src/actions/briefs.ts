@@ -29,7 +29,7 @@ import {
 import { getMarketRateNote } from "@/lib/market-rate-cache";
 import { CURRENT_LAYOUT } from "@/lib/quote-layout";
 import { hasStrategyContent } from "@/lib/strategy";
-import { disciplineLine } from "@/lib/industries";
+import { allDisciplines, disciplineLine, industryLabel } from "@/lib/industries";
 
 export type ActionResult<T = undefined> =
   | { ok: true; data: T }
@@ -218,6 +218,7 @@ async function buildPricingHistory(user: {
     price: number;
     hours: number;
     outcome?: "PENDING" | "WON" | "LOST";
+    settings?: { discipline?: string } | null;
   }[];
 
   const entries = past.map((p) => ({
@@ -226,6 +227,9 @@ async function buildPricingHistory(user: {
     hours: p.hours,
     impliedHourlyRate: p.price / p.hours,
     outcome: p.outcome ?? "PENDING",
+    // Quotes written before this existed have none, and the prompt says so by
+    // omitting the tag rather than by guessing one.
+    discipline: p.settings?.discipline,
   }));
 
   // Won first, then undecided, then lost, and cap at 15 so the prompt does not
@@ -263,7 +267,18 @@ export async function generateBriefAction(
     !draftInput.includeAvailability &&
     !draftInput.includeAI;
 
-  const draft: QuoteDraftPayload = { ...draftInput, language: quoteLanguage, chooseSections };
+  const disciplines = allDisciplines(
+    user.industry,
+    (user as unknown as { otherIndustries?: string[] }).otherIndustries
+  ).map((key) => ({ key, label: industryLabel(key) }));
+
+  const draft: QuoteDraftPayload = {
+    ...draftInput,
+    language: quoteLanguage,
+    chooseSections,
+    // Only when there is a choice. One discipline is a fact, not a question.
+    ...(disciplines.length > 1 ? { disciplines } : {}),
+  };
   // Whether there is a second half at all. A bare quote is one call and has
   // nothing to wait for.
   const extrasWanted = wantsExtras(draft);
@@ -409,6 +424,14 @@ export async function generateBriefAction(
           // client has already been sent must not change shape underneath them
           // because the app moved on.
           layout: CURRENT_LAYOUT,
+          // Which kind of work this turned out to be, as named by the model
+          // from the freelancer's own list. Read back by the next quote's
+          // pricing history, and shown on the quote page where it can be
+          // corrected. Only stored when it is one of theirs.
+          ...(generated.discipline &&
+          disciplines.some((option) => option.key === generated.discipline)
+            ? { discipline: generated.discipline }
+            : {}),
           // The second half has not been written yet. The quote page reads
           // this, asks for it, and clears the flag. Stored rather than
           // inferred, because "no terms" and "terms not written yet" look
@@ -1141,5 +1164,52 @@ export async function deleteBriefAction(briefId: string): Promise<ActionResult<u
   await prisma.brief.delete({ where: { id: brief.id } });
   revalidatePath("/quote");
   revalidatePath("/quote/all");
+  return { ok: true, data: undefined };
+}
+
+/**
+ * Correcting which kind of work a quote is.
+ *
+ * The model names it from the freelancer's own list, and it will sometimes be
+ * wrong: a brief that talks mostly about screens can turn out to be a build
+ * job. One press to fix, and the fix is worth more than the label, because
+ * this is what the next quote's pricing history anchors on. A wrong tag today
+ * quietly skews a price next month.
+ */
+export async function setQuoteDisciplineAction(
+  briefId: string,
+  discipline: string
+): Promise<ActionResult<undefined>> {
+  const user = await requireFullUser();
+  const brief = await prisma.brief.findFirst({
+    where: { id: briefId, ...teamScopeWhere(user) },
+    select: { id: true, settings: true },
+  });
+  if (!brief) return { ok: false, error: "Quote not found." };
+
+  // Theirs, or nothing. This is a stored fact other quotes read.
+  const mine = allDisciplines(
+    user.industry,
+    (user as unknown as { otherIndustries?: string[] }).otherIndustries
+  );
+  if (!mine.includes(discipline)) {
+    return { ok: false, error: "That is not one of the kinds of work on your account." };
+  }
+
+  const settings = (brief.settings as Record<string, unknown> | null) ?? {};
+
+  try {
+    await prisma.brief.update({
+      where: { id: brief.id },
+      data: {
+        settings: { ...settings, discipline } as unknown as Prisma.InputJsonValue,
+      },
+    });
+  } catch (err) {
+    console.error("[setQuoteDisciplineAction] failed", err);
+    return { ok: false, error: "Couldn't change that." };
+  }
+
+  revalidatePath(`/quote/${briefId}`);
   return { ok: true, data: undefined };
 }

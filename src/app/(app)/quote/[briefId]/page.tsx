@@ -6,6 +6,7 @@ import { teamScopeWhere } from "@/lib/team-scope";
 import type { Strategy, BriefExtras } from "@/lib/anthropic";
 import { BriefView } from "./brief-view";
 import { layoutOf } from "@/lib/quote-layout";
+import { allDisciplines, industryLabel } from "@/lib/industries";
 
 export default async function BriefPage({ params }: { params: { briefId: string } }) {
   const user = await requireFullUser();
@@ -55,6 +56,8 @@ export default async function BriefPage({ params }: { params: { briefId: string 
         clearedQuestions:
           (brief as unknown as { clearedQuestions?: string[] }).clearedQuestions ?? [],
         layout: layoutOf(brief.settings),
+        discipline:
+          ((brief.settings as { discipline?: string } | null) ?? {}).discipline ?? null,
         extrasPending:
           ((brief.settings as { extrasPending?: boolean } | null) ?? {}).extrasPending === true,
         hiddenSections:
@@ -90,6 +93,11 @@ export default async function BriefPage({ params }: { params: { briefId: string 
           caption: e.caption,
         })),
       }}
+      // What this account does, so a wrong guess can be corrected in one press.
+      disciplines={allDisciplines(
+        user.industry,
+        (user as unknown as { otherIndustries?: string[] }).otherIndustries
+      ).map((key) => ({ key, label: industryLabel(key) }))}
       brand={{
         brandPrimaryColor: user.brandPrimaryColor,
         brandAccentColor: user.brandAccentColor,

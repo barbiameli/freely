@@ -26,6 +26,7 @@ import {
   updateBriefContentAction,
   updateQuoteLookAction,
   generateExtrasAction,
+  setQuoteDisciplineAction,
   toggleSectionAction,
   deleteBriefExampleAction,
 } from "@/actions/briefs";
@@ -103,6 +104,9 @@ interface Brief {
   layout?: number;
   /** The add-on sections are still being written. See generateExtrasAction. */
   extrasPending?: boolean;
+  /** Which kind of work the model decided this is, when the account does more
+   * than one. */
+  discipline?: string | null;
   hiddenSections?: string[];
   /**
    * How the work splits into billable chunks, when the quote is billed that
@@ -267,14 +271,25 @@ const LAYOUTS = [
 export function BriefView({
   brief,
   brand,
+  disciplines = [],
 }: {
   brief: Brief;
+  /** Everything this account does, for correcting the guess. */
+  disciplines?: { key: string; label: string }[];
   /** The account's saved colours and logo, for the "own branding" preview. */
   brand: BrandSource;
 }) {
   const router = useRouter();
   const t = useT();
   const [refinePrompt, setRefinePrompt] = useState("");
+  /**
+   * Which kind of work this quote is, as decided when it was written.
+   *
+   * Held locally so a correction lands at once. It matters more than a label
+   * looks like it should: the next quote's pricing anchors on the quotes tagged
+   * with the same discipline, so a wrong tag today skews a price next month.
+   */
+  const [discipline, setDiscipline] = useState(brief.discipline ?? "");
   /**
    * The second half, asked for from here.
    *
@@ -561,6 +576,29 @@ export function BriefView({
             })}
             {brief.accepted.email ? ` (${brief.accepted.email})` : ""}. The published page records
             it.
+          </div>
+        </div>
+      )}
+
+      {/* What kind of work this is, and one press to disagree. Only when the
+          account does more than one, since with one there is nothing to name
+          and nothing to get wrong. */}
+      {disciplines.length > 1 && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <span className="text-caption text-text-muted">{t.brief.quotedAs}</span>
+          <div className="flex flex-wrap gap-1.5">
+            {disciplines.map((option) => (
+              <Chip
+                key={option.key}
+                active={discipline === option.key}
+                onClick={() => {
+                  setDiscipline(option.key);
+                  void setQuoteDisciplineAction(brief.id, option.key);
+                }}
+              >
+                {option.label}
+              </Chip>
+            ))}
           </div>
         </div>
       )}
