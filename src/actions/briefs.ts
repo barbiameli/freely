@@ -13,10 +13,12 @@ import { sanitizeText, stripLongDashes, stripContrastive } from "@/lib/sanitize-
 import { resolveQuoteLocale, parseLocale } from "@/lib/i18n";
 import { enforceLlmRateLimit } from "@/lib/rate-limit";
 import {
-  generateBriefFromDraft,
+  generateQuoteCore,
+  generateQuoteExtras,
   refineBrief,
   shouldResearchMarketRates,
   needsMarketRateNote,
+  wantsExtras,
   type GeneratedBrief,
   type QuoteDraftInput,
   type MemoryContext,
@@ -257,6 +259,9 @@ export async function generateBriefAction(
     !draftInput.includeAI;
 
   const draft: QuoteDraftPayload = { ...draftInput, language: quoteLanguage, chooseSections };
+  // Whether there is a second half at all. A bare quote is one call and has
+  // nothing to wait for.
+  const extrasWanted = wantsExtras(draft);
 
   if (!draft.sourceText.trim()) {
     return { ok: false, error: "Add some source material before generating a brief." };
@@ -306,7 +311,10 @@ export async function generateBriefAction(
           rateUnit: draft.rateUnit ?? "HOUR",
         })
       : undefined;
-    generated = await generateBriefFromDraft(
+    // The core only. The add-on sections are written after this returns, from
+    // the quote's own page, so the wait ends when there is something to look
+    // at rather than when the last paragraph of the terms is finished.
+    generated = await generateQuoteCore(
       await buildMemoryContext(user),
       draft,
       pricingHistory,
@@ -396,6 +404,18 @@ export async function generateBriefAction(
           // client has already been sent must not change shape underneath them
           // because the app moved on.
           layout: CURRENT_LAYOUT,
+          // The second half has not been written yet. The quote page reads
+          // this, asks for it, and clears the flag. Stored rather than
+          // inferred, because "no terms" and "terms not written yet" look
+          // identical from the outside and mean opposite things.
+          extrasPending: extrasWanted,
+          // Everything the second call needs to write the same quote this one
+          // started. Without these the add-on sections would be written from
+          // the brief alone and the freelancer's own words about their terms,
+          // revisions and AI use would be dropped between the two halves.
+          chooseSections,
+          sectionNotes: draft.sectionNotes ?? {},
+          availability: draft.availability ?? { facts: [] },
           instructions: sanitizeText(draft.instructions),
           memoryProjectTitles: draft.memoryProjectTitles.map(sanitizeText),
           format: draft.format,
@@ -801,6 +821,117 @@ export async function toggleSectionAction(
 
   revalidatePath(`/quote/${briefId}`);
   return { ok: true, data: next };
+}
+
+/**
+ * Writes the add-on sections for a quote whose core has already landed.
+ *
+ * Called once by the quote page when it finds extrasPending on a quote. The
+ * page is already open and readable by then, which is the entire point of the
+ * split: the wait ended at the price rather than at the confidentiality
+ * clause.
+ *
+ * Everything about it is written to fail quietly. A quote with no terms is
+ * still a quote, the flag is cleared either way so the page cannot ask again
+ * forever, and the error is returned rather than thrown so a failure shows up
+ * as a sentence rather than as a page that will not load.
+ */
+export async function generateExtrasAction(
+  briefId: string
+): Promise<ActionResult<{ written: boolean }>> {
+  const user = await requireFullUser();
+  const brief = await prisma.brief.findFirst({
+    where: { id: briefId, ...teamScopeWhere(user) },
+  });
+  if (!brief) return { ok: false, error: "Quote not found." };
+
+  const settings = (brief.settings as Record<string, unknown> | null) ?? {};
+  // Already done, or never wanted. Either way there is nothing to write, and
+  // saying so is cheaper than a second model call.
+  if (!settings.extrasPending) return { ok: true, data: { written: false } };
+
+  /**
+   * The draft, rebuilt from what was stored.
+   *
+   * The wizard's draft object does not survive the round trip, and passing it
+   * back from the client would let a page ask for sections the quote was never
+   * set up with. Everything needed is on the quote already.
+   */
+  const draft: QuoteDraftPayload = {
+    sourceText: brief.sourceText ?? "",
+    instructions: typeof settings.instructions === "string" ? settings.instructions : "",
+    memoryProjectTitles: Array.isArray(settings.memoryProjectTitles)
+      ? (settings.memoryProjectTitles as string[])
+      : [],
+    format: (settings.format as "HTML" | "PDF" | "Figma") ?? "PDF",
+    includeSOW: settings.includeSOW === true,
+    includeAI: settings.includeAI === true,
+    includeStrategy: settings.includeStrategy === true,
+    includeTimeline: settings.includeTimeline === true,
+    includeTerms: settings.includeTerms === true,
+    includeRevisions: settings.includeRevisions === true,
+    includeAvailability: settings.includeAvailability === true,
+    chooseSections: settings.chooseSections === true,
+    sectionNotes: (settings.sectionNotes as QuoteDraftPayload["sectionNotes"]) ?? undefined,
+    availability: (settings.availability as QuoteDraftPayload["availability"]) ?? undefined,
+    hourlyRate: brief.hourlyRate ?? 0,
+    rateUnit: ((brief as unknown as { rateUnit?: string }).rateUnit ?? "HOUR") as
+      | "HOUR"
+      | "DAY"
+      | "FIXED",
+    currency: brief.currency ?? "USD",
+    language: parseLocale((brief as unknown as { language?: string }).language),
+    paymentPlan: (settings.paymentPlan as QuoteDraftPayload["paymentPlan"]) ?? "SPLIT",
+    upfrontPercent: typeof settings.upfrontPercent === "number" ? settings.upfrontPercent : 50,
+    expertiseLevel: (brief.expertiseLevel as QuoteDraftPayload["expertiseLevel"]) ?? "Senior",
+  };
+
+  let written = false;
+  let extras: (BriefExtras & { strategy?: Strategy }) | null = null;
+  try {
+    await enforceLlmRateLimit(user.id);
+    extras = await generateQuoteExtras(await buildMemoryContext(user), draft, [], undefined);
+    written = true;
+  } catch (err) {
+    console.error("[generateExtrasAction] failed", err);
+  }
+
+  const generated = { ...(extras ?? {}) } as GeneratedBrief;
+  const nextSettings: Record<string, unknown> = { ...settings, extrasPending: false };
+
+  if (written && extras) {
+    // The sections the model chose are only knowable now, so the stored flags
+    // are settled here rather than at generation.
+    if (settings.chooseSections === true) {
+      nextSettings.includeStrategy = hasStrategyContent(extras.strategy);
+      nextSettings.includeSOW = Boolean(extras.paymentTerms);
+      nextSettings.includeTerms = Boolean(extras.terms);
+      nextSettings.includeRevisions = Boolean(extras.revisions);
+      nextSettings.includeAvailability = Boolean(extras.availability);
+      nextSettings.includeAI = Boolean(extras.aiUsage);
+    }
+  }
+
+  try {
+    await prisma.brief.update({
+      where: { id: brief.id },
+      data: {
+        ...(written && hasExtras(generated) ? { extras: sanitizeExtras(generated) } : {}),
+        // The Approach arrives with the second half when the model is choosing
+        // the sections, and the open questions ride inside it.
+        ...(written && extras?.strategy ? { strategy: sanitizeStrategy(extras.strategy) } : {}),
+        settings: nextSettings as unknown as Prisma.InputJsonValue,
+      },
+    });
+  } catch (err) {
+    console.error("[generateExtrasAction] failed to save", err);
+    return { ok: false, error: "The extra sections could not be saved." };
+  }
+
+  revalidatePath(`/quote/${briefId}`);
+  return written
+    ? { ok: true, data: { written } }
+    : { ok: false, error: "The extra sections could not be written. The quote itself is fine." };
 }
 
 /**

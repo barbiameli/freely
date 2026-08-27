@@ -324,6 +324,8 @@ export const es: Dictionary = {
     refineChanged: "Se actualizo: {list}.",
     refineNothing: "No cambio nada. Prueba a nombrar la parte que quieres distinta, por ejemplo \"acorta el calendario\".",
     refineShowMe: "Ensenamelo",
+    stillWriting: "Todavia escribiendo el resto.",
+    stillWritingHint: "Las condiciones, las revisiones y lo demas que pediste estan en camino. Todo lo de arriba ya esta listo.",
     beforeYouSend: "Antes de enviarlo",
     beforeYouSendOpen: "Quedan {count} por revisar. No bloquea la publicacion, son notas para ti.",
     beforeYouSendDone: "Todo revisado. Nada de esto llega a tu cliente.",

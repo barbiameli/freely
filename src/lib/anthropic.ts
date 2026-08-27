@@ -1038,6 +1038,79 @@ export function needsMarketRateNote(
   return shouldResearchMarketRates(draft, pricingHistory) && draft.hourlyRate <= 0;
 }
 
+/**
+ * The core of a quote: everything the client reads first.
+ *
+ * Split out so the wait can end when this lands rather than when the whole
+ * document does. The add-on sections take about as long again and none of them
+ * are needed to look at a price, so holding the page shut until they arrive
+ * spends somebody's attention on paragraphs they have not scrolled to yet.
+ */
+export async function generateQuoteCore(
+  memory: MemoryContext,
+  draft: QuoteDraftInput,
+  pricingHistory: PricingHistoryEntry[] = [],
+  marketRateNote?: string
+): Promise<GeneratedBrief> {
+  const system = buildSystemPrompt(memory);
+  const webSearch = shouldResearchMarketRates(draft, pricingHistory) && !marketRateNote;
+  const prompt = buildGenerateUserPrompt(
+    draft,
+    pricingHistory,
+    marketRateNote,
+    wantsExtras(draft) ? "core" : "all"
+  );
+
+  const text = await callClaude("generateBriefFromDraft", system, prompt, {
+    webSearch,
+    maxTokens: 8000,
+  });
+
+  const core = await (async () => {
+    try {
+      return parseBriefResponse(text, draft.language);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "";
+      const shapeFailure =
+        message.includes("did not return valid JSON") || message.includes("failed validation");
+      if (!shapeFailure) throw err;
+      const retry = await callClaude(
+        "generateBriefFromDraft",
+        system,
+        `${prompt}\n\nReturn ONLY the JSON object described above. No preamble, no explanation, no code fences, no text of any kind before or after it.`,
+        { maxTokens: 8000 }
+      );
+      return parseBriefResponse(retry, draft.language);
+    }
+  })();
+
+  return applyHourlyRate(core, draft.hourlyRate, draft.rateUnit ?? "HOUR");
+}
+
+/**
+ * The add-on sections, written on their own against the same brief.
+ *
+ * Called after the quote exists and its page is open, so a failure here loses
+ * the terms and keeps the quote. That is the right way round: a quote with no
+ * revisions policy is still a quote, and throwing away a generation somebody
+ * has already read would be the worse trade.
+ */
+export async function generateQuoteExtras(
+  memory: MemoryContext,
+  draft: QuoteDraftInput,
+  pricingHistory: PricingHistoryEntry[] = [],
+  marketRateNote?: string
+): Promise<BriefExtras & { strategy?: Strategy }> {
+  const system = buildSystemPrompt(memory);
+  const text = await callClaude(
+    "generateQuoteExtras",
+    system,
+    buildGenerateUserPrompt(draft, pricingHistory, marketRateNote, "extras"),
+    { maxTokens: 4000 }
+  );
+  return parseExtrasResponse(text) as BriefExtras & { strategy?: Strategy };
+}
+
 export async function generateBriefFromDraft(
   memory: MemoryContext,
   draft: QuoteDraftInput,

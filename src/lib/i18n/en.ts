@@ -324,6 +324,8 @@ export const en = {
     refineChanged: "Updated {list}.",
     refineNothing: "Nothing changed. Try naming the part you want different, for example \"shorten the timeline\".",
     refineShowMe: "Show me",
+    stillWriting: "Still writing the rest.",
+    stillWritingHint: "The terms, revisions and anything else you asked for are on their way. Everything above is finished.",
     beforeYouSend: "Before you send",
     beforeYouSendOpen: "{count} still to check. Publishing is not blocked, these are notes for you.",
     beforeYouSendDone: "All checked. Nothing here reaches your client.",

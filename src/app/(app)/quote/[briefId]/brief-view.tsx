@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Sparkles,
@@ -25,6 +25,7 @@ import {
   setBriefPublishedAction,
   updateBriefContentAction,
   updateQuoteLookAction,
+  generateExtrasAction,
   toggleSectionAction,
   deleteBriefExampleAction,
 } from "@/actions/briefs";
@@ -100,6 +101,8 @@ interface Brief {
   clearedQuestions?: string[];
   /** Which layout this quote was written for. See lib/quote-layout. */
   layout?: number;
+  /** The add-on sections are still being written. See generateExtrasAction. */
+  extrasPending?: boolean;
   hiddenSections?: string[];
   /**
    * How the work splits into billable chunks, when the quote is billed that
@@ -273,6 +276,17 @@ export function BriefView({
   const t = useT();
   const [refinePrompt, setRefinePrompt] = useState("");
   /**
+   * The second half, asked for from here.
+   *
+   * The quote is written in two calls and the page opens after the first, so
+   * the sections that describe the money and the terms arrive while somebody
+   * is already reading the scope. Asked for once per page load, guarded by a
+   * ref because React runs an effect twice in development and paying for a
+   * second model call to discover that is an expensive way to learn it.
+   */
+  const [writingExtras, setWritingExtras] = useState(Boolean(brief.extrasPending));
+  const askedForExtras = useRef(false);
+  /**
    * What the last refine changed, until the highlight has had its moment.
    *
    * Held here rather than read off the page, because after the refresh the
@@ -431,6 +445,19 @@ export function BriefView({
   const shareUrl =
     typeof window !== "undefined" ? `${window.location.origin}/q/${brief.publicSlug}` : `/q/${brief.publicSlug}`;
 
+  useEffect(() => {
+    if (!brief.extrasPending || askedForExtras.current) return;
+    askedForExtras.current = true;
+    void (async () => {
+      const result = await generateExtrasAction(brief.id);
+      setWritingExtras(false);
+      // A failure here is not worth an error banner: the quote is complete
+      // enough to read and to send, and the missing sections can be asked for
+      // again with a refine.
+      if (result.ok) router.refresh();
+    })();
+  }, [brief.extrasPending, brief.id, router]);
+
   async function handleRefine() {
     setWorking(true);
     setError("");
@@ -534,6 +561,18 @@ export function BriefView({
             })}
             {brief.accepted.email ? ` (${brief.accepted.email})` : ""}. The published page records
             it.
+          </div>
+        </div>
+      )}
+
+      {/* The second half, arriving. Said plainly and without a spinner over the
+          whole page: what is here is finished and readable, and the sections
+          still being written are the ones nobody has scrolled to yet. */}
+      {writingExtras && (
+        <div className="flex items-start gap-2.5 bg-violet-tint rounded-card px-4 py-3">
+          <Sparkles size={15} className="text-violet shrink-0 mt-0.5 animate-pulse motion-reduce:animate-none" />
+          <div className="text-small text-ink">
+            <span className="font-semibold">{t.brief.stillWriting}</span> {t.brief.stillWritingHint}
           </div>
         </div>
       )}

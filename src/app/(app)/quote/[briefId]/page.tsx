@@ -55,6 +55,8 @@ export default async function BriefPage({ params }: { params: { briefId: string 
         clearedQuestions:
           (brief as unknown as { clearedQuestions?: string[] }).clearedQuestions ?? [],
         layout: layoutOf(brief.settings),
+        extrasPending:
+          ((brief.settings as { extrasPending?: boolean } | null) ?? {}).extrasPending === true,
         hiddenSections:
           (brief as unknown as { hiddenSections?: string[] }).hiddenSections ?? [],
         // The milestone split, so it can be checked before the quote goes out.
