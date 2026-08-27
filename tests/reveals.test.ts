@@ -112,8 +112,20 @@ describe("what the price is keyed on", () => {
   it("only accepts a discipline this account actually does", () => {
     // The value becomes a cache key shared with every freelancer in the same
     // market, so an arbitrary string from the client cannot reach it.
-    expect(actions).toContain("mine.includes(input.industry)");
+    expect(actions).toContain("acceptable.includes(input.industry)");
     expect(actions).toContain("allDisciplines(");
+  });
+
+  /**
+   * Mid-onboarding the account has no disciplines saved yet, and the rate was
+   * being researched against "unspecified": the first number anybody is given,
+   * at the moment they are asked what they charge, was for no particular job.
+   */
+  it("lets an account with nothing saved yet name one from the real list", () => {
+    expect(actions).toContain("mine.length > 0");
+    expect(actions).toContain("INDUSTRY_OPTIONS.map((option) => option.key)");
+    // "other" is free text, not a market anybody can research.
+    expect(actions).toContain('filter((key) => key !== "other")');
   });
 
   it("says which work and which country the number is for", () => {

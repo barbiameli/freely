@@ -8,7 +8,7 @@ import { isKnownCountry, countryName } from "@/lib/countries";
 import { asLevel, pickThree, midpoint } from "@/lib/market-rate";
 import { parseRateUnit } from "@/lib/rate-unit";
 import type { ActionResult } from "@/actions/briefs";
-import { allDisciplines, industryLabel } from "@/lib/industries";
+import { allDisciplines, industryLabel, INDUSTRY_OPTIONS } from "@/lib/industries";
 
 export interface ResearchedRate {
   /** Two or three figures to choose between, lowest first. */
@@ -77,14 +77,28 @@ export async function researchRateAction(input: {
   if (!level) return { ok: false, error: "Pick your level first." };
   if (!isKnownCountry(input.country)) return { ok: false, error: "Pick where you work from." };
 
-  // Theirs, or their main one. Never an arbitrary key from the client: this
-  // becomes a cache key shared with every other freelancer in the same market.
+  /**
+   * Which kind of work to price.
+   *
+   * Theirs where the account has any, and never an arbitrary string: this
+   * becomes a cache key shared with every other freelancer in the same market.
+   *
+   * The account having none is the onboarding case, and it used to fall all the
+   * way through to "unspecified": the very first rate anybody researched, at
+   * the moment they were being asked what they charge, was the rate for no
+   * particular job. So an account with nothing saved yet is allowed to name any
+   * key from the real list, which is exactly what it is about to save anyway.
+   */
   const mine = allDisciplines(
     user.industry,
     (user as unknown as { otherIndustries?: string[] }).otherIndustries
   );
+  const acceptable =
+    mine.length > 0
+      ? mine
+      : INDUSTRY_OPTIONS.map((option) => option.key).filter((key) => key !== "other");
   const industry =
-    input.industry && mine.includes(input.industry) ? input.industry : user.industry;
+    input.industry && acceptable.includes(input.industry) ? input.industry : user.industry;
 
   try {
     // The same limit the quote generator uses. This is a web search on a

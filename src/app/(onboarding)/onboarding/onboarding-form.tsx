@@ -42,6 +42,7 @@ import { useT } from "@/lib/i18n/context";
 import { SubLabel } from "@/components/ui/label";
 import { RateBody } from "@/components/quote/setup-rows";
 import type { QuoteDraftPayload } from "@/actions/briefs";
+import { industryLabel } from "@/lib/industries";
 
 type StepId = "industry" | "instructions" | "toneNotes" | "storyNotes" | "contextNotes";
 
@@ -272,6 +273,12 @@ export function OnboardingForm({ stripeState }: { stripeState: ConnectState }) {
           setPaymentPlan={setPaymentPlan}
           upfrontPercent={upfrontPercent}
           setUpfrontPercent={setUpfrontPercent}
+          // Held in this form rather than on the account: nothing is saved
+          // until the last step, so the chooser has to be told what was just
+          // ticked two steps ago.
+          disciplines={[industryValue, ...alsoDo]
+            .filter((key): key is string => Boolean(key))
+            .map((key) => ({ key, label: industryLabel(key) }))}
           expertise={expertise}
           setExpertise={setExpertise}
         />
@@ -351,6 +358,7 @@ function PricingStep({
   setUpfrontPercent,
   expertise,
   setExpertise,
+  disciplines = [],
 }: {
   onBack: () => void;
   onContinue: () => void;
@@ -366,6 +374,8 @@ function PricingStep({
   setUpfrontPercent: (n: number) => void;
   expertise: string | null;
   setExpertise: (level: string | null) => void;
+  /** What they said they do, from this form's own state. */
+  disciplines?: { key: string; label: string }[];
 }) {
   const t = useT();
   const [unsure, setUnsure] = useState(false);
@@ -411,6 +421,7 @@ function PricingStep({
       <RateBody
         draft={rateDraft}
         setDraft={setRateDraft}
+        disciplines={disciplines}
         rateHelpOpen={unsure}
         setRateHelpOpen={(next) => {
           setUnsure(next);
