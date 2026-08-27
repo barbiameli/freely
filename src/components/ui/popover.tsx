@@ -121,5 +121,9 @@ export function PopoverHeader({ title, hint }: { title: string; hint?: string })
  * starts reading as a page.
  */
 export function PopoverList({ children }: { children: ReactNode }) {
-  return <div className="max-h-[260px] overflow-y-auto">{children}</div>;
+  // The cap is for a panel hanging under a button, which cannot grow past the
+  // window. As a sheet on a phone the panel already scrolls, and a second
+  // scroller inside it means a list that moves under your thumb while the
+  // sheet stays still.
+  return <div className="max-h-[60vh] sm:max-h-[260px] overflow-y-auto">{children}</div>;
 }

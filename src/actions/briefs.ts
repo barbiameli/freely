@@ -83,6 +83,39 @@ function cleanProse(text: string): string {
 }
 
 /**
+ * Keeps the milestone amounts adding up to the price after the quote changes.
+ *
+ * A refine that brings the total down, or an edit that adds a deliverable,
+ * used to leave the milestones exactly as they were: three amounts that summed
+ * to the old price, and a deliverable that no milestone covered. The client
+ * page then showed a schedule that did not add up to the total on the same
+ * page, which is the kind of arithmetic a client checks.
+ *
+ * Nothing happens to a quote that is not billed this way, and nothing happens
+ * when neither the price nor the deliverables moved.
+ */
+function rebalancedSettings(
+  settings: Record<string, unknown>,
+  deliverableCount: number,
+  totalPrice: number
+): Record<string, unknown> {
+  if (!settings.useMilestones) return settings;
+  const current = Array.isArray(settings.milestones)
+    ? (settings.milestones as { name: string; deliverableIndexes: number[]; gate?: string; amount: number }[])
+    : [];
+  if (current.length === 0) return settings;
+  return {
+    ...settings,
+    milestones: reconcileMilestones(current, deliverableCount, totalPrice).map((ms) => ({
+      name: ms.name,
+      deliverableIndexes: ms.deliverableIndexes,
+      ...(ms.gate ? { gate: ms.gate } : {}),
+      amount: ms.amount,
+    })),
+  };
+}
+
+/**
  * Which sections a generated quote actually came back with.
  *
  * Named the same way the removal list names them, so the two can be compared.
@@ -520,6 +553,9 @@ export async function refineBriefAction(
     };
   }
 
+  // Worked out before the write, because the write is what makes the two equal.
+  const changed = changedSections(current, updated);
+
   await prisma.brief.update({
     where: { id: brief.id },
     data: {
@@ -546,7 +582,7 @@ export async function refineBriefAction(
       // The stored section flags follow the document, so the PDF, the public
       // page and the signing offer cannot disagree with what is in it.
       settings: {
-        ...settings,
+        ...rebalancedSettings(settings, updated.deliverables.length, updated.price),
         includeStrategy: hasStrategyContent(updated.strategy),
         includeTimeline: updated.timeline.includes("\n"),
         includeSOW: Boolean(updated.paymentTerms),
@@ -555,11 +591,18 @@ export async function refineBriefAction(
         includeAvailability: Boolean(updated.availability),
         includeAI: Boolean(updated.aiUsage),
       } as unknown as Prisma.InputJsonValue,
-      // A section that was removed and has now been written again is one the
-      // refine was asked to bring back, so the removal goes with it.
+      // A removed section comes back only when this refine actually rewrote it.
+      //
+      // It used to come back whenever the section was present in the reply,
+      // which is almost always: the quote is returned whole, so a section
+      // somebody had taken out was still in the text being sent back and forth.
+      // Removing the timeline and then asking for a shorter scope put the
+      // timeline back on the client's page.
       ...(removed.length
         ? ({
-            hiddenSections: removed.filter((key) => !returnedSections(updated).includes(key)),
+            hiddenSections: removed.filter(
+              (key) => !(changed.includes(key) && returnedSections(updated).includes(key))
+            ),
           } as unknown as Record<string, unknown>)
         : {}),
       price: updated.price,
@@ -571,7 +614,7 @@ export async function refineBriefAction(
   // Named on the way out, so the page can say what moved and take you to it.
   // A spinner that stops is not feedback: it says something finished, not what
   // it did, and on a long quote the changed paragraph is often off-screen.
-  return { ok: true, data: { changed: changedSections(current, updated) } };
+  return { ok: true, data: { changed } };
 }
 
 /** Publishes/unpublishes a brief as a real, shareable "HTML page" quote at
@@ -823,7 +866,7 @@ export async function updateBriefContentAction(
   const user = await requireFullUser();
   const brief = await prisma.brief.findFirst({
     where: { id: briefId, ...teamScopeWhere(user) },
-    select: { id: true },
+    select: { id: true, price: true, deliverables: true, settings: true },
   });
   if (!brief) return { ok: false, error: "Quote not found." };
 
@@ -852,6 +895,18 @@ export async function updateBriefContentAction(
         ...(patch.hours !== undefined ? { hours: patch.hours } : {}),
         ...(patch.extras !== undefined ? { extras: sanitizeExtrasInput(patch.extras) } : {}),
         ...(patch.strategy !== undefined ? { strategy: sanitizeStrategy(patch.strategy) } : {}),
+        // Editing the price or the deliverables by hand moves what the
+        // milestones are shares of, so the shares are worked out again. A quote
+        // billed any other way is untouched.
+        ...(patch.price !== undefined || patch.deliverables !== undefined
+          ? {
+              settings: rebalancedSettings(
+                (brief.settings as Record<string, unknown> | null) ?? {},
+                patch.deliverables?.length ?? (brief.deliverables as string[]).length,
+                patch.price ?? brief.price
+              ) as unknown as Prisma.InputJsonValue,
+            }
+          : {}),
       },
     });
   } catch (err) {

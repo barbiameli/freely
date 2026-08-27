@@ -778,7 +778,10 @@ export function BriefView({
                           the names are what tells you the split is right. */}
                       <div className="text-caption text-slate mt-0.5 leading-relaxed">
                         {ms.deliverableIndexes
-                          .map((n) => brief.deliverables[n])
+                          // content, not brief: an edited deliverable name
+                          // should show here at once rather than after a
+                          // refresh, the same as it does in the preview.
+                          .map((n) => content.deliverables[n])
                           .filter(Boolean)
                           .join(", ")}
                       </div>

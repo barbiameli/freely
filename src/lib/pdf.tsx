@@ -22,9 +22,8 @@ import { parseTimelineStages, isRoadmapWorthy, stageTick } from "@/lib/timeline"
 import { dict, fill } from "@/lib/i18n";
 import type { BriefExtras } from "@/lib/anthropic";
 import { hasStrategyContent } from "@/lib/strategy";
-import { type QuoteMilestone } from "@/lib/milestone-lines";
+import { groupDeliverables, type QuoteMilestone } from "@/lib/milestone-lines";
 import { groupsByMilestone } from "@/lib/quote-layout";
-import { formatMoney } from "@/lib/money";
 import type { Locale } from "@/lib/i18n";
 
 export interface StrategyPdfData {
@@ -1038,11 +1037,22 @@ function PdfDeliverables({
   detailColor?: string;
   headingColor: string;
 }) {
-  const milestones = brief.milestones ?? [];
   const language = (brief.language ?? "en") as Locale;
-  const grouped = groupsByMilestone({ layout: brief.layout }, milestones.length);
+  const words = dict(language).quote;
+  const blocks = groupDeliverables({
+    milestones: brief.milestones,
+    deliverables: brief.deliverables,
+    currency: brief.currency,
+    language,
+    grouped: groupsByMilestone({ layout: brief.layout }, brief.milestones?.length ?? 0),
+    paymentTerms: brief.extras?.paymentTerms,
+    words: {
+      invoicedAtEnd: words.milestoneInvoicedAtEnd,
+      alsoIncluded: words.milestoneAlsoIncluded,
+    },
+  });
 
-  if (!grouped) {
+  if (!blocks) {
     return (
       <>
         {brief.deliverables.map((text, index) => (
@@ -1058,38 +1068,18 @@ function PdfDeliverables({
     );
   }
 
-  const words = dict(language).quote;
-  const covered = new Set<number>();
-  const blocks: { name: string; amount: string; note?: string; items: number[] }[] = [];
-
-  for (const milestone of milestones) {
-    const items: number[] = [];
-    for (const index of milestone.deliverableIndexes) {
-      if (!brief.deliverables[index] || covered.has(index)) continue;
-      covered.add(index);
-      items.push(index);
-    }
-    blocks.push({
-      name: milestone.name,
-      amount: formatMoney(milestone.amount, brief.currency, language),
-      // The freelancer's own payment terms win where they exist.
-      note: brief.extras?.paymentTerms ? undefined : words.milestoneInvoicedAtEnd,
-      items,
-    });
-  }
-
-  const leftovers = brief.deliverables
-    .map((_, index) => index)
-    .filter((index) => !covered.has(index));
-  if (leftovers.length > 0) {
-    blocks.push({ name: words.milestoneAlsoIncluded, amount: "", items: leftovers });
-  }
-
   return (
     <>
       {blocks.map((block, i) => (
-        <View key={i} style={{ marginBottom: S3 }} wrap={false}>
+        // Allowed to split across pages. A milestone with six deliverables
+        // under it is taller than the space left at the bottom of a page, and
+        // a block that refuses to break either leaves half a page empty or
+        // runs off the end of it. The heading and the lines inside each hold
+        // themselves together, which is the level where it matters.
+        <View key={i} style={{ marginBottom: S3 }}>
           <View
+            wrap={false}
+            minPresenceAhead={40}
             style={{
               flexDirection: "row",
               justifyContent: "space-between",

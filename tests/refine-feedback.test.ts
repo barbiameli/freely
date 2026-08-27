@@ -18,7 +18,7 @@ describe("a refine says what it did", () => {
     expect(actions).toContain("function changedSections");
     // After the refresh the page holds the new version only, so it cannot
     // work this out for itself.
-    expect(actions).toContain("changed: changedSections(current, updated)");
+    expect(actions).toContain("const changed = changedSections(current, updated);");
   });
 
   it("names every section it could have touched", () => {

@@ -7,9 +7,8 @@ import {
   rateSuffix,
 } from "@/lib/rate-unit";
 import { TimelineView } from "@/components/timeline-view";
-import { type QuoteMilestone } from "@/lib/milestone-lines";
+import { groupDeliverables, type QuoteMilestone } from "@/lib/milestone-lines";
 import { groupsByMilestone } from "@/lib/quote-layout";
-import { formatMoney } from "@/lib/money";
 import type { Locale } from "@/lib/i18n";
 import { hasStrategyContent } from "@/lib/strategy";
 import type { BriefExtras } from "@/lib/anthropic";
@@ -117,41 +116,32 @@ type DeliverableRow =
   | { kind: "item"; text: string; index: number };
 
 function deliverableRows(brief: PublicBrief): DeliverableRow[] {
-  const milestones = brief.milestones ?? [];
-  if (!groupsByMilestone({ layout: brief.layout }, milestones.length)) {
+  const language = (brief.language ?? "en") as Locale;
+  const words = dict(language).quote;
+  const groups = groupDeliverables({
+    milestones: brief.milestones,
+    deliverables: brief.deliverables,
+    currency: brief.currency,
+    language,
+    grouped: groupsByMilestone({ layout: brief.layout }, brief.milestones?.length ?? 0),
+    paymentTerms: brief.extras?.paymentTerms,
+    words: {
+      invoicedAtEnd: words.milestoneInvoicedAtEnd,
+      alsoIncluded: words.milestoneAlsoIncluded,
+    },
+  });
+
+  if (!groups) {
     return brief.deliverables.map((text, index) => ({ kind: "item", text, index }));
   }
 
-  const language = (brief.language ?? "en") as Locale;
-  const words = dict(language).quote;
   const rows: DeliverableRow[] = [];
-  const covered = new Set<number>();
-
-  for (const milestone of milestones) {
-    rows.push({
-      kind: "group",
-      name: milestone.name,
-      amount: formatMoney(milestone.amount, brief.currency, language),
-      // Said once per milestone, and only when the freelancer has not written
-      // their own payment terms: those are their words and they win.
-      note: brief.extras?.paymentTerms ? undefined : words.milestoneInvoicedAtEnd,
-    });
-    for (const index of milestone.deliverableIndexes) {
-      const text = brief.deliverables[index];
-      if (!text || covered.has(index)) continue;
-      covered.add(index);
-      rows.push({ kind: "item", text, index });
+  for (const group of groups) {
+    rows.push({ kind: "group", name: group.name, amount: group.amount, note: group.note });
+    for (const index of group.items) {
+      rows.push({ kind: "item", text: brief.deliverables[index], index });
     }
   }
-
-  const leftovers = brief.deliverables
-    .map((text, index) => ({ text, index }))
-    .filter(({ index }) => !covered.has(index));
-  if (leftovers.length > 0) {
-    rows.push({ kind: "group", name: words.milestoneAlsoIncluded, amount: "" });
-    for (const { text, index } of leftovers) rows.push({ kind: "item", text, index });
-  }
-
   return rows;
 }
 
