@@ -16,6 +16,7 @@ import { BRANDING_OPTIONS } from "@/lib/branding";
 import { updateInvoiceAction, deleteInvoiceAction, type InvoicePatch } from "@/actions/invoices";
 import type { InvoiceLineItem } from "@/lib/invoice-pdf";
 import { useT, useLocale } from "@/lib/i18n/context";
+import { RecordHeader } from "@/components/ui/page-header";
 
 interface EditorInvoice {
   id: string;
@@ -260,35 +261,35 @@ export function InvoiceEditor({
     <>
       <Topbar />
 
-      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
-        <div>
-          <h1 className="font-display italic text-[30px] md:text-4xl text-coral m-0">
-            Invoice #{String(invoice.number).padStart(4, "0")}
-          </h1>
-          <p className="text-slate text-lead mt-2">
+      <RecordHeader
+        title={`Invoice #${String(invoice.number).padStart(4, "0")}`}
+        meta={
+          <>
             {form.paid ? "Marked as paid." : "Not paid yet."}{" "}
             <Link href="/invoices" className="text-violet font-semibold">
               {t.invoices.allInvoices}
             </Link>
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            variant="outline"
-            icon={Check}
-            onClick={async () => {
-              const next = !form.paid;
-              set("paid", next);
-              await save({ paid: next });
-            }}
-          >
-            {form.paid ? "Mark unpaid" : "Mark paid"}
-          </Button>
-          <Button icon={Download} loading={downloading} onClick={download}>
-            {downloading ? "Building..." : "Download PDF"}
-          </Button>
-        </div>
-      </div>
+          </>
+        }
+        action={
+          <>
+            <Button
+              variant="outline"
+              icon={Check}
+              onClick={async () => {
+                const next = !form.paid;
+                set("paid", next);
+                await save({ paid: next });
+              }}
+            >
+              {form.paid ? "Mark unpaid" : "Mark paid"}
+            </Button>
+            <Button icon={Download} loading={downloading} onClick={download}>
+              {downloading ? "Building..." : "Download PDF"}
+            </Button>
+          </>
+        }
+      />
 
       {/* Your own details are the same on every invoice you will ever send, so
           they sit behind a summary line rather than being five fields to scroll

@@ -344,9 +344,12 @@ function PricingStep({
 
   return (
     <>
+      {/* The same heading every other onboarding step uses. This one was body
+          bold where the rest are display italic, which made the pricing step
+          read as a subsection of the step before it. */}
       <div>
-        <h2 className="font-body font-bold text-lead text-ink m-0">{t.onboarding.pricingTitle}</h2>
-        <p className="text-small text-slate mt-1 mb-0">{t.onboarding.pricingSubtitle}</p>
+        <h2 className="font-display italic text-2xl text-coral m-0">{t.onboarding.pricingTitle}</h2>
+        <p className="text-slate text-small mt-1.5 mb-0">{t.onboarding.pricingSubtitle}</p>
       </div>
 
       {/* The wizard's own rate control, rather than a second copy of it.

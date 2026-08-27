@@ -36,6 +36,7 @@ import { useT, useLocale } from "@/lib/i18n/context";
 import { ActionError } from "@/components/ui/action-error";
 import type { BillingMode } from "@/lib/invoice-queue";
 import { milestoneProgress, type MilestoneView } from "@/lib/milestones";
+import { RecordHeader } from "@/components/ui/page-header";
 
 interface Project {
   id: string;
@@ -272,25 +273,21 @@ export function ProjectDetail({
       <div className="flex flex-col gap-5 md:gap-6 flex-1 min-w-0">
         <Topbar />
 
-        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3">
-          <div className="min-w-0">
-            <h1 className="font-display italic text-[28px] md:text-[30px] text-coral m-0 max-w-[26ch] lg:max-w-none">
-              {project.title}
-            </h1>
-            <p className="text-slate text-small mt-1.5">{project.client}</p>
-            {tabs && <div className="mt-3">{tabs}</div>}
-          </div>
-          {/* Only the invoice here. "Send to diary" used to sit alongside it,
-              which put a client-facing action in the middle of the private
-              side of the project, next to somebody's rate and their own
-              questions. It belongs with the client page and now lives there. */}
-          <div className="flex items-center gap-2.5 shrink-0">
+        {/* Only the invoice in the action slot. "Send to diary" used to sit
+            alongside it, which put a client-facing action in the middle of the
+            private side of the project, next to somebody's rate and their own
+            questions. It belongs with the client page and now lives there. */}
+        <RecordHeader
+          title={project.title}
+          meta={project.client}
+          below={tabs}
+          action={
             <Button data-guide="invoice" onClick={() => router.push(`/track/${project.id}/invoice`)}>
               {t.track.generateInvoice}, {currencySymbol(project.currency)}
               {project.price.toLocaleString()}
             </Button>
-          </div>
-        </div>
+          }
+        />
 
         <StatRow
           stats={[

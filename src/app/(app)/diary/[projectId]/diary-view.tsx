@@ -26,6 +26,7 @@ import { formatDay } from "@/lib/schedule";
 import { UpdateBody } from "@/components/update-body";
 import { useT, useLocale } from "@/lib/i18n/context";
 import { fill } from "@/lib/i18n";
+import { RecordHeader } from "@/components/ui/page-header";
 
 interface Entry {
   id: string;
@@ -273,31 +274,29 @@ export function DiaryView({
       <div className="flex flex-col gap-5 md:gap-6 flex-1 min-w-0">
         <Topbar />
 
-        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3">
-          <div className="min-w-0">
-            <h1 className="font-display italic text-[28px] md:text-[30px] text-coral m-0">
-              {project.title}
-            </h1>
-            <p className="text-slate text-small mt-1.5">
+        {/* Just the invoice in the action slot. "Send to diary" used to sit
+            here, and it no longer exists: the client page keeps itself up to
+            date from the tracker, so there is nothing to compose and send. */}
+        <RecordHeader
+          title={project.title}
+          meta={
+            <>
               {project.client} ·{" "}
               <span className={STATUS_TEXT[project.status]}>
                 {statusLabel(project.status, t)}
               </span>
-            </p>
-            {tabs && <div className="mt-3">{tabs}</div>}
-          </div>
-          {/* Just the invoice. "Send to diary" used to sit here, and it no
-              longer exists: the client page keeps itself up to date from the
-              tracker, so there is nothing to compose and send. */}
-          <div className="flex items-center gap-2.5 shrink-0">
+            </>
+          }
+          below={tabs}
+          action={
             <Button
               data-guide="invoice"
               onClick={() => router.push(`/track/${project.id}/invoice`)}
             >
               {t.track.invoiceThis}
             </Button>
-          </div>
-        </div>
+          }
+        />
 
         {body}
       </div>

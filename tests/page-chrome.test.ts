@@ -37,6 +37,34 @@ describe("every list page wears the same header", () => {
   }
 });
 
+const RECORD_VIEWS = [
+  "src/app/(app)/track/[projectId]/project-detail.tsx",
+  "src/app/(app)/diary/[projectId]/diary-view.tsx",
+  "src/app/(app)/invoices/[invoiceId]/invoice-editor.tsx",
+];
+
+describe("a record is not a page", () => {
+  /**
+   * A page called Track is a place; a page called "Checkout redesign" is a
+   * thing inside it. They used to be set at three different sizes between
+   * them, one of which was larger than the list page above it, so there was no
+   * telling which level you were on.
+   */
+  for (const file of RECORD_VIEWS) {
+    it(`uses RecordHeader in ${file.split("/").pop()}`, () => {
+      const source = readFileSync(file, "utf8");
+      expect(source).toContain("<RecordHeader");
+      expect(source).not.toMatch(/<h1[^>]*font-display/);
+    });
+  }
+
+  it("sets a record below a page", () => {
+    const header = readFileSync("src/components/ui/page-header.tsx", "utf8");
+    expect(header).toMatch(/PageHeader[\s\S]*text-\[32px\]/);
+    expect(header).toMatch(/RecordHeader[\s\S]*text-\[28px\]/);
+  });
+});
+
 describe("controls answer when you point at them", () => {
   const css = readFileSync("src/app/globals.css", "utf8");
 

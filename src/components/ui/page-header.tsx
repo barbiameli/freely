@@ -66,3 +66,40 @@ export function SectionHeading({
     </div>
   );
 }
+
+/**
+ * The top of a record: one project, one invoice, one client page.
+ *
+ * Smaller than a list page's title on purpose. A page called Track is a place;
+ * a page called "Checkout redesign" is a thing inside it, and the two reading
+ * at the same size left no way to tell which level you were on. Under it goes
+ * the line that says which thing this is: the client, the status, whether an
+ * invoice is paid.
+ *
+ * `below` is for a tab strip, which belongs with the title rather than floating
+ * after it, and stays out of the way of the action on the right.
+ */
+export function RecordHeader({
+  title,
+  meta,
+  below,
+  action,
+}: {
+  title: ReactNode;
+  meta?: ReactNode;
+  below?: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3">
+      <div className="min-w-0">
+        <h1 className="font-display italic text-[28px] md:text-[30px] leading-[1.15] text-coral m-0 max-w-[26ch] lg:max-w-none text-pretty">
+          {title}
+        </h1>
+        {meta && <p className="text-slate text-small mt-1.5 mb-0 text-pretty">{meta}</p>}
+        {below && <div className="mt-3">{below}</div>}
+      </div>
+      {action && <div className="flex flex-wrap items-center gap-2.5 shrink-0">{action}</div>}
+    </div>
+  );
+}
