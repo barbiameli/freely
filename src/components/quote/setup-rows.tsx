@@ -606,6 +606,7 @@ export function PaymentBody({
           [
             ["UPFRONT", t.quote.paymentUpfront],
             ["SPLIT", t.quote.paymentSplit],
+            ["ON_DELIVERY", t.quote.paymentOnDelivery],
             ["MILESTONE", t.quote.paymentMilestone],
           ] as const
         ).map(([value, label]) => (
@@ -917,6 +918,7 @@ export function setupWords(t: Dictionary): SetupWords {
     perDay: t.quote.perDay.toLowerCase(),
     fixed: t.quote.rateFixed.toLowerCase(),
     upfrontAll: t.quote.paymentUpfront,
+    onDelivery: t.quote.paymentOnDelivery,
     splitTemplate: t.quote.splitSummary,
     byMilestone: t.quote.paymentMilestone,
     and: t.common.and,

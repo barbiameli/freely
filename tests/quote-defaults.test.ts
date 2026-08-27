@@ -193,6 +193,7 @@ const WORDS: SetupWords = {
   perHour: "per hour",
   perDay: "per day",
   fixed: "fixed",
+  onDelivery: "All on delivery",
   upfrontAll: "All upfront",
   splitTemplate: "{n}% upfront, rest on delivery",
   byMilestone: "By milestone",

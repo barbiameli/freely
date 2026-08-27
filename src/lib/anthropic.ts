@@ -257,7 +257,7 @@ export interface QuoteDraftInput {
    * them: choosing to be paid per milestone is choosing to have milestones,
    * and a project can no longer be billed per milestone without having any.
    */
-  paymentPlan?: "UPFRONT" | "SPLIT" | "MILESTONE";
+  paymentPlan?: "UPFRONT" | "SPLIT" | "ON_DELIVERY" | "MILESTONE";
   /** For SPLIT: how much is due before the work starts. */
   upfrontPercent?: number;
   /**
@@ -503,15 +503,27 @@ Use web search to find the going ${unitNoun(unit, promptWords)} rate, and the ty
   // are both optional: saying neither means the model reads the natural shape
   // of the work, which is usually a better answer than a number picked before
   // anyone knew what the deliverables were.
-  // Payment terms written from the choice, not asked for separately. This is
-  // the single source: whatever is said here is what appears on the quote, so
-  // the terms and the milestones cannot contradict each other.
+  /**
+   * Payment terms written from the choice, not asked for separately. This is
+   * the single source: whatever is said here is what appears on the quote, so
+   * the terms and the milestones cannot contradict each other.
+   *
+   * It used to be sent with the core half only, and paymentTerms is written by
+   * the extras half. So the call that actually wrote the sentence never learned
+   * which plan had been chosen, wrote something generic from the brief, and
+   * then overwrote the core's correct version when the two halves were merged.
+   * Changing the split from 50% to 30%, or to paid in full up front, changed
+   * nothing on the finished quote. It goes with the half that writes it now.
+   */
   const paymentInstruction = (() => {
     const plan = draft.paymentPlan;
     if (!plan) return "";
     const opening = `\nWrite "paymentTerms" from this and nothing else, in one or two plain sentences, as the freelancer's own terms to their client. Do not invent a different schedule.`;
     if (plan === "UPFRONT") {
       return `${opening} The whole amount is due before the work starts.`;
+    }
+    if (plan === "ON_DELIVERY") {
+      return `${opening} Nothing is due up front. The whole amount is invoiced on delivery, when the work is handed over.`;
     }
     if (plan === "SPLIT") {
       const up = draft.upfrontPercent ?? 50;
@@ -575,6 +587,17 @@ Rules: every deliverable appears in exactly one milestone, never two and never n
   // and what comes back is recorded as the quote's sections.
   const decides = Boolean(draft.chooseSections);
   const ifChosen = decides ? "Only if this quote needs it: " : "";
+  /**
+   * A section the freelancer has written a note for is not optional.
+   *
+   * When the model chooses the sections, every instruction is prefixed with
+   * "only if this quote needs it", and it was applying that to sections the
+   * freelancer had actually filled in: somebody types their revisions policy,
+   * the model decides the quote does not need one, and the policy they just
+   * wrote never appears. Writing the note is the choice.
+   */
+  const required = (note?: string) =>
+    note?.trim() ? "This quote includes this section, because the freelancer wrote it. " : ifChosen;
   const timelineInstruction = draft.includeTimeline
     ? `\nTimeline requirements. Return "timeline" as 4-6 stages, EACH ON ITS OWN LINE separated by a newline character, in the exact form "Week 1-2: Label - what actually happens". Rules:
 - Start every line with a concrete week or day range ("Week 1", "Week 2-3", "Day 1-3"). Never "Phase one" or "Later" with no timing.
@@ -598,7 +621,7 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
   const extraSections: string[] = [];
   if (draft.includeTerms || decides) {
     extraSections.push(
-      `${ifChosen}Include a "terms" object: {"cancellation": string, "ownership": string, "confidentiality": string}. Write each as one or two plain-English sentences a freelancer would actually stand behind, not legalese, and do not invent jurisdiction-specific clauses.${
+      `${required(notes.terms)}Include a "terms" object: {"cancellation": string, "ownership": string, "confidentiality": string}. Write each as one or two plain-English sentences a freelancer would actually stand behind, not legalese, and do not invent jurisdiction-specific clauses.${
         notes.terms ? ` Build them around what they have stated: ${notes.terms}` : ""
       }`
     );
@@ -606,7 +629,7 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
   if (draft.includeRevisions || decides) {
     extraSections.push(
       notes.revisions
-        ? `${ifChosen}Include a "revisions" string built on what they have stated: ${notes.revisions}. Say which stages it applies to and what counts as new work priced separately.`
+        ? `${required(notes.revisions)}Include a "revisions" string built on what they have stated: ${notes.revisions}. Say which stages it applies to and what counts as new work priced separately.`
         : `${ifChosen}Include a "revisions" string: how many rounds of changes are included at which stages, and what would count as new work priced separately. Base the number on the deliverables and hours, not a generic "two rounds".`
     );
   }
@@ -626,7 +649,7 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
   }
   if (draft.includeAI || decides) {
     extraSections.push(
-      `${ifChosen}Include an "aiUsage" object: {"will": string[], "willNot": string[]}. This is a disclosure of how AI is used on THIS project, so both lists must name specific tasks from this brief, not general statements about AI.${
+      `${required(notes.aiUsage)}Include an "aiUsage" object: {"will": string[], "willNot": string[]}. This is a disclosure of how AI is used on THIS project, so both lists must name specific tasks from this brief, not general statements about AI.${
         notes.aiUsage ? ` They have said: ${notes.aiUsage}. Build both lists around that.` : ""
       } "will" is 2-4 mechanical or repetitive parts of the work where AI genuinely helps, for example scaffolding file structure, generating repetitive variants, first-pass copy, or converting formats. "willNot" is 2-4 parts that stay entirely human because they are judgement, taste or client-specific reasoning, for example deciding what to build, visual design decisions, or interpreting research. Write each entry as a short phrase naming the actual task.`
     );
@@ -667,6 +690,7 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
       sectionChoiceInstruction,
       strategyInstruction,
       extraSectionsInstruction,
+      paymentInstruction,
       `\nReturn ONLY a JSON object containing the keys named above and nothing else. Do not include a title, client, scope, deliverables, timeline, price or hours: those are being written separately and anything you add here is discarded.`,
     ]
       .filter(Boolean)
@@ -683,7 +707,10 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
     part === "all" ? strategyInstruction : "",
     timelineInstruction,
     fixedPriceInstruction,
-    paymentInstruction,
+    // Only when this half is writing the whole quote. Split in two, the
+    // paymentTerms sentence belongs to the extras call, and having both write
+    // it meant the merge silently preferred the half that knew less.
+    part === "all" ? paymentInstruction : "",
     milestoneInstruction,
     part === "all" ? extraSectionsInstruction : "",
     `\nWrite a project quote based on this. Keep deliverables as a list of short, concrete items (4-7 items), name actual artifacts, not phases. Give a realistic timeline, a price in ${currencyCode}, and estimated hours that are consistent with the pricing approach above.`,
@@ -720,7 +747,14 @@ export function buildRefineUserPrompt(
   current: GeneratedBrief,
   refinePrompt: string
 ): string {
-  return `Here is the current quote:\n${JSON.stringify(current)}\n\nRevise it based on this instruction: "${refinePrompt}". Keep everything else as close to the original as makes sense.`;
+  // The add-on sections are named on purpose. They were being left out of the
+  // quote handed to this call and out of what it was asked for, so "change the
+  // payment terms" had nothing to change: the model rewrote the scope, the
+  // terms came back missing, and the stored ones were kept untouched. Keeping
+  // them is now stated as plainly as revising them.
+  return `Here is the current quote:\n${JSON.stringify(
+    current
+  )}\n\nRevise it based on this instruction: "${refinePrompt}". Keep everything else as close to the original as makes sense.\n\nReturn the whole quote, including every optional section it already has: terms, revisions, availability, paymentTerms and aiUsage. A section the instruction does not mention comes back exactly as it was. Do not drop a section because the instruction was about something else, and do not add one that is not there already unless the instruction asks for it.`;
 }
 
 /** Strips markdown fences and parses+validates the model's JSON response. */

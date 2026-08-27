@@ -129,6 +129,7 @@ export const es: Dictionary = {
     paymentWhen: "¿Cuándo cobras?",
     paymentUpfront: "Todo por adelantado",
     paymentSplit: "Una parte ahora y otra a la entrega",
+    paymentOnDelivery: "Todo a la entrega",
     paymentMilestone: "En cada hito",
     paymentHowMuchUpfront: "¿Cuánto por adelantado?",
     paymentRest: "El resto se paga a la entrega.",

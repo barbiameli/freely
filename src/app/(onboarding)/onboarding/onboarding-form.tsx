@@ -111,7 +111,7 @@ export function OnboardingForm({ stripeState }: { stripeState: ConnectState }) {
   // No country state here any more. RateBody asks for it and researchRateAction
   // saves it, which is also true in Memory and in the quote wizard, so there is
   // one path rather than three.
-  const [paymentPlan, setPaymentPlan] = useState<"UPFRONT" | "SPLIT" | "MILESTONE">("SPLIT");
+  const [paymentPlan, setPaymentPlan] = useState<"UPFRONT" | "SPLIT" | "ON_DELIVERY" | "MILESTONE">("SPLIT");
   const [upfrontPercent, setUpfrontPercent] = useState(50);
   const [expertise, setExpertise] = useState<string | null>(null);
   const [refFiles, setRefFiles] = useState<RefFile[]>([]);
@@ -311,8 +311,8 @@ function PricingStep({
   setRateUnit: (u: "HOUR" | "DAY" | "FIXED") => void;
   currency: string;
   setCurrency: (c: string) => void;
-  paymentPlan: "UPFRONT" | "SPLIT" | "MILESTONE";
-  setPaymentPlan: (p: "UPFRONT" | "SPLIT" | "MILESTONE") => void;
+  paymentPlan: "UPFRONT" | "SPLIT" | "ON_DELIVERY" | "MILESTONE";
+  setPaymentPlan: (p: "UPFRONT" | "SPLIT" | "ON_DELIVERY" | "MILESTONE") => void;
   upfrontPercent: number;
   setUpfrontPercent: (n: number) => void;
   expertise: string | null;
@@ -376,6 +376,7 @@ function PricingStep({
             [
               ["UPFRONT", t.quote.paymentUpfront],
               ["SPLIT", t.quote.paymentSplit],
+              ["ON_DELIVERY", t.quote.paymentOnDelivery],
               ["MILESTONE", t.quote.paymentMilestone],
             ] as const
           ).map(([value, label]) => (

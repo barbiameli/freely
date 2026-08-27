@@ -423,6 +423,11 @@ export async function refineBriefAction(
   if (!brief) return { ok: false, error: "Brief not found." };
   if (!refinePrompt.trim()) return { ok: false, error: "Add a refinement instruction." };
 
+  // Everything, including the add-on sections. Sending the quote without them
+  // meant an instruction about payment terms or revisions reached a model that
+  // could not see either, so it changed something else and the real ones were
+  // left exactly as they were.
+  const currentExtras = (brief.extras as BriefExtras | null) ?? undefined;
   const current: GeneratedBrief = {
     title: brief.title,
     client: brief.client,
@@ -432,6 +437,7 @@ export async function refineBriefAction(
     strategy: (brief.strategy as Strategy | null) ?? undefined,
     price: brief.price,
     hours: brief.hours,
+    ...currentExtras,
   };
 
   let updated: GeneratedBrief;
@@ -454,6 +460,13 @@ export async function refineBriefAction(
       deliverables: updated.deliverables.map(clean),
       timeline: clean(updated.timeline),
       ...(updated.strategy ? { strategy: sanitizeStrategy(updated.strategy) } : {}),
+      // Written back, and only over what came back. A refine that returns the
+      // sections unchanged rewrites them with the same words; one that drops
+      // them keeps what was there, since losing a clause to a request about
+      // the timeline would be the worse failure.
+      ...(hasExtras(updated)
+        ? { extras: { ...(currentExtras ?? {}), ...sanitizeExtras(updated) } }
+        : {}),
       price: updated.price,
       hours: updated.hours,
     },

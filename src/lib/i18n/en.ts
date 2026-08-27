@@ -124,6 +124,7 @@ export const en = {
     paymentWhen: "When do you get paid?",
     paymentUpfront: "All upfront",
     paymentSplit: "Part now, part on delivery",
+    paymentOnDelivery: "All on delivery",
     paymentMilestone: "At each milestone",
     paymentHowMuchUpfront: "How much upfront?",
     paymentRest: "The rest is due on delivery.",

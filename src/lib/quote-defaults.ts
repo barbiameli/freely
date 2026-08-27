@@ -24,7 +24,15 @@
  */
 import type { RateUnit } from "@/lib/rate-unit";
 
-export type PaymentPlan = "UPFRONT" | "SPLIT" | "MILESTONE";
+/**
+ * When the money arrives.
+ *
+ * ON_DELIVERY is the mirror of UPFRONT and was missing: plenty of small jobs
+ * are billed once, at the end, and the nearest thing on offer was a split with
+ * the deposit set to something small, which says a different thing to a client
+ * and produces a different invoice.
+ */
+export type PaymentPlan = "UPFRONT" | "SPLIT" | "ON_DELIVERY" | "MILESTONE";
 export type ExpertiseLevel = "Junior" | "Mid-level" | "Senior" | "Expert";
 export type QuoteFormat = "HTML" | "PDF" | "Figma";
 export type QuoteTemplate = "classic" | "editorial" | "minimal";
@@ -346,6 +354,7 @@ export interface SetupWords {
   perDay: string;
   fixed: string;
   upfrontAll: string;
+  onDelivery: string;
   /** Takes the percentage, e.g. "{n}% upfront, rest on delivery". */
   splitTemplate: string;
   byMilestone: string;
@@ -381,6 +390,7 @@ export function describeRow(
     }
     case "payment":
       if (setup.paymentPlan === "UPFRONT") return words.upfrontAll;
+      if (setup.paymentPlan === "ON_DELIVERY") return words.onDelivery;
       if (setup.paymentPlan === "MILESTONE") return words.byMilestone;
       return words.splitTemplate.replace("{n}", String(setup.upfrontPercent));
     case "sections": {
@@ -431,7 +441,9 @@ function asRateUnit(value?: string | null): RateUnit | undefined {
 }
 
 function asPaymentPlan(value?: string | null): PaymentPlan | undefined {
-  return value === "UPFRONT" || value === "SPLIT" || value === "MILESTONE" ? value : undefined;
+  return value === "UPFRONT" || value === "SPLIT" || value === "ON_DELIVERY" || value === "MILESTONE"
+    ? value
+    : undefined;
 }
 
 function asPercent(value?: number | null): number | undefined {
