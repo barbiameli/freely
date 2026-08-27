@@ -29,6 +29,7 @@ import {
 import { getMarketRateNote } from "@/lib/market-rate-cache";
 import { CURRENT_LAYOUT } from "@/lib/quote-layout";
 import { hasStrategyContent } from "@/lib/strategy";
+import { disciplineLine } from "@/lib/industries";
 
 export type ActionResult<T = undefined> =
   | { ok: true; data: T }
@@ -42,12 +43,16 @@ async function buildMemoryContext(user: {
   toneNotes: string;
   storyNotes: string;
   contextNotes: string;
+  industry?: string | null;
+  otherIndustries?: string[] | null;
 }): Promise<MemoryContext> {
   const files = await prisma.memoryAsset.findMany({
     where: { userId: user.id, type: "FILE" },
     select: { name: true, textContent: true },
   });
   return {
+    // What they do, and what else they do. See lib/industries.
+    disciplines: disciplineLine(user.industry, user.otherIndustries),
     instructions: user.memoryInstructions,
     toneNotes: user.toneNotes,
     storyNotes: user.storyNotes,

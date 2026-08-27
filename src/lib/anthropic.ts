@@ -325,6 +325,15 @@ export interface PricingContext {
 
 export interface MemoryContext {
   instructions: string;
+  /**
+   * What this person does, main discipline first.
+   *
+   * A quote for a job that is half design and half front end reads differently
+   * when the model knows the same person is doing both: one scope, one price,
+   * one timeline, rather than a design quote that treats the build as somebody
+   * else's problem.
+   */
+  disciplines?: string;
   toneNotes?: string;
   storyNotes?: string;
   contextNotes?: string;
@@ -344,6 +353,7 @@ export function buildSystemPrompt(memory: MemoryContext | string): string {
     "Never use em dashes or en dashes anywhere in your output. Use a comma, a full stop, or a hyphen instead. This applies to every field, including scope, deliverables, timeline and terms.",
     "Never end a sentence by contrasting it with what you are not saying. Do not write 'X, not Y', 'rather than Y', or 'not just X'. Say the thing and stop: 'best used as visual reference only' rather than adding 'not as a foundation to build on'. The client did not propose the alternative, so arguing against it reads as defensive. The exception is payment terms, cancellation terms and the revisions policy, where a real distinction is sometimes the substance of the clause.",
     "Every number you write, hours, price, timeline, should be defensible. Reason from the stated hourly rate and any pricing history provided, not from round numbers that merely sound reasonable.",
+    ctx.disciplines?.trim() || null,
     ctx.instructions?.trim() || null,
     ctx.toneNotes?.trim() ? `Tone notes: ${ctx.toneNotes.trim()}` : null,
     ctx.storyNotes?.trim() ? `Studio story / background: ${ctx.storyNotes.trim()}` : null,

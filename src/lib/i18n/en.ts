@@ -141,6 +141,8 @@ export const en = {
     rateUpper: "upper end",
     iKnowMyRate: "I know my rate",
     rememberThisRate: "Remember this as my usual rate",
+    rateHelpTitle: "Working out your rate",
+    rateHelpHint: "Two answers, then Freely looks up what this work pays where you are.",
     expertise: "Your expertise level",
     expertiseHint: "Used when no rate is given, to research a realistic one.",
     expertiseRead: "Read as {level} from your Memory. Change it if that is off.",
@@ -222,6 +224,8 @@ export const en = {
     milestoneCoversOne: "1 deliverable",
     addSectionsHint:
       "Every quote covers the scope, deliverables and the price. Add anything else this one needs. Where a section asks a question, answering is optional: left blank, it gets worked out from the brief and your past quotes.",
+    sectionQuestionsTitle: "About the sections you picked",
+    sectionQuestionsHint: "Optional. Left blank, these are written from the brief and your past quotes.",
     availabilityPrompt:
       "Anything specific worth saying? Start dates, how much time you can give it, or that availability is not held until the quote is agreed.",
     availabilitySkipped: "Left blank, this section is skipped rather than guessed at.",
@@ -863,6 +867,8 @@ export const en = {
     showUs: "Show us what you've got",
     gotGuidelines: "Got brand guidelines?",
     savedContinue: "Saved, continue whenever.",
+    alsoDo: "Anything else you do?",
+    alsoDoHint: "Optional, and as many as apply. Your rate is researched for the main one above.",
     whatWork: "What kind of work do you do?",
     yourName: "Your name",
     locationPlaceholder: "Valencia, Spain",

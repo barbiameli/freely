@@ -16,6 +16,7 @@ import { enforceLlmRateLimit } from "@/lib/rate-limit";
 import { parseLocale } from "@/lib/i18n";
 import { isKnownCountry } from "@/lib/countries";
 import type { ActionResult } from "@/actions/briefs";
+import { INDUSTRY_OPTIONS } from "@/lib/industries";
 
 export async function updateMemoryInstructionsAction(
   instructions: string
@@ -419,5 +420,49 @@ export async function updateDefaultRateAction(patch: {
   });
   revalidatePath("/memory");
   revalidatePath("/quote");
+  return { ok: true, data: undefined };
+}
+
+/**
+ * What you do, and what else you do.
+ *
+ * Editable here because the only other place it is asked is onboarding, and
+ * somebody who picks up front-end work six months in should not have to replay
+ * a first run to say so.
+ *
+ * The main discipline stays single. It is the key the market rate cache is
+ * shared on, so it has to name one kind of work: an average across "a bit of
+ * everything" is not a rate anybody could defend to a client.
+ */
+export async function updateDisciplinesAction(patch: {
+  industry: string;
+  otherIndustries: string[];
+}): Promise<ActionResult<undefined>> {
+  const user = await requireFullUser();
+
+  if (!INDUSTRY_OPTIONS.some((option) => option.key === patch.industry)) {
+    return { ok: false, error: "Pick one of the listed kinds of work." };
+  }
+
+  // Checked against the list and stripped of the main one, so nothing can be in
+  // both places and nothing unknown reaches a prompt or a cache key.
+  const others = patch.otherIndustries.filter(
+    (key) => key !== patch.industry && INDUSTRY_OPTIONS.some((option) => option.key === key)
+  );
+
+  try {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { industry: patch.industry, otherIndustries: others } as unknown as Record<
+        string,
+        unknown
+      >,
+    });
+  } catch (err) {
+    console.error("[updateDisciplinesAction] failed", err);
+    return { ok: false, error: "Couldn't save that." };
+  }
+
+  revalidatePath("/memory");
   return { ok: true, data: undefined };
 }

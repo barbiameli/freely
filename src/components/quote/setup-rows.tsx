@@ -29,6 +29,7 @@ import { useT } from "@/lib/i18n/context";
 import type { Dictionary } from "@/lib/i18n";
 import type { QuoteDraftPayload } from "@/actions/briefs";
 import { researchRateAction, type ResearchedRate } from "@/actions/rate";
+import { Reveal } from "@/components/ui/reveal";
 
 /**
  * The quote setup, as four readable lines.
@@ -481,7 +482,7 @@ export function RateBody({
           It only moves a number when the rate is being researched, so this is
           the one place it can affect anything. */}
       {rateHelpOpen && (
-        <div className="mt-4 pt-4 border-t border-line">
+        <Reveal title={t.quote.rateHelpTitle} hint={t.quote.rateHelpHint}>
           <SubLabel>{t.quote.expertise}</SubLabel>
           <div className="flex flex-wrap gap-1.5">
             {(["Junior", "Mid-level", "Senior", "Expert"] as const).map((level) => (
@@ -583,7 +584,7 @@ export function RateBody({
           )}
 
           {pricedFor}
-        </div>
+        </Reveal>
       )}
     </>
   );
@@ -621,8 +622,7 @@ export function PaymentBody({
       </div>
 
       {plan === "SPLIT" && (
-        <div className="mt-3">
-          <SubLabel>{t.quote.paymentHowMuchUpfront}</SubLabel>
+        <Reveal title={t.quote.paymentHowMuchUpfront} hint={t.quote.paymentRest}>
           <div className="flex flex-wrap gap-1.5">
             {[25, 40, 50].map((pct) => (
               <Chip
@@ -634,13 +634,15 @@ export function PaymentBody({
               </Chip>
             ))}
           </div>
-          <p className="text-caption text-text-muted mt-1.5 mb-0">{t.quote.paymentRest}</p>
-        </div>
+        </Reveal>
       )}
 
       {plan === "MILESTONE" && (
-        <div className="mt-3 flex flex-col gap-3">
-          <p className="text-caption text-text-muted m-0">{t.quote.paymentMilestoneHint}</p>
+        <Reveal
+          title={t.quote.milestonesSection}
+          hint={t.quote.paymentMilestoneHint}
+          className="flex flex-col gap-3"
+        >
           <div>
             <SubLabel>{t.quote.milestonesHowMany}</SubLabel>
             {/* "Work it out" first and default: the natural number of chunks is
@@ -671,11 +673,11 @@ export function PaymentBody({
               onChange={(e) => setDraft((d) => ({ ...d, milestoneNotes: e.target.value }))}
               rows={2}
               placeholder={t.quote.milestonesNotesPlaceholder}
-              className="w-full font-body text-small text-ink leading-relaxed bg-paper border border-line rounded-lg px-3 py-2.5 outline-none focus:border-violet"
+              className="w-full font-body text-small text-ink leading-relaxed bg-white border border-line rounded-lg px-3 py-2.5 outline-none focus:border-violet"
             />
             <p className="text-caption text-text-muted mt-1 mb-0">{t.quote.milestonesNotesHint}</p>
           </div>
-        </div>
+        </Reveal>
       )}
     </>
   );
@@ -723,8 +725,14 @@ export function SectionsBody({
       </div>
       <p className="text-caption text-text-muted mt-2 mb-0">{t.quote.setupSectionsNote}</p>
 
+      {/* Asked because a section was ticked, so it looks like a consequence of
+          ticking one rather than like four more fields that were always there. */}
       {questions.length > 0 && (
-        <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-line">
+        <Reveal
+          title={t.quote.sectionQuestionsTitle}
+          hint={t.quote.sectionQuestionsHint}
+          className="flex flex-col gap-3"
+        >
           {questions.map((q) => (
             <div key={q.key}>
               <SubLabel>{t.quote[q.promptKey]}</SubLabel>
@@ -735,25 +743,25 @@ export function SectionsBody({
                 }
                 rows={2}
                 placeholder={t.quote[q.placeholderKey]}
-                className="w-full font-body text-small text-ink leading-relaxed bg-paper border border-line rounded-lg px-3 py-2.5 outline-none focus:border-violet"
+                // White inside the panel: a paper field on a paper-ish tint is
+                // a field you have to look for.
+                className="w-full font-body text-small text-ink leading-relaxed bg-white border border-line rounded-lg px-3 py-2.5 outline-none focus:border-violet"
               />
             </div>
           ))}
-        </div>
+        </Reveal>
       )}
 
       {draft.includeAvailability && (
-        <div className="mt-3">
-          <SubLabel>{t.quote.availabilityPrompt}</SubLabel>
+        <Reveal title={t.quote.availabilityPrompt} hint={t.quote.availabilitySkipped}>
           <textarea
             value={availabilityNote}
             onChange={(e) => setAvailabilityNote(e.target.value)}
             rows={2}
             placeholder={t.quote.availabilityPlaceholder}
-            className="w-full font-body text-small text-ink leading-relaxed bg-paper border border-line rounded-lg px-3 py-2.5 outline-none focus:border-violet"
+            className="w-full font-body text-small text-ink leading-relaxed bg-white border border-line rounded-lg px-3 py-2.5 outline-none focus:border-violet"
           />
-          <p className="text-caption text-text-muted mt-1 mb-0">{t.quote.availabilitySkipped}</p>
-        </div>
+        </Reveal>
       )}
     </>
   );

@@ -52,6 +52,19 @@ model User {
   // presets across Quote/Memory. Null until the user completes /onboarding.
   industry           String?
 
+  // The other things they do, when one label does not cover it.
+  //
+  // Plenty of freelancers are a UX designer who also builds the front end, or a
+  // brand designer who writes the copy. Asking them to pick one made the answer
+  // a lie and made the quotes worse: a job that is half design and half build
+  // was being written as though the build were somebody else's problem.
+  //
+  // The main one above stays single on purpose. It is what the rate research is
+  // keyed on and what the market rate cache shares between freelancers, and
+  // "the average rate for a bit of everything" is not a number. These are
+  // context for the writing, not inputs to the price.
+  otherIndustries    String[] @default([])
+
   // Where this freelancer is based, e.g. "Valencia, Spain". The single
   // biggest determinant of a defensible rate when there's no pricing history
   // to anchor to: what a designer can charge in London and in Buenos Aires

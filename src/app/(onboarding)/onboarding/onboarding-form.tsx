@@ -86,6 +86,15 @@ export function OnboardingForm({ stripeState }: { stripeState: ConnectState }) {
   const t = useT();
   const [step, setStep] = useState(0);
   const [industry, setIndustry] = useState<string | null>(null);
+  /**
+   * The other things they do.
+   *
+   * Asked because plenty of people are a designer who also builds, and making
+   * them pick one made the answer a lie. The main one still exists and is still
+   * required: it is what the rate research is keyed on, and "the average rate
+   * for a bit of everything" is not a number.
+   */
+  const [alsoDo, setAlsoDo] = useState<string[]>([]);
   const [customIndustry, setCustomIndustry] = useState("");
   const [values, setValues] = useState<Record<StepId, string>>({
     industry: "",
@@ -141,6 +150,7 @@ export function OnboardingForm({ stripeState }: { stripeState: ConnectState }) {
       try {
         await completeOnboardingAction({
           industry: industryValue,
+          otherIndustries: alsoDo,
           instructions: values.instructions,
           toneNotes: values.toneNotes,
           storyNotes: values.storyNotes,
@@ -187,7 +197,16 @@ export function OnboardingForm({ stripeState }: { stripeState: ConnectState }) {
         <>
           <div className="flex flex-wrap gap-2.5">
             {INDUSTRY_OPTIONS.map((opt) => (
-              <Chip key={opt.key} active={industry === opt.key} onClick={() => setIndustry(opt.key)}>
+              <Chip
+                key={opt.key}
+                active={industry === opt.key}
+                onClick={() => {
+                  setIndustry(opt.key);
+                  // Picking a main one that was already ticked below takes it
+                  // out of the second list, so nothing is in both.
+                  setAlsoDo((current) => current.filter((key) => key !== opt.key));
+                }}
+              >
                 {opt.label}
               </Chip>
             ))}
@@ -198,6 +217,36 @@ export function OnboardingForm({ stripeState }: { stripeState: ConnectState }) {
               onChange={setCustomIndustry}
               placeholder={t.onboarding.whatWork}
             />
+          )}
+
+          {/* Only once the main one is chosen, so the two questions are asked
+              in the order they depend on each other. */}
+          {industry && industry !== "other" && (
+            <div>
+              <SubLabel>{t.onboarding.alsoDo}</SubLabel>
+              <p className="text-caption text-text-muted mt-0 mb-2 text-pretty">
+                {t.onboarding.alsoDoHint}
+              </p>
+              <div className="flex flex-wrap gap-2.5">
+                {INDUSTRY_OPTIONS.filter(
+                  (opt) => opt.key !== industry && opt.key !== "other"
+                ).map((opt) => (
+                  <Chip
+                    key={opt.key}
+                    active={alsoDo.includes(opt.key)}
+                    onClick={() =>
+                      setAlsoDo((current) =>
+                        current.includes(opt.key)
+                          ? current.filter((key) => key !== opt.key)
+                          : [...current, opt.key]
+                      )
+                    }
+                  >
+                    {opt.label}
+                  </Chip>
+                ))}
+              </div>
+            </div>
           )}
           {error && <div className="text-overdue text-xs">{error}</div>}
           <Button

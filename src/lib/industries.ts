@@ -97,3 +97,49 @@ export function industryQuoteExample(key: string | null | undefined): string {
     "e.g. focus on discovery phase, keep it generic enough to reuse..."
   );
 }
+
+/**
+ * Everything somebody does, main one first.
+ *
+ * The prompts want the whole picture: a quote for a job that is half design and
+ * half front end reads differently when the model knows the same person is
+ * doing both. The rate research wants only the first, which is why they are
+ * stored apart rather than as one list with a convention about position.
+ */
+export function allDisciplines(
+  industry: string | null | undefined,
+  others: string[] | null | undefined
+): string[] {
+  const main = industry?.trim();
+  const rest = (others ?? [])
+    .map((key) => key.trim())
+    .filter((key) => key.length > 0 && key !== main);
+  // Deduped, because a saved list from an older version can hold the main one.
+  return Array.from(new Set([...(main ? [main] : []), ...rest]));
+}
+
+/** The same list, as labels a person would recognise. */
+export function disciplineLabels(
+  industry: string | null | undefined,
+  others: string[] | null | undefined
+): string[] {
+  return allDisciplines(industry, others).map(industryLabel);
+}
+
+/**
+ * One line for a prompt: what they do, and what else they do.
+ *
+ * Empty when there is nothing to add, so a caller can drop it into a list of
+ * lines and let the empty one filter itself out.
+ */
+export function disciplineLine(
+  industry: string | null | undefined,
+  others: string[] | null | undefined
+): string {
+  const labels = disciplineLabels(industry, others);
+  if (labels.length === 0) return "";
+  if (labels.length === 1) return `This freelancer works as a ${labels[0]}.`;
+  return `This freelancer works mainly as a ${labels[0]}, and also does ${labels
+    .slice(1)
+    .join(", ")}. Where the brief touches more than one of those, quote it as one person doing all of it rather than as separate jobs.`;
+}

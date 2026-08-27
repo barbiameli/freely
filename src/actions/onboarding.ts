@@ -8,7 +8,10 @@ import { INDUSTRY_OPTIONS } from "@/lib/industries";
 import { isKnownCountry } from "@/lib/countries";
 
 export interface OnboardingMemoryInput {
+  /** The main one, which the rate research is keyed on. */
   industry: string;
+  /** Anything else they do. Context for the writing, never for the price. */
+  otherIndustries?: string[];
   instructions?: string;
   toneNotes?: string;
   storyNotes?: string;
@@ -44,10 +47,17 @@ export async function completeOnboardingAction(input: OnboardingMemoryInput) {
   const valid = INDUSTRY_OPTIONS.some((i) => i.key === input.industry);
   if (!valid) throw new Error("Pick one of the listed categories.");
 
+  // Checked against the list and stripped of the main one, so the stored list
+  // cannot hold a key the app does not know or repeat what is already above it.
+  const others = (input.otherIndustries ?? []).filter(
+    (key) => key !== input.industry && INDUSTRY_OPTIONS.some((i) => i.key === key)
+  );
+
   await prisma.user.update({
     where: { id: user.id },
     data: {
       industry: input.industry,
+      ...({ otherIndustries: others } as Record<string, unknown>),
       ...(input.instructions?.trim() ? { memoryInstructions: input.instructions.trim() } : {}),
       ...(input.toneNotes?.trim() ? { toneNotes: input.toneNotes.trim() } : {}),
       ...(input.storyNotes?.trim() ? { storyNotes: input.storyNotes.trim() } : {}),
