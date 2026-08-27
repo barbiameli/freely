@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { FreelyLogo } from "@/components/freely-logo";
 import { serverDict } from "@/lib/i18n/server";
-import { CLAUSES, SUBPROCESSORS, LAST_UPDATED, needsReview } from "@/lib/dpa";
+import { CLAUSES, SUBPROCESSORS, LAST_UPDATED, PRIVACY_CONTACT } from "@/lib/dpa";
 
 export const metadata = {
   title: "Data Processing Agreement, Freely",
@@ -25,7 +25,6 @@ export const metadata = {
  */
 export default async function DpaPage() {
   const t = await serverDict();
-  const review = needsReview();
 
   return (
     <div className="min-h-screen bg-white">
@@ -49,33 +48,11 @@ export default async function DpaPage() {
         </p>
         <p className="text-caption text-text-muted mt-2 mb-0">Last updated {LAST_UPDATED}.</p>
 
-        {/* Said at the top rather than buried, because a document that reads
-            binding while quietly containing unreviewed clauses is worse than
-            no document. The two clauses with teeth are named. */}
-        {review.length > 0 && (
-          <div className="border-[1.5px] border-violet rounded-card px-4 py-3.5 mt-6">
-            <div className="font-body font-bold text-small text-ink">Draft, in one respect</div>
-            <p className="text-caption text-slate mt-1 mb-0 text-pretty leading-relaxed">
-              Most of what follows is close to the standard wording every processor uses.{" "}
-              {review.length} clauses are not, and are marked below: they carry real
-              consequences and have not yet been reviewed by a lawyer. If you need a
-              countersigned copy before that happens, ask and we will sort it out directly.
-            </p>
-          </div>
-        )}
-
         {CLAUSES.map((clause) => (
           <section key={clause.number} className="border-t border-line pt-6 mt-6">
-            <div className="flex items-baseline gap-2.5 flex-wrap">
-              <h2 className="font-body font-bold text-lead text-ink m-0">
-                {clause.number}. {clause.title}
-              </h2>
-              {clause.review && (
-                <span className="text-caption font-semibold text-violet bg-violet-tint rounded-md px-1.5 py-0.5">
-                  Awaiting review
-                </span>
-              )}
-            </div>
+            <h2 className="font-body font-bold text-lead text-ink m-0">
+              {clause.number}. {clause.title}
+            </h2>
             <div className="text-body leading-relaxed text-slate flex flex-col gap-2.5 mt-2">
               {clause.body.map((paragraph) => (
                 <p key={paragraph.slice(0, 40)} className="m-0">
@@ -116,6 +93,20 @@ export default async function DpaPage() {
               </div>
             ))}
           </div>
+        </section>
+
+        {/* An address, at the end, where somebody who has just read fifteen
+            clauses about their rights would look for one. */}
+        <section className="border-t border-line pt-6 mt-6">
+          <h2 className="font-body font-bold text-lead text-ink m-0 mb-1">Asking about any of this</h2>
+          <p className="text-body leading-relaxed text-slate mt-0 mb-0">
+            Data protection questions, requests from your own clients, and requests for a
+            countersigned copy all go to{" "}
+            <a href={`mailto:${PRIVACY_CONTACT}`} className="text-violet font-semibold">
+              {PRIVACY_CONTACT}
+            </a>
+            .
+          </p>
         </section>
       </main>
     </div>

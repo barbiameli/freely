@@ -1000,13 +1000,16 @@ export const es: Dictionary = {
 
     whereTitle: "Dónde se guarda y quién más lo toca",
     whereBody:
-      "Hay tres empresas implicadas y ninguna más. Neon aloja la base de datos, en la Unión Europea. Vercel ejecuta la aplicación y no guarda nada de tu contenido. Anthropic recibe el texto descrito arriba cuando se está escribiendo un presupuesto.",
+      "Hay cuatro empresas implicadas y ninguna más. Neon aloja la base de datos, en Frankfurt, y tu contenido no sale de la UE. Vercel ejecuta la aplicación y no guarda nada de tu contenido. Anthropic recibe el texto descrito arriba cuando se está escribiendo un presupuesto. Resend envía el correo: los enlaces de acceso y el presupuesto cuando lo mandas.",
     whereNoOthers:
       "Ninguna empresa de analítica, red publicitaria ni intermediario de datos recibe nada sobre ti, tus proyectos o tus clientes. Freely registra qué funciones se usan, como recuentos sin nombres ni texto libre, y esos datos nunca salen de la base de datos.",
     whereHow:
-      "Cada una de las tres está sujeta a un acuerdo de tratamiento de datos, no a una promesa, y cada una pasa una auditoría independiente SOC 2 Type 2 cada año. El acuerdo de Vercel dice sin rodeos que no accederán, usarán ni cederán los datos de cliente salvo lo necesario para prestar el servicio o para cumplir la ley. Los términos de Neon incluyen un acuerdo de tratamiento conforme al RGPD y publican su propia lista de subencargados. La postura de Anthropic sobre retención y entrenamiento está descrita arriba.",
+      "Cada una de las cuatro está sujeta a un acuerdo de tratamiento de datos, no a una promesa, y cada una pasa una auditoría independiente SOC 2 Type 2 cada año. El acuerdo de Vercel dice sin rodeos que no accederán, usarán ni cederán los datos de cliente salvo lo necesario para prestar el servicio o para cumplir la ley. Los términos de Neon incluyen un acuerdo de tratamiento conforme al RGPD y publican su propia lista de subencargados. La postura de Anthropic sobre retención y entrenamiento está descrita arriba.",
     whereRead:
-      "Merece la pena leer las tres en lugar de fiarse: vercel.com/legal/dpa, neon.com/dpa y neon.com/subprocessors.",
+      "Merece la pena leer las cuatro en lugar de fiarse: neon.com/dpa, vercel.com/legal/dpa, anthropic.com/legal/data-processing-addendum y resend.com/legal/dpa.",
+    freeTitle: "Freely es gratis por ahora",
+    freeBody:
+      "Freely está en pruebas. No se cobra a nadie, todavía no hay una empresa detrás y no se está gestionando como un negocio. Eso no lo convierte en una organización sin ánimo de lucro, y tampoco ablanda ninguna de las promesas de esta página: las obligaciones del acuerdo de abajo se aplican pague alguien o no. Si Freely empieza a cobrar, te lo diremos antes de que cambie nada.",
     dpaTitle: "Si necesitas esto como contrato",
     dpaBody:
       "Esta página describe lo que hace Freely. Cuando metes los datos de otra persona, la ley exige que eso quede por escrito como un acuerdo y no como una descripción, y lo hay.",

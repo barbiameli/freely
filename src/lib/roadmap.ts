@@ -59,9 +59,9 @@ export const ROADMAP: RoadmapItem[] = [
   {
     id: "dpa-review",
     kind: "feature",
-    state: "next",
-    title: "Get three DPA clauses reviewed",
-    note: "The agreement is written and published at /dpa, and nine of its twelve clauses are close to the standard wording. Audit, liability and governing language are marked as awaiting review on the page itself. A couple of hours of a lawyer's time, not a couple of days.",
+    state: "done",
+    title: "Finish the Data Processing Agreement",
+    note: "Fifteen clauses at /dpa with nothing left pending. Audit, liability and governing law are written out rather than gestured at, and governing law follows the account holder, which is what the standard contractual clauses do for an EU exporter and avoids naming a country Freely has not chosen. Clause 2 says plainly that the service is free, that this reduces none of the obligations, and that it is not a charity; clause 11 says what happens if Freely stops. Every commitment about a sub-processor was read out of that company's own current agreement. Still worth a lawyer's eye when there is money for one, particularly the liability clause, but it is a document now rather than a draft.",
   },
 
   {

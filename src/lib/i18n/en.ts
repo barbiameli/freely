@@ -1007,13 +1007,16 @@ export const en = {
 
     whereTitle: "Where it is kept, and who else touches it",
     whereBody:
-      "Three companies are involved and no others. Neon host the database, in the European Union. Vercel run the application and store none of your content. Anthropic receive the text described above when a quote is being written.",
+      "Four companies are involved and no others. Neon host the database, in Frankfurt, and your content stays in the EU. Vercel run the application and store none of your content. Anthropic receive the text described above when a quote is being written. Resend send the email: sign-in links, and the quote when you send one.",
     whereNoOthers:
       "No analytics company, advertising network or data broker receives anything about you, your projects or your clients. Freely records which features are used, as counts with no names or free text in them, and that data never leaves the database.",
     whereHow:
-      "Each of the three is bound by a data processing agreement rather than a promise, and each is independently audited to SOC 2 Type 2 every year. Vercel's agreement says plainly that they will not access, use or disclose customer data except as needed to run the service or to comply with the law. Neon's terms include a GDPR data processing agreement and they publish their own list of subprocessors. Anthropic's retention and training position is described above.",
+      "Each of the four is bound by a data processing agreement rather than a promise, and each is independently audited to SOC 2 Type 2 every year. Vercel's agreement says plainly that they will not access, use or disclose customer data except as needed to run the service or to comply with the law. Neon's terms include a GDPR data processing agreement and they publish their own list of subprocessors. Anthropic's retention and training position is described above.",
     whereRead:
-      "All three are worth reading rather than taking on trust: vercel.com/legal/dpa, neon.com/dpa and neon.com/subprocessors.",
+      "All four are worth reading rather than taking on trust: neon.com/dpa, vercel.com/legal/dpa, anthropic.com/legal/data-processing-addendum and resend.com/legal/dpa.",
+    freeTitle: "Freely is free at the moment",
+    freeBody:
+      "Freely is in testing. Nobody is being charged, there is no company behind it yet, and it is not being run as a business. That does not make it a charity, and it does not make any of the promises on this page softer: the obligations in the agreement below apply whether or not anybody is paying. If Freely starts charging, you will be told before anything changes.",
     dpaTitle: "If you need this as a contract",
     dpaBody:
       "This page describes what Freely does. Where you enter another person's details, the law requires that to be written down as an agreement rather than a description, and there is one.",

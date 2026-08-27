@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { CLAUSES, SUBPROCESSORS, needsReview } from "@/lib/dpa";
+import { CLAUSES, SUBPROCESSORS, PRIVACY_CONTACT } from "@/lib/dpa";
 
 /**
  * What a processor contract has to contain.
@@ -38,7 +38,7 @@ describe("the agreement covers what Article 28 requires", () => {
 
 describe("the document holds together", () => {
   it("numbers its clauses in order, with no gaps", () => {
-    expect(CLAUSES.map((c) => c.number)).toEqual(
+    expect(CLAUSES.map((clause) => clause.number)).toEqual(
       CLAUSES.map((_, i) => String(i + 1))
     );
   });
@@ -52,14 +52,51 @@ describe("the document holds together", () => {
     }
   });
 
-  // Publishing something that reads binding while quietly containing
-  // unreviewed clauses is worse than publishing nothing, so the page counts
-  // them and says so at the top. If this ever reaches zero, the banner
-  // disappears, which should be a deliberate act rather than a surprise.
-  it("knows which clauses are still awaiting review", () => {
-    const flagged = needsReview().map((c) => c.number);
-    expect(flagged.length).toBeGreaterThan(0);
-    expect(flagged).toEqual(["10", "11", "12"]);
+  /**
+   * The document used to carry three clauses marked as awaiting a lawyer, and
+   * a banner counting them. They are written now, so nothing may reintroduce
+   * the marker quietly: a clause that is not finished should not be published
+   * at all rather than published with a label on it.
+   */
+  it("marks nothing as pending", () => {
+    expect(ALL_TEXT).not.toMatch(/awaiting review|to be reviewed|placeholder|TBD|TODO/i);
+  });
+
+  it("says which law governs and which courts hear it", () => {
+    expect(ALL_TEXT).toMatch(/governed by the law/i);
+    expect(ALL_TEXT).toMatch(/jurisdiction/i);
+  });
+
+  it("gives an address for data protection questions", () => {
+    expect(PRIVACY_CONTACT).toMatch(/@/);
+    expect(ALL_TEXT).toContain(PRIVACY_CONTACT);
+  });
+
+  it("puts a number on the breach notice and the sub-processor notice", () => {
+    expect(ALL_TEXT).toMatch(/within 48 hours/i);
+    expect(ALL_TEXT).toMatch(/14 days' notice/i);
+  });
+
+  /**
+   * Freely has never charged anybody. Saying so is honest, and saying only so
+   * would be misleading: Article 28 does not care whether a processor is paid.
+   */
+  it("says the service is free without pretending that reduces anything", () => {
+    expect(ALL_TEXT).toMatch(/free of charge/i);
+    expect(ALL_TEXT).toMatch(/do not depend on being paid/i);
+    expect(ALL_TEXT).toMatch(/does not make Freely a charity/i);
+  });
+
+  it("says what happens if it starts charging, and if it stops", () => {
+    expect(ALL_TEXT).toMatch(/if Freely does start charging/i);
+    expect(ALL_TEXT).toMatch(/30 days' notice by email and the means to export/i);
+  });
+
+  it("does not cap liability at a multiple of nothing", () => {
+    // A cap expressed as fees paid comes to zero on a free service, which is a
+    // disclaimer wearing a limitation's clothes.
+    expect(ALL_TEXT).toMatch(/would come to nothing/i);
+    expect(ALL_TEXT).toMatch(/limited to what the law allows/i);
   });
 });
 

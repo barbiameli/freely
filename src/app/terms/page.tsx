@@ -107,6 +107,14 @@ export default async function TermsPage() {
           <p>{s.yourDataBody}</p>
         </Section>
 
+        {/* Said before the agreement rather than after it. Somebody reading a
+            data protection page for a product that has never charged anybody
+            deserves to know that up front, and deserves to know it changes
+            none of the obligations underneath. */}
+        <Section title={s.freeTitle}>
+          <p className="text-body leading-relaxed text-slate m-0">{s.freeBody}</p>
+        </Section>
+
         {/* Where the question usually gets asked, so the answer is one
             click from it rather than something to be told about. */}
         <Section title={s.dpaTitle}>
