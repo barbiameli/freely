@@ -743,19 +743,72 @@ export function wantsExtras(draft: QuoteDraftInput): boolean {
   );
 }
 
+/** What a refine needs to know about the quote beyond its text. */
+export interface RefineContext {
+  /** The language it was written in, so a refine cannot switch it. */
+  language?: Locale;
+  /** How the client pays, in the freelancer's own words. */
+  paymentTerms?: string;
+  currency?: string;
+  rateUnit?: RateUnit;
+  hourlyRate?: number | null;
+  /** Sections the freelancer has taken out. Named so a refine can put one
+   * back when asked and leave it out when not. */
+  removedSections?: string[];
+}
+
 export function buildRefineUserPrompt(
   current: GeneratedBrief,
-  refinePrompt: string
+  refinePrompt: string,
+  context: RefineContext = {}
 ): string {
-  // The add-on sections are named on purpose. They were being left out of the
-  // quote handed to this call and out of what it was asked for, so "change the
-  // payment terms" had nothing to change: the model rewrote the scope, the
-  // terms came back missing, and the stored ones were kept untouched. Keeping
-  // them is now stated as plainly as revising them.
-  return `Here is the current quote:\n${JSON.stringify(
-    current
-  )}\n\nRevise it based on this instruction: "${refinePrompt}". Keep everything else as close to the original as makes sense.\n\nReturn the whole quote, including every optional section it already has: terms, revisions, availability, paymentTerms and aiUsage. A section the instruction does not mention comes back exactly as it was. Do not drop a section because the instruction was about something else, and do not add one that is not there already unless the instruction asks for it.`;
+  /**
+   * The whole quote goes in, and the whole quote comes back.
+   *
+   * This used to send the core fields only: no terms, no revisions, no payment
+   * terms, no availability, no AI disclosure. So "make it 30% up front" or
+   * "add a revisions policy" reached a model that could not see the sections
+   * being talked about, and it changed the scope instead. What came back had
+   * no sections in it either, so the stored ones survived untouched and the
+   * instruction appeared to do nothing.
+   *
+   * Adding and removing are both allowed, because "drop the AI disclosure" is
+   * as ordinary a request as "soften the terms", and the alternative was
+   * going back to the wizard and regenerating from scratch.
+   */
+  const facts: string[] = [];
+  if (context.hourlyRate) {
+    const unit =
+      context.rateUnit === "FIXED"
+        ? "as a fixed price"
+        : context.rateUnit === "DAY"
+          ? "per day"
+          : "per hour";
+    facts.push(`The rate behind the price is ${context.hourlyRate} ${context.currency ?? "USD"} ${unit}.`);
+  }
+  if (context.removedSections?.length) {
+    facts.push(
+      `Sections the freelancer has taken out of this quote: ${context.removedSections.join(
+        ", "
+      )}. Leave them out unless the instruction asks for one back.`
+    );
+  }
+
+  return [
+    languageInstruction(context.language),
+    `Here is the current quote, in full:\n${JSON.stringify(current)}`,
+    `\nRevise it based on this instruction: "${refinePrompt}". Keep everything else as close to the original as makes sense.`,
+    facts.length ? `\n${facts.join(" ")}` : "",
+    `\nReturn the whole quote, including every optional section it already has: strategy, terms, revisions, availability, paymentTerms and aiUsage. A section the instruction does not mention comes back exactly as it was, word for word. Do not drop a section because the instruction was about something else.`,
+    `\nYou may add a section this quote does not have, or leave one out, when the instruction asks for it: "add a revisions policy" means write one, "take out the AI disclosure" means omit that key entirely. Do not add one that was not asked for, and never invent facts to fill a section, particularly availability, which may only say what the freelancer has already stated.`,
+    context.paymentTerms
+      ? `\nThe payment terms currently read: "${context.paymentTerms}". If the instruction changes how or when the money is paid, rewrite them to match and make sure any milestones agree with them.`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
+
 
 /** Strips markdown fences and parses+validates the model's JSON response. */
 /**
@@ -1436,12 +1489,17 @@ export async function analyzeBrandGuideFromImage(
 export async function refineBrief(
   memory: MemoryContext,
   current: GeneratedBrief,
-  refinePrompt: string
+  refinePrompt: string,
+  context: RefineContext = {}
 ): Promise<GeneratedBrief> {
   const system = buildSystemPrompt(memory);
-  const user = buildRefineUserPrompt(current, refinePrompt);
-  const text = await callClaude("refineBrief", system, user);
-  return parseBriefResponse(text);
+  const user = buildRefineUserPrompt(current, refinePrompt, context);
+  // Room for the whole quote coming back rather than just its core, which is
+  // what the default 2000 was sized for.
+  const text = await callClaude("refineBrief", system, user, { maxTokens: 6000 });
+  // In the language it was written in. Without this a Spanish quote could come
+  // back with an English placeholder title.
+  return parseBriefResponse(text, context.language);
 }
 
 

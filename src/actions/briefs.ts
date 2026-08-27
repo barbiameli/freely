@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { track } from "@/lib/events";
 import { requireFullUser } from "@/lib/session";
@@ -9,7 +10,7 @@ import { teamScopeWhere } from "@/lib/team-scope";
 import { createProjectFromBrief } from "@/lib/track-from-brief";
 import { reconcileMilestones } from "@/lib/milestones";
 import { sanitizeText, stripLongDashes, stripContrastive } from "@/lib/sanitize-text";
-import { resolveQuoteLocale } from "@/lib/i18n";
+import { resolveQuoteLocale, parseLocale } from "@/lib/i18n";
 import { enforceLlmRateLimit } from "@/lib/rate-limit";
 import {
   generateBriefFromDraft,
@@ -78,6 +79,26 @@ function clean(text: string): string {
  */
 function cleanProse(text: string): string {
   return stripContrastive(clean(text));
+}
+
+/**
+ * Which sections a generated quote actually came back with.
+ *
+ * Named the same way the removal list names them, so the two can be compared.
+ * A refine that writes a section which had been taken out is a refine that was
+ * asked to bring it back, and leaving it hidden would mean paying for a
+ * paragraph nobody would ever see.
+ */
+function returnedSections(generated: GeneratedBrief): string[] {
+  const present: string[] = [];
+  if (hasStrategyContent(generated.strategy)) present.push("strategy");
+  if (generated.timeline.trim()) present.push("timeline");
+  if (generated.paymentTerms) present.push("paymentTerms");
+  if (generated.revisions) present.push("revisions");
+  if (generated.availability) present.push("availability");
+  if (generated.aiUsage) present.push("aiUsage");
+  if (generated.terms) present.push("terms");
+  return present;
 }
 
 /** Pulls the optional add-on sections off the generated brief into the shape
@@ -440,10 +461,23 @@ export async function refineBriefAction(
     ...currentExtras,
   };
 
+  const settings = (brief.settings as Record<string, unknown> | null) ?? {};
+  const removed = (brief as unknown as { hiddenSections?: string[] }).hiddenSections ?? [];
+
   let updated: GeneratedBrief;
   try {
     await enforceLlmRateLimit(user.id);
-    updated = await refineBrief(await buildMemoryContext(user), current, refinePrompt);
+    updated = await refineBrief(await buildMemoryContext(user), current, refinePrompt, {
+      language: parseLocale((brief as unknown as { language?: string }).language),
+      paymentTerms: currentExtras?.paymentTerms,
+      currency: brief.currency ?? undefined,
+      rateUnit: ((brief as unknown as { rateUnit?: string }).rateUnit ?? "HOUR") as
+        | "HOUR"
+        | "DAY"
+        | "FIXED",
+      hourlyRate: brief.hourlyRate,
+      removedSections: removed,
+    });
   } catch (err) {
     return {
       ok: false,
@@ -460,12 +494,38 @@ export async function refineBriefAction(
       deliverables: updated.deliverables.map(clean),
       timeline: clean(updated.timeline),
       ...(updated.strategy ? { strategy: sanitizeStrategy(updated.strategy) } : {}),
-      // Written back, and only over what came back. A refine that returns the
-      // sections unchanged rewrites them with the same words; one that drops
-      // them keeps what was there, since losing a clause to a request about
-      // the timeline would be the worse failure.
-      ...(hasExtras(updated)
-        ? { extras: { ...(currentExtras ?? {}), ...sanitizeExtras(updated) } }
+      // Written back whole, so a section can be added, rewritten or dropped.
+      //
+      // Merging over the old set was the safe first move and is the wrong one
+      // once a refine is allowed to remove a section: "take out the AI
+      // disclosure" would come back without it and the merge would put it
+      // straight back. What comes back is the quote now.
+      //
+      // The exception is a reply that carries no sections at all against a
+      // quote that had several, which is a truncated or lazy answer rather
+      // than a request to strip the document, so the old set is kept.
+      // Empty is a real answer: a refine asked to take out the only section a
+      // quote had comes back with none. A reply that was cut short never gets
+      // this far, since a truncated response fails to parse and is retried.
+      extras: hasExtras(updated) ? sanitizeExtras(updated) : Prisma.JsonNull,
+      // The stored section flags follow the document, so the PDF, the public
+      // page and the signing offer cannot disagree with what is in it.
+      settings: {
+        ...settings,
+        includeStrategy: hasStrategyContent(updated.strategy),
+        includeTimeline: updated.timeline.includes("\n"),
+        includeSOW: Boolean(updated.paymentTerms),
+        includeTerms: Boolean(updated.terms),
+        includeRevisions: Boolean(updated.revisions),
+        includeAvailability: Boolean(updated.availability),
+        includeAI: Boolean(updated.aiUsage),
+      } as unknown as Prisma.InputJsonValue,
+      // A section that was removed and has now been written again is one the
+      // refine was asked to bring back, so the removal goes with it.
+      ...(removed.length
+        ? ({
+            hiddenSections: removed.filter((key) => !returnedSections(updated).includes(key)),
+          } as unknown as Record<string, unknown>)
         : {}),
       price: updated.price,
       hours: updated.hours,

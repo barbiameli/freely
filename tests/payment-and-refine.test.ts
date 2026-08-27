@@ -101,6 +101,71 @@ describe("a section you wrote is a section you get", () => {
   });
 });
 
+describe("refining sees the whole quote", () => {
+  const full = {
+    title: "Rebrand",
+    client: "A roaster",
+    scope: "Scope",
+    deliverables: ["One"],
+    timeline: "Week 1: start\nWeek 2: finish",
+    price: 6000,
+    hours: 92,
+    paymentTerms: "50% up front, 50% on delivery.",
+    revisions: "Two rounds.",
+    terms: { cancellation: "c", ownership: "o", confidentiality: "f" },
+    aiUsage: { will: ["variants"], willNot: ["deciding what to build"] },
+  } as unknown as GeneratedBrief;
+
+  it("names every section, not just payment terms", () => {
+    const prompt = buildRefineUserPrompt(full, "soften the cancellation clause");
+    for (const key of ["strategy", "terms", "revisions", "availability", "paymentTerms", "aiUsage"]) {
+      expect(prompt).toContain(key);
+    }
+  });
+
+  it("allows adding a section and taking one out when asked", () => {
+    const prompt = buildRefineUserPrompt(full, "add a revisions policy");
+    expect(prompt).toContain("You may add a section this quote does not have");
+    expect(prompt).toContain("omit that key entirely");
+  });
+
+  it("refuses to invent what it cannot know", () => {
+    const prompt = buildRefineUserPrompt(full, "add availability");
+    expect(prompt).toContain("never invent facts to fill a section");
+    expect(prompt).toContain("availability");
+  });
+
+  it("says which sections were taken out, so they stay out unless asked for", () => {
+    const prompt = buildRefineUserPrompt(full, "shorten the scope", {
+      removedSections: ["aiUsage", "terms"],
+    });
+    expect(prompt).toContain("taken out of this quote: aiUsage, terms");
+    expect(prompt).toContain("unless the instruction asks for one back");
+  });
+
+  it("carries the rate behind the price, so a price change has something to work from", () => {
+    const prompt = buildRefineUserPrompt(full, "bring it under 5000", {
+      hourlyRate: 65,
+      currency: "GBP",
+      rateUnit: "HOUR",
+    });
+    expect(prompt).toContain("65 GBP per hour");
+  });
+
+  it("keeps a Spanish quote in Spanish", () => {
+    const prompt = buildRefineUserPrompt(full, "acorta el alcance", { language: "es" });
+    expect(prompt).toContain("Write the entire quote in Spanish");
+  });
+
+  it("puts the current payment terms in front of it", () => {
+    const prompt = buildRefineUserPrompt(full, "30% up front", {
+      paymentTerms: "50% up front, 50% on delivery.",
+    });
+    expect(prompt).toContain("The payment terms currently read");
+    expect(prompt).toContain("milestones agree with them");
+  });
+});
+
 describe("refining carries the sections both ways", () => {
   const current = {
     title: "Rebrand",
