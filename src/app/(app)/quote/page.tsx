@@ -7,6 +7,7 @@ import { quotesToAskAbout, type QuoteOutcome } from "@/lib/quote-outcome";
 import type { AccountDefaults } from "@/lib/quote-defaults";
 import type { GuideStep } from "@/lib/guide";
 import { QuoteWizard } from "./quote-wizard";
+import { allDisciplines, industryLabel } from "@/lib/industries";
 
 /**
  * How many quotes the prompt will ask about at once.
@@ -126,6 +127,12 @@ export default async function QuotePage({
       hasBrand={hasOwnBranding(user)}
       savedLocation={(user as unknown as { location: string | null }).location ?? ""}
       savedCountry={(user as unknown as { country: string | null }).country ?? null}
+      // Everything they said they do, main one first, so the rate helper can
+      // ask which of them this rate is for rather than assuming.
+      disciplines={allDisciplines(
+        user.industry,
+        (user as unknown as { otherIndustries?: string[] }).otherIndustries
+      ).map((key) => ({ key, label: industryLabel(key) }))}
       savedRate={(user as unknown as { defaultRate: number | null }).defaultRate ?? 0}
       savedRateUnit={
         (user as unknown as { defaultRateUnit: string | null }).defaultRateUnit ?? "HOUR"

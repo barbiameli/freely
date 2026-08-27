@@ -73,6 +73,7 @@ export function SetupRows({
   brandUpload,
   pricedFor,
   savedCountry,
+  disciplines,
   problemRow,
   problemMessage,
 }: {
@@ -100,6 +101,8 @@ export function SetupRows({
   /** The country already on the account, so the rate helper does not ask
    * for something Memory already knows. */
   savedCountry?: string | null;
+  /** What this account does, main one first. See RateBody. */
+  disciplines?: { key: string; label: string }[];
   /** A row that is missing something, and what to say about it.
    *
    * Shown inside the row rather than at the foot of the form. A message by the
@@ -325,6 +328,7 @@ export function SetupRows({
                     // note explains where a value nobody typed came from.
                     readLevel={saved.expertiseLevel ? null : saved.inferredExpertise ?? null}
                     savedCountry={savedCountry}
+                    disciplines={disciplines}
                   />
                 )}
                 {row === "payment" && <PaymentBody draft={draft} setDraft={setDraft} />}
@@ -364,6 +368,7 @@ export function RateBody({
   pricedFor,
   readLevel,
   savedCountry,
+  disciplines = [],
 }: {
   draft: QuoteDraftPayload;
   setDraft: Dispatch<SetStateAction<QuoteDraftPayload>>;
@@ -374,10 +379,22 @@ export function RateBody({
   readLevel?: string | null;
   /** The country already on the account, so it is not asked again. */
   savedCountry?: string | null;
+  /**
+   * Everything this account said it does, main one first.
+   *
+   * There is no single rate for somebody who designs and builds and writes:
+   * the client is buying one of the three, and a blended number cannot be
+   * explained to them. So when there is more than one, the panel asks which
+   * one this rate is for rather than quietly answering for the first.
+   */
+  disciplines?: { key: string; label: string }[];
 }) {
   const t = useT();
   const unit = (draft.rateUnit ?? "HOUR") as RateUnit;
   const [country, setCountry] = useState(savedCountry ?? "");
+  // Their main one, which is the right default and a bad assumption to leave
+  // unsaid. The chooser below names it either way.
+  const [discipline, setDiscipline] = useState(disciplines[0]?.key ?? "");
   const [researching, setResearching] = useState(false);
   const [researched, setResearched] = useState<ResearchedRate | null>(null);
   const [rateError, setRateError] = useState("");
@@ -391,6 +408,7 @@ export function RateBody({
         country,
         currency: draft.currency ?? "USD",
         rateUnit: unit,
+        industry: discipline || undefined,
       });
       if (result.ok) {
         setResearched(result.data);
@@ -483,6 +501,32 @@ export function RateBody({
           the one place it can affect anything. */}
       {rateHelpOpen && (
         <Reveal title={t.quote.rateHelpTitle} hint={t.quote.rateHelpHint}>
+          {/* Only when there is a choice to make. One discipline needs no
+              question, and asking it anyway would imply there was a decision. */}
+          {disciplines.length > 1 && (
+            <div className="mb-4">
+              <SubLabel>{t.quote.rateForWhich}</SubLabel>
+              <div className="flex flex-wrap gap-1.5">
+                {disciplines.map((option) => (
+                  <Chip
+                    key={option.key}
+                    active={discipline === option.key}
+                    onClick={() => {
+                      setDiscipline(option.key);
+                      // The old answer was about the old discipline.
+                      setResearched(null);
+                    }}
+                  >
+                    {option.label}
+                  </Chip>
+                ))}
+              </div>
+              <p className="text-caption text-text-muted mt-1.5 mb-0 text-pretty">
+                {t.quote.rateForWhichHint}
+              </p>
+            </div>
+          )}
+
           <SubLabel>{t.quote.expertise}</SubLabel>
           <div className="flex flex-wrap gap-1.5">
             {(["Junior", "Mid-level", "Senior", "Expert"] as const).map((level) => (
@@ -547,7 +591,11 @@ export function RateBody({
             <div className="mt-4">
               {researched.options.length > 0 ? (
                 <>
-                  <SubLabel>{t.quote.pickARate}</SubLabel>
+                  <SubLabel>
+                    {t.quote.rateForLabel
+                      .replace("{work}", researched.discipline)
+                      .replace("{country}", researched.country)}
+                  </SubLabel>
                   <p className="text-caption text-text-muted mt-0 mb-2">{t.quote.rateFilledIn}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {researched.options.map((amount, index) => (

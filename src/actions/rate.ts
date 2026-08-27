@@ -8,6 +8,7 @@ import { isKnownCountry, countryName } from "@/lib/countries";
 import { asLevel, pickThree, midpoint } from "@/lib/market-rate";
 import { parseRateUnit } from "@/lib/rate-unit";
 import type { ActionResult } from "@/actions/briefs";
+import { allDisciplines, industryLabel } from "@/lib/industries";
 
 export interface ResearchedRate {
   /** Two or three figures to choose between, lowest first. */
@@ -24,6 +25,15 @@ export interface ResearchedRate {
   note: string;
   /** Written out, for saying which market this is. */
   country: string;
+  /**
+   * Which kind of work this is the rate for, written out.
+   *
+   * Somebody who says they do three things and then asks what to charge is
+   * owed an answer to "for which one". The number is only defensible against
+   * one discipline: a UX designer who also builds cannot charge one blended
+   * figure and explain it, because the client is buying one of the two.
+   */
+  discipline: string;
 }
 
 /**
@@ -51,12 +61,30 @@ export async function researchRateAction(input: {
   country: string;
   currency: string;
   rateUnit: string;
+  /**
+   * Which of their disciplines to price.
+   *
+   * Optional, and checked against what this account actually said it does, so
+   * the cache cannot be filled with rates for work somebody does not do.
+   * Absent, it is their main one, which is the right default and a poor
+   * assumption to leave unsaid: the panel names it.
+   */
+  industry?: string;
 }): Promise<ActionResult<ResearchedRate>> {
   const user = await requireFullUser();
 
   const level = asLevel(input.expertise);
   if (!level) return { ok: false, error: "Pick your level first." };
   if (!isKnownCountry(input.country)) return { ok: false, error: "Pick where you work from." };
+
+  // Theirs, or their main one. Never an arbitrary key from the client: this
+  // becomes a cache key shared with every other freelancer in the same market.
+  const mine = allDisciplines(
+    user.industry,
+    (user as unknown as { otherIndustries?: string[] }).otherIndustries
+  );
+  const industry =
+    input.industry && mine.includes(input.industry) ? input.industry : user.industry;
 
   try {
     // The same limit the quote generator uses. This is a web search on a
@@ -65,7 +93,7 @@ export async function researchRateAction(input: {
 
     const answer = await getOrResearchMarketRate({
       country: input.country,
-      industry: user.industry,
+      industry,
       currency: input.currency || "USD",
       rateUnit: parseRateUnit(input.rateUnit),
     });
@@ -90,6 +118,7 @@ export async function researchRateAction(input: {
           suggested: 0,
           note: answer.note,
           country: countryName(input.country) ?? input.country,
+          discipline: industryLabel(industry),
         },
       };
     }
@@ -101,6 +130,7 @@ export async function researchRateAction(input: {
         suggested: midpoint(answer.levels[level]),
         note: answer.note,
         country: countryName(input.country) ?? input.country,
+        discipline: industryLabel(industry),
       },
     };
   } catch (err) {

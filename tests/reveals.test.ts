@@ -100,13 +100,32 @@ describe("what the price is keyed on", () => {
   const memory = readFileSync("src/actions/memory.ts", "utf8");
 
   /**
-   * The main discipline stays single. It is the key the market rate cache is
-   * shared on, and an average across "a bit of everything" is not a rate
-   * anybody could defend to a client.
+   * A rate is for one kind of work. Somebody who designs, builds and writes is
+   * selling one of those to this client, and a blended number cannot be
+   * explained to them.
    */
-  it("researches the rate against the main discipline only", () => {
-    expect(actions).toContain("industry: user.industry");
-    expect(actions).not.toContain("otherIndustries");
+  it("prices one discipline at a time, never a blend", () => {
+    expect(actions).toContain("const industry =");
+    expect(actions).not.toMatch(/industries\.join|average of/i);
+  });
+
+  it("only accepts a discipline this account actually does", () => {
+    // The value becomes a cache key shared with every freelancer in the same
+    // market, so an arbitrary string from the client cannot reach it.
+    expect(actions).toContain("mine.includes(input.industry)");
+    expect(actions).toContain("allDisciplines(");
+  });
+
+  it("says which work and which country the number is for", () => {
+    expect(actions).toContain("discipline: industryLabel(industry)");
+    const rows = readFileSync("src/components/quote/setup-rows.tsx", "utf8");
+    expect(rows).toContain("t.quote.rateForLabel");
+  });
+
+  it("asks which one only when there is more than one to choose", () => {
+    const rows = readFileSync("src/components/quote/setup-rows.tsx", "utf8");
+    expect(rows).toContain("disciplines.length > 1");
+    expect(rows).toContain("t.quote.rateForWhich");
   });
 
   it("refuses an unknown discipline rather than storing it", () => {

@@ -133,6 +133,7 @@ export function QuoteWizard({
   hasBrand,
   savedLocation,
   savedCountry,
+  disciplines,
   savedRate,
   savedRateUnit,
   industry,
@@ -152,6 +153,8 @@ export function QuoteWizard({
   savedLocation?: string;
   /** ISO 3166-1 alpha-2 from Memory, so the rate helper opens answered. */
   savedCountry?: string | null;
+  /** What this account does, main one first, for the rate helper. */
+  disciplines?: { key: string; label: string }[];
   /** The rate saved in Memory, prefilled so it is not retyped each time. */
   savedRate?: number;
   savedRateUnit?: string;
@@ -915,6 +918,7 @@ export function QuoteWizard({
             brandUpload={brandUpload}
             pricedFor={pricedForFields}
             savedCountry={savedCountry}
+            disciplines={disciplines}
             problemRow={problem.row}
             problemMessage={problem.message}
           />
