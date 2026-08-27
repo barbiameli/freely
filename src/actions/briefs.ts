@@ -11,7 +11,7 @@ import { createProjectFromBrief } from "@/lib/track-from-brief";
 import { reconcileMilestones } from "@/lib/milestones";
 import { sanitizeText, stripLongDashes, stripContrastive } from "@/lib/sanitize-text";
 import { resolveQuoteLocale, parseLocale } from "@/lib/i18n";
-import { enforceLlmRateLimit } from "@/lib/rate-limit";
+import { enforceLlmRateLimit, RateLimitError } from "@/lib/rate-limit";
 import {
   generateQuoteCore,
   generateQuoteExtras,
@@ -651,6 +651,18 @@ export async function setBriefPublishedAction(
   });
   if (!brief) return { ok: false, error: "Brief not found." };
 
+  // A quote whose second half is still being written is a quote missing its
+  // terms and its payment sentence. Publishing puts it at a URL a client can
+  // open, and the sections landing a few seconds later would change a document
+  // somebody may already be reading. Unpublishing is always allowed.
+  const settings = (brief.settings as { extrasPending?: boolean } | null) ?? {};
+  if (published && settings.extrasPending) {
+    return {
+      ok: false,
+      error: "Still writing the rest of this quote. Publishing will work in a moment.",
+    };
+  }
+
   const updated = await prisma.brief.update({ where: { id: briefId }, data: { published } });
   revalidatePath(`/quote/${briefId}`);
   return { ok: true, data: { publicSlug: updated.publicSlug } };
@@ -887,17 +899,31 @@ export async function generateExtrasAction(
   };
 
   let written = false;
+  /**
+   * Whether it is worth asking again later.
+   *
+   * Being rate limited is not a failure of the quote, it is a queue: somebody
+   * generated three quotes in a minute and the second call for this one arrived
+   * while the meter was full. Clearing the flag there would throw away sections
+   * that were never written, silently and permanently, over a wait of a few
+   * seconds. So the flag stays and the next visit to this quote finishes it.
+   *
+   * Every other failure clears the flag, because a quote that asks forever is
+   * worse than a quote missing its terms.
+   */
+  let retryLater = false;
   let extras: (BriefExtras & { strategy?: Strategy }) | null = null;
   try {
     await enforceLlmRateLimit(user.id);
     extras = await generateQuoteExtras(await buildMemoryContext(user), draft, [], undefined);
     written = true;
   } catch (err) {
+    retryLater = err instanceof RateLimitError;
     console.error("[generateExtrasAction] failed", err);
   }
 
   const generated = { ...(extras ?? {}) } as GeneratedBrief;
-  const nextSettings: Record<string, unknown> = { ...settings, extrasPending: false };
+  const nextSettings: Record<string, unknown> = { ...settings, extrasPending: retryLater };
 
   if (written && extras) {
     // The sections the model chose are only knowable now, so the stored flags
@@ -929,9 +955,13 @@ export async function generateExtrasAction(
   }
 
   revalidatePath(`/quote/${briefId}`);
-  return written
-    ? { ok: true, data: { written } }
-    : { ok: false, error: "The extra sections could not be written. The quote itself is fine." };
+  if (written) return { ok: true, data: { written } };
+  return {
+    ok: false,
+    error: retryLater
+      ? "The extra sections are queued behind another quote. Open this one again in a moment and they will be written."
+      : "The extra sections could not be written. The quote itself is fine.",
+  };
 }
 
 /**

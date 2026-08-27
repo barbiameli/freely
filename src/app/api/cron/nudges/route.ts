@@ -28,6 +28,15 @@ import { nudgeFor, type Nudge } from "@/lib/nudges";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
+/**
+ * How many people one run will look at.
+ *
+ * Sized against the sixty seconds this has and the three queries each person
+ * costs. Whoever is not reached today is at the front of the queue tomorrow,
+ * because the order is by who has waited longest.
+ */
+const RUN_LIMIT = 200;
+
 /** Somebody worth considering. Everyone else is skipped before any query. */
 interface Recipient {
   id: string;
@@ -54,10 +63,36 @@ export async function GET(request: Request) {
   let sent = 0;
 
   try {
+    /**
+     * Who to consider, oldest nudge first, and only so many in one run.
+     *
+     * This used to load every user, in whatever order the database returned
+     * them, and work through the lot. Two problems, both invisible until there
+     * are users. It reads every column of every row, including the Memory
+     * fields, to use five of them. And the run has sixty seconds: once there
+     * are more people than fit, the ones at the end of the list are never
+     * reached, and it is the same ones every morning because the order does
+     * not change.
+     *
+     * Ordering by when each person was last nudged fixes the second properly
+     * rather than by raising the cap: whoever waited longest goes first, so a
+     * run that runs out of time resumes at the right place tomorrow.
+     *
+     * The select and the ordering both go through a cast, because nudgeEmails
+     * and lastNudgeAt are newer than the generated client in this checkout.
+     */
     const users = (await prisma.user.findMany({
-      // No select: nudgeEmails and lastNudgeAt are newer than the generated
-      // client here.
-    })) as unknown as Recipient[];
+      select: {
+        id: true,
+        email: true,
+        createdAt: true,
+        nudgeEmails: true,
+        lastNudgeAt: true,
+      },
+      where: { nudgeEmails: true },
+      orderBy: [{ lastNudgeAt: { sort: "asc", nulls: "first" } }, { createdAt: "asc" }],
+      take: RUN_LIMIT,
+    } as unknown as Parameters<typeof prisma.user.findMany>[0])) as unknown as Recipient[];
 
     for (const user of users) {
       // Off is off, and worth checking before doing any work for them. The

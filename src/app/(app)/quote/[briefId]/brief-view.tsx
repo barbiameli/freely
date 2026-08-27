@@ -1305,7 +1305,17 @@ export function BriefView({
             </button>
           </div>
         ) : (
-          <Button icon={Link2} loading={publishing} onClick={handleTogglePublish} data-guide="publish">
+          // Held while the second half is still being written. The server
+          // refuses it anyway; disabling here means the refusal never has to be
+          // read, and the title says why rather than leaving a dead button.
+          <Button
+            icon={Link2}
+            loading={publishing}
+            disabled={writingExtras}
+            title={writingExtras ? t.brief.stillWriting : undefined}
+            onClick={handleTogglePublish}
+            data-guide="publish"
+          >
             {publishing ? "Publishing..." : "Publish as a page"}
           </Button>
         )}

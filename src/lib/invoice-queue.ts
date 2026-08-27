@@ -1,4 +1,5 @@
 import { billableMilestones } from "@/lib/milestones";
+import { roundTo } from "@/lib/money";
 
 /**
  * What can be invoiced right now, and for how much.
@@ -101,20 +102,29 @@ export function splitPrice(project: QueueProject): Map<string, number> {
   deliverables.forEach((d, i) => {
     const isLast = i === deliverables.length - 1;
     if (isLast) {
-      shares.set(d.id, round2(project.price - allocated));
+      shares.set(d.id, money(project.price - allocated, project.currency));
       return;
     }
     const fraction = useHours ? estimatedHours(d) / totalHours : 1 / deliverables.length;
-    const share = round2(project.price * fraction);
-    allocated = round2(allocated + share);
+    const share = money(project.price * fraction, project.currency);
+    allocated = money(allocated + share, project.currency);
     shares.set(d.id, share);
   });
 
   return shares;
 }
 
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
+/**
+ * Rounding that knows what currency it is in.
+ *
+ * This used to round everything to two decimals. A yen project split across
+ * three deliverables produced shares like 1333.33, which the invoice then
+ * printed as ¥1,333 because yen has no minor unit, and three of those do not
+ * add up to the total printed underneath them. The client is the one who
+ * notices, and there is no good explanation for it.
+ */
+function money(amount: number, currency: string): number {
+  return roundTo(amount, currency);
 }
 
 /**
@@ -148,7 +158,10 @@ export function billable(project: QueueProject): QueueEntry {
     return {
       project,
       lines,
-      total: round2(lines.reduce((sum, l) => sum + l.amount, 0)),
+      total: money(
+        lines.reduce((sum, l) => sum + l.amount, 0),
+        project.currency
+      ),
       notReady: lines.length ? null : anyUnbilled ? "nothing-done" : "already-invoiced",
     };
   }
@@ -168,7 +181,10 @@ export function billable(project: QueueProject): QueueEntry {
     return {
       project,
       lines,
-      total: round2(lines.reduce((sum, l) => sum + l.amount, 0)),
+      total: money(
+        lines.reduce((sum, l) => sum + l.amount, 0),
+        project.currency
+      ),
       notReady: lines.length
         ? null
         : anyUnbilled
@@ -197,10 +213,10 @@ export function billable(project: QueueProject): QueueEntry {
         deliverableId: null,
         title: project.title,
         hours: project.hours,
-        amount: round2(project.price),
+        amount: money(project.price, project.currency),
       },
     ],
-    total: round2(project.price),
+    total: money(project.price, project.currency),
     notReady: null,
   };
 }

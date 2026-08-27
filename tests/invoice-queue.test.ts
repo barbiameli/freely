@@ -270,3 +270,51 @@ describe("billing a project that has real milestones", () => {
     expect(entry.lines[0].deliverableId).toBe("a");
   });
 });
+
+describe("splitting money in a currency that has no cents", () => {
+  const deliverables = [
+    { id: "a", title: "One", status: "DONE", steps: [] },
+    { id: "b", title: "Two", status: "DONE", steps: [] },
+    { id: "c", title: "Three", status: "DONE", steps: [] },
+  ];
+
+  function project(currency: string) {
+    return {
+      id: "p",
+      title: "T",
+      client: "C",
+      price: 4000,
+      hours: 40,
+      currency,
+      billing: "ON_COMPLETION" as const,
+      status: "ACTIVE",
+      deliverables,
+      invoiceCount: 0,
+    };
+  }
+
+  /**
+   * The split used to round to two decimals whatever the currency. A yen
+   * project produced shares of 1333.33, which the invoice printed as ¥1,333
+   * because yen has no minor unit, and three of those do not add up to the
+   * total printed underneath them.
+   */
+  it("gives yen whole numbers that add up", () => {
+    const shares = Array.from(splitPrice(project("JPY") as never).values());
+    expect(shares.every((n) => Number.isInteger(n))).toBe(true);
+    expect(shares.reduce((sum, n) => sum + n, 0)).toBe(4000);
+  });
+
+  it("still gives pounds their pennies", () => {
+    const shares = Array.from(splitPrice(project("GBP") as never).values());
+    expect(shares).toEqual([1333.33, 1333.33, 1333.34]);
+    expect(shares.reduce((sum, n) => sum + n, 0)).toBe(4000);
+  });
+
+  it("puts the remainder on the last line rather than losing it", () => {
+    const shares = Array.from(
+      splitPrice({ ...project("JPY"), price: 1000 } as never).values()
+    );
+    expect(shares.reduce((sum, n) => sum + n, 0)).toBe(1000);
+  });
+});

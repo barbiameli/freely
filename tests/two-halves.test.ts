@@ -92,14 +92,36 @@ describe("the page finishes the job", () => {
 
   it("says what is happening rather than blocking the page", () => {
     expect(view).toContain("stillWriting");
-    expect(view).not.toContain("disabled={writingExtras}");
+    // Nothing about the quote is read-only while the rest is written: the
+    // scope, the price and the deliverables are finished and editable.
+    expect(view).not.toContain("readOnly={writingExtras}");
+  });
+
+  /**
+   * Publishing is the exception. It puts the quote at a URL a client can open,
+   * and sections landing a few seconds later would change a document somebody
+   * may already be reading.
+   */
+  it("holds publishing until the whole document exists", () => {
+    expect(view).toContain("disabled={writingExtras}");
+    expect(actions).toContain("Still writing the rest of this quote");
   });
 
   it("keeps the quote when the second half fails", () => {
     const action = actions.slice(actions.indexOf("export async function generateExtrasAction"));
-    // The flag is cleared either way, so the page cannot ask forever.
-    expect(action).toContain("extrasPending: false");
     expect(action).toContain("The quote itself is fine");
+  });
+
+  /**
+   * Being rate limited is a queue, not a failure. Clearing the flag there would
+   * throw away sections that were never written, permanently, over a wait of a
+   * few seconds.
+   */
+  it("asks again later when it was only rate limited", () => {
+    const action = actions.slice(actions.indexOf("export async function generateExtrasAction"));
+    expect(action).toContain("retryLater = err instanceof RateLimitError");
+    expect(action).toContain("extrasPending: retryLater");
+    expect(action).toContain("queued behind another quote");
   });
 
   it("does not pay for a second call when the sections are already there", () => {
