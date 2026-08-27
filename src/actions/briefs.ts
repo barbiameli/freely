@@ -433,10 +433,40 @@ export async function generateBriefAction(
 }
 
 /** Refines an existing brief with a follow-up instruction. */
+/**
+ * What a refine actually changed, by section.
+ *
+ * Compared field by field on the way through rather than worked out on the
+ * page, because the page only ever sees the new version: after a refresh there
+ * is nothing left to compare it against. The keys match the ones the quote
+ * page marks its sections with.
+ */
+function changedSections(before: GeneratedBrief, after: GeneratedBrief): string[] {
+  const changed: string[] = [];
+  const differs = (a: unknown, b: unknown) => JSON.stringify(a ?? null) !== JSON.stringify(b ?? null);
+
+  if (differs(before.title, after.title) || differs(before.client, after.client)) {
+    changed.push("overview");
+  }
+  if (differs(before.price, after.price) || differs(before.hours, after.hours)) {
+    if (!changed.includes("overview")) changed.push("overview");
+  }
+  if (differs(before.strategy, after.strategy)) changed.push("strategy");
+  if (differs(before.scope, after.scope)) changed.push("scope");
+  if (differs(before.deliverables, after.deliverables)) changed.push("deliverables");
+  if (differs(before.timeline, after.timeline)) changed.push("timeline");
+  if (differs(before.paymentTerms, after.paymentTerms)) changed.push("paymentTerms");
+  if (differs(before.revisions, after.revisions)) changed.push("revisions");
+  if (differs(before.availability, after.availability)) changed.push("availability");
+  if (differs(before.aiUsage, after.aiUsage)) changed.push("aiUsage");
+  if (differs(before.terms, after.terms)) changed.push("terms");
+  return changed;
+}
+
 export async function refineBriefAction(
   briefId: string,
   refinePrompt: string
-): Promise<ActionResult<undefined>> {
+): Promise<ActionResult<{ changed: string[] }>> {
   const user = await requireFullUser();
   const brief = await prisma.brief.findFirst({
     where: { id: briefId, ...teamScopeWhere(user) },
@@ -533,7 +563,10 @@ export async function refineBriefAction(
   });
 
   revalidatePath(`/quote/${briefId}`);
-  return { ok: true, data: undefined };
+  // Named on the way out, so the page can say what moved and take you to it.
+  // A spinner that stops is not feedback: it says something finished, not what
+  // it did, and on a long quote the changed paragraph is often off-screen.
+  return { ok: true, data: { changed: changedSections(current, updated) } };
 }
 
 /** Publishes/unpublishes a brief as a real, shareable "HTML page" quote at

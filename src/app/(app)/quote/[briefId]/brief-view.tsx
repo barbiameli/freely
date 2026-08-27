@@ -127,6 +127,7 @@ interface Brief {
  * is never deleted, so the offer costs nothing and always works.
  */
 function Section({
+  id,
   eyebrow,
   tint,
   accent,
@@ -134,7 +135,10 @@ function Section({
   removed,
   onRemove,
   words,
+  highlighted,
 }: {
+  /** Names this section, so a refine can say it changed and scroll to it. */
+  id?: string;
   eyebrow: string;
   tint: "coral" | "violet" | "paper";
   accent: "coral" | "violet";
@@ -143,13 +147,18 @@ function Section({
   onRemove?: (removed: boolean) => void;
   removed?: boolean;
   words?: { remove: string; removed: string; restore: string };
+  /** Just rewritten by a refine. Fades out on its own. */
+  highlighted?: boolean;
 }) {
   const tintClass = tint === "coral" ? "bg-coral-tint" : tint === "violet" ? "bg-violet-tint" : "bg-paper";
   const accentClass = accent === "coral" ? "border-coral" : "border-violet";
 
   if (removed && onRemove && words) {
     return (
-      <div className="rounded-card border border-dashed border-line px-5 py-3 flex flex-wrap items-center justify-between gap-2">
+      <div
+        data-section={id}
+        className="rounded-card border border-dashed border-line px-5 py-3 flex flex-wrap items-center justify-between gap-2"
+      >
         <span className="font-body font-bold text-caption tracking-[0.08em] uppercase text-text-muted">
           {eyebrow} · {words.removed}
         </span>
@@ -165,7 +174,12 @@ function Section({
   }
 
   return (
-    <div className={`${tintClass} rounded-card border-l-[3px] ${accentClass} px-5 py-4`}>
+    <div
+      data-section={id}
+      className={`${tintClass} rounded-card border-l-[3px] ${accentClass} px-5 py-4 ${
+        highlighted ? "just-changed" : ""
+      }`}
+    >
       <div className="flex items-start justify-between gap-3">
         <span className="font-body font-bold text-caption tracking-[0.08em] uppercase text-slate">
           {eyebrow}
@@ -199,6 +213,39 @@ function Bullets({ items, dense }: { items: string[]; dense?: boolean }) {
 }
 
 /**
+ * What each section is called, for the line that says what a refine changed.
+ *
+ * Its own map rather than reusing the eyebrows, because those are the client's
+ * words on the document and this is a sentence addressed to the freelancer.
+ */
+function sectionName(key: string, t: ReturnType<typeof useT>): string {
+  switch (key) {
+    case "overview":
+      return t.brief.changedOverview;
+    case "strategy":
+      return t.publicQuote.strategy;
+    case "scope":
+      return t.publicQuote.scope;
+    case "deliverables":
+      return t.publicQuote.deliverables;
+    case "timeline":
+      return t.publicQuote.timeline;
+    case "paymentTerms":
+      return t.publicQuote.paymentTerms;
+    case "revisions":
+      return t.publicQuote.revisions;
+    case "availability":
+      return t.publicQuote.availability;
+    case "aiUsage":
+      return t.quote.sectionAi;
+    case "terms":
+      return t.quote.sectionTerms;
+    default:
+      return key;
+  }
+}
+
+/**
  * The five layouts, in the order they read from most to least dressed.
  *
  * The two mono presets are stored as a branding and behave as a layout, so
@@ -223,6 +270,23 @@ export function BriefView({
   const router = useRouter();
   const t = useT();
   const [refinePrompt, setRefinePrompt] = useState("");
+  /**
+   * What the last refine changed, until the highlight has had its moment.
+   *
+   * Held here rather than read off the page, because after the refresh the
+   * page only has the new version and nothing to compare it to. The action
+   * does the comparing, where both versions exist.
+   */
+  const [justChanged, setJustChanged] = useState<string[]>([]);
+  /**
+   * The last refine's result, kept after the highlight fades.
+   *
+   * Separate from justChanged because an empty list means two different things
+   * at two different times: nothing has been refined yet, and a refine that
+   * changed nothing. Null is the first, an empty array is the second, and the
+   * second deserves saying out loud.
+   */
+  const [refined, setRefined] = useState<string[] | null>(null);
   /**
    * Which half a phone is showing.
    *
@@ -266,6 +330,8 @@ export function BriefView({
   /** The remove/restore props for one section, or nothing when it is core. */
   function removable(key: HideableSection) {
     return {
+      id: key,
+      highlighted: justChanged.includes(key),
       removed: hidden.includes(key),
       words: sectionWords,
       onRemove: (off: boolean) => {
@@ -374,6 +440,21 @@ export function BriefView({
     }
     setRefinePrompt("");
     router.refresh();
+
+    const changed = result.data.changed;
+    setJustChanged(changed);
+    setRefined(changed);
+    if (changed.length > 0) {
+      // After the refresh has painted, or the section being scrolled to is the
+      // old one and it is about to be replaced under the scroll.
+      window.setTimeout(() => {
+        const first = document.querySelector(`[data-section="${changed[0]}"]`);
+        first?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 350);
+    }
+    // Long enough to find it, short enough that it is gone before it becomes
+    // part of how the page looks.
+    window.setTimeout(() => setJustChanged([]), 6000);
   }
 
   async function handleAddToTrack() {
@@ -468,7 +549,12 @@ export function BriefView({
           its corner. The checklist held a column beside this and gave five
           private notes the same room as the quote itself. It opens itself
           once, a couple of seconds in, and lives in an overlay after that. */}
-      <div className="bg-ink rounded-card px-5 py-5 md:px-7 md:py-6 flex justify-between items-start gap-4">
+      <div
+        data-section="overview"
+        className={`bg-ink rounded-card px-5 py-5 md:px-7 md:py-6 flex justify-between items-start gap-4 ${
+          justChanged.includes("overview") ? "just-changed" : ""
+        }`}
+      >
         <div>
           <span className="font-body font-bold text-caption tracking-[0.08em] uppercase text-coral-light">
             {published ? "Quotation, published" : "Quotation, draft"}
@@ -637,7 +723,7 @@ export function BriefView({
             </Section>
           )}
 
-          <Section eyebrow={t.publicQuote.scope} tint="paper" accent="coral">
+          <Section eyebrow={t.publicQuote.scope} tint="paper" accent="coral" id="scope" highlighted={justChanged.includes("scope")}>
             <EditableBlock
               value={content.scope}
               onSave={(scope) => saveContent({ scope })}
@@ -653,7 +739,7 @@ export function BriefView({
             </EditableBlock>
           </Section>
 
-          <Section eyebrow={t.publicQuote.deliverables} tint="coral" accent="coral">
+          <Section eyebrow={t.publicQuote.deliverables} tint="coral" accent="coral" id="deliverables" highlighted={justChanged.includes("deliverables")}>
             <EditableBlock
               value={content.deliverables.join("\n")}
               onSave={(next) =>
@@ -993,6 +1079,36 @@ export function BriefView({
                 {working ? "Working..." : "Regenerate"}
               </Button>
             </div>
+
+            {/* What it did, in words, next to the button that did it. The
+                highlight on the section says where; this says what, and stays
+                readable after the highlight has faded. */}
+            {refined && (
+              <p className="text-caption text-slate mt-2.5 mb-0 text-pretty">
+                {refined.length === 0
+                  ? t.brief.refineNothing
+                  : t.brief.refineChanged.replace(
+                      "{list}",
+                      refined.map((key) => sectionName(key, t)).join(", ")
+                    )}
+                {refined.length > 0 && (
+                  <>
+                    {" "}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        document
+                          .querySelector(`[data-section="${refined[0]}"]`)
+                          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                      }}
+                      className="font-semibold text-violet bg-none border-none p-0 cursor-pointer tap"
+                    >
+                      {t.brief.refineShowMe}
+                    </button>
+                  </>
+                )}
+              </p>
+            )}
             <ActionError error={error || trackError} className="mt-2" />
           </Card>
           {brief.sourceText && (

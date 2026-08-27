@@ -158,6 +158,41 @@ summary:focus-visible {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* What just changed, for a few seconds.
+
+   A refine used to end with the spinner stopping and the box emptying, which
+   says something finished without saying what. On a quote long enough to
+   scroll, the rewritten paragraph is usually off-screen, so the honest read of
+   that ending was "nothing happened".
+
+   A ring that fades rather than a colour that stays: the highlight is about
+   the moment of arrival, and a section left permanently marked would still be
+   marked tomorrow when the reason is long forgotten. */
+@keyframes just-changed {
+  0% {
+    box-shadow: 0 0 0 2px #6320ee;
+    background-color: rgba(99, 32, 238, 0.06);
+  }
+  70% {
+    box-shadow: 0 0 0 2px #6320ee;
+    background-color: rgba(99, 32, 238, 0.06);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(99, 32, 238, 0);
+    background-color: transparent;
+  }
+}
+.just-changed {
+  animation: just-changed 3.2s ease-out 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Still says which one, without the fade. */
+  .just-changed {
+    animation: none;
+    box-shadow: 0 0 0 2px #6320ee;
+  }
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
