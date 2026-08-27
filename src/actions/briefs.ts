@@ -25,6 +25,7 @@ import {
   type BriefExtras,
 } from "@/lib/anthropic";
 import { getMarketRateNote } from "@/lib/market-rate-cache";
+import { CURRENT_LAYOUT } from "@/lib/quote-layout";
 import { hasStrategyContent } from "@/lib/strategy";
 
 export type ActionResult<T = undefined> =
@@ -358,6 +359,10 @@ export async function generateBriefAction(
         template: draft.template || "classic",
         branding: draft.branding || "freely",
         settings: {
+          // Pinned here and never rewritten. See lib/quote-layout: a quote a
+          // client has already been sent must not change shape underneath them
+          // because the app moved on.
+          layout: CURRENT_LAYOUT,
           instructions: sanitizeText(draft.instructions),
           memoryProjectTitles: draft.memoryProjectTitles.map(sanitizeText),
           format: draft.format,

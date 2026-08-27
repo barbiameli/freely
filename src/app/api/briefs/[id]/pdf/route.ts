@@ -5,6 +5,8 @@ import { teamScopeWhere } from "@/lib/team-scope";
 import { renderBriefPdf, type StrategyPdfData, type PdfTemplate } from "@/lib/pdf";
 import type { BriefExtras } from "@/lib/anthropic";
 import { resolveBrand } from "@/lib/branding";
+import { milestonesFromSettings } from "@/lib/milestone-lines";
+import { layoutOf } from "@/lib/quote-layout";
 
 const VALID_TEMPLATES: PdfTemplate[] = ["classic", "editorial", "minimal"];
 
@@ -42,6 +44,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     timeline: brief.timeline,
     strategy: brief.strategy as StrategyPdfData | null,
     extras: brief.extras as BriefExtras | null,
+    // The split the client is agreeing to. It was on the editing screen only,
+    // so a quote billed per milestone went out saying nothing about them.
+    milestones: milestonesFromSettings(brief.settings),
+    layout: layoutOf(brief.settings),
     price: brief.price,
     hours: brief.hours,
     rateUnit: (brief as unknown as { rateUnit?: string }).rateUnit ?? "HOUR",

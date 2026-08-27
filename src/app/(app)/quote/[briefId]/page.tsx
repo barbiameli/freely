@@ -5,6 +5,7 @@ import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import type { Strategy, BriefExtras } from "@/lib/anthropic";
 import { BriefView } from "./brief-view";
+import { layoutOf } from "@/lib/quote-layout";
 
 export default async function BriefPage({ params }: { params: { briefId: string } }) {
   const user = await requireFullUser();
@@ -53,6 +54,7 @@ export default async function BriefPage({ params }: { params: { briefId: string 
         signable: Boolean((brief.settings as { includeSOW?: boolean } | null)?.includeSOW),
         clearedQuestions:
           (brief as unknown as { clearedQuestions?: string[] }).clearedQuestions ?? [],
+        layout: layoutOf(brief.settings),
         hiddenSections:
           (brief as unknown as { hiddenSections?: string[] }).hiddenSections ?? [],
         // The milestone split, so it can be checked before the quote goes out.

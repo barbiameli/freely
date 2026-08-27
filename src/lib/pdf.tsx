@@ -22,6 +22,10 @@ import { parseTimelineStages, isRoadmapWorthy, stageTick } from "@/lib/timeline"
 import { dict, fill } from "@/lib/i18n";
 import type { BriefExtras } from "@/lib/anthropic";
 import { hasStrategyContent } from "@/lib/strategy";
+import { type QuoteMilestone } from "@/lib/milestone-lines";
+import { groupsByMilestone } from "@/lib/quote-layout";
+import { formatMoney } from "@/lib/money";
+import type { Locale } from "@/lib/i18n";
 
 export interface StrategyPdfData {
   goal: string;
@@ -59,6 +63,11 @@ export interface BriefPdfData {
   brandAccentColor?: string | null;
   brandLogoDataUrl?: string | null;
   extras?: BriefExtras | null;
+  /** The billing split, when the quote is billed that way. The client is
+   * agreeing to it, so it belongs in the file they keep. */
+  milestones?: QuoteMilestone[];
+  /** Which layout this quote was written for. See lib/quote-layout. */
+  layout?: number;
   examples?: BriefExamplePdfData[];
   preparedByEmail?: string | null;
   template?: PdfTemplate;
@@ -540,9 +549,7 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
 
           <View style={[styles.section, styles.sectionCoral]}>
             <Pill text={w.deliverables} tint="rgba(244,91,105,0.14)" color={FREELY_CORAL} />
-            {brief.deliverables.map((d, i) => (
-              <DeliverableLine key={i} text={d} />
-            ))}
+            <PdfDeliverables brief={brief} headingColor={FREELY_INK} />
           </View>
 
           <View style={[styles.section, styles.sectionPaper]} wrap={false} minPresenceAhead={SECTION_ROOM}>
@@ -678,9 +685,7 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
             <SectionHeading>
               <Text style={[styles.edSectionTitle, { color: primary }]}>{w.deliverables}</Text>
             </SectionHeading>
-            {brief.deliverables.map((d, i) => (
-              <DeliverableLine key={i} text={d} markColor={primary} />
-            ))}
+            <PdfDeliverables brief={brief} markColor={primary} headingColor={primary} />
           </View>
 
           <View style={styles.edSection} wrap={false} minPresenceAhead={SECTION_ROOM}>
@@ -794,9 +799,7 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
             <SectionHeading>
                 <Text style={styles.minLabel}>{w.deliverables}</Text>
               </SectionHeading>
-            {brief.deliverables.map((d, i) => (
-              <DeliverableLine key={i} text={d} />
-            ))}
+            <PdfDeliverables brief={brief} headingColor={FREELY_INK} />
           </View>
 
           <View style={styles.minSection} wrap={false} minPresenceAhead={SECTION_ROOM}>
@@ -933,9 +936,13 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
             >
               {w.deliverables}
             </Text>
-            {brief.deliverables.map((d, i) => (
-              <DeliverableLine key={i} text={d} markColor={ink} textColor={ink} detailColor={muted} />
-            ))}
+            <PdfDeliverables
+              brief={brief}
+              markColor={ink}
+              textColor={ink}
+              detailColor={muted}
+              headingColor={ink}
+            />
           </View>
 
           <View style={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }} wrap={false} minPresenceAhead={SECTION_ROOM}>
@@ -1009,6 +1016,109 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
 
 /** A deliverable as a name with its description underneath, rather than one
  * long bold run. */
+/**
+ * The deliverables, grouped under their milestone when the quote is billed
+ * that way and was written for the layout that groups them.
+ *
+ * Same rule as the published page, and it has to be: the page and the PDF are
+ * the same document in two files, and a client who reads one and prints the
+ * other should not find two different agreements. A quote written before this
+ * layout existed renders as the flat list it has always been.
+ */
+function PdfDeliverables({
+  brief,
+  markColor,
+  textColor,
+  detailColor,
+  headingColor,
+}: {
+  brief: BriefPdfData;
+  markColor?: string;
+  textColor?: string;
+  detailColor?: string;
+  headingColor: string;
+}) {
+  const milestones = brief.milestones ?? [];
+  const language = (brief.language ?? "en") as Locale;
+  const grouped = groupsByMilestone({ layout: brief.layout }, milestones.length);
+
+  if (!grouped) {
+    return (
+      <>
+        {brief.deliverables.map((text, index) => (
+          <DeliverableLine
+            key={index}
+            text={text}
+            markColor={markColor}
+            textColor={textColor}
+            detailColor={detailColor}
+          />
+        ))}
+      </>
+    );
+  }
+
+  const words = dict(language).quote;
+  const covered = new Set<number>();
+  const blocks: { name: string; amount: string; note?: string; items: number[] }[] = [];
+
+  for (const milestone of milestones) {
+    const items: number[] = [];
+    for (const index of milestone.deliverableIndexes) {
+      if (!brief.deliverables[index] || covered.has(index)) continue;
+      covered.add(index);
+      items.push(index);
+    }
+    blocks.push({
+      name: milestone.name,
+      amount: formatMoney(milestone.amount, brief.currency, language),
+      // The freelancer's own payment terms win where they exist.
+      note: brief.extras?.paymentTerms ? undefined : words.milestoneInvoicedAtEnd,
+      items,
+    });
+  }
+
+  const leftovers = brief.deliverables
+    .map((_, index) => index)
+    .filter((index) => !covered.has(index));
+  if (leftovers.length > 0) {
+    blocks.push({ name: words.milestoneAlsoIncluded, amount: "", items: leftovers });
+  }
+
+  return (
+    <>
+      {blocks.map((block, i) => (
+        <View key={i} style={{ marginBottom: S3 }} wrap={false}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "baseline",
+              marginBottom: S2,
+            }}
+          >
+            <Text style={{ fontSize: 10, fontFamily: "Helvetica-Bold", color: headingColor }}>
+              {block.name}
+            </Text>
+            <Text style={{ fontSize: 9, color: "#565656" }}>
+              {[block.note, block.amount].filter(Boolean).join("  ")}
+            </Text>
+          </View>
+          {block.items.map((index) => (
+            <DeliverableLine
+              key={index}
+              text={brief.deliverables[index]}
+              markColor={markColor}
+              textColor={textColor}
+              detailColor={detailColor}
+            />
+          ))}
+        </View>
+      ))}
+    </>
+  );
+}
+
 function DeliverableLine({
   text,
   markColor,

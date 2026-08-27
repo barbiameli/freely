@@ -213,6 +213,8 @@ export const en = {
     milestonesWhatGoesWhere: "What goes in which one?",
     milestonesNotesPlaceholder: "e.g. research and the audit first, then all the design, then build and handover",
     milestonesNotesHint: "Left blank, this gets worked out from the deliverables.",
+    milestoneInvoicedAtEnd: "Invoiced on completion",
+    milestoneAlsoIncluded: "Also included",
     milestonesSection: "Milestones",
     milestoneEndsWith: "Ends with",
     milestoneOf: "Milestone {current} of {total}",

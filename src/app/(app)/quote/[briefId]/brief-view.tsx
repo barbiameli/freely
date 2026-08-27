@@ -98,6 +98,8 @@ interface Brief {
   signable?: boolean;
   /** Open questions already ticked off, by their text. */
   clearedQuestions?: string[];
+  /** Which layout this quote was written for. See lib/quote-layout. */
+  layout?: number;
   hiddenSections?: string[];
   /**
    * How the work splits into billable chunks, when the quote is billed that
@@ -496,6 +498,8 @@ export function BriefView({
     deliverables: content.deliverables,
     timeline: content.timeline,
     strategy: content.strategy ?? null,
+    milestones: brief.milestones,
+    layout: brief.layout,
     extras: content.extras ?? null,
     price: content.price,
     hours: content.hours,

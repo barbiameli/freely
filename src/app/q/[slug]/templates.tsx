@@ -7,6 +7,10 @@ import {
   rateSuffix,
 } from "@/lib/rate-unit";
 import { TimelineView } from "@/components/timeline-view";
+import { type QuoteMilestone } from "@/lib/milestone-lines";
+import { groupsByMilestone } from "@/lib/quote-layout";
+import { formatMoney } from "@/lib/money";
+import type { Locale } from "@/lib/i18n";
 import { hasStrategyContent } from "@/lib/strategy";
 import type { BriefExtras } from "@/lib/anthropic";
 import { AcceptBlock } from "./accept-block";
@@ -33,6 +37,11 @@ export interface PublicBrief {
   deliverables: string[];
   timeline: string;
   strategy: Strategy | null;
+  /** The billing split, when the quote is billed that way. What the client is
+   * agreeing to pay and when, so it belongs on the document they sign. */
+  milestones?: QuoteMilestone[];
+  /** Which layout this quote was written for. See lib/quote-layout. */
+  layout?: number;
   price: number;
   hours: number;
   hourlyRate?: number | null;
@@ -63,8 +72,9 @@ function extraBlocks(
   extras: BriefExtras | null | undefined,
   q: Dictionary["publicQuote"]
 ): [string, string][] {
-  if (!extras) return [];
   const blocks: [string, string][] = [];
+  if (!extras) return blocks;
+
   if (extras.paymentTerms) blocks.push([q.paymentTerms, extras.paymentTerms]);
   if (extras.revisions) blocks.push([q.revisions, extras.revisions]);
   if (extras.availability) blocks.push([q.availability, extras.availability]);
@@ -87,6 +97,92 @@ function extraBlocks(
     }
   }
   return blocks;
+}
+
+/**
+ * The deliverables, in the order the client reads them, grouped when the quote
+ * is billed per milestone.
+ *
+ * One list of rows rather than four templates each working out the grouping:
+ * a header row carries the milestone and what it costs, and the item rows
+ * under it are its deliverables. A quote that is not billed this way, or that
+ * was written before this layout existed, produces item rows only and renders
+ * exactly as it always did.
+ *
+ * Anything the milestones do not cover comes last under its own header, so a
+ * deliverable cannot disappear from the document because the split missed it.
+ */
+type DeliverableRow =
+  | { kind: "group"; name: string; amount: string; note?: string }
+  | { kind: "item"; text: string; index: number };
+
+function deliverableRows(brief: PublicBrief): DeliverableRow[] {
+  const milestones = brief.milestones ?? [];
+  if (!groupsByMilestone({ layout: brief.layout }, milestones.length)) {
+    return brief.deliverables.map((text, index) => ({ kind: "item", text, index }));
+  }
+
+  const language = (brief.language ?? "en") as Locale;
+  const words = dict(language).quote;
+  const rows: DeliverableRow[] = [];
+  const covered = new Set<number>();
+
+  for (const milestone of milestones) {
+    rows.push({
+      kind: "group",
+      name: milestone.name,
+      amount: formatMoney(milestone.amount, brief.currency, language),
+      // Said once per milestone, and only when the freelancer has not written
+      // their own payment terms: those are their words and they win.
+      note: brief.extras?.paymentTerms ? undefined : words.milestoneInvoicedAtEnd,
+    });
+    for (const index of milestone.deliverableIndexes) {
+      const text = brief.deliverables[index];
+      if (!text || covered.has(index)) continue;
+      covered.add(index);
+      rows.push({ kind: "item", text, index });
+    }
+  }
+
+  const leftovers = brief.deliverables
+    .map((text, index) => ({ text, index }))
+    .filter(({ index }) => !covered.has(index));
+  if (leftovers.length > 0) {
+    rows.push({ kind: "group", name: words.milestoneAlsoIncluded, amount: "" });
+    for (const { text, index } of leftovers) rows.push({ kind: "item", text, index });
+  }
+
+  return rows;
+}
+
+/**
+ * The line that starts a milestone's group of deliverables.
+ *
+ * Deliberately plain across all four templates: the name, what it costs, and
+ * when it is invoiced. A client scanning a quote for "what do I pay and when"
+ * should find the same three facts in the same order whichever layout they
+ * were sent.
+ */
+function GroupHeading({
+  row,
+  color,
+}: {
+  row: { name: string; amount: string; note?: string };
+  color: string;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 flex-wrap pt-1">
+      <div className="font-body font-bold text-body" style={{ color }}>
+        {row.name}
+      </div>
+      <div className="flex items-baseline gap-2 shrink-0">
+        {row.note && <span className="text-caption text-slate">{row.note}</span>}
+        {row.amount && (
+          <span className="font-body font-bold text-body text-ink tabular-nums">{row.amount}</span>
+        )}
+      </div>
+    </div>
+  );
 }
 
 /** A block of generated prose, broken into paragraphs so a long scope has
@@ -179,8 +275,11 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
           <div className="rounded-lg p-4" style={{ background: "rgba(244,91,105,0.08)" }}>
             <div className="font-label text-xs text-slate uppercase mb-2">{q.deliverables}</div>
             <div className="flex flex-col gap-1.5">
-              {brief.deliverables.map((d, i) => {
-                const { lead, detail } = splitDeliverable(d);
+              {deliverableRows(brief).map((row, i) => {
+                if (row.kind === "group") {
+                  return <GroupHeading key={`g${i}`} row={row} color={brand.primary} />;
+                }
+                const { lead, detail } = splitDeliverable(row.text);
                 return (
                   <div key={i} className="flex items-start gap-2">
                     <span className="text-lead shrink-0" style={{ color: brand.accent }}>
@@ -333,12 +432,15 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
             {q.deliverables}
           </h2>
           <div className="flex flex-col gap-2.5">
-            {brief.deliverables.map((d, i) => {
-              const { lead, detail } = splitDeliverable(d);
+            {deliverableRows(brief).map((row, i) => {
+              if (row.kind === "group") {
+                return <GroupHeading key={`g${i}`} row={row} color={brand.primary} />;
+              }
+              const { lead, detail } = splitDeliverable(row.text);
               return (
                 <div key={i} className="flex items-baseline gap-3">
                   <span className="text-caption tabular-nums text-slate w-5 shrink-0">
-                    {String(i + 1).padStart(2, "0")}
+                    {String(row.index + 1).padStart(2, "0")}
                   </span>
                   <div className="min-w-0">
                     <div className="text-lead text-ink leading-snug">{lead}</div>
@@ -453,8 +555,11 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
         <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
           <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{q.deliverables}</div>
           <div className="flex flex-col gap-1">
-            {brief.deliverables.map((d, i) => {
-              const { lead, detail } = splitDeliverable(d);
+            {deliverableRows(brief).map((row, i) => {
+              if (row.kind === "group") {
+                return <GroupHeading key={`g${i}`} row={row} color={ink} />;
+              }
+              const { lead, detail } = splitDeliverable(row.text);
               return (
                 <div key={i} className="flex items-start gap-2">
                   <span className="text-lead shrink-0">-</span>
@@ -570,8 +675,11 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
         <div className="py-6 border-b border-line">
           <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{q.deliverables}</div>
           <div className="flex flex-col gap-1">
-            {brief.deliverables.map((d, i) => {
-              const { lead, detail } = splitDeliverable(d);
+            {deliverableRows(brief).map((row, i) => {
+              if (row.kind === "group") {
+                return <GroupHeading key={`g${i}`} row={row} color={"#181722"} />;
+              }
+              const { lead, detail } = splitDeliverable(row.text);
               return (
                 <div key={i} className="flex items-start gap-2">
                   <span className="text-lead shrink-0">-</span>
