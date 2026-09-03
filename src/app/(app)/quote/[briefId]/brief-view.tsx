@@ -54,6 +54,7 @@ import { SubLabel } from "@/components/ui/label";
 import { RenderedQuote } from "@/components/quote/rendered-quote";
 import { QuotePreview } from "@/components/quote/quote-preview";
 import { BeforeYouSend } from "@/components/quote/before-you-send";
+import { brokenRules, type RuleSettings } from "@/lib/ground-rules";
 import { applyHiddenSections, type HideableSection } from "@/lib/hidden-sections";
 import { hasStrategyContent } from "@/lib/strategy";
 import type { BrandSource } from "@/lib/branding";
@@ -105,6 +106,8 @@ interface Brief {
   layout?: number;
   /** Whether the total is the price or an estimate. See lib/quote-definitions. */
   billing?: string | null;
+  /** Ground rules already waved through on this quote. */
+  rulesAcknowledged?: string[];
   /** The add-on sections are still being written. See generateExtrasAction. */
   extrasPending?: boolean;
   /** Which kind of work the model decided this is, when the account does more
@@ -230,6 +233,14 @@ function Bullets({ items, dense }: { items: string[]; dense?: boolean }) {
  * Its own map rather than reusing the eyebrows, because those are the client's
  * words on the document and this is a sentence addressed to the freelancer.
  */
+/** Free text back into a list, the same way deliverables are parsed. */
+function linesOf(text: string): string[] {
+  return text
+    .split("\n")
+    .map((line) => line.replace(/^[-*\u2022]\s*/, "").trim())
+    .filter(Boolean);
+}
+
 function sectionName(key: string, t: ReturnType<typeof useT>): string {
   switch (key) {
     case "overview":
@@ -248,6 +259,10 @@ function sectionName(key: string, t: ReturnType<typeof useT>): string {
       return t.publicQuote.revisions;
     case "availability":
       return t.publicQuote.availability;
+    case "assumptions":
+      return t.publicQuote.assumptions;
+    case "scopeChanges":
+      return t.publicQuote.scopeChanges;
     case "aiUsage":
       return t.quote.sectionAi;
     case "terms":
@@ -275,12 +290,15 @@ export function BriefView({
   brief,
   brand,
   disciplines = [],
+  rules,
 }: {
   brief: Brief;
   /** Everything this account does, for correcting the guess. */
   disciplines?: { key: string; label: string }[];
   /** The account's saved colours and logo, for the "own branding" preview. */
   brand: BrandSource;
+  /** Which ground rules this account keeps, and its one number. */
+  rules: RuleSettings;
 }) {
   const router = useRouter();
   const t = useT();
@@ -725,6 +743,21 @@ export function BriefView({
             briefId={brief.id}
             questions={content.strategy?.openQuestions ?? []}
             cleared={brief.clearedQuestions ?? []}
+            // Checked against the quote as it stands, so editing a section
+            // clears its flag without a reload.
+            broken={brokenRules(
+              {
+                extras: content.extras ?? null,
+                hours: content.hours,
+                price: content.price,
+                rateUnit: brief.rateUnit ?? "HOUR",
+                billing: brief.billing ?? null,
+                milestoneCount: brief.milestones?.length ?? 0,
+                hidden,
+              },
+              rules
+            )}
+            acknowledged={brief.rulesAcknowledged ?? []}
           />
         </div>
       </div>
@@ -942,6 +975,53 @@ export function BriefView({
               />
             </Section>
           )}
+
+          {/* Two lists rather than prose, and edited as lines, because that is
+              how they are read: a client checks an assumption against what
+              they know and either agrees with it or corrects it. */}
+          {content.extras?.assumptions?.length ? (
+            <Section
+              eyebrow={t.publicQuote.assumptions}
+              tint="paper"
+              accent="violet"
+              {...removable("assumptions")}
+            >
+              <EditableBlock
+                value={content.extras.assumptions.join("\n")}
+                onSave={(next) =>
+                  saveContent({
+                    extras: { ...content.extras, assumptions: linesOf(next) },
+                  })
+                }
+                ariaLabel="Assumptions"
+                hint={t.brief.onePerLine}
+              >
+                <DeliverableList deliverables={content.extras.assumptions} />
+              </EditableBlock>
+            </Section>
+          ) : null}
+
+          {content.extras?.scopeChanges?.length ? (
+            <Section
+              eyebrow={t.publicQuote.scopeChanges}
+              tint="paper"
+              accent="violet"
+              {...removable("scopeChanges")}
+            >
+              <EditableBlock
+                value={content.extras.scopeChanges.join("\n")}
+                onSave={(next) =>
+                  saveContent({
+                    extras: { ...content.extras, scopeChanges: linesOf(next) },
+                  })
+                }
+                ariaLabel="What would change the price"
+                hint={t.brief.onePerLine}
+              >
+                <DeliverableList deliverables={content.extras.scopeChanges} />
+              </EditableBlock>
+            </Section>
+          ) : null}
 
           {content.extras?.aiUsage && (
             <Section eyebrow={t.quote.sectionAi} tint="paper" accent="violet" {...removable("aiUsage")}>

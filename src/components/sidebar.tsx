@@ -11,6 +11,9 @@ const ITEMS = [
   { key: "track", glyph: "T", href: "/track" },
   { key: "invoices", glyph: "I", href: "/invoices" },
   { key: "memory", glyph: "M", href: "/memory" },
+  // Fifth and last. The rail is full at five, and anything after this belongs
+  // under the account menu rather than in the nav.
+  { key: "rules", glyph: "R", href: "/rules" },
 ] as const;
 
 /**

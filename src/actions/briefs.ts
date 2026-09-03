@@ -31,6 +31,15 @@ import { CURRENT_LAYOUT } from "@/lib/quote-layout";
 import { hasStrategyContent } from "@/lib/strategy";
 import { allDisciplines, disciplineLine, industryLabel } from "@/lib/industries";
 import { withRate } from "@/lib/discipline-rates";
+import {
+  brokenRules,
+  blockingRules,
+  parseRuleSettings,
+  ruleOf,
+  GROUND_RULES,
+} from "@/lib/ground-rules";
+import { billingFromSettings } from "@/lib/quote-definitions";
+import { milestonesFromSettings } from "@/lib/milestone-lines";
 import type { RateUnit } from "@/lib/rate-unit";
 
 export type ActionResult<T = undefined> =
@@ -159,6 +168,12 @@ function sanitizeExtras(generated: GeneratedBrief): BriefExtras {
       : {}),
     ...(generated.revisions ? { revisions: clean(generated.revisions) } : {}),
     ...(generated.availability ? { availability: clean(generated.availability) } : {}),
+    ...(generated.assumptions?.length
+      ? { assumptions: generated.assumptions.map(clean).filter(Boolean) }
+      : {}),
+    ...(generated.scopeChanges?.length
+      ? { scopeChanges: generated.scopeChanges.map(clean).filter(Boolean) }
+      : {}),
     ...(generated.paymentTerms ? { paymentTerms: clean(generated.paymentTerms) } : {}),
     ...(generated.aiUsage
       ? {
@@ -176,6 +191,8 @@ function hasExtras(generated: GeneratedBrief): boolean {
     generated.terms ||
       generated.revisions ||
       generated.availability ||
+      generated.assumptions?.length ||
+      generated.scopeChanges?.length ||
       generated.paymentTerms ||
       generated.aiUsage
   );
@@ -267,6 +284,8 @@ export async function generateBriefAction(
     !draftInput.includeTerms &&
     !draftInput.includeRevisions &&
     !draftInput.includeAvailability &&
+    !draftInput.includeAssumptions &&
+    !draftInput.includeScopeChanges &&
     !draftInput.includeAI;
 
   const disciplines = allDisciplines(
@@ -274,9 +293,18 @@ export async function generateBriefAction(
     (user as unknown as { otherIndustries?: string[] }).otherIndustries
   ).map((key) => ({ key, label: industryLabel(key) }));
 
+  // The rules this account keeps, so the quote is written to satisfy them.
+  const ruleSettings = parseRuleSettings(
+    (user as unknown as { groundRules?: unknown }).groundRules
+  );
+  const activeRules = GROUND_RULES.filter(
+    (rule) => rule.checkable && !ruleSettings.off.includes(rule.key)
+  ).map((rule) => rule.key);
+
   const draft: QuoteDraftPayload = {
     ...draftInput,
     language: quoteLanguage,
+    activeRules,
     chooseSections,
     // Only when there is a choice. One discipline is a fact, not a question.
     ...(disciplines.length > 1 ? { disciplines } : {}),
@@ -396,6 +424,8 @@ export async function generateBriefAction(
         includeTerms: Boolean(generated.terms),
         includeRevisions: Boolean(generated.revisions),
         includeAvailability: Boolean(generated.availability),
+        includeAssumptions: (generated.assumptions?.length ?? 0) > 0,
+        includeScopeChanges: (generated.scopeChanges?.length ?? 0) > 0,
         includeAI: Boolean(generated.aiUsage),
       }
     : {
@@ -405,6 +435,8 @@ export async function generateBriefAction(
         includeTerms: draft.includeTerms ?? false,
         includeRevisions: draft.includeRevisions ?? false,
         includeAvailability: draft.includeAvailability ?? false,
+        includeAssumptions: draft.includeAssumptions ?? false,
+        includeScopeChanges: draft.includeScopeChanges ?? false,
         includeAI: draft.includeAI,
       };
 
@@ -724,9 +756,95 @@ export async function setBriefPublishedAction(
     };
   }
 
+  // The blocking ground rules, checked on the server as well as in the page.
+  //
+  // Three of them, and each one is a thing a client has actually written back
+  // to ask. They are not a judgement about the quote: every one can be waved
+  // through by saying it was deliberate, and that is recorded rather than
+  // argued with. What they stop is publishing by accident.
+  if (published) {
+    const rules = parseRuleSettings((user as unknown as { groundRules?: unknown }).groundRules);
+    const acknowledged = new Set(
+      ((brief.settings as { rulesAcknowledged?: unknown } | null)?.rulesAcknowledged as
+        | string[]
+        | undefined) ?? []
+    );
+    const outstanding = blockingRules(
+      brokenRules(
+        {
+          extras: brief.extras as BriefExtras | null,
+          hours: brief.hours ?? 0,
+          price: brief.price ?? 0,
+          rateUnit: (brief as unknown as { rateUnit?: string }).rateUnit ?? "HOUR",
+          billing: billingFromSettings(brief.settings),
+          milestoneCount: milestonesFromSettings(brief.settings).length,
+          hidden: (brief as unknown as { hiddenSections?: string[] }).hiddenSections ?? [],
+        },
+        rules
+      )
+    ).filter((rule) => !acknowledged.has(rule.key));
+
+    if (outstanding.length > 0) {
+      return {
+        ok: false,
+        error: "Some of your ground rules are still open on this quote.",
+      };
+    }
+  }
+
   const updated = await prisma.brief.update({ where: { id: briefId }, data: { published } });
   revalidatePath(`/quote/${briefId}`);
   return { ok: true, data: { publicSlug: updated.publicSlug } };
+}
+
+/**
+ * "I meant it", for one blocking rule on one quote.
+ *
+ * Recorded rather than argued with. A freelancer quoting a two-hour job does
+ * not need an assumptions list, and a rule that cannot be waved through is a
+ * rule people learn to route around. What is stored is the rule's key against
+ * this quote, so the flag stays quiet here and stays live everywhere else.
+ */
+export async function acknowledgeRuleAction(
+  briefId: string,
+  rule: string,
+  acknowledged: boolean
+): Promise<ActionResult<undefined>> {
+  const user = await requireFullUser();
+  const brief = await prisma.brief.findFirst({
+    where: { id: briefId, ...teamScopeWhere(user) },
+    select: { id: true, settings: true },
+  });
+  if (!brief) return { ok: false, error: "Quote not found." };
+  if (!ruleOf(rule)) return { ok: false, error: "That is not one of the rules." };
+
+  const settings = (brief.settings as Record<string, unknown> | null) ?? {};
+  const current = new Set((settings.rulesAcknowledged as string[] | undefined) ?? []);
+  if (acknowledged) current.add(rule);
+  else current.delete(rule);
+
+  try {
+    await prisma.brief.update({
+      where: { id: brief.id },
+      data: {
+        settings: {
+          ...settings,
+          rulesAcknowledged: Array.from(current),
+        } as unknown as Prisma.InputJsonValue,
+      },
+    });
+  } catch (err) {
+    console.error("[acknowledgeRuleAction] failed", err);
+    return { ok: false, error: "Couldn't save that." };
+  }
+
+  if (acknowledged) {
+    // Which rules get waved through, and how often. A blocking rule that is
+    // always overridden is a blocking rule that is wrong.
+    track("rule_overridden", { userId: user.id, subjectId: brief.id, detail: { rule } });
+  }
+  revalidatePath(`/quote/${briefId}`);
+  return { ok: true, data: undefined };
 }
 
 /** Attaches a reference file (screenshot, moodboard, past landing page...) to
@@ -944,6 +1062,8 @@ export async function generateExtrasAction(
     includeTerms: settings.includeTerms === true,
     includeRevisions: settings.includeRevisions === true,
     includeAvailability: settings.includeAvailability === true,
+    includeAssumptions: settings.includeAssumptions === true,
+    includeScopeChanges: settings.includeScopeChanges === true,
     chooseSections: settings.chooseSections === true,
     sectionNotes: (settings.sectionNotes as QuoteDraftPayload["sectionNotes"]) ?? undefined,
     availability: (settings.availability as QuoteDraftPayload["availability"]) ?? undefined,
@@ -995,6 +1115,8 @@ export async function generateExtrasAction(
       nextSettings.includeTerms = Boolean(extras.terms);
       nextSettings.includeRevisions = Boolean(extras.revisions);
       nextSettings.includeAvailability = Boolean(extras.availability);
+      nextSettings.includeAssumptions = (extras.assumptions?.length ?? 0) > 0;
+      nextSettings.includeScopeChanges = (extras.scopeChanges?.length ?? 0) > 0;
       nextSettings.includeAI = Boolean(extras.aiUsage);
     }
   }

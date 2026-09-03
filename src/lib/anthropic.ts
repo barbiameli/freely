@@ -89,6 +89,25 @@ export const briefExtrasSchema = z.object({
     .optional(),
   revisions: z.string().optional(),
   availability: z.string().optional(),
+  /**
+   * What this quote takes as given.
+   *
+   * The mechanism that turns an underestimate from a mistake into a changed
+   * circumstance. A price with no stated assumptions is a promise about a
+   * project nobody has seen yet; the same price with "12 screens, one user
+   * role, copy supplied by you" attached is a conditional commitment, and when
+   * the twelve screens turn out to be twenty there is a document to point at
+   * rather than an argument to have.
+   */
+  assumptions: z.array(z.string()).optional(),
+  /**
+   * What would change the price, named in advance.
+   *
+   * Read as adversarial only when it arrives after the fact. Sent with the
+   * quote it reads as somebody who has done this before, and it is the
+   * difference between a conversation and an invoice nobody expected.
+   */
+  scopeChanges: z.array(z.string()).optional(),
   /** When money is due. Never contains bank details: those belong on an
    * invoice, not on a quote that may be published to a public URL. */
   paymentTerms: z.string().optional(),
@@ -179,6 +198,8 @@ export const briefSchema = z.object({
   terms: briefExtrasSchema.shape.terms,
   revisions: briefExtrasSchema.shape.revisions,
   availability: briefExtrasSchema.shape.availability,
+  assumptions: briefExtrasSchema.shape.assumptions,
+  scopeChanges: briefExtrasSchema.shape.scopeChanges,
   paymentTerms: briefExtrasSchema.shape.paymentTerms,
   aiUsage: briefExtrasSchema.shape.aiUsage,
 });
@@ -256,6 +277,14 @@ export interface QuoteDraftInput {
    */
   billing?: "FIXED_TOTAL" | "HOURLY_TRACKED";
   /**
+   * The ground rules this account keeps. See lib/ground-rules.
+   *
+   * Sent so the quote is written to satisfy them rather than written first and
+   * marked against them afterwards. A flag that could have been avoided by
+   * saying so up front is a flag that should not have existed.
+   */
+  activeRules?: string[];
+  /**
    * Nobody picked any sections, so the model picks them.
    *
    * Set by the action when every include flag is false, which is now what a
@@ -323,6 +352,10 @@ export interface QuoteDraftInput {
   includeRevisions?: boolean;
   /** Capacity, start date and response times. */
   includeAvailability?: boolean;
+  /** What the quote takes as given. See briefExtrasSchema. */
+  includeAssumptions?: boolean;
+  /** What would change the price. See briefExtrasSchema. */
+  includeScopeChanges?: boolean;
   /** What the freelancer actually said about their availability, from the
    * wizard. Without this the Availability section is invented, so when it is
    * empty the section is skipped rather than guessed at. */
@@ -404,7 +437,7 @@ export function buildSystemPrompt(memory: MemoryContext | string): string {
           .map((f) => `--- ${f.name} ---\n${f.text.slice(0, 4000)}`)
           .join("\n\n")}`
       : null,
-    'Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly this schema: {"title": string, "client": string, "scope": string, "deliverables": string[], "timeline": string, "discipline": string (only when you were given a list of kinds of work to choose from; one of those keys), "strategy": {"goal": string, "findings": string[], "openQuestions": string[]} (always include this object; when Strategy was not requested, goal is "" and findings is []), "price": number, "hours": number, "terms": {"cancellation": string, "ownership": string, "confidentiality": string} (optional), "revisions": string (optional), "availability": string (optional), "paymentTerms": string (optional), "aiUsage": {"will": string[], "willNot": string[]} (optional)}. Omit any optional key entirely unless it was explicitly requested. "client" is the name of the person or company being quoted. Plenty of briefs never name one: when the brief does not say, put a short generic stand-in like "Client" rather than an empty string, and never invent a company name. The same goes for "title": describe the work in a few words if the brief does not title it. Never put bank account numbers, sort codes, IBANs, card details or any other payment credentials anywhere in the response, not even as an example or placeholder: quotes can be published to a public web address, so payment details belong only on an invoice. Each findings/openQuestions entry should be one short, standalone bullet point, not a run-on sentence with several ideas mashed together, and never numbered manually (e.g. no "(1)" prefixes) since the UI renders them as a real bulleted list. If you used web search to research rates, do not include citations or URLs in the JSON, fold the conclusion into your reasoning about price only.',
+    'Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly this schema: {"title": string, "client": string, "scope": string, "deliverables": string[], "timeline": string, "discipline": string (only when you were given a list of kinds of work to choose from; one of those keys), "strategy": {"goal": string, "findings": string[], "openQuestions": string[]} (always include this object; when Strategy was not requested, goal is "" and findings is []), "price": number, "hours": number, "terms": {"cancellation": string, "ownership": string, "confidentiality": string} (optional), "revisions": string (optional), "availability": string (optional), "assumptions": string[] (optional), "scopeChanges": string[] (optional), "paymentTerms": string (optional), "aiUsage": {"will": string[], "willNot": string[]} (optional)}. Omit any optional key entirely unless it was explicitly requested. "client" is the name of the person or company being quoted. Plenty of briefs never name one: when the brief does not say, put a short generic stand-in like "Client" rather than an empty string, and never invent a company name. The same goes for "title": describe the work in a few words if the brief does not title it. Never put bank account numbers, sort codes, IBANs, card details or any other payment credentials anywhere in the response, not even as an example or placeholder: quotes can be published to a public web address, so payment details belong only on an invoice. Each findings/openQuestions entry should be one short, standalone bullet point, not a run-on sentence with several ideas mashed together, and never numbered manually (e.g. no "(1)" prefixes) since the UI renders them as a real bulleted list. If you used web search to research rates, do not include citations or URLs in the JSON, fold the conclusion into your reasoning about price only.',
   ];
 
   return sections.filter(Boolean).join(" ");
@@ -710,8 +743,61 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
   // Optional sections. Each is off unless asked for, so the baseline quote
   // stays scope, deliverables and price rather than a wall of boilerplate.
   const sectionChoiceInstruction = decides
-    ? `\nNo sections were chosen for this quote, so choose them yourself. Judge from the brief and from what you know about how this freelancer works, and include the ones that earn their place: an Approach when the problem is worth framing, a staged timeline when the work has real stages, payment terms and a statement of work when the money or the commitment needs pinning down, terms when the engagement carries risk worth naming, a revisions policy when the work is the kind that attracts rounds of changes, an AI-use disclosure when AI genuinely touches this work. Two to four of them is usually right. Omit the key entirely for anything you leave out, and never include a section you would have to invent facts to fill.`
+    ? `\nNo sections were chosen for this quote, so choose them yourself. Judge from the brief and from what you know about how this freelancer works, and include the ones that earn their place: an Approach when the problem is worth framing, a staged timeline when the work has real stages, payment terms and a statement of work when the money or the commitment needs pinning down, terms when the engagement carries risk worth naming, a revisions policy when the work is the kind that attracts rounds of changes, an assumptions list whenever the price rests on quantities or on inputs somebody else supplies, a list of what would change the price when the brief leaves real room for the job to grow, an AI-use disclosure when AI genuinely touches this work. Two to four of them is usually right. Omit the key entirely for anything you leave out, and never include a section you would have to invent facts to fill.`
     : "";
+
+  /**
+   * The freelancer's own rules, as instructions.
+   *
+   * Only the ones a quote can actually satisfy. The rest are about what
+   * somebody does before they open Freely at all, and telling a model to
+   * enforce them would produce a paragraph nobody asked for.
+   */
+  const ruleInstruction = (() => {
+    const on = new Set(draft.activeRules ?? []);
+    if (on.size === 0) return "";
+    const lines: string[] = [];
+    if (on.has("revisionRounds")) {
+      lines.push(
+        "- Any revisions policy must state an actual number of rounds. Never leave the count open."
+      );
+    }
+    if (on.has("feedbackWindow")) {
+      lines.push(
+        "- Say what the timeline depends on from the client's side, naming a window in business days for feedback and sign-off, and say that the delivery date moves by the same number of days when it slips."
+      );
+    }
+    if (on.has("deemedAcceptance")) {
+      lines.push(
+        "- Say in the payment terms what happens when a delivered milestone gets no response: after a stated number of business days it is treated as accepted and invoiced."
+      );
+    }
+    if (on.has("cancellation")) {
+      lines.push(
+        "- Any cancellation clause must say that completed work is invoiced, the part in progress is invoiced in full, and anything not started is not charged."
+      );
+    }
+    if (on.has("ownership")) {
+      lines.push(
+        "- Any ownership clause must transfer rights on final payment rather than on delivery, and keep working files and unused concepts with the freelancer unless separately agreed."
+      );
+    }
+    if (on.has("exclusions")) {
+      lines.push(
+        "- Name the work next door to this job that is NOT included, drawn from this brief: the adjacent tasks a client tends to assume are part of it. Say plainly that they are quoted separately."
+      );
+    }
+    if (on.has("unpaidStretch") && draft.paymentPlan !== "MILESTONE") {
+      lines.push(
+        "- If this project is long enough that a single payment at the end would leave the freelancer carrying weeks of unpaid work, say so in the open questions and suggest splitting it."
+      );
+    }
+    return lines.length > 0
+      ? `\nThis freelancer keeps these rules on their quotes. Follow them wherever the relevant section exists, and do not mention the rules themselves:\n${lines.join(
+          "\n"
+        )}`
+      : "";
+  })();
 
   const notes = draft.sectionNotes ?? {};
   const extraSections: string[] = [];
@@ -741,6 +827,20 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
         .join(
           "\n"
         )}\nWrite it as one or two sentences in their voice. Do not add a start date, a weekly capacity, a response time or any other commitment that is not in that list.`
+    );
+  }
+  if (draft.includeAssumptions || decides) {
+    extraSections.push(
+      `${required(notes.assumptions)}Include an "assumptions" array: 4-8 short lines naming what this price rests on. Each one must be a specific, checkable fact drawn from this brief, of the kind that would change the amount of work if it turned out otherwise: quantities (how many screens, pages, articles, components, languages), what exists already and in what condition, who supplies which inputs, how many people review, and what is out of scope. Write them as plain noun phrases, e.g. "12 screens across 2 flows", "copy supplied by you", "one round of consolidated feedback per milestone". Never write a generic line like "the client will be responsive" or "requirements are clear". End the list with a line in the freelancer's own voice saying that if any of these turns out differently they will flag it and agree a revised scope before continuing, so nothing arrives on an invoice unapproved.${
+        notes.assumptions ? ` They have said: ${notes.assumptions}. Build the list around that.` : ""
+      }`
+    );
+  }
+  if (draft.includeScopeChanges || decides) {
+    extraSections.push(
+      `${required(notes.scopeChanges)}Include a "scopeChanges" array: 4-8 short lines naming what would change the price or the date on THIS project. Draw them from this brief rather than from a generic list, and cover the ones that actually bite: more of something than the quote assumes, a dependency that is not ready, work adjacent to the main job that tends to get assumed in (answering the client's developers, testing the built result, writing the copy, research, admin and access setup), a new decision-maker arriving partway through, a decision reversed after sign-off, and feedback or sign-off that does not come back inside the agreed window. Write each as a short phrase, not a sentence of consequences.${
+        notes.scopeChanges ? ` They have said: ${notes.scopeChanges}. Build the list around that.` : ""
+      }`
     );
   }
   if (draft.includeAI || decides) {
@@ -787,6 +887,7 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
       strategyInstruction,
       extraSectionsInstruction,
       paymentInstruction,
+      ruleInstruction,
       `\nReturn ONLY a JSON object containing the keys named above and nothing else. Do not include a title, client, scope, deliverables, timeline, price or hours: those are being written separately and anything you add here is discarded.`,
     ]
       .filter(Boolean)
@@ -810,6 +911,7 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
     part === "all" ? paymentInstruction : "",
     milestoneInstruction,
     part === "all" ? extraSectionsInstruction : "",
+    part === "all" ? ruleInstruction : "",
     // A real client could not tell whether "Design review session" and
     // "Feedback-incorporated final files" were the one included round or two
     // more on top of it. They were the same round, listed twice as though
@@ -901,7 +1003,7 @@ export function buildRefineUserPrompt(
     `Here is the current quote, in full:\n${JSON.stringify(current)}`,
     `\nRevise it based on this instruction: "${refinePrompt}". Keep everything else as close to the original as makes sense.`,
     facts.length ? `\n${facts.join(" ")}` : "",
-    `\nReturn the whole quote, including every optional section it already has: strategy, terms, revisions, availability, paymentTerms and aiUsage. A section the instruction does not mention comes back exactly as it was, word for word. Do not drop a section because the instruction was about something else.`,
+    `\nReturn the whole quote, including every optional section it already has: strategy, terms, revisions, availability, assumptions, scopeChanges, paymentTerms and aiUsage. A section the instruction does not mention comes back exactly as it was, word for word. Do not drop a section because the instruction was about something else.`,
     `\nYou may add a section this quote does not have, or leave one out, when the instruction asks for it: "add a revisions policy" means write one, "take out the AI disclosure" means omit that key entirely. Do not add one that was not asked for, and never invent facts to fill a section, particularly availability, which may only say what the freelancer has already stated.`,
     context.paymentTerms
       ? `\nThe payment terms currently read: "${context.paymentTerms}". If the instruction changes how or when the money is paid, rewrite them to match and make sure any milestones agree with them.`
@@ -1334,6 +1436,8 @@ const extrasOnlySchema = z.object({
   terms: briefExtrasSchema.shape.terms,
   revisions: briefExtrasSchema.shape.revisions,
   availability: briefExtrasSchema.shape.availability,
+  assumptions: briefExtrasSchema.shape.assumptions,
+  scopeChanges: briefExtrasSchema.shape.scopeChanges,
   paymentTerms: briefExtrasSchema.shape.paymentTerms,
   aiUsage: briefExtrasSchema.shape.aiUsage,
 });

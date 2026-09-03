@@ -52,6 +52,7 @@ export const en = {
     track: "Track",
     diary: "Diary",
     invoices: "Invoices",
+    rules: "Rules",
     memory: "Memory",
     team: "Team",
     account: "Account",
@@ -294,6 +295,12 @@ export const en = {
     askTermsPlaceholder: "e.g. two weeks notice to cancel, I keep the rights until the final invoice clears",
     askRevisions: "How many rounds do you include?",
     askRevisionsPlaceholder: "e.g. two rounds per deliverable, anything after that is quoted separately",
+    askAssumptions: "What does this price assume?",
+    askAssumptionsPlaceholder:
+      "Quantities, what already exists, who supplies what. Leave blank and Freely reads them off the brief.",
+    askScopeChanges: "Anything that tends to grow on your projects?",
+    askScopeChangesPlaceholder:
+      "Dev questions during build, QA, copy, admin. Leave blank and Freely names the ones this brief invites.",
     askAiUsage: "Which AI do you actually use, and where?",
     askAiUsagePlaceholder: "e.g. AI for first-pass copy and repetitive variants, never for design decisions",
     sectionStrategy: "Strategy",
@@ -308,6 +315,8 @@ export const en = {
     sectionRevisionsHint: "How many rounds are included, and what counts as new work.",
     sectionAvailability: "Availability",
     sectionAvailabilityHint: "Your capacity, start date, and how quickly you reply.",
+    sectionAssumptions: "What this assumes",
+    sectionScopeChanges: "What would change the price",
     sectionAi: "AI-use disclosure",
     sectionAiHint: "Which parts of this project use AI, and which stay entirely human.",
     dragFileHere: "Drag a file here, or click to choose one (.txt, .md, .pdf, .docx).",
@@ -360,6 +369,7 @@ export const en = {
     hoursNeedNumber: "Hours needs to be a number.",
     priceNeedNumber: "Price needs to be a number.",
     oneDeliverablePerLine: "One deliverable per line. Delete a line to remove it.",
+    onePerLine: "One per line.",
     workingDraft: "This is your working draft.",
     originalRequest: "Original request",
     refine: "Refine",
@@ -740,6 +750,105 @@ export const en = {
     invitePlaceholder: "teammate@studio.com (optional, leave blank for a shareable link)",
   },
 
+  rules: {
+    title: "Ground rules",
+    subtitle: "What a quote should say before it goes out, and what it costs when it does not.",
+    intro:
+      "Every one of these came from a quote somebody sent and then had to explain by email. Freely checks each quote against the ones you leave on. Switch off anything that does not fit how you work.",
+    on: "On",
+    off: "Off",
+    blocking: "Checked before publishing",
+    suggestion: "Flagged, never blocks",
+    notChecked: "Practice, not paperwork",
+    why: "Why",
+    cost: "What it costs",
+    maxUnpaidTitle: "Most you are willing to be owed",
+    maxUnpaidHint:
+      "In hours of your own work. Freely says something when a quote would leave you further out of pocket than this before any money arrives.",
+    hours: "hours",
+    savedRules: "Saved",
+    flagsTitle: "Before you publish",
+    flagsBlocking: "{count} to settle",
+    flagsSuggestions: "{count} worth a look",
+    flagsNone: "This quote passes your ground rules.",
+    flagFix: "Fix it",
+    flagIgnore: "I meant it",
+    flagIgnored: "Set aside",
+    blockedNotice: "Settle these, or mark them as deliberate, and this quote can be published.",
+    seeRule: "Read the rule",
+
+    paymentBasisTitle: "Say when you are paid, and on what basis",
+    paymentBasisWhy:
+      "A quote with a number and no terms leaves the client to decide when to pay, and they will decide later than you would.",
+    paymentBasisCost:
+      "The commonest way to be paid ninety days after delivery is to never have said seven.",
+
+    revisionRoundsTitle: "State the number of revision rounds",
+    revisionRoundsWhy:
+      "A round has to be a countable thing with a number next to it. \"Within reason\" is generous in intent and useless in practice.",
+    revisionRoundsCost:
+      "Your idea of reasonable and your client's diverge at exactly the point where it starts costing you evenings.",
+
+    assumptionsTitle: "Say what the price assumes",
+    assumptionsWhy:
+      "A price with no stated assumptions is a promise about a project nobody has seen yet. The same price with the quantities attached is a conditional commitment.",
+    assumptionsCost:
+      "Twelve screens turning into twenty is your mistake when nothing says twelve, and a conversation when something does.",
+
+    scopeChangesTitle: "Name what would change the price",
+    scopeChangesWhy:
+      "Sent with the quote it reads as somebody who has done this before. Sent afterwards it reads as an argument.",
+    scopeChangesCost:
+      "Work that grows quietly gets absorbed, because raising it late feels like asking for a favour.",
+
+    unpaidStretchTitle: "Cap how far out of pocket you go",
+    unpaidStretchWhy:
+      "One payment at the end means the whole project is money you are owed. Milestones mean you are owed one milestone.",
+    unpaidStretchCost:
+      "A client who goes quiet in month two costs you the whole job rather than the last chunk of it.",
+
+    feedbackWindowTitle: "Tie the date to their feedback",
+    feedbackWindowWhy:
+      "Your delivery date rests on somebody else replying. Saying so in advance is what makes it stick when they do not.",
+    feedbackWindowCost:
+      "A week of their silence becomes a week of your weekend, because the date was only ever yours.",
+
+    deemedAcceptanceTitle: "Say what happens if nobody replies",
+    deemedAcceptanceWhy:
+      "Delivered work waiting on an approval that never comes is unpaid work with no end date.",
+    deemedAcceptanceCost:
+      "You sit inside a live project, unable to invoice it and unable to leave it.",
+
+    cancellationTitle: "Say what a cancellation costs",
+    cancellationWhy:
+      "Everything done is invoiced and the part in progress is invoiced in full. Anything not started is not charged.",
+    cancellationCost:
+      "Without it, a project cancelled halfway is a negotiation you start from nothing.",
+
+    ownershipTitle: "Rights transfer when the final payment lands",
+    ownershipWhy:
+      "On payment rather than on delivery. Handing over the rights first removes the only leverage you have.",
+    ownershipCost:
+      "A client holding finished work they own has very little reason to hurry.",
+
+    exclusionsTitle: "Name the work next door",
+    exclusionsWhy:
+      "Answering someone's developers, testing what got built, writing the copy, sorting out access. Every trade has its version, and it gets assumed in by everyone and quoted by nobody.",
+    exclusionsCost:
+      "Hours that were never in the number, done for free, on a project already priced.",
+
+    beforeSignatureTitle: "Nothing starts before a signature",
+    beforeSignatureWhy:
+      "Reading a brief to write a quote is fine. Anything that produces a deliverable waits for the signature and the deposit.",
+    beforeSignatureCost:
+      "Starting early looks like enthusiasm and reads as free. If they go quiet you have unpaid work and no contract.",
+
+    noNumberBeforeScopeTitle: "No number before you have scoped it",
+    noNumberBeforeScopeWhy:
+      "Not on a call, not roughly, not as a ballpark. The first figure a client hears is the price, and everything above it is an increase.",
+    noNumberBeforeScopeCost:
+      "A real quote that beats your own guess by a third loses the work, however right it was.",
+  },
   publicQuote: {
     quotation: "Quotation",
     quote: "Quote",
@@ -750,6 +859,8 @@ export const en = {
     totalDays: "{count} days in total.",
     totalMonths: "{count} months in total.",
     concurrent: "Some stages run at the same time.",
+    assumptions: "What this assumes",
+    scopeChanges: "What would change the price",
     milestoneMeans:
       "A milestone is a named set of deliverables with its own date and price. Each one is invoiced when it is delivered.",
     roundMeans:

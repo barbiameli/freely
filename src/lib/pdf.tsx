@@ -458,6 +458,14 @@ function ExtraSections({
   }
   if (extras.revisions) blocks.push([w.revisions, revisionsClause(extras.revisions, w)]);
   if (extras.availability) blocks.push([w.availability, extras.availability]);
+  // Bulleted, because these are lists a client checks line by line rather
+  // than prose they read once.
+  if (extras.assumptions?.length) {
+    blocks.push([w.assumptions, extras.assumptions.map((line) => `- ${line}`).join("\n")]);
+  }
+  if (extras.scopeChanges?.length) {
+    blocks.push([w.scopeChanges, extras.scopeChanges.map((line) => `- ${line}`).join("\n")]);
+  }
   if (extras.terms) {
     blocks.push([w.cancellation, extras.terms.cancellation]);
     blocks.push([w.ownership, extras.terms.ownership]);

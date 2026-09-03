@@ -16,6 +16,8 @@ export type HideableSection =
   | "paymentTerms"
   | "revisions"
   | "availability"
+  | "assumptions"
+  | "scopeChanges"
   | "aiUsage"
   | "terms";
 
@@ -25,6 +27,8 @@ export const HIDEABLE_SECTIONS: HideableSection[] = [
   "paymentTerms",
   "revisions",
   "availability",
+  "assumptions",
+  "scopeChanges",
   "aiUsage",
   "terms",
 ];
@@ -60,6 +64,8 @@ export function applyHiddenSections<T extends Hideable>(brief: T, hidden: string
     if (off.has("paymentTerms")) delete extras.paymentTerms;
     if (off.has("revisions")) delete extras.revisions;
     if (off.has("availability")) delete extras.availability;
+    if (off.has("assumptions")) delete extras.assumptions;
+    if (off.has("scopeChanges")) delete extras.scopeChanges;
     if (off.has("aiUsage")) delete extras.aiUsage;
     if (off.has("terms")) delete extras.terms;
   }

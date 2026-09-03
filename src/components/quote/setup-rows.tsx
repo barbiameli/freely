@@ -1057,6 +1057,10 @@ function sectionName(key: SectionKey, t: Dictionary): string {
       return t.quote.sectionRevisions;
     case "includeAvailability":
       return t.quote.sectionAvailability;
+    case "includeAssumptions":
+      return t.quote.sectionAssumptions;
+    case "includeScopeChanges":
+      return t.quote.sectionScopeChanges;
     case "includeAI":
       return t.quote.sectionAi;
   }
@@ -1082,6 +1086,8 @@ export function setupWords(t: Dictionary): SetupWords {
       includeTerms: t.quote.sectionTerms,
       includeRevisions: t.quote.sectionRevisions,
       includeAvailability: t.quote.sectionAvailability,
+      includeAssumptions: t.quote.sectionAssumptions,
+      includeScopeChanges: t.quote.sectionScopeChanges,
       includeAI: t.quote.sectionAi,
     },
     formats: {

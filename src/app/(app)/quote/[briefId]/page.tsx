@@ -7,6 +7,7 @@ import type { Strategy, BriefExtras } from "@/lib/anthropic";
 import { BriefView } from "./brief-view";
 import { layoutOf } from "@/lib/quote-layout";
 import { billingFromSettings } from "@/lib/quote-definitions";
+import { parseRuleSettings } from "@/lib/ground-rules";
 import { allDisciplines, industryLabel } from "@/lib/industries";
 
 export default async function BriefPage({ params }: { params: { briefId: string } }) {
@@ -30,6 +31,7 @@ export default async function BriefPage({ params }: { params: { briefId: string 
     <>
 
     <BriefView
+      rules={parseRuleSettings((user as unknown as { groundRules?: unknown }).groundRules)}
       brief={{
         id: brief.id,
         title: brief.title,
@@ -58,6 +60,9 @@ export default async function BriefPage({ params }: { params: { briefId: string 
           (brief as unknown as { clearedQuestions?: string[] }).clearedQuestions ?? [],
         layout: layoutOf(brief.settings),
         billing: billingFromSettings(brief.settings),
+        rulesAcknowledged:
+          ((brief.settings as { rulesAcknowledged?: string[] } | null) ?? {}).rulesAcknowledged ??
+          [],
         discipline:
           ((brief.settings as { discipline?: string } | null) ?? {}).discipline ?? null,
         extrasPending:

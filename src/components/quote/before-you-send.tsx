@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { Check, Lightbulb } from "lucide-react";
+import Link from "next/link";
+import { Check, Lightbulb, AlertTriangle } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
-import { clearQuestionAction } from "@/actions/briefs";
+import { clearQuestionAction, acknowledgeRuleAction } from "@/actions/briefs";
 import { useT } from "@/lib/i18n/context";
+import type { GroundRule } from "@/lib/ground-rules";
+import { ruleWords } from "@/lib/rule-words";
 
 /** One flag per quote, so the overlay arrives once and never again. */
 function seenKey(briefId: string): string {
@@ -54,19 +57,35 @@ export function BeforeYouSend({
   briefId,
   questions,
   cleared: initialCleared,
+  broken = [],
+  acknowledged: initialAcknowledged = [],
 }: {
   briefId: string;
   questions: string[];
   /** Which are already ticked, by their text. */
   cleared: string[];
+  /**
+   * The ground rules this quote breaks.
+   *
+   * They share the overlay with the AI's questions rather than getting a
+   * panel of their own, because they are the same job: the things to settle
+   * before this goes to a client. Two lists in two places would mean checking
+   * one and forgetting the other.
+   */
+  broken?: GroundRule[];
+  /** Rules already waved through on this quote. */
+  acknowledged?: string[];
 }) {
   const t = useT();
   const [cleared, setCleared] = useState<string[]>(initialCleared);
+  const [acknowledged, setAcknowledged] = useState<string[]>(initialAcknowledged);
   const [open, setOpen] = useState(false);
   const [, startTransition] = useTransition();
 
-  const unchecked = questions.filter((q) => !cleared.includes(q)).length;
-  const hasQuestions = questions.length > 0;
+  const openRules = broken.filter((rule) => !acknowledged.includes(rule.key));
+  const blocking = openRules.filter((rule) => rule.severity === "blocking").length;
+  const unchecked = questions.filter((q) => !cleared.includes(q)).length + openRules.length;
+  const hasQuestions = questions.length > 0 || broken.length > 0;
 
   useEffect(() => {
     if (!hasQuestions) return;
@@ -87,6 +106,14 @@ export function BeforeYouSend({
   }, [briefId, hasQuestions]);
 
   if (!hasQuestions) return null;
+
+  function wave(rule: string) {
+    const already = acknowledged.includes(rule);
+    setAcknowledged(already ? acknowledged.filter((r) => r !== rule) : [...acknowledged, rule]);
+    startTransition(() => {
+      void acknowledgeRuleAction(briefId, rule, !already);
+    });
+  }
 
   function toggle(question: string) {
     const next = cleared.includes(question)
@@ -138,6 +165,58 @@ export function BeforeYouSend({
         }
         wide
       >
+        {/* Rules first. A question is something to think about; a broken rule
+            is something a client will write back about. */}
+        {openRules.length > 0 && (
+          <div className="flex flex-col gap-3 mb-5">
+            {blocking > 0 && (
+              <p className="font-body font-semibold text-caption text-overdue m-0 text-pretty">
+                {t.rules.blockedNotice}
+              </p>
+            )}
+            {openRules.map((rule) => {
+              const words = ruleWords(rule.key, t);
+              return (
+                <div
+                  key={rule.key}
+                  className={`rounded-card border-l-[3px] px-4 py-3.5 ${
+                    rule.severity === "blocking"
+                      ? "bg-coral-tint border-coral"
+                      : "bg-violet-tint border-violet"
+                  }`}
+                >
+                  <div className="flex items-start gap-2">
+                    {rule.severity === "blocking" && (
+                      <AlertTriangle size={14} className="text-coral shrink-0 mt-[3px]" />
+                    )}
+                    <div className="min-w-0">
+                      <div className="font-body font-bold text-small text-ink text-pretty">
+                        {words.title}
+                      </div>
+                      <p className="text-caption text-slate mt-1 mb-0 text-pretty">{words.why}</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-4 mt-2.5">
+                    <button
+                      type="button"
+                      onClick={() => wave(rule.key)}
+                      className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
+                    >
+                      {t.rules.flagIgnore}
+                    </button>
+                    <Link
+                      href="/rules"
+                      className="text-meta font-semibold text-slate no-underline tap"
+                    >
+                      {t.rules.seeRule}
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         <ul className="list-none p-0 m-0 flex flex-col">
           {questions.map((question) => {
             const done = cleared.includes(question);

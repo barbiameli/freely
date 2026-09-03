@@ -168,6 +168,11 @@ model User {
   // migration.
   ratesByDiscipline  Json?
 
+  // Which ground rules this account has switched off, and the one number the
+  // rules read. See lib/ground-rules: the rules themselves are code, so this
+  // only ever holds what somebody changed about them.
+  groundRules        Json?
+
   // The quote setup: everything the wizard used to ask on every quote that is
   // actually a property of the freelancer rather than of the job. Asking for
   // it once and remembering it is what took the first screen from fourteen

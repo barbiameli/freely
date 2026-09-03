@@ -207,6 +207,8 @@ const WORDS: SetupWords = {
     includeTerms: "Terms",
     includeRevisions: "Revisions",
     includeAvailability: "Availability",
+  includeAssumptions: "What this assumes",
+  includeScopeChanges: "What would change the price",
     includeAI: "AI use",
   },
   formats: { HTML: "Web page", PDF: "PDF", Figma: "Figma" },

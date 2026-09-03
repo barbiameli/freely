@@ -224,16 +224,18 @@ export function availabilityFacts(note?: string): string[] {
  * and past quotes rather than from a stated preference.
  */
 export interface SectionQuestion {
-  key: "payment" | "terms" | "revisions" | "aiUsage";
+  key: "payment" | "terms" | "revisions" | "aiUsage" | "assumptions" | "scopeChanges";
   /** Which inclusion reveals it. */
   inclusion: string;
   /** Dictionary keys, so the question is translated with the rest. */
-  promptKey: "askPayment" | "askTerms" | "askRevisions" | "askAiUsage";
+  promptKey: "askPayment" | "askTerms" | "askRevisions" | "askAiUsage" | "askAssumptions" | "askScopeChanges";
   placeholderKey:
     | "askPaymentPlaceholder"
     | "askTermsPlaceholder"
     | "askRevisionsPlaceholder"
-    | "askAiUsagePlaceholder";
+    | "askAiUsagePlaceholder"
+    | "askAssumptionsPlaceholder"
+    | "askScopeChangesPlaceholder";
 }
 
 /**
@@ -258,6 +260,18 @@ export const SECTION_QUESTIONS: SectionQuestion[] = [
     inclusion: "includeRevisions",
     promptKey: "askRevisions",
     placeholderKey: "askRevisionsPlaceholder",
+  },
+  {
+    key: "assumptions",
+    inclusion: "includeAssumptions",
+    promptKey: "askAssumptions",
+    placeholderKey: "askAssumptionsPlaceholder",
+  },
+  {
+    key: "scopeChanges",
+    inclusion: "includeScopeChanges",
+    promptKey: "askScopeChanges",
+    placeholderKey: "askScopeChangesPlaceholder",
   },
   {
     key: "aiUsage",

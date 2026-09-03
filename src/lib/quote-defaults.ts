@@ -46,6 +46,8 @@ export type SectionKey =
   | "includeTerms"
   | "includeRevisions"
   | "includeAvailability"
+  | "includeAssumptions"
+  | "includeScopeChanges"
   | "includeAI";
 
 export const ALL_SECTIONS: SectionKey[] = [
@@ -55,6 +57,8 @@ export const ALL_SECTIONS: SectionKey[] = [
   "includeTerms",
   "includeRevisions",
   "includeAvailability",
+  "includeAssumptions",
+  "includeScopeChanges",
   "includeAI",
 ];
 

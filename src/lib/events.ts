@@ -38,7 +38,14 @@ export type EventKind =
   | "diary_entry_added"
   // Account shape, for reading the rest against.
   | "signed_up"
-  | "onboarding_finished";
+  | "onboarding_finished"
+  // Which ground rules people keep, and which they turn off. Worth knowing:
+  // a rule most accounts switch off is a rule that is wrong, and a rule that
+  // blocks publishing and gets waved through every time is worse than none.
+  | "rule_on"
+  | "rule_off"
+  | "rule_flagged"
+  | "rule_overridden";
 
 /**
  * The detail carried alongside an event.
@@ -60,6 +67,9 @@ export interface EventDetail {
   count?: number;
   /** Seconds, where something is worth timing. */
   seconds?: number;
+  /** A ground rule's key. One of a fixed list in lib/ground-rules, never
+   * anything somebody typed. */
+  rule?: string;
 }
 
 /**

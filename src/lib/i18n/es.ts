@@ -61,6 +61,7 @@ export const es: Dictionary = {
     track: "Proyectos",
     diary: "Diario",
     invoices: "Facturas",
+    rules: "Reglas",
     memory: "Memoria",
     team: "Equipo",
     account: "Cuenta",
@@ -294,6 +295,12 @@ export const es: Dictionary = {
     askTermsPlaceholder: "p. ej. dos semanas de preaviso para cancelar; los derechos siguen siendo míos hasta cobrar la última factura",
     askRevisions: "¿Cuántas rondas incluyes?",
     askRevisionsPlaceholder: "p. ej. dos rondas por entregable; lo que venga después se presupuesta aparte",
+    askAssumptions: "¿Qué da por hecho este precio?",
+    askAssumptionsPlaceholder:
+      "Cantidades, qué existe ya, quién aporta qué. Déjalo vacío y Freely lo saca del proyecto.",
+    askScopeChanges: "¿Qué se te suele hinchar en los proyectos?",
+    askScopeChangesPlaceholder:
+      "Dudas de desarrollo, QA, textos, gestión de accesos. Déjalo vacío y Freely nombra lo que este proyecto invita.",
     askAiUsage: "¿Qué IA usas de verdad, y para qué?",
     askAiUsagePlaceholder: "p. ej. IA para primeros borradores de texto y variantes repetitivas, nunca para decisiones de diseño",
     sectionStrategy: "Estrategia",
@@ -308,6 +315,8 @@ export const es: Dictionary = {
     sectionRevisionsHint: "Cuántas rondas se incluyen y qué cuenta como trabajo nuevo.",
     sectionAvailability: "Disponibilidad",
     sectionAvailabilityHint: "Cuándo puedes empezar, cuánto le puedes dedicar y en cuánto respondes.",
+    sectionAssumptions: "Qué se da por hecho",
+    sectionScopeChanges: "Qué cambiaría el precio",
     sectionAi: "Uso de IA",
     sectionAiHint: "Qué partes del proyecto usan IA y cuáles son del todo humanas.",
     dragFileHere: "Arrastra un archivo aquí, o haz clic para elegirlo (.txt, .md, .pdf, .docx).",
@@ -360,6 +369,7 @@ export const es: Dictionary = {
     hoursNeedNumber: "Las horas tienen que ser un número.",
     priceNeedNumber: "El precio tiene que ser un número.",
     oneDeliverablePerLine: "Un entregable por línea. Borra la línea para quitarlo.",
+    onePerLine: "Uno por línea.",
     workingDraft: "Esto todavía es tu borrador.",
     originalRequest: "Lo que mandó el cliente",
     refine: "Afinar",
@@ -738,6 +748,105 @@ export const es: Dictionary = {
     invitePlaceholder: "companero@estudio.com (opcional, déjalo vacío para un enlace)",
   },
 
+  rules: {
+    title: "Reglas de base",
+    subtitle: "Lo que un presupuesto debería decir antes de salir, y lo que cuesta cuando no lo dice.",
+    intro:
+      "Todas salen de presupuestos que alguien envió y luego tuvo que explicar por correo. Freely revisa cada presupuesto con las que dejes activadas. Desactiva lo que no encaje con tu forma de trabajar.",
+    on: "Activada",
+    off: "Desactivada",
+    blocking: "Se revisa antes de publicar",
+    suggestion: "Se avisa, nunca bloquea",
+    notChecked: "Práctica, no papeleo",
+    why: "Por qué",
+    cost: "Qué cuesta",
+    maxUnpaidTitle: "Lo máximo que aceptas que te deban",
+    maxUnpaidHint:
+      "En horas de tu trabajo. Freely avisa cuando un presupuesto te dejaría con más que esto por cobrar antes de que llegue nada.",
+    hours: "horas",
+    savedRules: "Guardado",
+    flagsTitle: "Antes de publicar",
+    flagsBlocking: "{count} por resolver",
+    flagsSuggestions: "{count} para mirar",
+    flagsNone: "Este presupuesto cumple tus reglas.",
+    flagFix: "Arreglarlo",
+    flagIgnore: "Es a propósito",
+    flagIgnored: "Aparcado",
+    blockedNotice: "Resuelve esto, o márcalo como intencionado, y el presupuesto se podrá publicar.",
+    seeRule: "Leer la regla",
+
+    paymentBasisTitle: "Di cuándo cobras, y sobre qué base",
+    paymentBasisWhy:
+      "Un presupuesto con una cifra y sin condiciones deja que el cliente decida cuándo pagar, y decidirá más tarde que tú.",
+    paymentBasisCost:
+      "La forma más común de cobrar a noventa días es no haber dicho nunca siete.",
+
+    revisionRoundsTitle: "Di cuántas rondas de revisión entran",
+    revisionRoundsWhy:
+      "Una ronda tiene que ser algo contable con un número al lado. \"Dentro de lo razonable\" es generoso y no sirve de nada.",
+    revisionRoundsCost:
+      "Tu idea de razonable y la de tu cliente se separan justo cuando empieza a costarte las tardes.",
+
+    assumptionsTitle: "Di qué da por hecho el precio",
+    assumptionsWhy:
+      "Un precio sin supuestos es una promesa sobre un proyecto que nadie ha visto. El mismo precio con las cantidades al lado es un compromiso condicionado.",
+    assumptionsCost:
+      "Que doce pantallas sean veinte es culpa tuya si nada dice doce, y una conversación si algo lo dice.",
+
+    scopeChangesTitle: "Nombra qué cambiaría el precio",
+    scopeChangesWhy:
+      "Con el presupuesto se lee como alguien con oficio. Después se lee como una discusión.",
+    scopeChangesCost:
+      "El trabajo que crece sin ruido acaba absorbido, porque sacarlo tarde parece pedir un favor.",
+
+    unpaidStretchTitle: "Pon un tope a lo que te deben",
+    unpaidStretchWhy:
+      "Un solo pago al final significa que todo el proyecto es dinero pendiente. Con hitos, lo pendiente es un hito.",
+    unpaidStretchCost:
+      "Un cliente que desaparece en el segundo mes te cuesta el proyecto entero y no el último tramo.",
+
+    feedbackWindowTitle: "Ata la fecha a sus respuestas",
+    feedbackWindowWhy:
+      "Tu fecha de entrega depende de que otra persona conteste. Decirlo antes es lo que hace que se sostenga cuando no contesta.",
+    feedbackWindowCost:
+      "Una semana de su silencio se convierte en una semana de tu fin de semana.",
+
+    deemedAcceptanceTitle: "Di qué pasa si nadie responde",
+    deemedAcceptanceWhy:
+      "Trabajo entregado esperando una aprobación que no llega es trabajo sin cobrar y sin fecha de final.",
+    deemedAcceptanceCost:
+      "Te quedas dentro de un proyecto vivo, sin poder facturarlo ni dejarlo.",
+
+    cancellationTitle: "Di qué cuesta una cancelación",
+    cancellationWhy:
+      "Lo hecho se factura y lo que está en marcha se factura entero. Lo que no ha empezado no se cobra.",
+    cancellationCost:
+      "Sin esto, un proyecto cancelado a medias es una negociación que empiezas desde cero.",
+
+    ownershipTitle: "Los derechos pasan con el pago final",
+    ownershipWhy:
+      "Con el pago y no con la entrega. Ceder los derechos antes te quita lo único que tienes.",
+    ownershipCost:
+      "Un cliente con el trabajo acabado y en propiedad tiene pocas razones para darse prisa.",
+
+    exclusionsTitle: "Nombra el trabajo de al lado",
+    exclusionsWhy:
+      "Responder a sus desarrolladores, probar lo construido, escribir los textos, gestionar accesos. Cada oficio tiene su versión, y todo el mundo la da por incluida y nadie la presupuesta.",
+    exclusionsCost:
+      "Horas que nunca estuvieron en la cifra, hechas gratis, en un proyecto ya cerrado.",
+
+    beforeSignatureTitle: "Nada empieza antes de una firma",
+    beforeSignatureWhy:
+      "Leer un proyecto para presupuestarlo está bien. Todo lo que produce un entregable espera a la firma y al anticipo.",
+    beforeSignatureCost:
+      "Empezar antes parece entusiasmo y se lee como gratis. Si desaparecen, tienes trabajo sin cobrar y ningún contrato.",
+
+    noNumberBeforeScopeTitle: "Ninguna cifra antes de dimensionarlo",
+    noNumberBeforeScopeWhy:
+      "Ni en una llamada, ni a ojo, ni como orientación. La primera cifra que oye un cliente es el precio, y todo lo que suba es una subida.",
+    noNumberBeforeScopeCost:
+      "Un presupuesto real que supere en un tercio tu propia estimación pierde el trabajo, por muy acertado que sea.",
+  },
   publicQuote: {
     quotation: "Presupuesto",
     quote: "Presupuesto",
@@ -748,6 +857,8 @@ export const es: Dictionary = {
     totalDays: "{count} días en total.",
     totalMonths: "{count} meses en total.",
     concurrent: "Algunas etapas van a la vez.",
+    assumptions: "Qué se da por hecho",
+    scopeChanges: "Qué cambiaría el precio",
     milestoneMeans:
       "Un hito es un conjunto de entregables con su propia fecha y su propio precio. Cada uno se factura al entregarlo.",
     roundMeans:
