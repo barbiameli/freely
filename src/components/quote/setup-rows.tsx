@@ -1125,7 +1125,7 @@ function rowHint(row: SetupRowKey, t: Dictionary): string {
   }
 }
 
-function sectionName(key: SectionKey, t: Dictionary): string {
+export function sectionName(key: SectionKey, t: Dictionary): string {
   switch (key) {
     case "includeStrategy":
       return t.quote.sectionStrategy;

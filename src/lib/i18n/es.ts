@@ -315,6 +315,24 @@ export const es: Dictionary = {
     sectionRevisionsHint: "Cuántas rondas se incluyen y qué cuenta como trabajo nuevo.",
     sectionAvailability: "Disponibilidad",
     sectionAvailabilityHint: "Cuándo puedes empezar, cuánto le puedes dedicar y en cuánto respondes.",
+    planning: "Leyéndolo.",
+    planTitle: "Antes de escribirlo",
+    planSubtitle: "Lo que Freely ha entendido del trabajo. Corrige lo que haga falta y escribe a partir de eso.",
+    planReading: "Qué es este trabajo",
+    planMilestones: "Cómo se divide",
+    planMilestonesHint: "Desmarca las que no deban ser un hito propio.",
+    planGate: "Se cierra con: {gate}",
+    planQuestions: "Lo que no ha podido deducir",
+    planQuestionsHint: "Contesta lo que sepas. Lo que dejes en blanco va al presupuesto como un supuesto escrito.",
+    planSightUnseen:
+      "No has abierto aquello sobre lo que se trabaja, así que el precio se apoya en estas respuestas.",
+    planSkip: "Déjalo vacío para saltarlo",
+    planAssume: "Si lo saltas: {assume}",
+    planSections: "Qué va a llevar el presupuesto",
+    planSectionsHint: "Sacado del proyecto y de tus reglas de base.",
+    planRules: "Ya resuelto por tus reglas de base",
+    planWrite: "Escribir el presupuesto",
+    planBack: "Volver al proyecto",
     readingBrief: "Leyendo el proyecto.",
     suggestedTitle: "Vale la pena añadir a este",
     suggestedHint: "Sacado del proyecto. Coge lo que encaje.",
@@ -805,13 +823,13 @@ export const es: Dictionary = {
     feedbackWindowRule:
       "Los comentarios y las aprobaciones llegan en {feedbackDays} días hábiles. Cuando se retrasan, la fecha de entrega se mueve otros tantos días.",
     deemedAcceptanceRule:
-      "El trabajo entregado sin respuesta después de {acceptanceDays} días hábiles se da por aceptado y se factura.",
+      "El trabajo entregado sin respuesta después de {acceptanceDays} días hábiles se da por aceptado, se factura y empieza el siguiente hito.",
     cancellationRule:
       "Si se cancela, lo hecho se factura y lo que está en marcha se factura entero. Lo que no ha empezado no se cobra.",
     ownershipRule:
       "Los derechos del trabajo final pasan cuando llega el pago final. Los archivos de trabajo y las propuestas descartadas siguen siendo tuyos salvo que acordéis otra cosa.",
     exclusionsRule: "Cada presupuesto nombra el trabajo de al lado que no cubre, y dice que se presupuesta aparte.",
-    includedCallsTitle: "Di cuántas llamadas entran",
+    includedCallsTitle: "Se incluye un número fijo de llamadas",
     includedCallsWhy:
       "Las llamadas son la parte de un proyecto sin límite natural. Un cliente al que no le das un número dará por hecho que no lo hay.",
     includedCallsCost:
@@ -822,73 +840,73 @@ export const es: Dictionary = {
     noNumberBeforeScopeRule:
       "No se da ninguna cifra, ni aproximada, antes de dimensionar el trabajo. Si insisten, das un rango con sus motivos y lo confirmas cuando hayas visto el material.",
 
-    paymentBasisTitle: "Di cuándo cobras, y sobre qué base",
+    paymentBasisTitle: "El dinero se mueve con condiciones dichas",
     paymentBasisWhy:
       "Un presupuesto con una cifra y sin condiciones deja que el cliente decida cuándo pagar, y decidirá más tarde que tú.",
     paymentBasisCost:
       "La forma más común de cobrar a noventa días es no haber dicho nunca siete.",
 
-    revisionRoundsTitle: "Di cuántas rondas de revisión entran",
+    revisionRoundsTitle: "Se incluye un número fijo de rondas de revisión",
     revisionRoundsWhy:
       "Una ronda tiene que ser algo contable con un número al lado. \"Dentro de lo razonable\" es generoso y no sirve de nada.",
     revisionRoundsCost:
       "Tu idea de razonable y la de tu cliente se separan justo cuando empieza a costarte las tardes.",
 
-    assumptionsTitle: "Di qué da por hecho el precio",
+    assumptionsTitle: "El precio se apoya en supuestos que has escrito",
     assumptionsWhy:
       "Un precio sin supuestos es una promesa sobre un proyecto que nadie ha visto. El mismo precio con las cantidades al lado es un compromiso condicionado.",
     assumptionsCost:
       "Que doce pantallas sean veinte es culpa tuya si nada dice doce, y una conversación si algo lo dice.",
 
-    scopeChangesTitle: "Nombra qué cambiaría el precio",
+    scopeChangesTitle: "Lo que cambiaría el precio se nombra por adelantado",
     scopeChangesWhy:
       "Con el presupuesto se lee como alguien con oficio. Después se lee como una discusión.",
     scopeChangesCost:
       "El trabajo que crece sin ruido acaba absorbido, porque sacarlo tarde parece pedir un favor.",
 
-    unpaidStretchTitle: "Pon un tope a lo que te deben",
+    unpaidStretchTitle: "Nunca te deben más de un tramo de trabajo",
     unpaidStretchWhy:
       "Un solo pago al final significa que todo el proyecto es dinero pendiente. Con hitos, lo pendiente es un hito.",
     unpaidStretchCost:
       "Un cliente que desaparece en el segundo mes te cuesta el proyecto entero y no el último tramo.",
 
-    feedbackWindowTitle: "Ata la fecha a sus respuestas",
+    feedbackWindowTitle: "Su retraso mueve la fecha",
     feedbackWindowWhy:
       "Tu fecha de entrega depende de que otra persona conteste. Decirlo antes es lo que hace que se sostenga cuando no contesta.",
     feedbackWindowCost:
       "Una semana de su silencio se convierte en una semana de tu fin de semana.",
 
-    deemedAcceptanceTitle: "Di qué pasa si nadie responde",
+    deemedAcceptanceTitle: "El silencio cuenta como aprobación, y el trabajo sigue",
     deemedAcceptanceWhy:
       "Trabajo entregado esperando una aprobación que no llega es trabajo sin cobrar y sin fecha de final.",
     deemedAcceptanceCost:
       "Te quedas dentro de un proyecto vivo, sin poder facturarlo ni dejarlo.",
 
-    cancellationTitle: "Di qué cuesta una cancelación",
+    cancellationTitle: "Una cancelación paga lo que se hizo",
     cancellationWhy:
       "Lo hecho se factura y lo que está en marcha se factura entero. Lo que no ha empezado no se cobra.",
     cancellationCost:
       "Sin esto, un proyecto cancelado a medias es una negociación que empiezas desde cero.",
 
-    ownershipTitle: "Los derechos pasan con el pago final",
+    ownershipTitle: "Los derechos pasan cuando llega el pago final",
     ownershipWhy:
       "Con el pago y no con la entrega. Ceder los derechos antes te quita lo único que tienes.",
     ownershipCost:
       "Un cliente con el trabajo acabado y en propiedad tiene pocas razones para darse prisa.",
 
-    exclusionsTitle: "Nombra el trabajo de al lado",
+    exclusionsTitle: "El trabajo de al lado se nombra y se presupuesta aparte",
     exclusionsWhy:
       "Responder a sus desarrolladores, probar lo construido, escribir los textos, gestionar accesos. Cada oficio tiene su versión, y todo el mundo la da por incluida y nadie la presupuesta.",
     exclusionsCost:
       "Horas que nunca estuvieron en la cifra, hechas gratis, en un proyecto ya cerrado.",
 
-    beforeSignatureTitle: "Nada empieza antes de una firma",
+    beforeSignatureTitle: "El trabajo empieza en la firma",
     beforeSignatureWhy:
       "Leer un proyecto para presupuestarlo está bien. Todo lo que produce un entregable espera a la firma y al anticipo.",
     beforeSignatureCost:
       "Empezar antes parece entusiasmo y se lee como gratis. Si desaparecen, tienes trabajo sin cobrar y ningún contrato.",
 
-    noNumberBeforeScopeTitle: "Ninguna cifra antes de dimensionarlo",
+    noNumberBeforeScopeTitle: "La primera cifra que das es la dimensionada",
     noNumberBeforeScopeWhy:
       "Ni en una llamada, ni a ojo, ni como orientación. La primera cifra que oye un cliente es el precio, y todo lo que suba es una subida.",
     noNumberBeforeScopeCost:

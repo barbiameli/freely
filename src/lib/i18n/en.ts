@@ -315,6 +315,24 @@ export const en = {
     sectionRevisionsHint: "How many rounds are included, and what counts as new work.",
     sectionAvailability: "Availability",
     sectionAvailabilityHint: "Your capacity, start date, and how quickly you reply.",
+    planning: "Reading it.",
+    planTitle: "Before it writes",
+    planSubtitle: "What Freely took the job to be. Correct anything here and it writes from that.",
+    planReading: "What this job is",
+    planMilestones: "How it splits",
+    planMilestonesHint: "Untick any that should not be their own milestone.",
+    planGate: "Closes on: {gate}",
+    planQuestions: "Things it could not work out",
+    planQuestionsHint: "Answer what you know. Anything you skip goes on the quote as a stated assumption.",
+    planSightUnseen:
+      "You have not opened the thing being worked on, so these answers are what the price rests on.",
+    planSkip: "Leave blank to skip",
+    planAssume: "If you skip it: {assume}",
+    planSections: "What the quote will carry",
+    planSectionsHint: "Read from the brief and from your ground rules.",
+    planRules: "Already settled by your ground rules",
+    planWrite: "Write the quote",
+    planBack: "Back to the brief",
     readingBrief: "Reading the brief.",
     suggestedTitle: "Worth adding to this one",
     suggestedHint: "Read from the brief. Take what fits.",
@@ -807,13 +825,13 @@ export const en = {
     feedbackWindowRule:
       "Feedback and sign-off come back within {feedbackDays} business days. When they slip, the delivery date moves by the same number of days.",
     deemedAcceptanceRule:
-      "Delivered work with no response after {acceptanceDays} business days counts as accepted and is invoiced.",
+      "Delivered work with no response after {acceptanceDays} business days counts as accepted, it is invoiced, and the next milestone starts.",
     cancellationRule:
       "On cancellation, completed work is invoiced and the part in progress is invoiced in full. Anything not started is not charged.",
     ownershipRule:
       "Rights to the final work transfer when the final payment lands. Working files and unused concepts stay yours unless you agree otherwise.",
     exclusionsRule: "Every quote names the adjacent work it does not cover, and says it is quoted separately.",
-    includedCallsTitle: "State how many calls are included",
+    includedCallsTitle: "A set number of calls is included",
     includedCallsWhy:
       "Calls are the part of a project with no natural limit. A client who is not told a number will assume there is not one.",
     includedCallsCost:
@@ -824,49 +842,49 @@ export const en = {
     noNumberBeforeScopeRule:
       "No figure is given, even roughly, before the work has been scoped. If pressed, you give a range with its reasons and confirm once you have seen the material.",
 
-    paymentBasisTitle: "Say when you are paid, and on what basis",
+    paymentBasisTitle: "Money moves on stated terms",
     paymentBasisWhy:
       "A quote with a number and no terms leaves the client to decide when to pay, and they will decide later than you would.",
     paymentBasisCost:
       "The commonest way to be paid ninety days after delivery is to never have said seven.",
 
-    revisionRoundsTitle: "State the number of revision rounds",
+    revisionRoundsTitle: "A set number of revision rounds is included",
     revisionRoundsWhy:
       "A round has to be a countable thing with a number next to it. \"Within reason\" is generous in intent and useless in practice.",
     revisionRoundsCost:
       "Your idea of reasonable and your client's diverge at exactly the point where it starts costing you evenings.",
 
-    assumptionsTitle: "Say what the price assumes",
+    assumptionsTitle: "The price rests on assumptions you have written down",
     assumptionsWhy:
       "A price with no stated assumptions is a promise about a project nobody has seen yet. The same price with the quantities attached is a conditional commitment.",
     assumptionsCost:
       "Twelve screens turning into twenty is your mistake when nothing says twelve, and a conversation when something does.",
 
-    scopeChangesTitle: "Name what would change the price",
+    scopeChangesTitle: "What would change the price is named in advance",
     scopeChangesWhy:
       "Sent with the quote it reads as somebody who has done this before. Sent afterwards it reads as an argument.",
     scopeChangesCost:
       "Work that grows quietly gets absorbed, because raising it late feels like asking for a favour.",
 
-    unpaidStretchTitle: "Cap how far out of pocket you go",
+    unpaidStretchTitle: "You are never owed more than one chunk of work",
     unpaidStretchWhy:
       "One payment at the end means the whole project is money you are owed. Milestones mean you are owed one milestone.",
     unpaidStretchCost:
       "A client who goes quiet in month two costs you the whole job rather than the last chunk of it.",
 
-    feedbackWindowTitle: "Tie the date to their feedback",
+    feedbackWindowTitle: "Their delay moves the date",
     feedbackWindowWhy:
       "Your delivery date rests on somebody else replying. Saying so in advance is what makes it stick when they do not.",
     feedbackWindowCost:
       "A week of their silence becomes a week of your weekend, because the date was only ever yours.",
 
-    deemedAcceptanceTitle: "Say what happens if nobody replies",
+    deemedAcceptanceTitle: "Silence counts as approval, and the work carries on",
     deemedAcceptanceWhy:
       "Delivered work waiting on an approval that never comes is unpaid work with no end date.",
     deemedAcceptanceCost:
       "You sit inside a live project, unable to invoice it and unable to leave it.",
 
-    cancellationTitle: "Say what a cancellation costs",
+    cancellationTitle: "A cancellation pays for what was done",
     cancellationWhy:
       "Everything done is invoiced and the part in progress is invoiced in full. Anything not started is not charged.",
     cancellationCost:
@@ -878,19 +896,19 @@ export const en = {
     ownershipCost:
       "A client holding finished work they own has very little reason to hurry.",
 
-    exclusionsTitle: "Name the work next door",
+    exclusionsTitle: "The work next door is named and quoted separately",
     exclusionsWhy:
       "Answering someone's developers, testing what got built, writing the copy, sorting out access. Every trade has its version, and it gets assumed in by everyone and quoted by nobody.",
     exclusionsCost:
       "Hours that were never in the number, done for free, on a project already priced.",
 
-    beforeSignatureTitle: "Nothing starts before a signature",
+    beforeSignatureTitle: "Work starts at the signature",
     beforeSignatureWhy:
       "Reading a brief to write a quote is fine. Anything that produces a deliverable waits for the signature and the deposit.",
     beforeSignatureCost:
       "Starting early looks like enthusiasm and reads as free. If they go quiet you have unpaid work and no contract.",
 
-    noNumberBeforeScopeTitle: "No number before you have scoped it",
+    noNumberBeforeScopeTitle: "The first number you give is the scoped one",
     noNumberBeforeScopeWhy:
       "Not on a call, not roughly, not as a ballpark. The first figure a client hears is the price, and everything above it is an increase.",
     noNumberBeforeScopeCost:

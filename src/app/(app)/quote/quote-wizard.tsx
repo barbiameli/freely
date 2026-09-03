@@ -48,17 +48,32 @@ import {
 } from "@/actions/memory";
 import { SetupRows, setupFromDraft } from "@/components/quote/setup-rows";
 import { suggestSectionsAction } from "@/actions/suggest";
+import { planQuoteAction, type PlannedQuote } from "@/actions/plan";
+import { PlanReview } from "@/components/quote/plan-review";
+import { sectionName } from "@/components/quote/setup-rows";
+import {
+  answersForPrompt,
+  milestonesForPrompt,
+  type PlanAnswer,
+} from "@/lib/quote-plan";
 import type { SectionSuggestion } from "@/lib/suggest-sections";
 import {
   learnQuoteDefaultsAction,
   keepQuoteDefaultAction,
 } from "@/actions/quote-defaults";
-import { resolveSetup, type AccountDefaults, type SetupRowKey } from "@/lib/quote-defaults";
+import {
+  ALL_SECTIONS,
+  resolveSetup,
+  type AccountDefaults,
+  type SectionKey,
+  type SetupRowKey,
+} from "@/lib/quote-defaults";
 
 import type { BriefSummary } from "@/components/brief-card";
 import { CoachMark } from "@/components/guide/coach-mark";
 import type { GuideStep } from "@/lib/guide";
 import { PageHeader } from "@/components/ui/page-header";
+import { ActionError } from "@/components/ui/action-error";
 
 /** A visual reference held in wizard state. These can only be saved once the
  * brief exists (a BriefExample needs a briefId), so they're attached
@@ -265,6 +280,9 @@ export function QuoteWizard({
   const [suggestions, setSuggestions] = useState<SectionSuggestion[]>([]);
   const [sightUnseen, setSightUnseen] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
+  /** The plan, once it has been read. Null means the form is still showing. */
+  const [plan, setPlan] = useState<PlannedQuote | null>(null);
+  const [planning, setPlanning] = useState(false);
   /** The text the current suggestions were read from, so typing on does not
    * fire a call per pause. */
   const suggestedFrom = useRef("");
@@ -314,7 +332,84 @@ export function QuoteWizard({
     setProblem((p) => (p.row === null ? { row: null, message: "" } : p));
   }
 
+  /**
+   * Pressing Generate: the plan, then the quote.
+   *
+   * It used to go straight to the expensive call and hand back a finished
+   * document, so a misreading of the brief could only be corrected by writing
+   * the whole thing again. Now a cheap read comes first and the freelancer
+   * corrects the understanding, then the quote is written once from something
+   * already agreed.
+   *
+   * The plan failing is not an error anybody needs to see. It falls through to
+   * writing the quote directly, which is what this button did before.
+   */
   async function handleGenerate() {
+    const { message, row } = whatIsMissingWhere();
+    if (message) {
+      setProblem({ row, message });
+      if (row === "rate") setShowRateHelp(true);
+      if (!row) setError(message);
+      return;
+    }
+    setProblem({ row: null, message: "" });
+    setError("");
+    setPlanning(true);
+    const result = await planQuoteAction({
+      sourceText: draft.sourceText,
+      instructions: draft.instructions,
+    });
+    setPlanning(false);
+    if (result.ok) {
+      setPlan(result.data);
+      return;
+    }
+    await writeQuote();
+  }
+
+  /**
+   * What the plan step decided, folded into the draft.
+   *
+   * Sections become flags, the kept milestones and the answered questions
+   * become instructions, and anything skipped carries its assumption through
+   * so it lands on the quote in writing rather than as a silent guess.
+   */
+  async function handleWriteFromPlan(choices: {
+    sections: SectionKey[];
+    milestones: string[];
+    answers: PlanAnswer[];
+  }) {
+    if (!plan) return;
+    // Built with a loop rather than a mapped object literal: the generic in
+    // the cast reads as a JSX tag to the guard that scans this file for
+    // hardcoded copy, and a false positive there is a test somebody learns to
+    // ignore.
+    const flags: Partial<Record<SectionKey, boolean>> = {};
+    for (const key of ALL_SECTIONS) {
+      flags[key] = choices.sections.includes(key);
+    }
+
+    const extra = [
+      answersForPrompt(plan, choices.answers),
+      milestonesForPrompt(plan, choices.milestones),
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+    const next: QuoteDraftPayload = {
+      ...draft,
+      ...flags,
+      instructions: [draft.instructions, extra].filter(Boolean).join("\n\n"),
+      // A split they have just agreed to is a split to bill against.
+      ...(choices.milestones.length > 1
+        ? { paymentPlan: "MILESTONE" as const, milestoneCount: choices.milestones.length }
+        : {}),
+    };
+    setDraft(next);
+    await writeQuote(next);
+  }
+
+  async function writeQuote(override?: QuoteDraftPayload) {
     const { message, row } = whatIsMissingWhere();
     if (message) {
       // The card opens the row, tints it, and prints the sentence next to the
@@ -355,7 +450,9 @@ export function QuoteWizard({
       // rather than living in the draft, and an empty list means the section
       // is skipped rather than invented.
       const payload: QuoteDraftPayload = {
-        ...draft,
+        // The plan's choices, when they came from there. Passed rather than
+        // read off state, since setDraft has not necessarily painted yet.
+        ...(override ?? draft),
         availability: { facts: availabilityFacts(availabilityNote) },
         sectionNotes: sectionNoteLines(sectionNotes),
       };
@@ -365,7 +462,9 @@ export function QuoteWizard({
       // fixed price is a total for one project rather than a rate to reuse,
       // which lib/quote-defaults handles by only learning a rate above zero
       // alongside its unit.
-      void learnQuoteDefaultsAction(setupFromDraft(draft, sectionNotes, availabilityNote));
+      void learnQuoteDefaultsAction(
+        setupFromDraft(override ?? draft, sectionNotes, availabilityNote)
+      );
       const result = await Promise.race([generateBriefAction(payload), timeout]);
       if (cancelledRef.current) return;
       clearGenerationTimers();
@@ -729,7 +828,28 @@ export function QuoteWizard({
         </>
       )}
 
-      {tab === "new" && (
+      {/* The plan takes the whole step rather than sitting under the form.
+          Everything on that form has already been answered by the time this
+          appears, and leaving it above would put a wall of controls between
+          the reading and the button that acts on it. Going back brings it
+          all straight back, unchanged. */}
+      {tab === "new" && plan && (
+        <>
+          <Topbar />
+          <QuoteTabs value={tab} onChange={setTab} count={recentBriefs.length} />
+          <PageHeader title={t.quote.planTitle} subtitle={t.quote.planSubtitle} />
+          <PlanReview
+            plan={plan}
+            sectionName={sectionName}
+            working={generating}
+            onWrite={(choices) => void handleWriteFromPlan(choices)}
+            onBack={() => setPlan(null)}
+          />
+          {error && <ActionError error={error} />}
+        </>
+      )}
+
+      {tab === "new" && !plan && (
         <>
           <Topbar />
           {/* The two halves of a first quote, one at a time.
@@ -998,8 +1118,13 @@ export function QuoteWizard({
                 {t.quote.stop}
               </Button>
             ) : (
-              <Button icon={Sparkles} onClick={handleGenerate} data-guide="generate">
-                {t.quote.generate}
+              <Button
+                icon={Sparkles}
+                loading={planning}
+                onClick={handleGenerate}
+                data-guide="generate"
+              >
+                {planning ? t.quote.planning : t.quote.generate}
               </Button>
             )}
           </div>

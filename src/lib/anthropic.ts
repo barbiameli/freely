@@ -8,6 +8,7 @@ import type { SectionNotes } from "@/lib/quote-prompts";
 import type { Locale } from "@/lib/i18n/types";
 import { dict } from "@/lib/i18n";
 import { sanitizeText } from "@/lib/sanitize-text";
+import { buildPlanPrompt, planSchema, type QuotePlan } from "@/lib/quote-plan";
 import {
   buildSuggestPrompt,
   suggestionResponseSchema,
@@ -796,7 +797,7 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
     if (on.has("deemedAcceptance")) {
       const days = figures.acceptanceDays ?? 10;
       lines.push(
-        `- Say in the payment terms that delivered work with no response after ${days} business days counts as accepted and is invoiced.`
+        `- Say in the payment terms that delivered work with no response after ${days} business days counts as accepted, is invoiced, and that the next milestone starts.`
       );
     }
     if (on.has("includedCalls") && figures.callsIncluded !== undefined) {
@@ -1163,7 +1164,8 @@ type LlmJob =
   | "plainDeliverableNames"
   | "researchMarketRate"
   | "generateQuoteExtras"
-  | "suggestSections";
+  | "suggestSections"
+  | "planQuote";
 
 interface LlmCallLog {
   job: LlmJob;
@@ -2054,6 +2056,41 @@ export async function suggestSections(input: {
     return parsed.success ? parsed.data : null;
   } catch (err) {
     console.error("[suggestSections] failed", err);
+    return null;
+  }
+}
+
+/**
+ * The plan, before the quote.
+ *
+ * Sonnet rather than Haiku, and this is the one place it is worth arguing
+ * about. Everything downstream rests on this reading: get the split or the
+ * quantities wrong here and the freelancer approves a plan that produces a
+ * wrong quote, which is worse than the old order where at least the mistake
+ * was visible in the finished document. It is still a fraction of what
+ * generation costs, because it writes a paragraph and some names rather than a
+ * whole quote.
+ *
+ * Returns nothing on failure. The wizard falls back to writing the quote
+ * directly, which is exactly what it did before this step existed.
+ */
+export async function planQuote(input: {
+  sourceText: string;
+  instructions?: string;
+  disciplineLine?: string;
+  language: string;
+  ruleStatements: string[];
+}): Promise<QuotePlan | null> {
+  const { system, user } = buildPlanPrompt(input);
+  try {
+    const text = await callClaude("planQuote", system, user, { maxTokens: 1600 });
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start === -1 || end <= start) return null;
+    const parsed = planSchema.safeParse(JSON.parse(text.slice(start, end + 1)));
+    return parsed.success ? parsed.data : null;
+  } catch (err) {
+    console.error("[planQuote] failed", err);
     return null;
   }
 }

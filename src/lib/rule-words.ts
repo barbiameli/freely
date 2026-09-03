@@ -125,7 +125,7 @@ export function ruleFix(key: RuleKey, values: Record<ValueKey, number>): string 
     case "feedbackWindow":
       return `Say that feedback and sign-off come back within ${values.feedbackDays} business days, and that the delivery date moves by the same number of days when they do not.`;
     case "deemedAcceptance":
-      return `Add to the payment terms that delivered work with no response after ${values.acceptanceDays} business days counts as accepted and is invoiced.`;
+      return `Add to the payment terms that delivered work with no response after ${values.acceptanceDays} business days counts as accepted, is invoiced, and that the next milestone starts.`;
     case "cancellation":
       return "Add a cancellation clause: completed work is invoiced, the part in progress is invoiced in full, and anything not started is not charged.";
     case "ownership":
