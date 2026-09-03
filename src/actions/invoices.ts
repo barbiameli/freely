@@ -11,6 +11,8 @@ import type { InvoiceLineItem } from "@/lib/invoice-pdf";
 import { billable } from "@/lib/invoice-queue";
 import { detectBillingMode } from "@/lib/billing-mode";
 import type { ActionResult } from "@/actions/briefs";
+import { clientFor } from "@/lib/client-db";
+import { parseRuleSettings, valueOf } from "@/lib/ground-rules";
 
 /** Invoice numbers are sequential per user, so a client sees 0001, 0002 rather
  * than a random id. Computed at creation from the current maximum. */
@@ -86,8 +88,29 @@ export async function createInvoiceAction(
   }
 
   const issuedAt = new Date();
+
+  /**
+   * The window from the account's own rule, not a number written here.
+   *
+   * The rules page says payment is due within N days and every quote now says
+   * so to the client. This used to say 30 regardless, so the invoice
+   * contradicted the quote it followed, which is the one place a client will
+   * definitely notice.
+   */
+  const paymentDays = valueOf(
+    parseRuleSettings((user as unknown as { groundRules?: unknown }).groundRules),
+    "paymentDays"
+  );
   const dueAt = new Date(issuedAt);
-  dueAt.setDate(dueAt.getDate() + 30);
+  dueAt.setDate(dueAt.getDate() + paymentDays);
+
+  // Never fatal: an invoice must not fail to raise because a lookup did.
+  let clientId: string | null = null;
+  try {
+    clientId = await clientFor(user.id, seed.clientName);
+  } catch (err) {
+    console.error("[invoices] could not resolve client", err);
+  }
 
   const invoice = await invoiceDb.create({
     data: {
@@ -97,6 +120,8 @@ export async function createInvoiceAction(
       dueAt,
       reference: "",
       clientName: seed.clientName,
+      // Joined to the client, so this invoice counts towards how they pay.
+      ...(clientId ? { clientId } : {}),
       clientCompany: "",
       clientWebsite: "",
       clientEmail: "",
@@ -109,7 +134,7 @@ export async function createInvoiceAction(
       itemised: true,
       currency: seed.currency,
       taxRate: 0,
-      notes: "Payment within 30 days of the issue date.",
+      notes: `Payment within ${paymentDays} days of the issue date.`,
       branding: seed.branding,
       template: seed.template,
       paid: false,
@@ -188,8 +213,22 @@ export async function invoiceProjectAction(
 
   const rate = project.brief?.hourlyRate ?? null;
   const issuedAt = new Date();
+  // The account's own window, the same as the other path. Two places said 30
+  // regardless, so an invoice contradicted the quote it followed.
+  const paymentDays = valueOf(
+    parseRuleSettings((user as unknown as { groundRules?: unknown }).groundRules),
+    "paymentDays"
+  );
   const dueAt = new Date(issuedAt);
-  dueAt.setDate(dueAt.getDate() + 30);
+  dueAt.setDate(dueAt.getDate() + paymentDays);
+
+  // Never fatal: an invoice must not fail to raise because a lookup did.
+  let projectClientId: string | null = null;
+  try {
+    projectClientId = await clientFor(user.id, project.client);
+  } catch (err) {
+    console.error("[invoices] could not resolve client", err);
+  }
 
   const invoice = await invoiceDb.create({
     data: {
@@ -199,6 +238,7 @@ export async function invoiceProjectAction(
       dueAt,
       reference: project.title,
       clientName: project.client,
+      ...(projectClientId ? { clientId: projectClientId } : {}),
       clientCompany: "",
       clientWebsite: "",
       clientEmail: "",
@@ -219,7 +259,7 @@ export async function invoiceProjectAction(
       itemised: entry.lines.length > 1,
       currency: project.currency,
       taxRate: 0,
-      notes: "Payment within 30 days of the issue date.",
+      notes: `Payment within ${paymentDays} days of the issue date.`,
       branding: project.brief?.branding || "freely",
       template: project.brief?.template || "classic",
       paid: false,

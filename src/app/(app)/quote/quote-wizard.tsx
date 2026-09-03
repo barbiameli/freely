@@ -284,6 +284,16 @@ export function QuoteWizard({
    */
   const [plan, setPlan] = useState<PlannedQuote | null>(null);
   const [planning, setPlanning] = useState(false);
+  /**
+   * Who the quote is for, asked before it is written.
+   *
+   * The name used to be read out of the brief by the model and only existed
+   * once the quote did, which is too late to be useful: knowing whether these
+   * people have paid you before is exactly what should shape the quote. Asked
+   * plainly and left optional, since plenty of briefs do name the client and
+   * the model will still find it.
+   */
+  const [clientName, setClientName] = useState("");
   // Branding can be added without leaving the wizard, so a half-filled brief
   // isn't lost to a trip to Memory.
   const [showBrandUpload, setShowBrandUpload] = useState(false);
@@ -356,6 +366,7 @@ export function QuoteWizard({
     const result = await planQuoteAction({
       sourceText: draft.sourceText,
       instructions: draft.instructions,
+      client: clientName,
     });
     setPlanning(false);
     if (result.ok) {
@@ -377,6 +388,7 @@ export function QuoteWizard({
     milestones: string[];
     answers: PlanAnswer[];
     protection: ProtectionLevel;
+    milestonesBillable: boolean;
   }) {
     if (!plan) return;
     // Built with a loop rather than a mapped object literal: the generic in
@@ -410,19 +422,26 @@ export function QuoteWizard({
     const next: QuoteDraftPayload = {
       ...draft,
       ...flags,
-      instructions: [draft.instructions, extra].filter(Boolean).join("\n\n"),
-      // The top level insists on milestones, because being owed one chunk of
-      // work rather than the whole project is what actually protects somebody.
-      // Below that, a split they have just agreed to is a split to bill
-      // against, and their own choice stands otherwise.
+      instructions: [
+        clientName.trim() ? `The client is ${clientName.trim()}.` : "",
+        draft.instructions,
+        extra,
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+      // The top level insists on billing per milestone, because being owed one
+      // chunk of work rather than the whole project is what actually protects
+      // somebody. Otherwise keeping stages is not a decision about money:
+      // their payment plan stands unless they said these are payment points.
       ...(armour.paymentPlan
         ? {
             paymentPlan: armour.paymentPlan,
             milestoneCount: Math.max(choices.milestones.length, 2),
           }
-        : choices.milestones.length > 1
+        : choices.milestonesBillable && choices.milestones.length > 1
         ? { paymentPlan: "MILESTONE" as const, milestoneCount: choices.milestones.length }
-        : {}),
+        : { milestoneCount: choices.milestones.length || undefined }),
+      milestonesBillable: choices.milestonesBillable || Boolean(armour.paymentPlan),
       protection: choices.protection,
     };
     setDraft(next);
@@ -966,6 +985,24 @@ export function QuoteWizard({
                 the box holds what the client sent and this holds what you want
                 done with it. Behind a press, the field that shapes the quote
                 most was the one nobody opened. */}
+            {/* Asked before the quote is written, because whether these
+                people have paid you before is exactly what should shape it.
+                Optional: plenty of briefs name the client and the model finds
+                it anyway. */}
+            <div className="border-t border-line px-5 py-4">
+              <SubLabel>{t.quote.clientLabel}</SubLabel>
+              <input
+                type="text"
+                value={clientName}
+                onChange={(e) => setClientName(e.target.value)}
+                placeholder={t.quote.unnamedClient}
+                className="w-full mt-1.5 bg-paper rounded-lg border-none px-3 py-2.5 text-sm text-ink outline-none"
+              />
+              <p className="text-caption text-text-muted mt-1.5 mb-0 text-pretty">
+                {t.quote.clientHint}
+              </p>
+            </div>
+
             <div className="border-t border-line px-5 py-4 bg-paper">
               <SubLabel>{t.quote.howShouldItRun}</SubLabel>
               <p className="text-caption text-text-muted mt-0 mb-2.5 text-pretty">

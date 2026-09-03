@@ -252,6 +252,7 @@ model User {
   team      Team?   @relation("TeamMember", fields: [teamId], references: [id])
 
   briefs      Brief[]
+  clients     Client[]
   projects    Project[]
   passwordResets PasswordReset[]
   emails         EmailLog[]
@@ -315,7 +316,11 @@ model Brief {
   userId         String
   user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   title          String
+  // Kept as written. The link below is the joined-up answer; this is what the
+  // quote actually said, and a client renamed later must not rewrite it.
   client         String
+  clientId       String?
+  clientRecord   Client?     @relation(fields: [clientId], references: [id], onDelete: SetNull)
   scope          String      @db.Text
   deliverables   Json
   timeline       String
@@ -455,6 +460,8 @@ model Project {
   brief       Brief?        @relation(fields: [briefId], references: [id])
   title       String
   client      String
+  clientId    String?
+  clientRecord Client?      @relation(fields: [clientId], references: [id], onDelete: SetNull)
   // Which register the client's page is written in. False is the tracker's own
   // words, which suits a technical client who wants the detail, and reads as
   // somebody else's task list to a client who is buying an outcome. Per project
@@ -544,6 +551,10 @@ model Invoice {
   /// Sequential per user, so invoice numbers read 0001, 0002 and so on rather
   /// than exposing a random id to the client.
   number    Int
+  // Whose it is, where the client is known. The frozen clientName below is
+  // still what the document says.
+  clientId  String?
+  clientRecord Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
   issuedAt  DateTime @default(now())
   dueAt     DateTime
   /// A free-text reference the client quotes when paying.
@@ -939,6 +950,45 @@ model MarketRateCache {
   refreshedAt DateTime @default(now())
 
   @@unique([country, industry, currency, rateUnit])
+}
+
+// The person or company on the other side of the work.
+//
+// Freely had no such thing. A client was a free-text string on a Brief, a
+// different free-text string on a Project, and a third on an Invoice, and
+// nothing joined them. So the app could not answer the question a freelancer
+// asks first about any job: have I worked with these people before, and how
+// did it go. It could not tell a first quote from a fourth, could not learn
+// that somebody always pays late, and asked for the same details on every
+// invoice it had already been given twice.
+//
+// Matched on a normalised name rather than created by hand. Asking somebody to
+// maintain a client list is asking for admin, and the name is already typed
+// into every quote. A wrong match is a merge somebody can undo; a list nobody
+// fills in is a feature nobody uses.
+//
+// The denormalised strings stay exactly where they are. An invoice is a record
+// of what was sent, and renaming a client must not rewrite one.
+model Client {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// As last typed, for showing.
+  name  String
+  /// Lowercased and stripped, for matching. See lib/clients.
+  slug  String
+  email String @default("")
+  notes String @default("") @db.Text
+
+  briefs   Brief[]
+  projects Project[]
+  invoices Invoice[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, slug])
+  @@index([userId])
 }
 
 // What freelancers like this one actually do, researched from the open web.

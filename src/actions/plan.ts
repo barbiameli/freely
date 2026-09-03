@@ -8,11 +8,34 @@ import type { QuotePlan } from "@/lib/quote-plan";
 import { GROUND_RULES, parseRuleSettings, ruleValues } from "@/lib/ground-rules";
 import { ruleWords } from "@/lib/rule-words";
 import { allDisciplines, disciplineLine } from "@/lib/industries";
+import { historyForClient } from "@/lib/client-db";
+import { levelFromHistory, NO_HISTORY, type ClientHistory } from "@/lib/clients";
 import { dict, resolveQuoteLocale } from "@/lib/i18n";
 
 export interface PlannedQuote extends QuotePlan {
   /** The rules that will be applied, already worded as positions. */
   rules: { key: string; statement: string }[];
+  /** What has happened with this client before. See lib/clients. */
+  history: ClientHistory;
+}
+
+/** The history, as the one line that explains the proposed level. */
+function historyReason(
+  reason: NonNullable<ReturnType<typeof levelFromHistory>>["reason"],
+  history: ClientHistory,
+  words: ReturnType<typeof dict>
+): string {
+  const w = words.quote;
+  if (reason === "overdue") {
+    return w.historyOverdue.replace("{count}", String(history.overdueInvoices));
+  }
+  if (reason === "paidLate") {
+    return w.historyPaidLate.replace("{days}", String(history.typicalPaymentDays));
+  }
+  if (reason === "good") {
+    return w.historyGood.replace("{count}", String(history.quotes));
+  }
+  return "";
 }
 
 /**
@@ -30,6 +53,8 @@ export interface PlannedQuote extends QuotePlan {
 export async function planQuoteAction(input: {
   sourceText: string;
   instructions?: string;
+  /** The client's name, when the freelancer already knows it. */
+  client?: string;
 }): Promise<{ ok: true; data: PlannedQuote } | { ok: false; error: string }> {
   try {
     const user = await requireFullUser();
@@ -88,12 +113,29 @@ export async function planQuoteAction(input: {
       )
     );
 
+    /**
+     * What you already know about these people beats what a brief implies.
+     *
+     * The model reads the text and can only guess at the relationship. The
+     * history is fact: three quotes, all won, all paid inside a week is a
+     * different engagement from a stranger with the same brief, and an
+     * invoice of theirs already overdue is a different one again.
+     */
+    const history = input.client ? await historyForClient(user.id, input.client) : NO_HISTORY;
+    const fromHistory = levelFromHistory(history);
+    const known = fromHistory && fromHistory.reason !== "new" && fromHistory.reason !== "unproven";
+
     return {
       ok: true,
       data: {
         ...plan,
+        protection: known ? fromHistory.level : plan.protection,
+        risks: known
+          ? [historyReason(fromHistory.reason, history, words), ...plan.risks].filter(Boolean)
+          : plan.risks,
         sections: sections.map((s) => ({ key: s.key, reason: s.reason })),
         rules: active,
+        history,
       },
     };
   } catch {

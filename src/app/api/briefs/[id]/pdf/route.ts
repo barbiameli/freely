@@ -7,6 +7,7 @@ import type { BriefExtras } from "@/lib/anthropic";
 import { resolveBrand } from "@/lib/branding";
 import { milestonesFromSettings } from "@/lib/milestone-lines";
 import { billingFromSettings } from "@/lib/quote-definitions";
+import { milestonesAreBillable } from "@/lib/quote-layout";
 import { layoutOf } from "@/lib/quote-layout";
 
 const VALID_TEMPLATES: PdfTemplate[] = ["classic", "editorial", "minimal"];
@@ -49,6 +50,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     // so a quote billed per milestone went out saying nothing about them.
     milestones: milestonesFromSettings(brief.settings),
     billing: billingFromSettings(brief.settings),
+    milestonesBillable: milestonesAreBillable(brief.settings),
     layout: layoutOf(brief.settings),
     price: brief.price,
     hours: brief.hours,

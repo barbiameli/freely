@@ -305,6 +305,14 @@ export interface QuoteDraftInput {
    */
   protection?: "KNOWN" | "NEW" | "GUARDED";
   /**
+   * Whether the stages are payment points, or only the shape of the work.
+   *
+   * Two questions that used to be one. A project can run in stages and still
+   * be paid in two lumps at either end, and putting an amount on every stage
+   * of one of those invents a schedule nobody agreed to.
+   */
+  milestonesBillable?: boolean;
+  /**
    * The figures those rules state. See lib/ground-rules.
    *
    * Sent so the quote says "due within 14 days" rather than a term the model

@@ -23,8 +23,8 @@ import { dict, fill } from "@/lib/i18n";
 import type { BriefExtras } from "@/lib/anthropic";
 import { hasStrategyContent } from "@/lib/strategy";
 import { paymentClause, revisionsClause, type BillingBasis } from "@/lib/quote-definitions";
-import { groupDeliverables, type QuoteMilestone } from "@/lib/milestone-lines";
-import { groupsByMilestone } from "@/lib/quote-layout";
+import { groupDeliverables, milestoneLines, type QuoteMilestone } from "@/lib/milestone-lines";
+import { groupsByMilestone, showsMilestoneSection } from "@/lib/quote-layout";
 import type { Locale } from "@/lib/i18n";
 
 export interface StrategyPdfData {
@@ -89,6 +89,8 @@ export interface BriefPdfData {
   language?: string | null;
   /** Whether the total is the price or an estimate. See lib/quote-definitions. */
   billing?: string | null;
+  /** Whether the stages are payment points, or only the shape of the work. */
+  milestonesBillable?: boolean;
 }
 
 /** The words for one quote. Read once per document and passed down. */
@@ -422,6 +424,66 @@ function Footer({
   );
 }
 
+
+/**
+ * The stages, as their own block. See the same component in the templates.
+ *
+ * A milestone is a stage of the work; a deliverable is something the client
+ * ends up holding. Folding the first into the second meant a quote with stages
+ * showed none, and the headings read as deliverables.
+ */
+function PdfMilestones({
+  brief,
+  w,
+  labelStyle,
+  bodyStyle,
+  accent,
+}: {
+  brief: BriefPdfData;
+  w: ReturnType<typeof words>;
+  labelStyle: Style;
+  bodyStyle: Style;
+  accent: string;
+}) {
+  if (!showsMilestoneSection({ layout: brief.layout }, brief.milestones?.length ?? 0)) return null;
+
+  const lines = milestoneLines({
+    milestones: brief.milestones,
+    deliverables: brief.deliverables,
+    currency: brief.currency,
+    language: (brief.language ?? "en") as Locale,
+    billable: brief.milestonesBillable !== false,
+  });
+  if (lines.length === 0) return null;
+
+  return (
+    <View style={{ paddingVertical: 18 }} wrap={false} minPresenceAhead={SECTION_ROOM}>
+      <Text style={labelStyle}>{w.milestones}</Text>
+      {lines.map((line, i) => (
+        <View key={i} style={{ marginBottom: 8 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+            <Text style={[bodyStyle, styles.bold, { color: accent }]}>
+              {i + 1}. {line.name}
+            </Text>
+            {line.amount ? <Text style={[bodyStyle, styles.bold]}>{line.amount}</Text> : null}
+          </View>
+          {line.delivers.length > 0 ? (
+            <Text style={bodyStyle}>{line.delivers.join(", ")}</Text>
+          ) : null}
+          {line.gate ? (
+            <Text style={[bodyStyle, { color: "#8A8F98" }]}>
+              {w.milestoneCloses.replace("{gate}", line.gate)}
+            </Text>
+          ) : null}
+        </View>
+      ))}
+      <Text style={[bodyStyle, { color: "#8A8F98" }]}>
+        {brief.milestonesBillable !== false ? w.milestonesBillable : w.milestonesShapeOnly}
+      </Text>
+    </View>
+  );
+}
+
 /** The optional add-on sections. Deliberately plain: they're reference
  * material a client reads once, not something to art-direct. */
 function ExtraSections({
@@ -584,6 +646,14 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
             <Pill text={w.deliverables} tint="rgba(244,91,105,0.14)" color={FREELY_CORAL} />
             <PdfDeliverables brief={brief} headingColor={FREELY_INK} />
           </View>
+
+          <PdfMilestones
+            brief={brief}
+            w={w}
+            labelStyle={styles.subLabel}
+            bodyStyle={styles.body}
+            accent={FREELY_INK}
+          />
 
           <View style={[styles.section, styles.sectionPaper]} wrap={false} minPresenceAhead={SECTION_ROOM}>
             <Pill text={w.timeline} tint="#EFEFEF" color="#565656" />

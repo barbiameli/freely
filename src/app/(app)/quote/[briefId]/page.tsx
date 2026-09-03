@@ -5,7 +5,7 @@ import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import type { Strategy, BriefExtras } from "@/lib/anthropic";
 import { BriefView } from "./brief-view";
-import { layoutOf } from "@/lib/quote-layout";
+import { layoutOf, milestonesAreBillable } from "@/lib/quote-layout";
 import { billingFromSettings } from "@/lib/quote-definitions";
 import { parseRuleSettings } from "@/lib/ground-rules";
 import { allDisciplines, industryLabel } from "@/lib/industries";
@@ -60,6 +60,7 @@ export default async function BriefPage({ params }: { params: { briefId: string 
           (brief as unknown as { clearedQuestions?: string[] }).clearedQuestions ?? [],
         layout: layoutOf(brief.settings),
         billing: billingFromSettings(brief.settings),
+        milestonesBillable: milestonesAreBillable(brief.settings),
         // What they chose, so a rule that only matters under another plan
         // stays quiet rather than arguing with the choice.
         paymentPlan:

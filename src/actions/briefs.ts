@@ -32,6 +32,7 @@ import { hasStrategyContent } from "@/lib/strategy";
 import { allDisciplines, disciplineLine, industryLabel } from "@/lib/industries";
 import { withRate } from "@/lib/discipline-rates";
 import { isProtectionLevel } from "@/lib/protection";
+import { clientFor } from "@/lib/client-db";
 import { ruleFix } from "@/lib/rule-words";
 import {
   brokenRules,
@@ -375,6 +376,8 @@ export async function generateBriefAction(
     });
   }
 
+  let clientId: string | null = null;
+
   let generated: GeneratedBrief;
   try {
     await enforceLlmRateLimit(user.id);
@@ -444,6 +447,14 @@ export async function generateBriefAction(
         includeAI: draft.includeAI,
       };
 
+  // The client record, from the name the quote ended up with. Never fatal: a
+  // quote that generated fine must not fail to save because a lookup did.
+  try {
+    clientId = await clientFor(user.id, generated.client);
+  } catch (err) {
+    console.error("[generateBriefAction] could not resolve client", err);
+  }
+
   // Saving is wrapped separately from generation on purpose: by this point
   // the AI call has already succeeded and been paid for, so a failure here
   // (most often a schema/database mismatch after a deploy) should say what
@@ -461,6 +472,10 @@ export async function generateBriefAction(
         // whole insert after the slow generation had already been paid for.
         title: clean(generated.title),
         client: clean(generated.client),
+        // Joined up with everything else of theirs. Created as a side effect
+        // of work somebody was doing anyway, since a client list maintained
+        // by hand is admin, and admin is the first thing to be abandoned.
+        ...(clientId ? { clientId } : {}),
         scope: cleanProse(generated.scope),
         deliverables: generated.deliverables.map(cleanProse),
         timeline: cleanProse(generated.timeline),
@@ -489,6 +504,11 @@ export async function generateBriefAction(
           // client has already been sent must not change shape underneath them
           // because the app moved on.
           layout: CURRENT_LAYOUT,
+          // Stages, and whether they are where money moves. Two questions, and
+          // they used to be one: a project can run in stages and still be paid
+          // in two lumps at either end.
+          milestonesBillable:
+            draft.milestonesBillable ?? draft.paymentPlan === "MILESTONE",
           // Why this quote carries what it carries. See lib/protection.
           ...(isProtectionLevel(draftInput.protection)
             ? { protection: draftInput.protection }

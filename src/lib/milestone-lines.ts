@@ -90,3 +90,54 @@ export function groupDeliverables(input: {
 
   return groups;
 }
+
+/** One milestone, ready to render as its own line. */
+export interface MilestoneLine {
+  name: string;
+  /** What closes it, when there is one. */
+  gate: string;
+  /** What lands in it, named from the deliverables it covers. */
+  delivers: string[];
+  /** Formatted with its symbol. Empty when the milestones are not billable. */
+  amount: string;
+}
+
+/**
+ * The milestones, as a section of their own.
+ *
+ * They used to render only as headings inside the deliverables list, which is
+ * why a client reading a real quote saw no milestones anywhere and took the
+ * headings for deliverables. They are different things: a deliverable is
+ * something the client ends up holding, a milestone is a stage of the work.
+ *
+ * The amount is the part that has to be chosen rather than assumed. A project
+ * can run in stages and still be paid in two lumps at either end, and putting
+ * a figure on every stage of one of those invents a schedule nobody agreed to.
+ */
+export function milestoneLines({
+  milestones,
+  deliverables,
+  currency,
+  language,
+  billable,
+}: {
+  milestones: QuoteMilestone[] | undefined;
+  deliverables: string[];
+  currency?: string | null;
+  language?: Locale;
+  billable: boolean;
+}): MilestoneLine[] {
+  if (!milestones?.length) return [];
+
+  return milestones.map((milestone) => ({
+    name: milestone.name,
+    gate: milestone.gate ?? "",
+    delivers: (milestone.deliverableIndexes ?? [])
+      .map((index) => deliverables[index])
+      .filter(Boolean)
+      // The short form: a client reading the stages wants to know what lands
+      // in each, not to read the deliverables list twice.
+      .map((text) => text.split(/\s+[-–—]\s+/)[0].trim()),
+    amount: billable && milestone.amount > 0 ? formatMoney(milestone.amount, currency, language) : "",
+  }));
+}

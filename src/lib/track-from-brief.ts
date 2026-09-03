@@ -52,6 +52,12 @@ export async function createProjectFromBrief(
         briefId: brief.id,
         title: brief.title,
         client: brief.client,
+        // Carried from the quote rather than looked up again: the project is
+        // the same job for the same people, and a second lookup could differ
+        // if the name was edited in between.
+        ...((brief as unknown as { clientId?: string | null }).clientId
+          ? { clientId: (brief as unknown as { clientId: string }).clientId }
+          : {}),
         price: brief.price,
         hours: brief.hours,
         timeline: brief.timeline,

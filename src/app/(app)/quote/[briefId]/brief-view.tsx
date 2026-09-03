@@ -112,6 +112,8 @@ interface Brief {
   paymentPlan?: string | null;
   /** How much armour it was written with. See lib/protection. */
   protection?: string | null;
+  /** Whether the stages are payment points. See lib/quote-layout. */
+  milestonesBillable?: boolean;
   /** Changes with every save, so the editor knows to take the server's copy. */
   updatedAt?: string;
   /** The add-on sections are still being written. See generateExtrasAction. */
@@ -604,6 +606,7 @@ export function BriefView({
     milestones: brief.milestones,
     layout: brief.layout,
     billing: brief.billing ?? null,
+    milestonesBillable: brief.milestonesBillable,
     extras: content.extras ?? null,
     price: content.price,
     hours: content.hours,

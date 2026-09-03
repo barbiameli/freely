@@ -50,6 +50,8 @@ export function PlanReview({
     milestones: string[];
     answers: PlanAnswer[];
     protection: ProtectionLevel;
+    /** Whether the stages are payment points, or only the shape of the work. */
+    milestonesBillable: boolean;
   }) => void;
   onBack: () => void;
   working: boolean;
@@ -61,6 +63,18 @@ export function PlanReview({
   const [milestones, setMilestones] = useState<string[]>(
     () => plan.milestones.map((m) => m.name)
   );
+  /**
+   * Whether the stages are where money moves.
+   *
+   * Kept apart from the stages themselves, because they are two questions and
+   * were one. Plenty of projects run in stages and are still paid in two lumps
+   * at either end, and putting an amount on every stage of one of those
+   * invents a payment schedule nobody agreed to.
+   *
+   * Off by default: billing per stage is a commitment, and a commitment
+   * nobody made should not be the assumption.
+   */
+  const [billable, setBillable] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   /**
    * How much armour this quote carries.
@@ -154,6 +168,16 @@ export function PlanReview({
         <Card>
           <SubLabel>{t.quote.planMilestones}</SubLabel>
           <p className="text-caption text-slate mt-1 mb-3 text-pretty">{t.quote.planMilestonesHint}</p>
+
+          {/* Two questions, not one. */}
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            <Chip active={!billable} onClick={() => setBillable(false)}>
+              {t.quote.planStagesShape}
+            </Chip>
+            <Chip active={billable} onClick={() => setBillable(true)}>
+              {t.quote.planStagesBillable}
+            </Chip>
+          </div>
           <ul className="list-none p-0 m-0 flex flex-col gap-2.5">
             {plan.milestones.map((milestone) => {
               const on = milestones.includes(milestone.name);
@@ -294,6 +318,7 @@ export function PlanReview({
                 .filter(([, value]) => value.trim())
                 .map(([ask, answer]) => ({ ask, answer })),
               protection,
+              milestonesBillable: billable,
             })
           }
         >

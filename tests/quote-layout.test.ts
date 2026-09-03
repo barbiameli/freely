@@ -1,6 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { CURRENT_LAYOUT, layoutOf, groupsByMilestone } from "@/lib/quote-layout";
+import {
+  CURRENT_LAYOUT,
+  groupsByMilestone,
+  layoutOf,
+  milestonesAreBillable,
+  showsMilestoneSection,
+} from "@/lib/quote-layout";
+import { milestoneLines } from "@/lib/milestone-lines";
 import { milestonesFromSettings } from "@/lib/milestone-lines";
 
 /**
@@ -30,7 +37,7 @@ describe("the layout is pinned to the quote", () => {
   it("stamps new quotes with the current one", () => {
     const actions = readFileSync("src/actions/briefs.ts", "utf8");
     expect(actions).toContain("layout: CURRENT_LAYOUT");
-    expect(CURRENT_LAYOUT).toBe(2);
+    expect(CURRENT_LAYOUT).toBe(3);
   });
 
   it("never rewrites the stamp on an existing quote", () => {
@@ -188,5 +195,85 @@ describe("grouping the deliverables", () => {
 
   it("leaves the catch-all group without an amount", () => {
     expect(group()!.at(-1)?.amount).toBe("");
+  });
+});
+
+
+/**
+ * Version 3: stages are their own section.
+ *
+ * A client read a real quote and could not find the milestones, because they
+ * only existed as headings inside the deliverables list and read as
+ * deliverables. They are different things, and the money question is a third
+ * thing again.
+ */
+describe("stages are not deliverables", () => {
+  it("gives them a section of their own from version 3", () => {
+    expect(showsMilestoneSection({ layout: 3 }, 2)).toBe(true);
+    expect(showsMilestoneSection({ layout: 2 }, 2)).toBe(false);
+    expect(showsMilestoneSection({ layout: 1 }, 2)).toBe(false);
+  });
+
+  it("says nothing when there are no stages", () => {
+    expect(showsMilestoneSection({ layout: 3 }, 0)).toBe(false);
+  });
+
+  it("stops folding them into the deliverables from version 3", () => {
+    // Version 2 quotes keep the shape they were sent in.
+    expect(groupsByMilestone({ layout: 2 }, 2)).toBe(true);
+    expect(groupsByMilestone({ layout: 3 }, 2)).toBe(false);
+  });
+
+  it("only puts money on a stage when the freelancer said so", () => {
+    expect(milestonesAreBillable({ layout: 3, milestonesBillable: true })).toBe(true);
+    expect(milestonesAreBillable({ layout: 3, milestonesBillable: false })).toBe(false);
+  });
+
+  it("treats every quote written before the distinction as billed by stage", () => {
+    // Those could only have been created under a payment plan that meant it.
+    expect(milestonesAreBillable({ layout: 2 })).toBe(true);
+    expect(milestonesAreBillable(null)).toBe(true);
+  });
+
+  it("does not turn keeping stages into a decision about money", () => {
+    const wizard = readFileSync("src/app/(app)/quote/quote-wizard.tsx", "utf8");
+    expect(wizard).toContain("choices.milestonesBillable && choices.milestones.length > 1");
+  });
+});
+
+describe("what a stage renders as", () => {
+  const milestones = [
+    { name: "Review and interviews", deliverableIndexes: [0], gate: "Findings agreed", amount: 300 },
+    { name: "Redesign", deliverableIndexes: [1, 2], gate: "", amount: 350 },
+  ];
+  const deliverables = [
+    "Flow review doc - a written breakdown of the two flows",
+    "Redesigned screens - Figma frames for both flows",
+    "Annotations - inline notes on the frames",
+  ];
+
+  it("names what lands in each, in short form", () => {
+    const lines = milestoneLines({ milestones, deliverables, currency: "USD", billable: true });
+    expect(lines[1].delivers).toEqual(["Redesigned screens", "Annotations"]);
+  });
+
+  it("shows an amount only when the stages are payment points", () => {
+    const billed = milestoneLines({ milestones, deliverables, currency: "USD", billable: true });
+    expect(billed[0].amount).toContain("300");
+
+    const shape = milestoneLines({ milestones, deliverables, currency: "USD", billable: false });
+    expect(shape[0].amount).toBe("");
+    expect(shape[0].name).toBe("Review and interviews");
+  });
+
+  it("carries the gate through, where there is one", () => {
+    const lines = milestoneLines({ milestones, deliverables, currency: "USD", billable: true });
+    expect(lines[0].gate).toBe("Findings agreed");
+    expect(lines[1].gate).toBe("");
+  });
+
+  it("says nothing when a quote has no stages", () => {
+    expect(milestoneLines({ milestones: [], deliverables, billable: true })).toEqual([]);
+    expect(milestoneLines({ milestones: undefined, deliverables, billable: true })).toEqual([]);
   });
 });

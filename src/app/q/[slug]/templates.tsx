@@ -8,8 +8,8 @@ import {
 } from "@/lib/rate-unit";
 import { TimelineView } from "@/components/timeline-view";
 import { timelineTotal } from "@/lib/timeline";
-import { groupDeliverables, type QuoteMilestone } from "@/lib/milestone-lines";
-import { groupsByMilestone } from "@/lib/quote-layout";
+import { groupDeliverables, milestoneLines, type QuoteMilestone } from "@/lib/milestone-lines";
+import { groupsByMilestone, showsMilestoneSection } from "@/lib/quote-layout";
 import type { Locale } from "@/lib/i18n";
 import { hasStrategyContent } from "@/lib/strategy";
 import { paymentClause, revisionsClause, type BillingBasis } from "@/lib/quote-definitions";
@@ -43,6 +43,8 @@ export interface PublicBrief {
   milestones?: QuoteMilestone[];
   /** Which layout this quote was written for. See lib/quote-layout. */
   layout?: number;
+  /** Whether the stages are payment points, or only the shape of the work. */
+  milestonesBillable?: boolean;
   /**
    * Whether the total is the price or an estimate of hours to be billed.
    *
@@ -67,6 +69,10 @@ export interface PublicBrief {
   signable: boolean;
   accepted?: { name: string; at: string } | null;
 }
+
+/** One eyebrow style and one accent, so the block looks native in all four. */
+const MILESTONE_LABEL = "font-label text-xs text-slate uppercase mb-2";
+const MILESTONE_ACCENT = "#343434";
 
 export interface BrandProps {
   primary: string;
@@ -175,6 +181,82 @@ function deliverableRows(brief: PublicBrief): DeliverableRow[] {
     }
   }
   return rows;
+}
+
+
+/**
+ * The stages of the work, as their own section.
+ *
+ * They used to exist only as headings inside the deliverables list, so a
+ * client reading a real quote saw no milestones anywhere and reasonably took
+ * the headings for deliverables. A deliverable is something they end up
+ * holding; a milestone is a stage, and only sometimes a point where money
+ * moves.
+ *
+ * One component for all four templates: a client comparing two quotes from
+ * the same freelancer should find the same facts in the same order whichever
+ * layout they were sent.
+ */
+function MilestonesBlock({
+  brief,
+  q,
+  label,
+  accent,
+}: {
+  brief: PublicBrief;
+  q: Dictionary["publicQuote"];
+  /** The heading's own classes, so each template keeps its own eyebrow style. */
+  label: string;
+  accent: string;
+}) {
+  if (!showsMilestoneSection({ layout: brief.layout }, brief.milestones?.length ?? 0)) return null;
+
+  const lines = milestoneLines({
+    milestones: brief.milestones,
+    deliverables: brief.deliverables,
+    currency: brief.currency,
+    language: (brief.language ?? "en") as Locale,
+    billable: brief.milestonesBillable !== false,
+  });
+  if (lines.length === 0) return null;
+
+  return (
+    <div className="rounded-lg p-4 bg-paper">
+      <div className={label}>{q.milestones}</div>
+      <div className="flex flex-col gap-3">
+        {lines.map((line, i) => (
+          <div key={i}>
+            <div className="flex items-baseline justify-between gap-3 flex-wrap">
+              <span className="font-body font-bold text-body" style={{ color: accent }}>
+                {i + 1}. {line.name}
+              </span>
+              {line.amount && (
+                <span className="font-body font-bold text-body text-ink tabular-nums shrink-0">
+                  {line.amount}
+                </span>
+              )}
+            </div>
+            {line.delivers.length > 0 && (
+              <div className="text-body text-slate leading-relaxed mt-0.5">
+                {line.delivers.join(", ")}
+              </div>
+            )}
+            {line.gate && (
+              <div className="text-caption text-text-muted mt-0.5">
+                {q.milestoneCloses.replace("{gate}", line.gate)}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      {/* Said once, at the foot, rather than implied by whether numbers are
+          present: a client should not have to work out from the absence of an
+          amount whether a stage is a payment point. */}
+      <p className="text-caption text-text-muted mt-3 mb-0">
+        {brief.milestonesBillable !== false ? q.milestonesBillable : q.milestonesShapeOnly}
+      </p>
+    </div>
+  );
 }
 
 /**
@@ -321,7 +403,9 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
             </div>
           </div>
 
-          {brief.timeline && (
+          <MilestonesBlock brief={brief} q={q} label={MILESTONE_LABEL} accent={MILESTONE_ACCENT} />
+
+        {brief.timeline && (
             <div className="rounded-lg p-4 bg-paper">
               <div className="font-label text-xs text-slate uppercase mb-2">{q.timeline}</div>
               <TimelineView timeline={brief.timeline} accent={brand.accent} className="text-ink" total={timelineTotal(brief.timeline, q)} />
@@ -476,6 +560,8 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
           </div>
         </div>
 
+        <MilestonesBlock brief={brief} q={q} label={MILESTONE_LABEL} accent={MILESTONE_ACCENT} />
+
         {brief.timeline && (
           <div className="py-10 border-b" style={{ borderColor: "#E8EAEF" }}>
             <h2 className="font-display italic text-2xl m-0 mb-4" style={{ color: brand.primary }}>
@@ -599,6 +685,8 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
           </div>
         </div>
 
+        <MilestonesBlock brief={brief} q={q} label={MILESTONE_LABEL} accent={MILESTONE_ACCENT} />
+
         {brief.timeline && (
           <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
             <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{q.timeline}</div>
@@ -716,6 +804,8 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
             })}
           </div>
         </div>
+
+        <MilestonesBlock brief={brief} q={q} label={MILESTONE_LABEL} accent={MILESTONE_ACCENT} />
 
         {brief.timeline && (
           <div className="py-6 border-b border-line">
