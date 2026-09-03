@@ -9,6 +9,11 @@ import type { Locale } from "@/lib/i18n/types";
 import { dict } from "@/lib/i18n";
 import { sanitizeText } from "@/lib/sanitize-text";
 import {
+  buildSuggestPrompt,
+  suggestionResponseSchema,
+  type SuggestionResponse,
+} from "@/lib/suggest-sections";
+import {
   priceFor,
   rateSuffix,
   unitNoun,
@@ -1106,7 +1111,8 @@ type LlmJob =
   | "breakDownDeliverable"
   | "plainDeliverableNames"
   | "researchMarketRate"
-  | "generateQuoteExtras";
+  | "generateQuoteExtras"
+  | "suggestSections";
 
 interface LlmCallLog {
   job: LlmJob;
@@ -1964,4 +1970,39 @@ export async function plainDeliverableNames(
     // Falls through.
   }
   throw new Error("Couldn't rewrite those in plain language. Try again.");
+}
+
+/**
+ * Which sections this brief wants, read before the quote is written.
+ *
+ * Haiku, and capped short. This runs while somebody is still in the wizard
+ * deciding what to ask for, so it has to come back in a couple of seconds and
+ * cost almost nothing; the judgement it makes is "does this brief mention
+ * three reviewers", which is reading rather than reasoning.
+ *
+ * Failure is quiet by design. The suggestions are an offer, and a wizard that
+ * shows an error because an optional convenience did not arrive is worse than
+ * one that simply does not offer it. See lib/suggest-sections.
+ */
+export async function suggestSections(input: {
+  sourceText: string;
+  instructions?: string;
+  disciplineLine?: string;
+  language: string;
+}): Promise<SuggestionResponse | null> {
+  const { system, user } = buildSuggestPrompt(input);
+  try {
+    const text = await callClaude("suggestSections", system, user, {
+      small: true,
+      maxTokens: 700,
+    });
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start === -1 || end <= start) return null;
+    const parsed = suggestionResponseSchema.safeParse(JSON.parse(text.slice(start, end + 1)));
+    return parsed.success ? parsed.data : null;
+  } catch (err) {
+    console.error("[suggestSections] failed", err);
+    return null;
+  }
 }

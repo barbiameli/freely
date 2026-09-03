@@ -315,6 +315,13 @@ export const es: Dictionary = {
     sectionRevisionsHint: "Cuántas rondas se incluyen y qué cuenta como trabajo nuevo.",
     sectionAvailability: "Disponibilidad",
     sectionAvailabilityHint: "Cuándo puedes empezar, cuánto le puedes dedicar y en cuánto respondes.",
+    readingBrief: "Leyendo el proyecto.",
+    suggestedTitle: "Vale la pena añadir a este",
+    suggestedHint: "Sacado del proyecto. Coge lo que encaje.",
+    suggestedSightUnseen:
+      "Este proyecto describe algo que todavía no has abierto, así que el precio depende de cantidades que nadie ha contado.",
+    suggestedByRule: "Tus reglas de base: {rule}.",
+    suggestedTakeAll: "Añadir todas",
     sectionAssumptions: "Qué se da por hecho",
     sectionScopeChanges: "Qué cambiaría el precio",
     sectionAi: "Uso de IA",

@@ -47,6 +47,8 @@ import {
   uploadBrandLogoAction,
 } from "@/actions/memory";
 import { SetupRows, setupFromDraft } from "@/components/quote/setup-rows";
+import { suggestSectionsAction } from "@/actions/suggest";
+import type { SectionSuggestion } from "@/lib/suggest-sections";
 import {
   learnQuoteDefaultsAction,
   keepQuoteDefaultAction,
@@ -252,6 +254,20 @@ export function QuoteWizard({
   const [showRateHelp, setShowRateHelp] = useState(false);
   // Rows kept as the usual during this quote, so the offer is not repeated.
   const [keptRows, setKeptRows] = useState<SetupRowKey[]>([]);
+
+  /**
+   * What Freely thinks this quote should carry, read off the brief.
+   *
+   * Arrives on its own once there is enough to read, because a suggestion
+   * behind a button is a suggestion nobody asks for. Nothing is applied: the
+   * sections row shows them as offers with the reason attached.
+   */
+  const [suggestions, setSuggestions] = useState<SectionSuggestion[]>([]);
+  const [sightUnseen, setSightUnseen] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
+  /** The text the current suggestions were read from, so typing on does not
+   * fire a call per pause. */
+  const suggestedFrom = useRef("");
   // Branding can be added without leaving the wizard, so a half-filled brief
   // isn't lost to a trip to Memory.
   const [showBrandUpload, setShowBrandUpload] = useState(false);
@@ -526,6 +542,34 @@ export function QuoteWizard({
 
 
   /** "Make this my usual", for the row that was changed. */
+  /**
+   * Reading the brief, once it has settled.
+   *
+   * Fires on its own rather than behind a button: a suggestion you have to ask
+   * for is one nobody asks for. It waits for typing to stop, and only when the
+   * text has moved by a couple of hundred characters, so pasting a brief costs
+   * one small call and writing one costs a handful rather than one per pause.
+   */
+  useEffect(() => {
+    const text = draft.sourceText.trim();
+    // Too little to read is not a brief. Below this a model produces confident
+    // guesses about a job nobody has described yet.
+    if (text.length < 160) return;
+    if (Math.abs(text.length - suggestedFrom.current.length) < 200) return;
+
+    const timer = window.setTimeout(() => {
+      suggestedFrom.current = text;
+      setSuggesting(true);
+      void suggestSectionsAction({ sourceText: text, instructions: draft.instructions })
+        .then((result) => {
+          setSuggestions(result.suggestions);
+          setSightUnseen(result.sightUnseen);
+        })
+        .finally(() => setSuggesting(false));
+    }, 1400);
+    return () => window.clearTimeout(timer);
+  }, [draft.sourceText, draft.instructions]);
+
   async function handleKeepRow(row: SetupRowKey) {
     setKeptRows((rows) => (rows.includes(row) ? rows : [...rows, row]));
     const result = await keepQuoteDefaultAction(
@@ -925,6 +969,9 @@ export function QuoteWizard({
             pricedFor={pricedForFields}
             savedCountry={savedCountry}
             disciplines={disciplines}
+            suggestions={suggestions}
+            suggesting={suggesting}
+            sightUnseen={sightUnseen}
             problemRow={problem.row}
             problemMessage={problem.message}
           />

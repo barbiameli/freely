@@ -315,6 +315,13 @@ export const en = {
     sectionRevisionsHint: "How many rounds are included, and what counts as new work.",
     sectionAvailability: "Availability",
     sectionAvailabilityHint: "Your capacity, start date, and how quickly you reply.",
+    readingBrief: "Reading the brief.",
+    suggestedTitle: "Worth adding to this one",
+    suggestedHint: "Read from the brief. Take what fits.",
+    suggestedSightUnseen:
+      "This brief describes something you have not opened yet, so the price rests on quantities nobody has counted.",
+    suggestedByRule: "Your ground rules: {rule}.",
+    suggestedTakeAll: "Add all of these",
     sectionAssumptions: "What this assumes",
     sectionScopeChanges: "What would change the price",
     sectionAi: "AI-use disclosure",
