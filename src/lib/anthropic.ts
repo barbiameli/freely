@@ -297,6 +297,14 @@ export interface QuoteDraftInput {
    */
   activeRules?: string[];
   /**
+   * How well the freelancer knows this client. See lib/protection.
+   *
+   * Stored on the quote as well as sent, because it is the answer to "why does
+   * this quote carry all this" and a quote reopened in a month should still
+   * be able to say.
+   */
+  protection?: "KNOWN" | "NEW" | "GUARDED";
+  /**
    * The figures those rules state. See lib/ground-rules.
    *
    * Sent so the quote says "due within 14 days" rather than a term the model

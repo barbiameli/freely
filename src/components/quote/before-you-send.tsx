@@ -84,12 +84,23 @@ export function BeforeYouSend({
   const [cleared, setCleared] = useState<string[]>(initialCleared);
   const [acknowledged, setAcknowledged] = useState<string[]>(initialAcknowledged);
   const [open, setOpen] = useState(false);
-  /** The rule currently being written into the quote, if any. */
+  /** The rule currently being written in, or "all" while every one runs. */
   const [fixing, setFixing] = useState("");
   const [fixError, setFixError] = useState("");
+  /**
+   * Rules already written into this quote, this visit.
+   *
+   * The flags are computed from the quote as the page last loaded it, and a
+   * clause that has just been added is not in that copy yet. Without this they
+   * stayed on screen after being settled, which reads as the button having
+   * done nothing.
+   */
+  const [settled, setSettled] = useState<string[]>([]);
   const [, startTransition] = useTransition();
 
-  const openRules = broken.filter((rule) => !acknowledged.includes(rule.key));
+  const openRules = broken.filter(
+    (rule) => !acknowledged.includes(rule.key) && !settled.includes(rule.key)
+  );
   const blocking = openRules.filter((rule) => rule.severity === "blocking").length;
   const unchecked = questions.filter((q) => !cleared.includes(q)).length + openRules.length;
   const hasQuestions = questions.length > 0 || broken.length > 0;
@@ -122,17 +133,20 @@ export function BeforeYouSend({
    * rule's own instruction through the same refine the rest of the page uses
    * and the clause comes back in the quote's voice.
    */
-  async function fix(rule: string) {
+  async function fix(rules: string[]) {
     setFixError("");
-    setFixing(rule);
-    const result = await applyRuleAction(briefId, rule);
+    setFixing(rules.length === 1 ? rules[0] : "all");
+    const result = await applyRuleAction(briefId, rules);
     setFixing("");
     if (!result.ok) {
       setFixError(result.error);
       return;
     }
+    // Gone from the list before the page has caught up, because the clause is
+    // in the quote whatever this copy of it says.
+    setSettled((current) => [...current, ...result.data.applied]);
     // Closed on success: the thing to look at is the quote behind this, with
-    // the new section lit up.
+    // the new sections lit up.
     setOpen(false);
     onFixed?.(result.data.changed);
   }
@@ -207,6 +221,22 @@ export function BeforeYouSend({
             {fixError && (
               <p className="font-body font-semibold text-caption text-overdue m-0">{fixError}</p>
             )}
+
+            {/* One pass for all of them. Settling five used to be five full
+                rewrites of the quote, run one after another, each re-reading
+                what the last had just written. */}
+            {openRules.length > 1 && (
+              <button
+                type="button"
+                disabled={Boolean(fixing)}
+                onClick={() => void fix(openRules.map((rule) => rule.key))}
+                className="self-start font-body font-semibold text-caption text-white bg-violet border-none rounded-full px-3.5 py-2 cursor-pointer tap disabled:opacity-60"
+              >
+                {fixing === "all"
+                  ? t.rules.flagFixing
+                  : t.rules.flagFixAll.replace("{count}", String(openRules.length))}
+              </button>
+            )}
             {openRules.map((rule) => {
               const words = ruleWords(rule.key, t);
               return (
@@ -233,7 +263,7 @@ export function BeforeYouSend({
                     <button
                       type="button"
                       disabled={Boolean(fixing)}
-                      onClick={() => void fix(rule.key)}
+                      onClick={() => void fix([rule.key])}
                       className="font-body font-semibold text-caption text-white bg-violet border-none rounded-full px-3 py-1.5 cursor-pointer tap disabled:opacity-60"
                     >
                       {fixing === rule.key ? t.rules.flagFixing : t.rules.flagFix}
@@ -246,7 +276,7 @@ export function BeforeYouSend({
                       {t.rules.flagIgnore}
                     </button>
                     <Link
-                      href="/rules"
+                      href="/memory?tab=rules"
                       className="text-meta font-semibold text-slate no-underline tap"
                     >
                       {t.rules.seeRule}

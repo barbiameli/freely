@@ -1,4 +1,5 @@
 import type { BriefExtras } from "@/lib/anthropic";
+import { isProtectionLevel, protectionFor } from "@/lib/protection";
 
 /**
  * The things a quote should say before it goes out, and what it costs when it
@@ -250,6 +251,23 @@ export interface CheckableQuote {
   rateUnit?: string | null;
   /** "FIXED_TOTAL" or "HOURLY_TRACKED". See lib/quote-definitions. */
   billing?: string | null;
+  /**
+   * How much armour this quote was written with. See lib/protection.
+   *
+   * A quote for a client of two years is not missing a cancellation clause,
+   * it was written without one on purpose. Checking it against the full set
+   * would be Freely arguing with an answer it asked for.
+   */
+  protection?: string | null;
+  /**
+   * The payment plan this quote was written on.
+   *
+   * Rules read it, because several of them stop meaning anything once it is
+   * decided. A freelancer paid in full before starting is not waiting on an
+   * approval and is not carrying unpaid work, so flagging either at them is
+   * Freely arguing with a choice it was told about.
+   */
+  paymentPlan?: string | null;
   milestoneCount: number;
   /** Sections the freelancer removed. A removed section is not a present one. */
   hidden?: string[];
@@ -302,6 +320,28 @@ export function brokenRules(quote: CheckableQuote, settings: RuleSettings): Grou
   const off = new Set(settings.off);
   const broken: GroundRule[] = [];
 
+  /**
+   * Paid in full before the work starts.
+   *
+   * The strongest position there is, and several rules exist only to protect
+   * somebody who is not in it. A rule that fires anyway is not being careful,
+   * it is overriding a decision it was told about, and the way that reads is
+   * that the choice did not matter.
+   */
+  const paidUpFront = quote.paymentPlan === "UPFRONT";
+
+  /**
+   * Only the rules this quote's protection level asked for.
+   *
+   * Without this, a quote written for somebody they have worked with for two
+   * years comes back with eight flags for clauses that were deliberately left
+   * out. The level is the answer; the flags check the quote against the
+   * answer, not against the maximum.
+   */
+  const asked = isProtectionLevel(quote.protection)
+    ? new Set<string>(protectionFor(quote.protection).rules)
+    : null;
+
   const fails: Record<RuleKey, () => boolean> = {
     // Nothing on the quote says when money moves, so the client will decide
     // for themselves and they will decide late.
@@ -323,6 +363,8 @@ export function brokenRules(quote: CheckableQuote, settings: RuleSettings): Grou
 
     // The whole job is one payment at the end, and it is a long one.
     unpaidStretch: () => {
+      // Nothing is owed to somebody who has already been paid.
+      if (paidUpFront) return false;
       if (quote.hours <= 0) return false;
       if (quote.milestoneCount > 1) return false;
       // An up-front deposit means the unpaid stretch is not the whole job.
@@ -342,7 +384,9 @@ export function brokenRules(quote: CheckableQuote, settings: RuleSettings): Grou
 
     // Silence on a delivered milestone leaves the freelancer waiting, unpaid,
     // with nothing to point at.
+    // An approval that never comes costs nothing when the money is already in.
     deemedAcceptance: () =>
+      !paidUpFront &&
       !mentions(`${extras.paymentTerms ?? ""} ${extras.terms?.cancellation ?? ""}`, [
         "accepted",
         "acceptance",
@@ -380,6 +424,7 @@ export function brokenRules(quote: CheckableQuote, settings: RuleSettings): Grou
   for (const rule of GROUND_RULES) {
     if (off.has(rule.key)) continue;
     if (!rule.checkable) continue;
+    if (asked && !asked.has(rule.key)) continue;
     if (fails[rule.key]()) broken.push(rule);
   }
   return broken;

@@ -62,6 +62,23 @@ export const planSchema = z.object({
     .default([]),
   /** The brief describes something nobody has opened yet. */
   sightUnseen: z.boolean().default(false),
+  /**
+   * How much armour this job looks like it needs.
+   *
+   * Proposed rather than decided: the freelancer knows things about a client
+   * that no brief contains, and the answer is theirs. But asking cold gets a
+   * shrug, and a proposal with its reasons attached gets a considered yes or
+   * a considered no.
+   */
+  protection: z.enum(["KNOWN", "NEW", "GUARDED"]).default("NEW"),
+  /**
+   * What in the brief led to that, in the freelancer's language.
+   *
+   * Shown next to the proposal, because "guarded, because there is no budget
+   * and no named decision-maker" is a judgement somebody can disagree with,
+   * and "guarded" on its own is a machine telling them to be worried.
+   */
+  risks: z.array(z.string()).default([]),
 });
 
 export type QuotePlan = z.infer<typeof planSchema>;
@@ -128,6 +145,9 @@ export function buildPlanPrompt(input: {
     )}. Choose between two and five.`,
     '"questions" is at most four things you could not work out that would change the work or the price: quantities, how many people review, what already exists and in what condition, who supplies what, whether the freelancer has seen the thing being worked on. Each "ask" is one short question. Each "assume" is what you will assume if it goes unanswered, phrased as a fact rather than a sentence. Ask nothing whose answer is already in the brief, and nothing that would not move the price or the shape.',
     '"sightUnseen" is true when the brief describes a product, file, codebase or body of work the freelancer has clearly not opened.',
+    '"protection" is how much this engagement needs written down. "KNOWN" only when the source shows they have worked together before, for example a reference to a previous project or an ongoing relationship. "GUARDED" when the brief carries real risk markers. "NEW" otherwise, and NEW is the right answer most of the time.',
+    'Risk markers that point to GUARDED: no budget or timeline named anywhere; scope described in adjectives rather than quantities; the decision-maker is not the person writing; several stakeholders with no named owner; urgency with no reason; a product, file or codebase the freelancer has not seen; a payment arrangement the client has proposed that leaves the freelancer paid last; anything the client says about a previous freelancer.',
+    '"risks" is up to three short phrases naming what you actually saw, in the freelancer\'s language and never the client\'s. Empty when the answer is KNOWN. Never guess at the client\'s character: name what is in the text.',
     "Never invent facts. If the brief does not say how big something is, that is a question rather than a number.",
     `Write everything in this language: ${input.language}.`,
   ].join(" ");

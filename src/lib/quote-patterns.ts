@@ -96,6 +96,9 @@ export function patternsFor(
 
   // Nothing up front, on most of them. The one that turns into an unpaid
   // invoice for the whole project rather than for the last part of it.
+  // UPFRONT is the strongest position there is, so a quote on it is never
+  // part of this pattern: somebody paid in full before starting is not
+  // carrying anything.
   const noDeposit = quotes.filter(
     (q) => q.paymentPlan === "ON_DELIVERY" || (q.paymentPlan === "SPLIT" && q.upfrontPercent === 0)
   );
@@ -114,7 +117,7 @@ export function patternsFor(
         total: String(quotes.length),
         percent: String(benchmark.depositPercent),
       },
-      fixHref: "/rules",
+      fixHref: "/memory?tab=rules",
     });
   }
 
@@ -165,7 +168,7 @@ export function patternsFor(
       observed: "patternSlowAnswers",
       compared: "patternSlowAnswersNorm",
       values: { days: String(Math.round(typicalWait)), norm: String(benchmark.acceptanceDays) },
-      fixHref: "/rules",
+      fixHref: "/memory?tab=rules",
     });
   }
 
@@ -184,7 +187,7 @@ export function patternsFor(
         count: String(paid.length),
         norm: benchmark?.paymentDays != null ? String(benchmark.paymentDays) : "14",
       },
-      fixHref: "/rules",
+      fixHref: "/memory?tab=rules",
     });
   }
 
@@ -197,7 +200,7 @@ export function patternsFor(
       observed: "patternNoAssumptions",
       compared: "patternNoAssumptionsNorm",
       values: { count: String(noAssumptions.length), total: String(quotes.length) },
-      fixHref: "/rules",
+      fixHref: "/memory?tab=rules",
     });
   }
 

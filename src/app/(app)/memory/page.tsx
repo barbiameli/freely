@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { requireFullUser } from "@/lib/session";
 import { hasOwnBranding } from "@/lib/branding";
 import type { AccountDefaults } from "@/lib/quote-defaults";
+import { parseRuleSettings } from "@/lib/ground-rules";
 import { MemoryView } from "./memory-view";
 
 export default async function MemoryPage() {
@@ -40,6 +41,7 @@ export default async function MemoryPage() {
       // generated Prisma client here, so narrowing would return them undefined
       // and the page would show an empty setup over saved values.
       saved={user as unknown as AccountDefaults}
+      rules={parseRuleSettings((user as unknown as { groundRules?: unknown }).groundRules)}
       files={assets
         .filter((a) => a.type === "FILE")
         .map((a) => ({ id: a.id, name: a.name, createdAt: a.createdAt.toISOString() }))}

@@ -317,7 +317,7 @@ export function HomeView({ data, name }: { data: HomeData; name: string }) {
                 <h2 className="font-body font-bold text-body text-ink m-0">
                   {t.home.worthChanging}
                 </h2>
-                <Link href="/rules" className="text-meta font-semibold text-violet no-underline tap">
+                <Link href="/memory?tab=rules" className="text-meta font-semibold text-violet no-underline tap">
                   {t.home.yourRules}
                 </Link>
               </div>

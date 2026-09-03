@@ -14,10 +14,11 @@ const ITEMS = [
   { key: "quote", glyph: "Q", href: "/quote" },
   { key: "track", glyph: "T", href: "/track" },
   { key: "invoices", glyph: "I", href: "/invoices" },
-  { key: "memory", glyph: "M", href: "/memory" },
   // Fifth and last. The rail is full at five, and anything after this belongs
-  // under the account menu rather than in the nav.
-  { key: "rules", glyph: "R", href: "/rules" },
+  // inside one of these rather than beside them. The ground rules were briefly
+  // a sixth item and are now a tab in here, which is where the rest of what
+  // Freely knows about how you work already was.
+  { key: "memory", glyph: "M", href: "/memory" },
 ] as const;
 
 /**

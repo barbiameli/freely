@@ -194,6 +194,100 @@ describe("what each rule catches", () => {
   });
 });
 
+describe("a choice that has been made", () => {
+  /**
+   * Paid in full before the work starts.
+   *
+   * The freelancer said so in the brief and it is their saved preference, and
+   * Freely still told them to add a deemed-acceptance clause and warned about
+   * unpaid work. Both exist to protect somebody who has not been paid. A rule
+   * that fires anyway is not being careful, it is overruling a decision it was
+   * told about.
+   */
+  const upFront: CheckableQuote = {
+    ...good,
+    hours: 60,
+    milestoneCount: 0,
+    paymentPlan: "UPFRONT",
+    extras: { ...good.extras, paymentTerms: "The full amount is due before the work starts." },
+  };
+
+  it("does not ask about approvals nobody is waiting on", () => {
+    expect(brokenRules(upFront, DEFAULT_RULE_SETTINGS).map((r) => r.key)).not.toContain(
+      "deemedAcceptance"
+    );
+  });
+
+  it("does not warn about unpaid work to somebody already paid", () => {
+    expect(brokenRules(upFront, DEFAULT_RULE_SETTINGS).map((r) => r.key)).not.toContain(
+      "unpaidStretch"
+    );
+  });
+
+  it("still raises the rules that do apply", () => {
+    const bare: CheckableQuote = { ...upFront, extras: { paymentTerms: "Paid up front." } };
+    expect(brokenRules(bare, DEFAULT_RULE_SETTINGS).map((r) => r.key)).toContain("assumptions");
+  });
+
+  it("keeps asking everyone else", () => {
+    const onDelivery: CheckableQuote = { ...upFront, paymentPlan: "ON_DELIVERY" };
+    const keys = brokenRules(onDelivery, DEFAULT_RULE_SETTINGS).map((r) => r.key);
+    expect(keys).toContain("deemedAcceptance");
+    expect(keys).toContain("unpaidStretch");
+  });
+});
+
+describe("settling them", () => {
+  const actions = readFileSync("src/actions/briefs.ts", "utf8");
+  const modal = readFileSync("src/components/quote/before-you-send.tsx", "utf8");
+
+  it("takes all of them in one pass", () => {
+    // Five flags used to be five full rewrites of the quote, run one after
+    // another, each re-reading what the last had just written.
+    expect(actions).toContain("rules: string | string[]");
+    expect(actions).toContain("Make all of the following changes in one pass");
+    expect(modal).toContain("flagFixAll");
+  });
+
+  it("says which ones it actually applied", () => {
+    expect(actions).toContain("applied");
+  });
+
+  it("drops a flag as soon as it is settled", () => {
+    // The flags are computed from the quote as the page last loaded it, so a
+    // clause just added is not in that copy yet.
+    expect(modal).toContain("setSettled");
+    expect(modal).toContain("!settled.includes(rule.key)");
+  });
+
+  it("takes the server's copy back after a rewrite", () => {
+    const view = readFileSync("src/app/(app)/quote/[briefId]/brief-view.tsx", "utf8");
+    expect(view).toContain("}, [brief.updatedAt]);");
+  });
+});
+
+describe("where the rules live", () => {
+  it("is a tab inside Memory rather than a page of its own", () => {
+    // The same kind of thing as the quote setup beside it: standing decisions
+    // that shape every quote. Two pages was an accident of when each arrived.
+    const memory = readFileSync("src/app/(app)/memory/memory-view.tsx", "utf8");
+    expect(memory).toContain('{tab === "rules" && <RulesView settings={rules} />}');
+
+    const sidebar = readFileSync("src/components/sidebar.tsx", "utf8");
+    expect(sidebar).not.toContain('href: "/rules"');
+  });
+
+  it("keeps the old address working", () => {
+    const page = readFileSync("src/app/(app)/rules/page.tsx", "utf8");
+    expect(page).toContain('redirect("/memory?tab=rules")');
+  });
+
+  it("points every flag at the tab", () => {
+    const modal = readFileSync("src/components/quote/before-you-send.tsx", "utf8");
+    expect(modal).toContain('href="/memory?tab=rules"');
+  });
+});
+
 describe("switching rules off", () => {
   it("stops checking one that is off", () => {
     const quote = { ...good, extras: { ...good.extras, assumptions: [] } };
@@ -238,7 +332,7 @@ describe("publishing", () => {
     expect(actions).toContain("applyRuleAction");
     // Reuses the refine everything else uses, so the clause arrives in the
     // quote's own voice and language.
-    expect(actions).toContain("return refineBriefAction(briefId, instruction);");
+    expect(actions).toContain("const result = await refineBriefAction(briefId, instruction);");
   });
 
   it("is checked on the server, not only in the page", () => {

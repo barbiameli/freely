@@ -46,6 +46,8 @@ import { QuoteSetupCard } from "@/components/memory/quote-setup-card";
 import type { AccountDefaults } from "@/lib/quote-defaults";
 import { PageHeader } from "@/components/ui/page-header";
 import { allDisciplines } from "@/lib/industries";
+import { RulesView } from "@/app/(app)/rules/rules-view";
+import type { RuleSettings } from "@/lib/ground-rules";
 
 /**
  * Memory, in four tabs.
@@ -68,24 +70,38 @@ import { allDisciplines } from "@/lib/industries";
  * The tab lives in the URL, so a refresh, a back button and a link all land
  * where you were rather than at the top.
  */
-type MemoryTab = "you" | "voice" | "quotes" | "sources";
+type MemoryTab = "you" | "voice" | "quotes" | "rules" | "sources";
 
-const TABS: { id: MemoryTab; labelKey: "groupYou" | "groupVoice" | "groupQuotes" | "groupSources" }[] = [
+const TABS: {
+  id: MemoryTab;
+  labelKey: "groupYou" | "groupVoice" | "groupQuotes" | "groupRules" | "groupSources";
+}[] = [
   { id: "you", labelKey: "groupYou" },
   { id: "voice", labelKey: "groupVoice" },
   { id: "quotes", labelKey: "groupQuotes" },
+  { id: "rules", labelKey: "groupRules" },
   { id: "sources", labelKey: "groupSources" },
 ];
 
-const HINTS: Record<MemoryTab, "groupYouHint" | "groupVoiceHint" | "groupQuotesHint" | "groupSourcesHint"> = {
+const HINTS: Record<
+  MemoryTab,
+  "groupYouHint" | "groupVoiceHint" | "groupQuotesHint" | "groupRulesHint" | "groupSourcesHint"
+> = {
   you: "groupYouHint",
   voice: "groupVoiceHint",
   quotes: "groupQuotesHint",
+  rules: "groupRulesHint",
   sources: "groupSourcesHint",
 };
 
 function isTab(value: string | null): value is MemoryTab {
-  return value === "you" || value === "voice" || value === "quotes" || value === "sources";
+  return (
+    value === "you" ||
+    value === "voice" ||
+    value === "quotes" ||
+    value === "rules" ||
+    value === "sources"
+  );
 }
 
 interface FileAsset {
@@ -125,6 +141,7 @@ export function MemoryView({
   brandBodyFont,
   currency,
   country,
+  rules,
   quoteLocale,
   hasBrand,
   saved,
@@ -148,6 +165,8 @@ export function MemoryView({
   currency: string;
   /** ISO 3166-1 alpha-2, or null for anybody who was never asked. */
   country: string | null;
+  /** The ground rules, shown in their own tab. See lib/ground-rules. */
+  rules: RuleSettings;
   /** null means quotes follow the interface language. */
   quoteLocale: string | null;
   /** Whether there is a logo or brand color saved, so "Your brand" is pickable. */
@@ -268,6 +287,13 @@ export function MemoryView({
             />
           </>
         )}
+
+        {/* How your engagements run. The same kind of thing as the setup
+            beside it: standing decisions that shape every quote. They were two
+            pages because they arrived at different times, not because they are
+            two ideas, and the split meant your rate lived in one place and your
+            payment window in another while both ended up in the same quote. */}
+        {tab === "rules" && <RulesView settings={rules} />}
 
         {/* What it learns from. */}
         {tab === "sources" && (

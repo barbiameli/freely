@@ -108,6 +108,12 @@ interface Brief {
   billing?: string | null;
   /** Ground rules already waved through on this quote. */
   rulesAcknowledged?: string[];
+  /** The payment plan, so a rule made moot by it stays quiet. */
+  paymentPlan?: string | null;
+  /** How much armour it was written with. See lib/protection. */
+  protection?: string | null;
+  /** Changes with every save, so the editor knows to take the server's copy. */
+  updatedAt?: string;
   /** The add-on sections are still being written. See generateExtrasAction. */
   extrasPending?: boolean;
   /** Which kind of work the model decided this is, when the account does more
@@ -440,6 +446,31 @@ export function BriefView({
     hours: brief.hours,
   });
 
+  /**
+   * Taking the server's copy back after a rewrite.
+   *
+   * The editor holds the quote in state so a save feels instant, which means a
+   * refine landing on the server changed nothing on screen until a reload: the
+   * new sections were in the database and the page was still showing what it
+   * had. Keyed on the version stamp rather than on the whole object, so an
+   * edit somebody is in the middle of typing is not thrown away by a refresh
+   * that changed nothing.
+   */
+  useEffect(() => {
+    setContent({
+      title: brief.title,
+      client: brief.client,
+      scope: brief.scope,
+      deliverables: brief.deliverables,
+      timeline: brief.timeline,
+      extras: brief.extras ?? null,
+      strategy: brief.strategy ?? null,
+      price: brief.price,
+      hours: brief.hours,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brief.updatedAt]);
+
   async function saveContent(patch: Parameters<typeof updateBriefContentAction>[1]) {
     setContent((c) => ({
       ...c,
@@ -761,6 +792,8 @@ export function BriefView({
                 price: content.price,
                 rateUnit: brief.rateUnit ?? "HOUR",
                 billing: brief.billing ?? null,
+                paymentPlan: brief.paymentPlan ?? null,
+                protection: brief.protection ?? null,
                 milestoneCount: brief.milestones?.length ?? 0,
                 hidden,
               },

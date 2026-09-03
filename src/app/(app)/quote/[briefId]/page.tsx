@@ -60,6 +60,13 @@ export default async function BriefPage({ params }: { params: { briefId: string 
           (brief as unknown as { clearedQuestions?: string[] }).clearedQuestions ?? [],
         layout: layoutOf(brief.settings),
         billing: billingFromSettings(brief.settings),
+        // What they chose, so a rule that only matters under another plan
+        // stays quiet rather than arguing with the choice.
+        paymentPlan:
+          ((brief.settings as { paymentPlan?: string } | null) ?? {}).paymentPlan ?? null,
+        protection:
+          ((brief.settings as { protection?: string } | null) ?? {}).protection ?? null,
+        updatedAt: brief.updatedAt.toISOString(),
         rulesAcknowledged:
           ((brief.settings as { rulesAcknowledged?: string[] } | null) ?? {}).rulesAcknowledged ??
           [],

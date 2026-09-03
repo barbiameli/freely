@@ -1,14 +1,10 @@
-import { requireFullUser } from "@/lib/session";
-import { parseRuleSettings } from "@/lib/ground-rules";
-import { RulesView } from "./rules-view";
+import { redirect } from "next/navigation";
 
-export default async function RulesPage() {
-  const user = await requireFullUser();
-  // Cast rather than selected: groundRules is newer than the generated client
-  // in some environments, and narrowing there would return it undefined and
-  // show the starter set over somebody's saved choices.
-  const settings = parseRuleSettings(
-    (user as unknown as { groundRules?: unknown }).groundRules
-  );
-  return <RulesView settings={settings} />;
+/**
+ * The rules moved into a tab on Memory, which is where every other standing
+ * decision about how you work already lived. This route only exists so old
+ * links, bookmarks and the flags on a quote keep landing somewhere.
+ */
+export default function RulesPage() {
+  redirect("/memory?tab=rules");
 }

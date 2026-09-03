@@ -56,6 +56,12 @@ import {
   type PlanAnswer,
 } from "@/lib/quote-plan";
 import {
+  discoveryInstruction,
+  protectionFor,
+  protectionInstruction,
+  type ProtectionLevel,
+} from "@/lib/protection";
+import {
   learnQuoteDefaultsAction,
   keepQuoteDefaultAction,
 } from "@/actions/quote-defaults";
@@ -71,6 +77,7 @@ import type { BriefSummary } from "@/components/brief-card";
 import { CoachMark } from "@/components/guide/coach-mark";
 import type { GuideStep } from "@/lib/guide";
 import { PageHeader } from "@/components/ui/page-header";
+import { currencySymbol } from "@/lib/currencies";
 import { ActionError } from "@/components/ui/action-error";
 
 /** A visual reference held in wizard state. These can only be saved once the
@@ -369,6 +376,7 @@ export function QuoteWizard({
     sections: SectionKey[];
     milestones: string[];
     answers: PlanAnswer[];
+    protection: ProtectionLevel;
   }) {
     if (!plan) return;
     // Built with a loop rather than a mapped object literal: the generic in
@@ -380,9 +388,21 @@ export function QuoteWizard({
       flags[key] = choices.sections.includes(key);
     }
 
+    const armour = protectionFor(choices.protection);
+
     const extra = [
+      protectionInstruction(choices.protection),
       answersForPrompt(plan, choices.answers),
       milestonesForPrompt(plan, choices.milestones),
+      // Only when the brief actually describes something nobody has opened.
+      // Proposing discovery for a job already scoped is padding.
+      armour.paidDiscovery && plan.sightUnseen
+        ? discoveryInstruction(
+            draft.hourlyRate > 0 ? draft.hourlyRate * 8 : 40,
+            currencySymbol(draft.currency),
+            draft.hourlyRate
+          )
+        : "",
     ]
       .filter(Boolean)
       .join("\n\n");
@@ -391,10 +411,19 @@ export function QuoteWizard({
       ...draft,
       ...flags,
       instructions: [draft.instructions, extra].filter(Boolean).join("\n\n"),
-      // A split they have just agreed to is a split to bill against.
-      ...(choices.milestones.length > 1
+      // The top level insists on milestones, because being owed one chunk of
+      // work rather than the whole project is what actually protects somebody.
+      // Below that, a split they have just agreed to is a split to bill
+      // against, and their own choice stands otherwise.
+      ...(armour.paymentPlan
+        ? {
+            paymentPlan: armour.paymentPlan,
+            milestoneCount: Math.max(choices.milestones.length, 2),
+          }
+        : choices.milestones.length > 1
         ? { paymentPlan: "MILESTONE" as const, milestoneCount: choices.milestones.length }
         : {}),
+      protection: choices.protection,
     };
     setDraft(next);
     await writeQuote(next);

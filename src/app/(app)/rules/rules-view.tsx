@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { Card } from "@/components/ui/card";
-import { PageHeader } from "@/components/ui/page-header";
 import { ActionError } from "@/components/ui/action-error";
 import { useT } from "@/lib/i18n/context";
 import {
@@ -101,8 +100,8 @@ export function RulesView({ settings }: { settings: RuleSettings }) {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader title={t.rules.title} subtitle={t.rules.subtitle} />
-
+      {/* No page header: this is a tab inside Memory now, and the tab strip
+          above it has already said where you are. */}
       <p className="text-small text-slate m-0 max-w-prose text-pretty">{t.rules.intro}</p>
       <p className="text-caption text-text-muted m-0 max-w-prose text-pretty">
         {t.rules.statedHint} {t.rules.sourceNote}

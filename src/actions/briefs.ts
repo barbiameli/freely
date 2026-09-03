@@ -31,6 +31,7 @@ import { CURRENT_LAYOUT } from "@/lib/quote-layout";
 import { hasStrategyContent } from "@/lib/strategy";
 import { allDisciplines, disciplineLine, industryLabel } from "@/lib/industries";
 import { withRate } from "@/lib/discipline-rates";
+import { isProtectionLevel } from "@/lib/protection";
 import { ruleFix } from "@/lib/rule-words";
 import {
   brokenRules,
@@ -488,6 +489,10 @@ export async function generateBriefAction(
           // client has already been sent must not change shape underneath them
           // because the app moved on.
           layout: CURRENT_LAYOUT,
+          // Why this quote carries what it carries. See lib/protection.
+          ...(isProtectionLevel(draftInput.protection)
+            ? { protection: draftInput.protection }
+            : {}),
           // Whether the total is the price or an estimate. Stored on the quote
           // rather than read off the account, because it is a decision about
           // this job and a freelancer works both ways.
@@ -864,21 +869,50 @@ export async function acknowledgeRuleAction(
  */
 export async function applyRuleAction(
   briefId: string,
-  rule: string
-): Promise<ActionResult<{ changed: string[] }>> {
+  rules: string | string[]
+): Promise<ActionResult<{ changed: string[]; applied: string[] }>> {
   const user = await requireFullUser();
-  const found = ruleOf(rule);
-  if (!found) return { ok: false, error: "That is not one of the rules." };
+  const asked = Array.isArray(rules) ? rules : [rules];
 
   const settings = parseRuleSettings((user as unknown as { groundRules?: unknown }).groundRules);
-  const instruction = ruleFix(found.key, ruleValues(settings));
-  if (!instruction) {
+  const values = ruleValues(settings);
+
+  const applied: string[] = [];
+  const instructions: string[] = [];
+  for (const key of asked) {
+    const found = ruleOf(key);
+    if (!found) continue;
+    const instruction = ruleFix(found.key, values);
     // The two rules about what happens before a quote exists. Nothing on the
     // document can satisfy them, so there is nothing to run.
-    return { ok: false, error: "This one is about what you do, not about the quote." };
+    if (!instruction) continue;
+    applied.push(found.key);
+    instructions.push(instruction);
   }
 
-  return refineBriefAction(briefId, instruction);
+  if (instructions.length === 0) {
+    return { ok: false, error: "Those are about what you do, not about the quote." };
+  }
+
+  /**
+   * All of them in one pass.
+   *
+   * Each of these used to be its own full rewrite of the quote, so settling
+   * five meant waiting through five of them, one after another, each one
+   * re-reading and re-writing everything the last had just finished. They are
+   * independent clauses in different sections, so a single instruction listing
+   * all of them produces the same result for a fifth of the wait.
+   */
+  const instruction =
+    instructions.length === 1
+      ? instructions[0]
+      : `Make all of the following changes in one pass. They are separate and none of them replaces another:\n${instructions
+          .map((line, i) => `${i + 1}. ${line}`)
+          .join("\n")}`;
+
+  const result = await refineBriefAction(briefId, instruction);
+  if (!result.ok) return result;
+  return { ok: true, data: { changed: result.data.changed, applied } };
 }
 
 /** Attaches a reference file (screenshot, moodboard, past landing page...) to
