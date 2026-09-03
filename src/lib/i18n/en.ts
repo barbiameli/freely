@@ -47,7 +47,73 @@ export const en = {
     and: "and",
   },
 
+  home: {
+    title: "Where things stand",
+    titleNamed: "Morning, {name}",
+    subtitle: "What needs you, and what is already moving.",
+    emptySubtitle: "Nothing here yet.",
+    emptyBody:
+      "Write your first quote and this becomes the page that tells you where everything got to: what a client has signed, what is late, and what you are owed.",
+    worthChanging: "Worth changing",
+    yourRules: "Your ground rules",
+    patternSource:
+      "Comparisons come from research on what freelancers in your field, country and level actually do, refreshed every couple of weeks. Not from other Freely accounts, of which there are too few to mean anything yet.",
+    patternResearched: "Researched {when}.",
+    patternSources: "Where this came from",
+    patternDismiss: "Not for my work",
+
+    patternNoDeposit: "{count} of your last {total} quotes took nothing up front",
+    patternNoDepositNorm:
+      "Freelancers in your field usually take {percent}% before starting. On a quote billed entirely on delivery you carry the whole project until it is finished.",
+
+    patternRateBelow: "Your rate has been the same on {count} quotes",
+    patternRateBelowNorm:
+      "You charge {rate}. The researched range for your field, country and level is {low} to {high}. Winning quickly and never being pushed back on is usually a sign of pricing under it.",
+
+    patternSlowAnswers: "Your quotes take {days} days to get an answer",
+    patternSlowAnswersNorm:
+      "A deemed-acceptance clause is the usual fix: after {norm} business days, delivered work counts as accepted and is invoiced.",
+
+    patternPaidLate: "You are paid {days} days after the due date",
+    patternPaidLateNorm:
+      "Across {count} paid invoices. Terms of {norm} days are normal for your field, and a stated window is what makes a due date mean anything.",
+
+    patternNoAssumptions: "{count} of your last {total} quotes said nothing about what the price assumes",
+    patternNoAssumptionsNorm:
+      "Without it, a project that turns out bigger than the brief suggested is your mistake rather than a change you both agreed to handle.",
+    newQuote: "New quote",
+    needsYou: "Needs you",
+    needSigned: "{client} signed your quote.",
+    needInvoiceLate: "{amount} is {days} days late.",
+    needProjectLate: "{title} has work {days} days overdue.",
+    needQuoteQuiet: "{client} has had your quote {days} days with no answer.",
+    aClient: "A client",
+    outWithClients: "Out with clients",
+    inHand: "Work in hand",
+    owedToYou: "Owed to you",
+    none: "Nothing",
+    allSettled: "All settled",
+    unpaidCount: "{count} unpaid",
+    workInHand: "Work in hand",
+    recentQuotes: "Recent quotes",
+    unpaid: "Unpaid invoices",
+    seeTrack: "All projects",
+    seeQuotes: "All quotes",
+    seeInvoices: "All invoices",
+    doneOf: "{done} of {total}",
+    dueIn: "Due in {days} days",
+    lateBy: "{days} days late",
+    invoiceNumber: "Invoice {number}",
+    stateSigned: "Signed",
+    stateTracked: "Tracked",
+    stateWon: "Won",
+    stateLost: "Lost",
+    statePublished: "Sent",
+    stateDraft: "Draft",
+  },
+
   nav: {
+    home: "Home",
     quote: "Quote",
     track: "Track",
     diary: "Diary",

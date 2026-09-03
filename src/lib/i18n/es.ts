@@ -56,7 +56,73 @@ export const es: Dictionary = {
     and: "y",
   },
 
+  home: {
+    title: "Cómo va todo",
+    titleNamed: "Buenas, {name}",
+    subtitle: "Lo que te espera y lo que ya está en marcha.",
+    emptySubtitle: "Todavía no hay nada.",
+    emptyBody:
+      "Escribe tu primer presupuesto y esta pasa a ser la página que te dice dónde está cada cosa: qué ha firmado un cliente, qué va tarde y qué te deben.",
+    worthChanging: "Vale la pena cambiar",
+    yourRules: "Tus reglas de base",
+    patternSource:
+      "Las comparaciones salen de investigación sobre lo que hacen los freelancers de tu campo, país y nivel, actualizada cada dos semanas. No de otras cuentas de Freely, que todavía son muy pocas para decir nada.",
+    patternResearched: "Investigado {when}.",
+    patternSources: "De dónde sale esto",
+    patternDismiss: "No es para mi trabajo",
+
+    patternNoDeposit: "{count} de tus últimos {total} presupuestos no pedían nada por adelantado",
+    patternNoDepositNorm:
+      "En tu campo lo normal es cobrar un {percent}% antes de empezar. En un presupuesto que se cobra todo al entregar, cargas con el proyecto entero hasta terminarlo.",
+
+    patternRateBelow: "Tu tarifa ha sido la misma en {count} presupuestos",
+    patternRateBelowNorm:
+      "Cobras {rate}. El rango investigado para tu campo, país y nivel es de {low} a {high}. Ganar rápido y que nadie te discuta el precio suele ser señal de estar por debajo.",
+
+    patternSlowAnswers: "Tus presupuestos tardan {days} días en recibir respuesta",
+    patternSlowAnswersNorm:
+      "La solución habitual es una cláusula de aceptación tácita: pasados {norm} días hábiles, lo entregado se da por aceptado y se factura.",
+
+    patternPaidLate: "Te pagan {days} días después del vencimiento",
+    patternPaidLateNorm:
+      "Sobre {count} facturas cobradas. Unos plazos de {norm} días son lo normal en tu campo, y decir el plazo es lo que hace que una fecha de vencimiento signifique algo.",
+
+    patternNoAssumptions: "{count} de tus últimos {total} presupuestos no decían qué da por hecho el precio",
+    patternNoAssumptionsNorm:
+      "Sin eso, un proyecto que resulta más grande de lo que sugería el brief es culpa tuya y no un cambio que acordáis gestionar.",
+    newQuote: "Nuevo presupuesto",
+    needsYou: "Te espera",
+    needSigned: "{client} ha firmado tu presupuesto.",
+    needInvoiceLate: "{amount} llevan {days} días de retraso.",
+    needProjectLate: "{title} tiene trabajo con {days} días de retraso.",
+    needQuoteQuiet: "{client} lleva {days} días con tu presupuesto sin contestar.",
+    aClient: "Un cliente",
+    outWithClients: "En manos de clientes",
+    inHand: "Trabajo en marcha",
+    owedToYou: "Te deben",
+    none: "Nada",
+    allSettled: "Todo cobrado",
+    unpaidCount: "{count} sin pagar",
+    workInHand: "Trabajo en marcha",
+    recentQuotes: "Presupuestos recientes",
+    unpaid: "Facturas sin pagar",
+    seeTrack: "Todos los proyectos",
+    seeQuotes: "Todos los presupuestos",
+    seeInvoices: "Todas las facturas",
+    doneOf: "{done} de {total}",
+    dueIn: "Vence en {days} días",
+    lateBy: "{days} días de retraso",
+    invoiceNumber: "Factura {number}",
+    stateSigned: "Firmado",
+    stateTracked: "En seguimiento",
+    stateWon: "Ganado",
+    stateLost: "Perdido",
+    statePublished: "Enviado",
+    stateDraft: "Borrador",
+  },
+
   nav: {
+    home: "Inicio",
     quote: "Presupuesto",
     track: "Proyectos",
     diary: "Diario",

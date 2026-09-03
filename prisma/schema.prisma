@@ -941,6 +941,61 @@ model MarketRateCache {
   @@unique([country, industry, currency, rateUnit])
 }
 
+// What freelancers like this one actually do, researched from the open web.
+//
+// The rate cache above answers one question (what does this pay) for the
+// pricing prompt. This answers the rest of them: how many revision rounds are
+// normal, what deposit is usual, how long payment terms run, how many calls
+// get included. It exists because the alternative was comparing somebody's
+// quotes against figures that came from nowhere, and a benchmark with no
+// source behind it is an opinion with a number on it.
+//
+// One row per kind of work, place and experience level, refreshed on a cycle
+// rather than on demand: these move over months, and researching them while
+// somebody waits for a page would make a dashboard cost a web search.
+//
+// Not derived from Freely's own accounts, and deliberately so while there are
+// few of them. When there are enough, peer figures become a second source
+// alongside this one rather than a replacement: what people do and what is
+// written down about what people do are both worth knowing.
+model Benchmark {
+  id       String @id @default(cuid())
+  /// An INDUSTRY_OPTIONS key. See lib/industries.
+  industry String
+  /// ISO 3166-1 alpha-2, or "??" where the research was not region-specific.
+  country  String @default("??")
+  /// "Junior" | "Mid-level" | "Senior" | "Expert".
+  level    String
+
+  /// The going rate, as a range, in the currency below.
+  rateLow  Float
+  rateHigh Float
+  currency String
+  /// "HOUR" or "DAY".
+  rateUnit String @default("HOUR")
+
+  /// The terms that are normal for this kind of work. Nullable one by one
+  /// because a research pass can come back sure about rates and unsure about
+  /// how many calls a project usually includes, and inventing the missing one
+  /// to fill a column is how a benchmark stops being a benchmark.
+  revisionRounds Int?
+  depositPercent Int?
+  paymentDays    Int?
+  acceptanceDays Int?
+  callsIncluded  Int?
+
+  /// A short paragraph a person can read, and what it was drawn from.
+  note    String @db.Text
+  /// [{ title, url }]. Kept so a figure can always be traced back, and shown
+  /// wherever the figure is used to tell somebody they are out of step.
+  sources Json?
+
+  refreshedAt DateTime @default(now())
+
+  @@unique([industry, country, level])
+  @@index([refreshedAt])
+}
+
 // A fixed-window rate-limit counter (see lib/rate-limit.ts) — one row per
 // (scope, identifier, window bucket), not per user, so old windows are just
 // rows that stop being read rather than state that needs resetting. Shared

@@ -39,7 +39,7 @@ export default function SignInPage() {
     // "Sign in" again while the app was still loading behind it: the longest
     // wait on the screen, with the one thing that could explain it switched
     // off. It goes when the page does.
-    router.push("/quote");
+    router.push("/home");
     router.refresh();
   }
 
@@ -88,7 +88,7 @@ export default function SignInPage() {
               disabled={loading}
               onClick={() => {
                 setGoogle(true);
-                void signIn("google", { callbackUrl: "/quote" });
+                void signIn("google", { callbackUrl: "/home" });
               }}
             >
               {t.auth.continueWithGoogle}

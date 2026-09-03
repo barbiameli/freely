@@ -6,7 +6,7 @@ import { Marketing } from "./marketing";
 
 export default async function RootPage() {
   const user = await getCurrentUser();
-  if (user) redirect("/quote");
+  if (user) redirect("/home");
 
   const locale = await currentLocale();
   return <Marketing t={dict(locale)} locale={locale} />;

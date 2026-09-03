@@ -10,6 +10,12 @@ import { dict } from "@/lib/i18n";
 import { sanitizeText } from "@/lib/sanitize-text";
 import { buildPlanPrompt, planSchema, type QuotePlan } from "@/lib/quote-plan";
 import {
+  benchmarkSchema,
+  buildBenchmarkPrompt,
+  type BenchmarkFacts,
+  type BenchmarkKey,
+} from "@/lib/benchmarks";
+import {
   buildSuggestPrompt,
   suggestionResponseSchema,
   type SuggestionResponse,
@@ -1165,7 +1171,8 @@ type LlmJob =
   | "researchMarketRate"
   | "generateQuoteExtras"
   | "suggestSections"
-  | "planQuote";
+  | "planQuote"
+  | "researchBenchmark";
 
 interface LlmCallLog {
   job: LlmJob;
@@ -2091,6 +2098,47 @@ export async function planQuote(input: {
     return parsed.success ? parsed.data : null;
   } catch (err) {
     console.error("[planQuote] failed", err);
+    return null;
+  }
+}
+
+/**
+ * One benchmark, researched.
+ *
+ * Web search, because the whole point is that the figures come from somewhere
+ * that can be named. Sonnet rather than Haiku for the same reason the rate
+ * research uses it: weighing several sources that disagree into one defensible
+ * range is judgement, and a cheaper model tends to pick the first number it
+ * sees.
+ *
+ * Runs on a cron rather than in a request, so it can afford to be slow.
+ */
+export async function researchBenchmark(
+  key: BenchmarkKey,
+  labels: { industry: string; country: string }
+): Promise<BenchmarkFacts | null> {
+  const { system, user } = buildBenchmarkPrompt(key, labels);
+  try {
+    const text = await callClaude("researchBenchmark", system, user, {
+      webSearch: true,
+      maxTokens: 1200,
+    });
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start === -1 || end <= start) return null;
+    const parsed = benchmarkSchema.safeParse(JSON.parse(text.slice(start, end + 1)));
+    if (!parsed.success) {
+      console.error("[researchBenchmark] failed validation", parsed.error.issues);
+      return null;
+    }
+    // A range the wrong way round is a transcription slip rather than a
+    // finding, and swapping it is safer than throwing the answer away.
+    const facts = parsed.data;
+    return facts.rateLow <= facts.rateHigh
+      ? facts
+      : { ...facts, rateLow: facts.rateHigh, rateHigh: facts.rateLow };
+  } catch (err) {
+    console.error("[researchBenchmark] failed", err);
     return null;
   }
 }

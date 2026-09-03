@@ -7,6 +7,10 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { useT } from "@/lib/i18n/context";
 
 const ITEMS = [
+  // Home first, because signing in lands here now. The rail used to open on
+  // the quote form, which assumes somebody came to write a new quote rather
+  // than to find out where the last one got to.
+  { key: "home", glyph: "H", href: "/home" },
   { key: "quote", glyph: "Q", href: "/quote" },
   { key: "track", glyph: "T", href: "/track" },
   { key: "invoices", glyph: "I", href: "/invoices" },

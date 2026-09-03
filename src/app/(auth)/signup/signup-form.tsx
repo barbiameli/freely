@@ -48,7 +48,7 @@ export function SignUpForm() {
       router.push("/signin");
       return;
     }
-    router.push("/quote");
+    router.push("/home");
     router.refresh();
   }
 
