@@ -18,10 +18,11 @@ import {
   unitsFromHours,
   rateLabel,
 } from "@/lib/rate-unit";
-import { parseTimelineStages, isRoadmapWorthy, stageTick } from "@/lib/timeline";
+import { parseTimelineStages, isRoadmapWorthy, roadmapTicks, timelineTotal } from "@/lib/timeline";
 import { dict, fill } from "@/lib/i18n";
 import type { BriefExtras } from "@/lib/anthropic";
 import { hasStrategyContent } from "@/lib/strategy";
+import { paymentClause, revisionsClause, type BillingBasis } from "@/lib/quote-definitions";
 import { groupDeliverables, type QuoteMilestone } from "@/lib/milestone-lines";
 import { groupsByMilestone } from "@/lib/quote-layout";
 import type { Locale } from "@/lib/i18n";
@@ -86,6 +87,8 @@ export interface BriefPdfData {
    * so it is the last place that should have been left in one language.
    */
   language?: string | null;
+  /** Whether the total is the price or an estimate. See lib/quote-definitions. */
+  billing?: string | null;
 }
 
 /** The words for one quote. Read once per document and passed down. */
@@ -280,15 +283,19 @@ function TimelineVisual({
   dotColor,
   textColor,
   mutedColor,
+  total,
 }: {
   timeline: string;
   dotColor: string;
   textColor?: string;
   mutedColor?: string;
+  /** How long the whole thing runs, in the quote's language. */
+  total?: string;
 }) {
   const stages = parseTimelineStages(timeline);
   const ink = textColor || "#343434";
   const muted = mutedColor || "#565656";
+  const ticks = roadmapTicks(stages);
 
   if (!isRoadmapWorthy(stages)) {
     return <Text style={[styles.body, { color: ink }]}>{timeline}</Text>;
@@ -296,12 +303,15 @@ function TimelineVisual({
 
   return (
     <View style={styles.timelineWrap}>
+      {total ? (
+        <Text style={[styles.body, styles.bold, { color: ink, marginBottom: 10 }]}>{total}</Text>
+      ) : null}
       <View style={[styles.timelineLine, { borderTopColor: dotColor }]} />
       <View style={styles.timelineStages}>
-        {stages.map((s, i) => (
+        {ticks.map((tick, i) => (
           <View key={i} style={styles.timelineStage}>
             <View style={[styles.timelineDot, { backgroundColor: dotColor }]} />
-            <Text style={[styles.timelineLabel, { color: muted }]}>{stageTick(s)}</Text>
+            <Text style={[styles.timelineLabel, { color: muted }]}>{tick}</Text>
           </View>
         ))}
       </View>
@@ -415,22 +425,38 @@ function Footer({
 /** The optional add-on sections. Deliberately plain: they're reference
  * material a client reads once, not something to art-direct. */
 function ExtraSections({
-  extras,
+  brief,
   w,
   labelStyle,
   bodyStyle,
   wrapStyle,
 }: {
-  extras?: BriefExtras | null;
+  /** The whole quote: the clauses need the milestones and the billing basis
+   * as well as their own text. */
+  brief: BriefPdfData;
   w: ReturnType<typeof words>;
   labelStyle: Style;
   bodyStyle: Style;
   wrapStyle: Style;
 }) {
+  const extras = brief.extras;
   if (!extras) return null;
   const blocks: [string, string][] = [];
-  if (extras.paymentTerms) blocks.push([w.paymentTerms, extras.paymentTerms]);
-  if (extras.revisions) blocks.push([w.revisions, extras.revisions]);
+  if (extras.paymentTerms) {
+    blocks.push([
+      w.paymentTerms,
+      paymentClause(
+        extras.paymentTerms,
+        {
+          hasMilestones: (brief.milestones?.length ?? 0) > 0,
+          billing: (brief.billing as BillingBasis) ?? "FIXED_TOTAL",
+          fixedPrice: brief.rateUnit === "FIXED",
+        },
+        w
+      ),
+    ]);
+  }
+  if (extras.revisions) blocks.push([w.revisions, revisionsClause(extras.revisions, w)]);
   if (extras.availability) blocks.push([w.availability, extras.availability]);
   if (extras.terms) {
     blocks.push([w.cancellation, extras.terms.cancellation]);
@@ -553,7 +579,11 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
 
           <View style={[styles.section, styles.sectionPaper]} wrap={false} minPresenceAhead={SECTION_ROOM}>
             <Pill text={w.timeline} tint="#EFEFEF" color="#565656" />
-            <TimelineVisual timeline={brief.timeline} dotColor={accent} />
+            <TimelineVisual
+              timeline={brief.timeline}
+              dotColor={accent}
+              total={timelineTotal(brief.timeline, w)}
+            />
           </View>
 
           <View style={styles.investmentRow} wrap={false} minPresenceAhead={SECTION_ROOM}>
@@ -581,7 +611,7 @@ function ClassicDocument({ brief }: { brief: BriefPdfData }) {
 
           <ExtraSections
             w={w}
-            extras={brief.extras}
+            brief={brief}
             wrapStyle={{ ...styles.section, ...styles.sectionPaper }}
             labelStyle={{ ...styles.subLabel, marginTop: 0, color: "#565656" }}
             bodyStyle={styles.body}
@@ -691,7 +721,11 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
             <SectionHeading>
               <Text style={[styles.edSectionTitle, { color: primary }]}>{w.timeline}</Text>
             </SectionHeading>
-            <TimelineVisual timeline={brief.timeline} dotColor={primary} />
+            <TimelineVisual
+              timeline={brief.timeline}
+              dotColor={primary}
+              total={timelineTotal(brief.timeline, w)}
+            />
           </View>
 
           {brief.examples && brief.examples.length > 0 && (
@@ -705,7 +739,7 @@ function EditorialDocument({ brief }: { brief: BriefPdfData }) {
 
           <ExtraSections
             w={w}
-            extras={brief.extras}
+            brief={brief}
             wrapStyle={styles.edSection}
             labelStyle={{ ...styles.edSectionTitle, fontSize: 13, color: primary }}
             bodyStyle={styles.body}
@@ -805,7 +839,11 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
             <SectionHeading>
               <Text style={styles.minLabel}>{w.timeline}</Text>
             </SectionHeading>
-            <TimelineVisual timeline={brief.timeline} dotColor={FREELY_INK} />
+            <TimelineVisual
+              timeline={brief.timeline}
+              dotColor={FREELY_INK}
+              total={timelineTotal(brief.timeline, w)}
+            />
           </View>
 
           {brief.examples && brief.examples.length > 0 && (
@@ -819,7 +857,7 @@ function MinimalDocument({ brief }: { brief: BriefPdfData }) {
 
           <ExtraSections
             w={w}
-            extras={brief.extras}
+            brief={brief}
             wrapStyle={styles.minSection}
             labelStyle={styles.minLabel}
             bodyStyle={styles.body}
@@ -955,6 +993,7 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
               dotColor={ink}
               textColor={ink}
               mutedColor={muted}
+              total={timelineTotal(brief.timeline, w)}
             />
           </View>
 
@@ -971,7 +1010,7 @@ function MonoDocument({ brief, dark }: { brief: BriefPdfData; dark: boolean }) {
 
           <ExtraSections
             w={w}
-            extras={brief.extras}
+            brief={brief}
             wrapStyle={{ paddingVertical: 22, borderBottomWidth: 1, borderBottomColor: line }}
             labelStyle={{
               fontSize: 9,

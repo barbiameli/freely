@@ -710,8 +710,41 @@ export function PaymentBody({
 }) {
   const t = useT();
   const plan = draft.paymentPlan ?? "SPLIT";
+  const billing = draft.billing ?? "FIXED_TOTAL";
+  // A fixed price has no hours to bill, so the question does not arise.
+  const priced = (draft.rateUnit ?? "HOUR") !== "FIXED";
   return (
     <>
+      {/* Is the number the price, or an estimate?
+          A client cannot tell from the quote, and every one of them who
+          noticed asked by email. Answering it in the document is one line and
+          it removes a round trip on every quote. */}
+      {priced && (
+        <div className="mb-4">
+          <SubLabel>{t.quote.billingBasis}</SubLabel>
+          <div className="flex flex-wrap gap-1.5">
+            {(
+              [
+                ["FIXED_TOTAL", t.quote.billingFixed],
+                ["HOURLY_TRACKED", t.quote.billingTracked],
+              ] as const
+            ).map(([value, label]) => (
+              <Chip
+                key={value}
+                active={billing === value}
+                onClick={() => setDraft((d) => ({ ...d, billing: value }))}
+              >
+                {label}
+              </Chip>
+            ))}
+          </div>
+          <p className="text-caption text-text-muted mt-1.5 mb-0 text-pretty">
+            {billing === "HOURLY_TRACKED" ? t.quote.billingTrackedHint : t.quote.billingFixedHint}
+          </p>
+        </div>
+      )}
+
+      <SubLabel>{t.quote.paymentWhen}</SubLabel>
       <div className="flex flex-wrap gap-1.5">
         {(
           [

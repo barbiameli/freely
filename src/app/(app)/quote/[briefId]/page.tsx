@@ -6,6 +6,7 @@ import { teamScopeWhere } from "@/lib/team-scope";
 import type { Strategy, BriefExtras } from "@/lib/anthropic";
 import { BriefView } from "./brief-view";
 import { layoutOf } from "@/lib/quote-layout";
+import { billingFromSettings } from "@/lib/quote-definitions";
 import { allDisciplines, industryLabel } from "@/lib/industries";
 
 export default async function BriefPage({ params }: { params: { briefId: string } }) {
@@ -56,6 +57,7 @@ export default async function BriefPage({ params }: { params: { briefId: string 
         clearedQuestions:
           (brief as unknown as { clearedQuestions?: string[] }).clearedQuestions ?? [],
         layout: layoutOf(brief.settings),
+        billing: billingFromSettings(brief.settings),
         discipline:
           ((brief.settings as { discipline?: string } | null) ?? {}).discipline ?? null,
         extrasPending:

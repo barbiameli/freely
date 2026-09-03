@@ -7,6 +7,7 @@ import type { PublicBrief } from "./templates";
 import { RenderedQuote } from "@/components/quote/rendered-quote";
 import { applyHiddenSections } from "@/lib/hidden-sections";
 import { milestonesFromSettings } from "@/lib/milestone-lines";
+import { billingFromSettings } from "@/lib/quote-definitions";
 import { layoutOf } from "@/lib/quote-layout";
 
 export const dynamic = "force-dynamic";
@@ -47,6 +48,7 @@ export default async function PublicQuotePage({ params }: { params: { slug: stri
     strategy: (brief.strategy as Strategy | null) ?? null,
     // Only when the quote is actually billed this way. See milestone-lines.
     milestones: milestonesFromSettings(brief.settings),
+    billing: billingFromSettings(brief.settings),
     // The layout this quote was written for, so a page a client already has
     // keeps the shape it had when they were sent it.
     layout: layoutOf(brief.settings),

@@ -140,6 +140,12 @@ export const es: Dictionary = {
     orResearched: "O deja que la busquemos nosotros.",
     notSureWhatToCharge: "¿No sabes cuánto cobrar?",
     findMyRate: "Buscar mi tarifa",
+    billingBasis: "¿La cifra es el precio o una estimación?",
+    billingFixed: "Precio cerrado",
+    billingTracked: "Estimación, por horas",
+    billingFixedHint: "El cliente paga el total del presupuesto, lleve el trabajo lo que lleve.",
+    billingTrackedHint:
+      "El cliente paga las horas realmente trabajadas. El presupuesto dice que avisarás al 80% de la estimación y que no sigues sin su confirmación.",
     rateForWhich: "¿Para qué trabajo es este presupuesto?",
     rateForWhichHint: "Cada tipo de trabajo que haces guarda su propia tarifa.",
     rateNoneForWork: "Todavía no tienes una tarifa guardada para {work}.",
@@ -738,6 +744,17 @@ export const es: Dictionary = {
     scope: "Alcance",
     deliverables: "Entregables",
     timeline: "Calendario",
+    totalWeeks: "{count} semanas en total.",
+    totalDays: "{count} días en total.",
+    totalMonths: "{count} meses en total.",
+    concurrent: "Algunas etapas van a la vez.",
+    milestoneMeans:
+      "Un hito es un conjunto de entregables con su propia fecha y su propio precio. Cada uno se factura al entregarlo.",
+    roundMeans:
+      "Una ronda de revisiones es un único bloque de comentarios sobre todo el entregable, reunido entre todas las personas implicadas y enviado de una vez.",
+    billedFixed: "Es un precio cerrado por el alcance de esta página.",
+    billedTracked:
+      "Es una estimación. Se factura por las horas realmente trabajadas, a la tarifa de arriba. Te aviso cuando el tiempo registrado llegue al 80% de la estimación y no sigo sin tu confirmación por escrito.",
     strategy: "Estrategia",
     findings: "Hallazgos",
     examples: "Referencias",

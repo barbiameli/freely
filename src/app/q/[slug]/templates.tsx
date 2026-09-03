@@ -7,10 +7,12 @@ import {
   rateSuffix,
 } from "@/lib/rate-unit";
 import { TimelineView } from "@/components/timeline-view";
+import { timelineTotal } from "@/lib/timeline";
 import { groupDeliverables, type QuoteMilestone } from "@/lib/milestone-lines";
 import { groupsByMilestone } from "@/lib/quote-layout";
 import type { Locale } from "@/lib/i18n";
 import { hasStrategyContent } from "@/lib/strategy";
+import { paymentClause, revisionsClause, type BillingBasis } from "@/lib/quote-definitions";
 import type { BriefExtras } from "@/lib/anthropic";
 import { AcceptBlock } from "./accept-block";
 import { dict, type Dictionary } from "@/lib/i18n";
@@ -41,6 +43,14 @@ export interface PublicBrief {
   milestones?: QuoteMilestone[];
   /** Which layout this quote was written for. See lib/quote-layout. */
   layout?: number;
+  /**
+   * Whether the total is the price or an estimate of hours to be billed.
+   *
+   * On the quote because it is the thing a client cannot work out from the
+   * numbers. Thirteen hours at 50 tells them nothing about whether they owe
+   * 650 or whatever the hours turn out to be. See lib/quote-definitions.
+   */
+  billing?: string | null;
   price: number;
   hours: number;
   hourlyRate?: number | null;
@@ -68,14 +78,28 @@ export interface BrandProps {
  * template can render them in its own style without duplicating the logic
  * that decides which ones are present. */
 function extraBlocks(
-  extras: BriefExtras | null | undefined,
+  brief: PublicBrief,
   q: Dictionary["publicQuote"]
 ): [string, string][] {
+  const extras = brief.extras;
   const blocks: [string, string][] = [];
   if (!extras) return blocks;
 
-  if (extras.paymentTerms) blocks.push([q.paymentTerms, extras.paymentTerms]);
-  if (extras.revisions) blocks.push([q.revisions, extras.revisions]);
+  if (extras.paymentTerms) {
+    blocks.push([
+      q.paymentTerms,
+      paymentClause(
+        extras.paymentTerms,
+        {
+          hasMilestones: (brief.milestones?.length ?? 0) > 0,
+          billing: (brief.billing as BillingBasis) ?? "FIXED_TOTAL",
+          fixedPrice: brief.rateUnit === "FIXED",
+        },
+        q
+      ),
+    ]);
+  }
+  if (extras.revisions) blocks.push([q.revisions, revisionsClause(extras.revisions, q)]);
   if (extras.availability) blocks.push([q.availability, extras.availability]);
   if (extras.terms) {
     blocks.push([q.cancellation, extras.terms.cancellation]);
@@ -292,7 +316,7 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
           {brief.timeline && (
             <div className="rounded-lg p-4 bg-paper">
               <div className="font-label text-xs text-slate uppercase mb-2">{q.timeline}</div>
-              <TimelineView timeline={brief.timeline} accent={brand.accent} className="text-ink" />
+              <TimelineView timeline={brief.timeline} accent={brand.accent} className="text-ink" total={timelineTotal(brief.timeline, q)} />
             </div>
           )}
 
@@ -303,7 +327,7 @@ export function ClassicTemplate({ brief, brand }: { brief: PublicBrief; brand: B
             </div>
           )}
 
-          {extraBlocks(brief.extras, q).map(([label, text]) => (
+          {extraBlocks(brief, q).map(([label, text]) => (
             <div key={label} className="rounded-lg p-4 bg-paper">
               <div className="font-label text-xs text-slate uppercase mb-2">{label}</div>
               <p className="text-body text-ink m-0 leading-relaxed whitespace-pre-line">{text}</p>
@@ -449,7 +473,7 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
             <h2 className="font-display italic text-2xl m-0 mb-4" style={{ color: brand.primary }}>
               {q.timeline}
             </h2>
-            <TimelineView timeline={brief.timeline} accent={brand.primary} className="text-ink" />
+            <TimelineView timeline={brief.timeline} accent={brand.primary} className="text-ink" total={timelineTotal(brief.timeline, q)} />
           </div>
         )}
 
@@ -462,7 +486,7 @@ export function EditorialTemplate({ brief, brand }: { brief: PublicBrief; brand:
           </div>
         )}
 
-        {extraBlocks(brief.extras, q).map(([label, text]) => (
+        {extraBlocks(brief, q).map(([label, text]) => (
           <div key={label} className="py-10 border-b" style={{ borderColor: "#E8EAEF" }}>
             <h2 className="font-display italic text-2xl m-0 mb-4" style={{ color: brand.primary }}>
               {label}
@@ -570,7 +594,7 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
         {brief.timeline && (
           <div className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
             <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{q.timeline}</div>
-            <TimelineView timeline={brief.timeline} accent={ink} muted={muted} />
+            <TimelineView timeline={brief.timeline} accent={ink} muted={muted} total={timelineTotal(brief.timeline, q)} />
           </div>
         )}
 
@@ -581,7 +605,7 @@ export function MonoTemplate({ brief, dark }: { brief: PublicBrief; dark: boolea
           </div>
         )}
 
-        {extraBlocks(brief.extras, q).map(([label, text]) => (
+        {extraBlocks(brief, q).map(([label, text]) => (
           <div key={label} className="py-6" style={{ borderBottom: `1px solid ${line}` }}>
             <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{label}</div>
             <p className="text-body leading-relaxed m-0 whitespace-pre-line">{text}</p>
@@ -688,7 +712,7 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
         {brief.timeline && (
           <div className="py-6 border-b border-line">
             <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{q.timeline}</div>
-            <TimelineView timeline={brief.timeline} accent="#181722" />
+            <TimelineView timeline={brief.timeline} accent="#181722" total={timelineTotal(brief.timeline, q)} />
           </div>
         )}
 
@@ -699,7 +723,7 @@ export function MinimalTemplate({ brief, brand }: { brief: PublicBrief; brand: B
           </div>
         )}
 
-        {extraBlocks(brief.extras, q).map(([label, text]) => (
+        {extraBlocks(brief, q).map(([label, text]) => (
           <div key={label} className="py-6 border-b border-line">
             <div className="text-caption font-bold tracking-[0.1em] uppercase mb-2">{label}</div>
             <p className="text-body leading-relaxed m-0 whitespace-pre-line">{text}</p>

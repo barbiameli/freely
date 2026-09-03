@@ -1,4 +1,4 @@
-import { parseTimelineStages, isRoadmapWorthy, stageTick } from "@/lib/timeline";
+import { parseTimelineStages, isRoadmapWorthy, roadmapTicks } from "@/lib/timeline";
 
 /**
  * Renders a timeline as a small roadmap graphic with the stages spelled out
@@ -14,9 +14,18 @@ export function TimelineView({
   timeline,
   accent,
   muted,
+  total,
   className,
 }: {
   timeline: string;
+  /**
+   * How long the whole thing runs, in one sentence.
+   *
+   * Passed in rather than computed here because it has to be in the quote's
+   * language, and this component renders inside four templates and knows
+   * nothing about locale. See lib/timeline.
+   */
+  total?: string;
   /** Colour for the rule and dots. Defaults to the app's violet. */
   accent?: string;
   /** Colour for secondary text. Defaults to the app's slate. */
@@ -26,6 +35,7 @@ export function TimelineView({
   const stages = parseTimelineStages(timeline);
   const dot = accent || "#6320EE";
   const subtle = muted || "#565656";
+  const ticks = roadmapTicks(stages);
 
   if (!isRoadmapWorthy(stages)) {
     return <p className={`text-sm m-0 ${className || ""}`}>{timeline}</p>;
@@ -33,14 +43,23 @@ export function TimelineView({
 
   return (
     <div className={className}>
+      {/* The one number a client actually needs, and the one nothing on the
+          page used to state. Stages each carried their own week and the
+          document never added them up. */}
+      {total && (
+        <p className="text-body font-bold m-0 mb-4">{total}</p>
+      )}
       <div aria-hidden className="mb-5">
         <div className="h-[2px] w-full rounded-full" style={{ background: dot, opacity: 0.25 }} />
         <div className="flex -mt-[5px]">
-          {stages.map((stage, i) => (
+          {/* One dot per distinct period. Two stages inside the same week
+              drew two dots captioned "Week 2" and "Week 2", which reads as a
+              fortnight. */}
+          {ticks.map((tick, i) => (
             <div key={i} className="flex-1 flex flex-col items-center px-1 text-center">
               <div className="w-2 h-2 rounded-full mb-1.5" style={{ background: dot }} />
               <span className="text-caption leading-tight" style={{ color: subtle }}>
-                {stageTick(stage)}
+                {tick}
               </span>
             </div>
           ))}

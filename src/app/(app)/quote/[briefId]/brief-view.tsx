@@ -46,6 +46,7 @@ import {
 } from "@/lib/rate-unit";
 import { DeliverableList } from "@/components/deliverable-list";
 import { TimelineView } from "@/components/timeline-view";
+import { timelineTotal } from "@/lib/timeline";
 import type { BriefExtras } from "@/lib/anthropic";
 import { EditableBlock, EditableSection } from "@/components/editable-text";
 import { Chip } from "@/components/ui/chip";
@@ -102,6 +103,8 @@ interface Brief {
   clearedQuestions?: string[];
   /** Which layout this quote was written for. See lib/quote-layout. */
   layout?: number;
+  /** Whether the total is the price or an estimate. See lib/quote-definitions. */
+  billing?: string | null;
   /** The add-on sections are still being written. See generateExtrasAction. */
   extrasPending?: boolean;
   /** Which kind of work the model decided this is, when the account does more
@@ -542,6 +545,7 @@ export function BriefView({
     strategy: content.strategy ?? null,
     milestones: brief.milestones,
     layout: brief.layout,
+    billing: brief.billing ?? null,
     extras: content.extras ?? null,
     price: content.price,
     hours: content.hours,
@@ -889,7 +893,11 @@ export function BriefView({
               ariaLabel="Timeline"
               hint={'One stage per line, as "Week 1-2: Label - what happens".'}
             >
-              <TimelineView timeline={content.timeline} className="text-ink" />
+              <TimelineView
+                timeline={content.timeline}
+                total={timelineTotal(content.timeline, t.publicQuote)}
+                className="text-ink"
+              />
             </EditableBlock>
           </Section>
 

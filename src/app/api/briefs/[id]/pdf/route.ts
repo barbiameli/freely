@@ -6,6 +6,7 @@ import { renderBriefPdf, type StrategyPdfData, type PdfTemplate } from "@/lib/pd
 import type { BriefExtras } from "@/lib/anthropic";
 import { resolveBrand } from "@/lib/branding";
 import { milestonesFromSettings } from "@/lib/milestone-lines";
+import { billingFromSettings } from "@/lib/quote-definitions";
 import { layoutOf } from "@/lib/quote-layout";
 
 const VALID_TEMPLATES: PdfTemplate[] = ["classic", "editorial", "minimal"];
@@ -47,6 +48,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     // The split the client is agreeing to. It was on the editing screen only,
     // so a quote billed per milestone went out saying nothing about them.
     milestones: milestonesFromSettings(brief.settings),
+    billing: billingFromSettings(brief.settings),
     layout: layoutOf(brief.settings),
     price: brief.price,
     hours: brief.hours,

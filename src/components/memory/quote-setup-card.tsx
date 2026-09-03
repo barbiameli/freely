@@ -128,7 +128,7 @@ export function QuoteSetupCard({
       });
     }, 700);
     return () => clearTimeout(timer);
-  }, [draft, sectionNotes, availabilityNote, stated]);
+  }, [draft, sectionNotes, availabilityNote, stated, saved.industry]);
 
   const readLevel = stated ? null : saved.inferredExpertise ?? null;
 

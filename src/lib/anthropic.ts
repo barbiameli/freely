@@ -249,6 +249,13 @@ export interface QuoteDraftInput {
    */
   discipline?: string;
   /**
+   * Whether the total is the price or an estimate of hours to be billed.
+   *
+   * Changes what the payment terms have to say, so the model is told rather
+   * than left to phrase it from the numbers.
+   */
+  billing?: "FIXED_TOTAL" | "HOURLY_TRACKED";
+  /**
    * Nobody picked any sections, so the model picks them.
    *
    * Set by the action when every include flag is false, which is now what a
@@ -566,7 +573,16 @@ Use web search to find the going ${unitNoun(unit, promptWords)} rate, and the ty
   const paymentInstruction = (() => {
     const plan = draft.paymentPlan;
     if (!plan) return "";
-    const opening = `\nWrite "paymentTerms" from this and nothing else, in one or two plain sentences, as the freelancer's own terms to their client. Do not invent a different schedule.`;
+    // Said in the terms as well as in the fixed line the page appends, because
+    // the model writes the schedule and a schedule that assumes a fixed total
+    // reads as a contradiction next to an estimate.
+    const basis =
+      (draft.rateUnit ?? "HOUR") === "FIXED"
+        ? ""
+        : draft.billing === "HOURLY_TRACKED"
+        ? ` The total shown is an estimate, and the client is billed for the hours actually worked at the stated rate. Never call it a fixed price, a capped price or a maximum.`
+        : ` The total shown is a fixed total for this scope, whatever the hours turn out to be. Never describe it as an estimate or as subject to the hours worked.`;
+    const opening = `\nWrite "paymentTerms" from this and nothing else, in one or two plain sentences, as the freelancer's own terms to their client. Do not invent a different schedule.${basis}`;
     if (plan === "UPFRONT") {
       return `${opening} The whole amount is due before the work starts.`;
     }
@@ -679,6 +695,8 @@ Rules: every deliverable appears in exactly one milestone, never two and never n
   const timelineInstruction = draft.includeTimeline
     ? `\nTimeline requirements. Return "timeline" as 4-6 stages, EACH ON ITS OWN LINE separated by a newline character, in the exact form "Week 1-2: Label - what actually happens". Rules:
 - Start every line with a concrete week or day range ("Week 1", "Week 2-3", "Day 1-3"). Never "Phase one" or "Later" with no timing.
+- Use the same unit on every line: all weeks, or all days. Never mix them.
+- Stages run in order and their ranges must move forward. Two stages may share a range only when the work genuinely happens at the same time, and then the second one must say so in its detail. A client who sees "Week 2" twice cannot tell how long the project is.
 - Give each stage a short label, then a dash, then specifics: the actual activities and what the client ends up holding at the end of it.
 - Name real artifacts and real activities drawn from the deliverables and the source material, not generic filler like "design work" or "iteration".
 - Say what is needed from the client and when (reviews, sign-off, content, access), since that is usually what actually determines the schedule.
@@ -708,7 +726,7 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
     extraSections.push(
       notes.revisions
         ? `${required(notes.revisions)}Include a "revisions" string built on what they have stated: ${notes.revisions}. Say which stages it applies to and what counts as new work priced separately.`
-        : `${ifChosen}Include a "revisions" string: how many rounds of changes are included at which stages, and what would count as new work priced separately. Base the number on the deliverables and hours, not a generic "two rounds".`
+        : `${ifChosen}Include a "revisions" string: how many rounds of changes are included at which stages, and what would count as new work priced separately. Base the number on the deliverables and hours, not a generic "two rounds". State an actual number of rounds. Never write "within reason", "as needed", "reasonable amends" or any other phrase that leaves the count open, since the freelancer and the client will read it differently at exactly the moment it matters.`
     );
   }
   // Only written when there is something to write it from. The old version
@@ -792,6 +810,11 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
     part === "all" ? paymentInstruction : "",
     milestoneInstruction,
     part === "all" ? extraSectionsInstruction : "",
+    // A real client could not tell whether "Design review session" and
+    // "Feedback-incorporated final files" were the one included round or two
+    // more on top of it. They were the same round, listed twice as though
+    // they were things being bought.
+    `\nDeliverables are things the client ends up holding. Never list a review, a feedback session, a revision round, a handover call or an amends pass as a deliverable: those describe the process, and where they are part of the deal they belong in the revisions policy or the timeline. If a file exists in a draft form and a final form, that is one deliverable, not two.`,
     `\nWrite a project quote based on this. Keep deliverables as a list of short, concrete items (4-7 items), name actual artifacts, not phases. Give a realistic timeline, a price in ${currencyCode}, and estimated hours that are consistent with the pricing approach above.`,
   ]
     .filter(Boolean)

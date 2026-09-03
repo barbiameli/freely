@@ -135,6 +135,12 @@ export const en = {
     orResearched: "Or have one researched.",
     notSureWhatToCharge: "Not sure what to charge?",
     findMyRate: "Find my rate",
+    billingBasis: "Is the number the price, or an estimate?",
+    billingFixed: "A fixed total",
+    billingTracked: "An estimate, billed by the hour",
+    billingFixedHint: "The client pays the total on the quote, whatever the work takes.",
+    billingTrackedHint:
+      "The client pays for hours actually worked. The quote says you will flag it at 80% of the estimate and stop there without their go-ahead.",
     rateForWhich: "Which work is this quote for?",
     rateForWhichHint: "Each kind of work you do keeps its own rate.",
     rateNoneForWork: "You have no rate saved for {work} yet.",
@@ -740,6 +746,17 @@ export const en = {
     scope: "Scope",
     deliverables: "Deliverables",
     timeline: "Timeline",
+    totalWeeks: "{count} weeks in total.",
+    totalDays: "{count} days in total.",
+    totalMonths: "{count} months in total.",
+    concurrent: "Some stages run at the same time.",
+    milestoneMeans:
+      "A milestone is a named set of deliverables with its own date and price. Each one is invoiced when it is delivered.",
+    roundMeans:
+      "A round of revisions is one consolidated set of feedback covering the whole deliverable, gathered from everyone involved and sent once.",
+    billedFixed: "This is a fixed total for the scope on this page.",
+    billedTracked:
+      "This is an estimate. You are billed for the hours actually worked, at the rate above. I will tell you when tracked time reaches 80% of the estimate, and will not go past it without your written go-ahead.",
     strategy: "Strategy",
     findings: "Findings",
     examples: "Examples",

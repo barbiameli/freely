@@ -453,6 +453,10 @@ export async function generateBriefAction(
           // client has already been sent must not change shape underneath them
           // because the app moved on.
           layout: CURRENT_LAYOUT,
+          // Whether the total is the price or an estimate. Stored on the quote
+          // rather than read off the account, because it is a decision about
+          // this job and a freelancer works both ways.
+          billing: draft.billing === "HOURLY_TRACKED" ? "HOURLY_TRACKED" : "FIXED_TOTAL",
           // Which kind of work this turned out to be, as named by the model
           // from the freelancer's own list. Read back by the next quote's
           // pricing history, and shown on the quote page where it can be
