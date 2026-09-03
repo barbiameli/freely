@@ -34,12 +34,45 @@ export type RuleKey =
   | "cancellation"
   | "ownership"
   | "exclusions"
+  | "includedCalls"
   | "beforeSignature"
   | "noNumberBeforeScope";
+
+/**
+ * A number a rule states out loud.
+ *
+ * The rules used to be positions without figures: "say when you are paid"
+ * rather than "payment is due within 14 days". A rule with no number in it
+ * cannot be put on a quote, which meant every one of these still left the
+ * actual term to be invented per project.
+ *
+ * The defaults below are the researched norm rather than anybody's preference,
+ * with the reasoning on each one. They are starting points: every account can
+ * change every figure, and the rule is stated with whatever number it holds.
+ */
+export type ValueKey =
+  | "paymentDays"
+  | "depositPercent"
+  | "revisionRounds"
+  | "feedbackDays"
+  | "acceptanceDays"
+  | "callsIncluded"
+  | "maxUnpaidHours";
+
+export interface RuleValue {
+  key: ValueKey;
+  fallback: number;
+  min: number;
+  max: number;
+}
 
 export interface GroundRule {
   key: RuleKey;
   severity: Severity;
+  /** The number this rule states, where it states one. */
+  value?: RuleValue;
+  /** A second number, for the one rule that needs two. */
+  extra?: RuleValue;
   /**
    * Whether a quote can be checked against this rule at all.
    *
@@ -63,16 +96,65 @@ export interface GroundRule {
  * user should read them in.
  */
 export const GROUND_RULES: GroundRule[] = [
-  { key: "paymentBasis", severity: "blocking", checkable: true },
-  { key: "revisionRounds", severity: "blocking", checkable: true },
+  {
+    key: "paymentBasis",
+    severity: "blocking",
+    checkable: true,
+    // 30 days is the statutory fallback across the EU and UK when a contract
+    // says nothing, and 60 is the outer limit for business-to-business terms.
+    // Stating a term is the whole point of the rule, so the default is well
+    // inside that: 14 days is common freelance practice and short enough to
+    // matter without being the kind of number a finance department refuses.
+    value: { key: "paymentDays", fallback: 14, min: 1, max: 60 },
+    // 25% to 50% up front is the range in general use, with 50% the norm on
+    // smaller projects and for clients with no history.
+    extra: { key: "depositPercent", fallback: 50, min: 0, max: 100 },
+  },
+  {
+    key: "revisionRounds",
+    severity: "blocking",
+    checkable: true,
+    // Two is the standard across design, writing and most creative work. One
+    // is usual for development, three where several people review.
+    value: { key: "revisionRounds", fallback: 2, min: 0, max: 10 },
+  },
   { key: "assumptions", severity: "blocking", checkable: true },
   { key: "scopeChanges", severity: "suggestion", checkable: true },
-  { key: "unpaidStretch", severity: "suggestion", checkable: true },
-  { key: "feedbackWindow", severity: "suggestion", checkable: true },
-  { key: "deemedAcceptance", severity: "suggestion", checkable: true },
+  {
+    key: "unpaidStretch",
+    severity: "suggestion",
+    checkable: true,
+    // No external norm for this one. It is a question about what a person can
+    // afford to be owed, so the figure is theirs from the start.
+    value: { key: "maxUnpaidHours", fallback: 10, min: 1, max: 200 },
+  },
+  {
+    key: "feedbackWindow",
+    severity: "suggestion",
+    checkable: true,
+    // Three business days is the most commonly cited figure, inside a general
+    // range of two to five.
+    value: { key: "feedbackDays", fallback: 3, min: 1, max: 30 },
+  },
+  {
+    key: "deemedAcceptance",
+    severity: "suggestion",
+    checkable: true,
+    // Five to fourteen business days is the range in general use. Ten sits in
+    // the middle and is long enough that nobody can call it a trap.
+    value: { key: "acceptanceDays", fallback: 10, min: 1, max: 60 },
+  },
   { key: "cancellation", severity: "suggestion", checkable: true },
   { key: "ownership", severity: "suggestion", checkable: true },
   { key: "exclusions", severity: "suggestion", checkable: true },
+  {
+    key: "includedCalls",
+    severity: "suggestion",
+    checkable: true,
+    // No researched norm. Two covers a kickoff and one alignment session,
+    // which is the shape most small projects actually take.
+    value: { key: "callsIncluded", fallback: 2, min: 0, max: 20 },
+  },
   { key: "beforeSignature", severity: "suggestion", checkable: false },
   { key: "noNumberBeforeScope", severity: "suggestion", checkable: false },
 ];
@@ -85,33 +167,78 @@ export function ruleOf(key: string): GroundRule | undefined {
 export interface RuleSettings {
   /** Rules switched off. Everything not listed is on. */
   off: RuleKey[];
-  /**
-   * The longest stretch of unpaid work, in hours, before the rule complains.
-   *
-   * A number rather than a rule of thumb, because the point of it is to be
-   * checkable. At a typical rate this is the most somebody is ever out of
-   * pocket, and it is the one figure worth setting per account: it depends
-   * entirely on what a person can afford to be owed.
-   */
-  maxUnpaidHours: number;
+  /** Figures changed from the researched default. Everything else falls back. */
+  values: Partial<Record<ValueKey, number>>;
 }
 
-export const DEFAULT_RULE_SETTINGS: RuleSettings = { off: [], maxUnpaidHours: 10 };
+export const DEFAULT_RULE_SETTINGS: RuleSettings = { off: [], values: {} };
+
+/** Every figure the rules state, defaults filled in. */
+export function ruleValues(settings: RuleSettings): Record<ValueKey, number> {
+  const out = {} as Record<ValueKey, number>;
+  for (const rule of GROUND_RULES) {
+    for (const value of [rule.value, rule.extra]) {
+      if (!value) continue;
+      const set = settings.values[value.key];
+      out[value.key] =
+        typeof set === "number" && set >= value.min && set <= value.max ? set : value.fallback;
+    }
+  }
+  return out;
+}
+
+/** One figure, defaulted and bounded. */
+export function valueOf(settings: RuleSettings, key: ValueKey): number {
+  return ruleValues(settings)[key];
+}
 
 function isRuleKey(value: unknown): value is RuleKey {
   return typeof value === "string" && GROUND_RULES.some((rule) => rule.key === value);
 }
 
-/** Reads the settings off an account, defensively. */
+function valueSpec(key: string): RuleValue | undefined {
+  for (const rule of GROUND_RULES) {
+    if (rule.value?.key === key) return rule.value;
+    if (rule.extra?.key === key) return rule.extra;
+  }
+  return undefined;
+}
+
+/**
+ * Reads the settings off an account, defensively.
+ *
+ * Also carries forward the shape this had before the figures existed, when
+ * the only number was the unpaid stretch and it sat at the top level. An
+ * account that set it then keeps it now.
+ */
 export function parseRuleSettings(value: unknown): RuleSettings {
   if (!value || typeof value !== "object" || Array.isArray(value)) return DEFAULT_RULE_SETTINGS;
-  const raw = value as { off?: unknown; maxUnpaidHours?: unknown };
-  const hours = typeof raw.maxUnpaidHours === "number" && raw.maxUnpaidHours > 0
-    ? Math.min(raw.maxUnpaidHours, 200)
-    : DEFAULT_RULE_SETTINGS.maxUnpaidHours;
+  const raw = value as { off?: unknown; values?: unknown; maxUnpaidHours?: unknown };
+
+  const values: Partial<Record<ValueKey, number>> = {};
+  const stored =
+    raw.values && typeof raw.values === "object" && !Array.isArray(raw.values)
+      ? (raw.values as Record<string, unknown>)
+      : {};
+  for (const [key, entry] of Object.entries(stored)) {
+    const spec = valueSpec(key);
+    if (!spec) continue;
+    if (typeof entry !== "number" || !Number.isFinite(entry)) continue;
+    values[spec.key] = Math.min(Math.max(Math.round(entry), spec.min), spec.max);
+  }
+  if (values.maxUnpaidHours === undefined && typeof raw.maxUnpaidHours === "number") {
+    const spec = valueSpec("maxUnpaidHours");
+    if (spec && Number.isFinite(raw.maxUnpaidHours)) {
+      values.maxUnpaidHours = Math.min(
+        Math.max(Math.round(raw.maxUnpaidHours), spec.min),
+        spec.max
+      );
+    }
+  }
+
   return {
     off: Array.isArray(raw.off) ? raw.off.filter(isRuleKey) : [],
-    maxUnpaidHours: hours,
+    values,
   };
 }
 
@@ -202,7 +329,7 @@ export function brokenRules(quote: CheckableQuote, settings: RuleSettings): Grou
       if (mentions(extras.paymentTerms, ["up front", "upfront", "deposit", "por adelantado", "anticipo"])) {
         return false;
       }
-      return quote.hours > settings.maxUnpaidHours;
+      return quote.hours > valueOf(settings, "maxUnpaidHours");
     },
 
     // The date rests on the client coming back, and the document does not
@@ -234,6 +361,17 @@ export function brokenRules(quote: CheckableQuote, settings: RuleSettings): Grou
       const said = `${(extras.scopeChanges ?? []).join(" ")} ${(extras.assumptions ?? []).join(" ")}`;
       return !mentions(said, ["not included", "excluded", "separately", "no incluye", "aparte"]);
     },
+
+    // How many calls are included, stated as a number rather than left to
+    // "a couple". Every one after them is either billed or resented.
+    includedCalls: () =>
+      !mentions(`${extras.paymentTerms ?? ""} ${(extras.assumptions ?? []).join(" ")} ${(extras.scopeChanges ?? []).join(" ")}`, [
+        "call",
+        "meeting",
+        "session",
+        "llamada",
+        "reunión",
+      ]),
 
     beforeSignature: () => false,
     noNumberBeforeScope: () => false,

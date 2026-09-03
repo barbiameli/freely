@@ -5,9 +5,17 @@ import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { ActionError } from "@/components/ui/action-error";
 import { useT } from "@/lib/i18n/context";
-import { GROUND_RULES, type RuleKey, type RuleSettings } from "@/lib/ground-rules";
-import { setRuleAction, setMaxUnpaidHoursAction } from "@/actions/ground-rules";
+import {
+  GROUND_RULES,
+  ruleValues,
+  type RuleKey,
+  type RuleSettings,
+  type RuleValue,
+  type ValueKey,
+} from "@/lib/ground-rules";
+import { setRuleAction, setRuleValueAction } from "@/actions/ground-rules";
 import { ruleWords } from "@/lib/rule-words";
+import { valueLabel } from "@/lib/rule-words";
 
 /**
  * The rulebook, as a page you can read.
@@ -25,7 +33,7 @@ import { ruleWords } from "@/lib/rule-words";
 export function RulesView({ settings }: { settings: RuleSettings }) {
   const t = useT();
   const [off, setOff] = useState<RuleKey[]>(settings.off);
-  const [hours, setHours] = useState(String(settings.maxUnpaidHours));
+  const [values, setValues] = useState<Record<ValueKey, number>>(() => ruleValues(settings));
   const [error, setError] = useState("");
   const [, startTransition] = useTransition();
 
@@ -41,13 +49,54 @@ export function RulesView({ settings }: { settings: RuleSettings }) {
     });
   }
 
-  function saveHours(value: string) {
-    setHours(value);
-    const parsed = Number(value);
-    if (!Number.isFinite(parsed) || parsed <= 0) return;
+  function saveValue(spec: RuleValue, raw: string) {
+    const parsed = Number(raw);
+    // Typed into, so an empty box and a half-typed number are normal states
+    // rather than errors. Nothing is saved until it is a figure inside the
+    // rule's own bounds.
+    setValues((current) => ({ ...current, [spec.key]: Number.isFinite(parsed) ? parsed : 0 }));
+    if (!Number.isFinite(parsed) || parsed < spec.min || parsed > spec.max) return;
     startTransition(() => {
-      void setMaxUnpaidHoursAction(parsed);
+      void setRuleValueAction(spec.key, parsed).then((result: { ok: boolean; error?: string }) => {
+        if (!result.ok && result.error) setError(result.error);
+      });
     });
+  }
+
+  /**
+   * The rule as a sentence, with a field where each number goes.
+   *
+   * Split on the placeholders rather than rendered as a title above a row of
+   * inputs. Reading "Payment is due within [14] days" and changing the 14 in
+   * place is a rule; the same thing as a labelled numeric field is a setting,
+   * and settings are what people stop reading.
+   */
+  function Statement({ rule }: { rule: (typeof GROUND_RULES)[number] }) {
+    const words = ruleWords(rule.key, t);
+    const specs = [rule.value, rule.extra].filter(Boolean) as RuleValue[];
+    const parts = words.statement.split(/(\{\w+\})/);
+
+    return (
+      <p className="text-small text-ink m-0 max-w-prose text-pretty leading-[1.9]">
+        {parts.map((part, i) => {
+          const name = part.startsWith("{") ? part.slice(1, -1) : "";
+          const spec = specs.find((s) => s.key === name);
+          if (!spec) return <span key={i}>{part}</span>;
+          return (
+            <input
+              key={i}
+              type="number"
+              min={spec.min}
+              max={spec.max}
+              value={values[spec.key] ?? spec.fallback}
+              onChange={(e) => saveValue(spec, e.target.value)}
+              aria-label={valueLabel(spec.key, t)}
+              className="w-[58px] mx-1 bg-paper rounded-lg border-none px-2 py-1 text-sm font-semibold text-violet text-center outline-none focus:ring-1 focus:ring-violet"
+            />
+          );
+        })}
+      </p>
+    );
   }
 
   return (
@@ -55,6 +104,9 @@ export function RulesView({ settings }: { settings: RuleSettings }) {
       <PageHeader title={t.rules.title} subtitle={t.rules.subtitle} />
 
       <p className="text-small text-slate m-0 max-w-prose text-pretty">{t.rules.intro}</p>
+      <p className="text-caption text-text-muted m-0 max-w-prose text-pretty">
+        {t.rules.statedHint} {t.rules.sourceNote}
+      </p>
 
       <ActionError error={error} />
 
@@ -91,6 +143,16 @@ export function RulesView({ settings }: { settings: RuleSettings }) {
               </div>
 
               <div className="mt-4 flex flex-col gap-3">
+                {on && (
+                  <div>
+                    <div className="font-body font-bold text-caption uppercase tracking-[0.08em] text-slate">
+                      {t.rules.stated}
+                    </div>
+                    <div className="mt-1.5">
+                      <Statement rule={rule} />
+                    </div>
+                  </div>
+                )}
                 <div>
                   <div className="font-body font-bold text-caption uppercase tracking-[0.08em] text-slate">
                     {t.rules.why}
@@ -107,31 +169,6 @@ export function RulesView({ settings }: { settings: RuleSettings }) {
                     {words.cost}
                   </p>
                 </div>
-
-                {/* The one rule that needs a number rather than a switch, and
-                    it belongs to the person: what you can afford to be owed is
-                    not something Freely can pick for you. */}
-                {rule.key === "unpaidStretch" && on && (
-                  <div className="pt-1">
-                    <div className="font-body font-bold text-caption uppercase tracking-[0.08em] text-slate">
-                      {t.rules.maxUnpaidTitle}
-                    </div>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <input
-                        type="number"
-                        min={1}
-                        max={200}
-                        value={hours}
-                        onChange={(e) => saveHours(e.target.value)}
-                        className="w-[92px] bg-paper rounded-lg border-none px-3 py-2.5 text-sm text-ink outline-none"
-                      />
-                      <span className="text-slate text-sm">{t.rules.hours}</span>
-                    </div>
-                    <p className="text-caption text-text-muted mt-1.5 mb-0 max-w-prose text-pretty">
-                      {t.rules.maxUnpaidHint}
-                    </p>
-                  </div>
-                )}
               </div>
             </Card>
           );

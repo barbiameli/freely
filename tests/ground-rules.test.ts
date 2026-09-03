@@ -6,10 +6,11 @@ import {
   brokenRules,
   blockingRules,
   parseRuleSettings,
+  ruleValues,
   ruleOf,
   type CheckableQuote,
 } from "@/lib/ground-rules";
-import { ruleWords } from "@/lib/rule-words";
+import { ruleWords, ruleFix } from "@/lib/rule-words";
 import { dict } from "@/lib/i18n";
 
 /** A quote that satisfies everything, so each test can break one thing. */
@@ -23,7 +24,12 @@ const good: CheckableQuote = {
     paymentTerms:
       "50% up front and the rest on delivery, due within 7 business days. Anything delivered and not commented on within 10 business days is treated as accepted.",
     revisions: "Two rounds of changes are included per milestone.",
-    assumptions: ["12 pages", "copy supplied by you", "testing not included, quoted separately"],
+    assumptions: [
+      "12 pages",
+      "copy supplied by you",
+      "testing not included, quoted separately",
+      "2 calls included, a kickoff and one review",
+    ],
     scopeChanges: ["more pages than the 12 above", "a second reviewer joining partway through"],
     terms: {
       cancellation: "Work completed is invoiced, and the part in progress is invoiced in full.",
@@ -47,6 +53,55 @@ describe("the starter set", () => {
         expect(words.cost.length, `${rule.key} ${locale} cost`).toBeGreaterThan(0);
       }
     }
+  });
+
+  it("states a number wherever a rule needs one", () => {
+    // A rule with no figure in it cannot be put on a quote, which leaves the
+    // actual term to be invented per project.
+    const values = ruleValues(DEFAULT_RULE_SETTINGS);
+    expect(values).toEqual({
+      paymentDays: 14,
+      depositPercent: 50,
+      revisionRounds: 2,
+      feedbackDays: 3,
+      acceptanceDays: 10,
+      callsIncluded: 2,
+      maxUnpaidHours: 10,
+    });
+  });
+
+  it("says every rule as a sentence with its figures marked", () => {
+    for (const rule of GROUND_RULES) {
+      const statement = ruleWords(rule.key, dict("en")).statement;
+      expect(statement.length, rule.key).toBeGreaterThan(0);
+      for (const spec of [rule.value, rule.extra]) {
+        if (!spec) continue;
+        expect(statement, `${rule.key} states ${spec.key}`).toContain(`{${spec.key}}`);
+      }
+    }
+  });
+
+  it("knows how to repair what it complains about", () => {
+    // A flag that only names a gap leaves the freelancer writing the clause,
+    // which is the work they opened Freely to avoid.
+    const values = ruleValues(DEFAULT_RULE_SETTINGS);
+    for (const rule of GROUND_RULES) {
+      const fix = ruleFix(rule.key, values);
+      if (!rule.checkable) {
+        expect(fix, rule.key).toBe("");
+      } else {
+        expect(fix.length, rule.key).toBeGreaterThan(20);
+      }
+    }
+    expect(ruleFix("revisionRounds", values)).toContain("2 rounds");
+    expect(ruleFix("paymentBasis", values)).toContain("14 days");
+    expect(ruleFix("paymentBasis", values)).toContain("50%");
+  });
+
+  it("carries the account's own figures into the fix", () => {
+    const values = ruleValues({ off: [], values: { revisionRounds: 1, paymentDays: 7 } });
+    expect(ruleFix("revisionRounds", values)).toContain("1 rounds");
+    expect(ruleFix("paymentBasis", values)).toContain("7 days");
   });
 
   it("keeps exactly three rules able to block publishing", () => {
@@ -123,10 +178,10 @@ describe("what each rule catches", () => {
       milestoneCount: 0,
       extras: { ...good.extras, paymentTerms: "Invoiced on delivery within 7 business days. Treated as accepted after 10 business days." },
     };
-    expect(brokenRules(quote, { off: [], maxUnpaidHours: 20 }).map((r) => r.key)).not.toContain(
+    expect(brokenRules(quote, { off: [], values: { maxUnpaidHours: 20 } }).map((r) => r.key)).not.toContain(
       "unpaidStretch"
     );
-    expect(brokenRules(quote, { off: [], maxUnpaidHours: 4 }).map((r) => r.key)).toContain(
+    expect(brokenRules(quote, { off: [], values: { maxUnpaidHours: 4 } }).map((r) => r.key)).toContain(
       "unpaidStretch"
     );
   });
@@ -142,7 +197,7 @@ describe("what each rule catches", () => {
 describe("switching rules off", () => {
   it("stops checking one that is off", () => {
     const quote = { ...good, extras: { ...good.extras, assumptions: [] } };
-    expect(brokenRules(quote, { off: ["assumptions"], maxUnpaidHours: 10 }).map((r) => r.key)).not.toContain(
+    expect(brokenRules(quote, { off: ["assumptions"], values: {} }).map((r) => r.key)).not.toContain(
       "assumptions"
     );
   });
@@ -150,8 +205,10 @@ describe("switching rules off", () => {
   it("reads settings defensively", () => {
     expect(parseRuleSettings(null)).toEqual(DEFAULT_RULE_SETTINGS);
     expect(parseRuleSettings({ off: ["nonsense", "assumptions"] }).off).toEqual(["assumptions"]);
-    expect(parseRuleSettings({ maxUnpaidHours: -4 }).maxUnpaidHours).toBe(10);
-    expect(parseRuleSettings({ maxUnpaidHours: 5000 }).maxUnpaidHours).toBe(200);
+    expect(parseRuleSettings({ values: { maxUnpaidHours: -4 } }).values.maxUnpaidHours).toBe(1);
+    expect(parseRuleSettings({ values: { maxUnpaidHours: 5000 } }).values.maxUnpaidHours).toBe(200);
+    // The shape this had before the figures existed still reads.
+    expect(parseRuleSettings({ maxUnpaidHours: 25 }).values.maxUnpaidHours).toBe(25);
   });
 
   it("knows a real rule from an invented one", () => {
@@ -174,6 +231,14 @@ describe("publishing", () => {
       "paymentBasis",
       "assumptions",
     ]);
+  });
+
+  it("offers the fix rather than only the complaint", () => {
+    const actions = readFileSync("src/actions/briefs.ts", "utf8");
+    expect(actions).toContain("applyRuleAction");
+    // Reuses the refine everything else uses, so the clause arrives in the
+    // quote's own voice and language.
+    expect(actions).toContain("return refineBriefAction(briefId, instruction);");
   });
 
   it("is checked on the server, not only in the page", () => {

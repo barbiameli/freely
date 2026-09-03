@@ -290,6 +290,13 @@ export interface QuoteDraftInput {
    */
   activeRules?: string[];
   /**
+   * The figures those rules state. See lib/ground-rules.
+   *
+   * Sent so the quote says "due within 14 days" rather than a term the model
+   * invented, which is the difference between a rule and a preference.
+   */
+  ruleValues?: Partial<Record<string, number>>;
+  /**
    * Nobody picked any sections, so the model picks them.
    *
    * Set by the action when every include flag is false, which is now what a
@@ -647,6 +654,8 @@ Use web search to find the going ${unitNoun(unit, promptWords)} rate, and the ty
 
 A milestone is a billable chunk of the project, and it is NOT one deliverable renamed: a six-deliverable project is usually three or four milestones, not six.
 
+If the source material already names the milestones, or describes the project in phases with dates attached, use those exactly: their number, their boundaries and their dates. Somebody who has written out "milestone 1 at the end of week 1, milestone 2 at the end of week 2" has told you the answer, and a different split invented here contradicts what they have already said to their client.
+
 Decide the split by dependency, not by cutting the list into equal pieces. Ask what genuinely cannot start until something earlier is settled. Work that needs a direction agreed, a stakeholder decision, data access, or a technical choice made belongs AFTER the milestone where that gets settled, and the settling itself belongs INSIDE the earlier one. A milestone boundary is a point where the client has to do something before you can carry on, so put the boundary where that is actually true.
 
 Each entry has:
@@ -761,20 +770,38 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
   const ruleInstruction = (() => {
     const on = new Set(draft.activeRules ?? []);
     if (on.size === 0) return "";
+    const figures = draft.ruleValues ?? {};
     const lines: string[] = [];
+    if (on.has("paymentBasis") && figures.paymentDays) {
+      lines.push(
+        `- Payment is due within ${figures.paymentDays} days of invoice. Say that number in the payment terms.` +
+          (figures.depositPercent
+            ? ` This freelancer takes ${figures.depositPercent}% before starting with a new client, so use that figure rather than a different split, unless the payment plan you were given above says otherwise.`
+            : "")
+      );
+    }
     if (on.has("revisionRounds")) {
       lines.push(
-        "- Any revisions policy must state an actual number of rounds. Never leave the count open."
+        figures.revisionRounds !== undefined
+          ? `- The revisions policy includes exactly ${figures.revisionRounds} rounds of changes. State that number, and say that further rounds are quoted and approved before they start.`
+          : "- Any revisions policy must state an actual number of rounds. Never leave the count open."
       );
     }
     if (on.has("feedbackWindow")) {
+      const days = figures.feedbackDays ?? 3;
       lines.push(
-        "- Say what the timeline depends on from the client's side, naming a window in business days for feedback and sign-off, and say that the delivery date moves by the same number of days when it slips."
+        `- Say that feedback and sign-off come back within ${days} business days, and that the delivery date moves by the same number of days when they do not.`
       );
     }
     if (on.has("deemedAcceptance")) {
+      const days = figures.acceptanceDays ?? 10;
       lines.push(
-        "- Say in the payment terms what happens when a delivered milestone gets no response: after a stated number of business days it is treated as accepted and invoiced."
+        `- Say in the payment terms that delivered work with no response after ${days} business days counts as accepted and is invoiced.`
+      );
+    }
+    if (on.has("includedCalls") && figures.callsIncluded !== undefined) {
+      lines.push(
+        `- Say that ${figures.callsIncluded} calls are included and that any beyond them are billed at the stated rate.`
       );
     }
     if (on.has("cancellation")) {
@@ -869,8 +896,32 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
     : "";
 
   // What both halves need to know: the brief itself, and how to write.
+  /**
+   * The source is evidence, not copy.
+   *
+   * People paste whatever they have: email threads, chat logs, their own
+   * replies to a client, notes to themselves. A real quote came back with a
+   * freelancer's private email reasoning printed in the scope, including the
+   * sentence about expecting to run over and absorbing it, because the model
+   * treated the thread as text to summarise rather than as a record to read
+   * facts out of. That is the freelancer's negotiating position, published to
+   * the client under their own name.
+   *
+   * So the rule is stated before the source rather than after it, and it is
+   * about voice as much as content: the quote is written from what the source
+   * establishes, never out of its sentences.
+   */
+  const sourceInstruction = `\nThe source material below is evidence to read facts out of. It is NOT copy to reuse. It often contains email threads, chat logs, notes and the freelancer's own replies, and it was not written for the client to read.
+- Never lift sentences, phrases or turns of phrase from the source into the quote. Establish the fact, then write it yourself in the flat, plain voice of a quote.
+- Never carry across anything the freelancer said about their own position: what they are unsure of, what they expect to run over, what they are willing to absorb, what they will do differently next time, why they priced it as they did, how they feel about the client, or what they are hoping this leads to. A client reading their own quote must not learn any of it.
+- Ignore pleasantries, apologies, hedges, asides and anything addressed to a person by name. "In all honesty", "to be fair", "I'm happy to" and the like never appear in the output.
+- Never mention the tools the freelancer uses to run their own business, such as time trackers, invoicing apps or task boards, unless the client is being asked to use them too.
+- Where the source states structure, use it rather than inventing your own: if it names milestones, dates, phases, quantities or who is responsible for what, those are the facts of this project and the quote must match them exactly.
+- Where the source contradicts itself because it is a thread, the later message wins.`;
+
   const shared = [
     languageInstruction(draft.language),
+    sourceInstruction,
     `Client brief / source material:\n${
       draft.sourceText ? truncateSourceText(draft.sourceText) : "(no source text provided)"
     }`,

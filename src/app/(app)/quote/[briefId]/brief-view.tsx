@@ -504,9 +504,18 @@ export function BriefView({
       return;
     }
     setRefinePrompt("");
-    router.refresh();
+    showChanged(result.data.changed);
+  }
 
-    const changed = result.data.changed;
+  /**
+   * What a rewrite changed, said out loud.
+   *
+   * Shared by the refine box and by a ground rule writing its own clause in:
+   * both end with parts of the quote replaced somewhere off screen, and a
+   * spinner that simply stops says something finished rather than what it did.
+   */
+  function showChanged(changed: string[]) {
+    router.refresh();
     setJustChanged(changed);
     setRefined(changed);
     if (changed.length > 0) {
@@ -758,6 +767,7 @@ export function BriefView({
               rules
             )}
             acknowledged={brief.rulesAcknowledged ?? []}
+            onFixed={showChanged}
           />
         </div>
       </div>

@@ -778,11 +778,51 @@ export const en = {
     flagsBlocking: "{count} to settle",
     flagsSuggestions: "{count} worth a look",
     flagsNone: "This quote passes your ground rules.",
-    flagFix: "Fix it",
+    flagFixing: "Writing it in.",
+    flagFix: "Add it for me",
     flagIgnore: "I meant it",
     flagIgnored: "Set aside",
     blockedNotice: "Settle these, or mark them as deliberate, and this quote can be published.",
     seeRule: "Read the rule",
+
+    stated: "As it stands",
+    statedHint: "Change any figure. Every quote you write from now on uses it.",
+    sourceNote: "Defaults follow common practice and, where the law sets a baseline, the law.",
+    valuePaymentDays: "Days to pay",
+    valueDepositPercent: "Percent up front",
+    valueRevisionRounds: "Rounds included",
+    valueFeedbackDays: "Business days for feedback",
+    valueAcceptanceDays: "Business days before it counts as accepted",
+    valueCallsIncluded: "Calls included",
+    valueMaxUnpaidHours: "Hours",
+
+    paymentBasisRule:
+      "Payment is due within {paymentDays} days, and new clients pay {depositPercent}% before the work starts.",
+    revisionRoundsRule: "{revisionRounds} rounds of changes are included. Further rounds are quoted and approved first.",
+    assumptionsRule:
+      "Every quote lists what its price assumes. If any of it turns out differently, you flag it and agree a revised scope before continuing.",
+    scopeChangesRule: "Every quote names, in advance, what would change the price or the date.",
+    unpaidStretchRule:
+      "No single stretch of work leaves you more than {maxUnpaidHours} hours out of pocket before money arrives.",
+    feedbackWindowRule:
+      "Feedback and sign-off come back within {feedbackDays} business days. When they slip, the delivery date moves by the same number of days.",
+    deemedAcceptanceRule:
+      "Delivered work with no response after {acceptanceDays} business days counts as accepted and is invoiced.",
+    cancellationRule:
+      "On cancellation, completed work is invoiced and the part in progress is invoiced in full. Anything not started is not charged.",
+    ownershipRule:
+      "Rights to the final work transfer when the final payment lands. Working files and unused concepts stay yours unless you agree otherwise.",
+    exclusionsRule: "Every quote names the adjacent work it does not cover, and says it is quoted separately.",
+    includedCallsTitle: "State how many calls are included",
+    includedCallsWhy:
+      "Calls are the part of a project with no natural limit. A client who is not told a number will assume there is not one.",
+    includedCallsCost:
+      "Six hours of meetings on a job priced for eight is a job priced for two.",
+    includedCallsRule: "{callsIncluded} calls are included. Any after that are billed at your rate.",
+    beforeSignatureRule:
+      "No work that produces a deliverable begins before the agreement is signed and any deposit has landed.",
+    noNumberBeforeScopeRule:
+      "No figure is given, even roughly, before the work has been scoped. If pressed, you give a range with its reasons and confirm once you have seen the material.",
 
     paymentBasisTitle: "Say when you are paid, and on what basis",
     paymentBasisWhy:

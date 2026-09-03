@@ -132,3 +132,35 @@ describe("what the model is told", () => {
     expect(prompt).toContain("Never call it a fixed price, a capped price or a maximum");
   });
 });
+
+describe("the source is evidence, not copy", () => {
+  const prompt = readFileSync("src/lib/anthropic.ts", "utf8");
+
+  /**
+   * A real quote came back with the freelancer's private email reasoning in
+   * its scope, including the line about expecting to run over and absorbing
+   * it. That is a negotiating position, published to the client under the
+   * freelancer's own name, because the model read a pasted thread as text to
+   * summarise rather than as a record to read facts out of.
+   */
+  it("forbids reusing the source's sentences", () => {
+    expect(prompt).toContain("It is NOT copy to reuse");
+    expect(prompt).toContain("Never lift sentences, phrases or turns of phrase from the source");
+  });
+
+  it("forbids carrying the freelancer's own position into the quote", () => {
+    expect(prompt).toContain("what they are willing to absorb");
+    expect(prompt).toContain('"In all honesty"');
+  });
+
+  it("keeps the freelancer's own tools out of a client's document", () => {
+    // A client does not need to know which time tracker runs in the
+    // background, and naming one invites an argument about it.
+    expect(prompt).toContain("time trackers, invoicing apps or task boards");
+  });
+
+  it("takes the structure the source already states", () => {
+    expect(prompt).toContain("If the source material already names the milestones");
+    expect(prompt).toContain("the later message wins");
+  });
+});

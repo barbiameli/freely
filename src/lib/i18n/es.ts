@@ -776,11 +776,51 @@ export const es: Dictionary = {
     flagsBlocking: "{count} por resolver",
     flagsSuggestions: "{count} para mirar",
     flagsNone: "Este presupuesto cumple tus reglas.",
-    flagFix: "Arreglarlo",
+    flagFixing: "Escribiéndolo.",
+    flagFix: "Añádelo tú",
     flagIgnore: "Es a propósito",
     flagIgnored: "Aparcado",
     blockedNotice: "Resuelve esto, o márcalo como intencionado, y el presupuesto se podrá publicar.",
     seeRule: "Leer la regla",
+
+    stated: "Tal como está",
+    statedHint: "Cambia cualquier cifra. Todos los presupuestos que escribas a partir de ahora la usan.",
+    sourceNote: "Los valores por defecto siguen la práctica habitual y, donde la ley marca un mínimo, la ley.",
+    valuePaymentDays: "Días para pagar",
+    valueDepositPercent: "Porcentaje por adelantado",
+    valueRevisionRounds: "Rondas incluidas",
+    valueFeedbackDays: "Días hábiles para responder",
+    valueAcceptanceDays: "Días hábiles antes de darse por aceptado",
+    valueCallsIncluded: "Llamadas incluidas",
+    valueMaxUnpaidHours: "Horas",
+
+    paymentBasisRule:
+      "El pago vence a los {paymentDays} días, y los clientes nuevos pagan un {depositPercent}% antes de empezar.",
+    revisionRoundsRule: "Se incluyen {revisionRounds} rondas de cambios. Las siguientes se presupuestan y se aprueban antes.",
+    assumptionsRule:
+      "Cada presupuesto dice qué da por hecho su precio. Si algo resulta distinto, lo avisas y acordáis un alcance revisado antes de seguir.",
+    scopeChangesRule: "Cada presupuesto nombra, por adelantado, qué cambiaría el precio o la fecha.",
+    unpaidStretchRule:
+      "Ningún tramo de trabajo te deja con más de {maxUnpaidHours} horas por cobrar antes de que llegue dinero.",
+    feedbackWindowRule:
+      "Los comentarios y las aprobaciones llegan en {feedbackDays} días hábiles. Cuando se retrasan, la fecha de entrega se mueve otros tantos días.",
+    deemedAcceptanceRule:
+      "El trabajo entregado sin respuesta después de {acceptanceDays} días hábiles se da por aceptado y se factura.",
+    cancellationRule:
+      "Si se cancela, lo hecho se factura y lo que está en marcha se factura entero. Lo que no ha empezado no se cobra.",
+    ownershipRule:
+      "Los derechos del trabajo final pasan cuando llega el pago final. Los archivos de trabajo y las propuestas descartadas siguen siendo tuyos salvo que acordéis otra cosa.",
+    exclusionsRule: "Cada presupuesto nombra el trabajo de al lado que no cubre, y dice que se presupuesta aparte.",
+    includedCallsTitle: "Di cuántas llamadas entran",
+    includedCallsWhy:
+      "Las llamadas son la parte de un proyecto sin límite natural. Un cliente al que no le das un número dará por hecho que no lo hay.",
+    includedCallsCost:
+      "Seis horas de reuniones en un trabajo presupuestado a ocho es un trabajo presupuestado a dos.",
+    includedCallsRule: "Se incluyen {callsIncluded} llamadas. Las siguientes se facturan a tu tarifa.",
+    beforeSignatureRule:
+      "Ningún trabajo que produzca un entregable empieza antes de firmar el acuerdo y de que haya llegado el anticipo.",
+    noNumberBeforeScopeRule:
+      "No se da ninguna cifra, ni aproximada, antes de dimensionar el trabajo. Si insisten, das un rango con sus motivos y lo confirmas cuando hayas visto el material.",
 
     paymentBasisTitle: "Di cuándo cobras, y sobre qué base",
     paymentBasisWhy:

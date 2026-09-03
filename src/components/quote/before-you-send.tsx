@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { Check, Lightbulb, AlertTriangle } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
-import { clearQuestionAction, acknowledgeRuleAction } from "@/actions/briefs";
+import { clearQuestionAction, acknowledgeRuleAction, applyRuleAction } from "@/actions/briefs";
 import { useT } from "@/lib/i18n/context";
 import type { GroundRule } from "@/lib/ground-rules";
 import { ruleWords } from "@/lib/rule-words";
@@ -59,6 +59,7 @@ export function BeforeYouSend({
   cleared: initialCleared,
   broken = [],
   acknowledged: initialAcknowledged = [],
+  onFixed,
 }: {
   briefId: string;
   questions: string[];
@@ -75,11 +76,17 @@ export function BeforeYouSend({
   broken?: GroundRule[];
   /** Rules already waved through on this quote. */
   acknowledged?: string[];
+  /** Runs after a rule has rewritten part of the quote, so the page can
+   * refresh and light up what changed. */
+  onFixed?: (changed: string[]) => void;
 }) {
   const t = useT();
   const [cleared, setCleared] = useState<string[]>(initialCleared);
   const [acknowledged, setAcknowledged] = useState<string[]>(initialAcknowledged);
   const [open, setOpen] = useState(false);
+  /** The rule currently being written into the quote, if any. */
+  const [fixing, setFixing] = useState("");
+  const [fixError, setFixError] = useState("");
   const [, startTransition] = useTransition();
 
   const openRules = broken.filter((rule) => !acknowledged.includes(rule.key));
@@ -106,6 +113,29 @@ export function BeforeYouSend({
   }, [briefId, hasQuestions]);
 
   if (!hasQuestions) return null;
+
+  /**
+   * Letting Freely write the missing clause.
+   *
+   * The whole point of the flag. Naming a gap and leaving somebody to write
+   * the sentence themselves is most of the work still to do, so this runs the
+   * rule's own instruction through the same refine the rest of the page uses
+   * and the clause comes back in the quote's voice.
+   */
+  async function fix(rule: string) {
+    setFixError("");
+    setFixing(rule);
+    const result = await applyRuleAction(briefId, rule);
+    setFixing("");
+    if (!result.ok) {
+      setFixError(result.error);
+      return;
+    }
+    // Closed on success: the thing to look at is the quote behind this, with
+    // the new section lit up.
+    setOpen(false);
+    onFixed?.(result.data.changed);
+  }
 
   function wave(rule: string) {
     const already = acknowledged.includes(rule);
@@ -174,6 +204,9 @@ export function BeforeYouSend({
                 {t.rules.blockedNotice}
               </p>
             )}
+            {fixError && (
+              <p className="font-body font-semibold text-caption text-overdue m-0">{fixError}</p>
+            )}
             {openRules.map((rule) => {
               const words = ruleWords(rule.key, t);
               return (
@@ -197,6 +230,14 @@ export function BeforeYouSend({
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-4 mt-2.5">
+                    <button
+                      type="button"
+                      disabled={Boolean(fixing)}
+                      onClick={() => void fix(rule.key)}
+                      className="font-body font-semibold text-caption text-white bg-violet border-none rounded-full px-3 py-1.5 cursor-pointer tap disabled:opacity-60"
+                    >
+                      {fixing === rule.key ? t.rules.flagFixing : t.rules.flagFix}
+                    </button>
                     <button
                       type="button"
                       onClick={() => wave(rule.key)}

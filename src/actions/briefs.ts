@@ -31,10 +31,12 @@ import { CURRENT_LAYOUT } from "@/lib/quote-layout";
 import { hasStrategyContent } from "@/lib/strategy";
 import { allDisciplines, disciplineLine, industryLabel } from "@/lib/industries";
 import { withRate } from "@/lib/discipline-rates";
+import { ruleFix } from "@/lib/rule-words";
 import {
   brokenRules,
   blockingRules,
   parseRuleSettings,
+  ruleValues,
   ruleOf,
   GROUND_RULES,
 } from "@/lib/ground-rules";
@@ -305,6 +307,7 @@ export async function generateBriefAction(
     ...draftInput,
     language: quoteLanguage,
     activeRules,
+    ruleValues: ruleValues(ruleSettings),
     chooseSections,
     // Only when there is a choice. One discipline is a fact, not a question.
     ...(disciplines.length > 1 ? { disciplines } : {}),
@@ -845,6 +848,37 @@ export async function acknowledgeRuleAction(
   }
   revalidatePath(`/quote/${briefId}`);
   return { ok: true, data: undefined };
+}
+
+/**
+ * Doing what a broken rule asks for.
+ *
+ * The flag used to name a problem and stop, which left the freelancer to write
+ * the clause themselves. That is the work they opened Freely to avoid, and a
+ * flag you have to act on by hand is one you learn to wave through.
+ *
+ * So it runs the same refine everything else uses, with an instruction built
+ * from the rule and the account's own figures. The quote comes back changed
+ * in its own voice and language, the changed sections are named, and the page
+ * scrolls to them exactly as it does for a refinement somebody typed.
+ */
+export async function applyRuleAction(
+  briefId: string,
+  rule: string
+): Promise<ActionResult<{ changed: string[] }>> {
+  const user = await requireFullUser();
+  const found = ruleOf(rule);
+  if (!found) return { ok: false, error: "That is not one of the rules." };
+
+  const settings = parseRuleSettings((user as unknown as { groundRules?: unknown }).groundRules);
+  const instruction = ruleFix(found.key, ruleValues(settings));
+  if (!instruction) {
+    // The two rules about what happens before a quote exists. Nothing on the
+    // document can satisfy them, so there is nothing to run.
+    return { ok: false, error: "This one is about what you do, not about the quote." };
+  }
+
+  return refineBriefAction(briefId, instruction);
 }
 
 /** Attaches a reference file (screenshot, moodboard, past landing page...) to

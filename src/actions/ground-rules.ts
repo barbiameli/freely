@@ -65,15 +65,28 @@ export async function setRuleAction(
   }
 }
 
-/** The one number the rules read: how far out of pocket you are willing to go. */
-export async function setMaxUnpaidHoursAction(
-  hours: number
+/**
+ * One of the figures a rule states.
+ *
+ * Bounded per figure rather than by one global rule, since "days to pay" and
+ * "percent up front" are not the same kind of number. Anything outside its
+ * bounds is refused rather than clamped: silently turning 500 into 60 would
+ * leave somebody believing their quotes say 500.
+ */
+export async function setRuleValueAction(
+  key: string,
+  amount: number
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     const user = await requireFullUser();
-    if (!Number.isFinite(hours) || hours <= 0 || hours > 200) {
-      return { ok: false, error: "Give a number of hours between 1 and 200." };
+    const spec = GROUND_RULES.map((rule) => [rule.value, rule.extra])
+      .flat()
+      .find((value) => value?.key === key);
+    if (!spec) return { ok: false, error: "That is not one of the figures." };
+    if (!Number.isFinite(amount) || amount < spec.min || amount > spec.max) {
+      return { ok: false, error: `Give a number between ${spec.min} and ${spec.max}.` };
     }
+
     const settings = parseRuleSettings(
       (user as unknown as { groundRules?: unknown }).groundRules
     );
@@ -82,7 +95,7 @@ export async function setMaxUnpaidHoursAction(
       data: {
         groundRules: {
           ...settings,
-          maxUnpaidHours: Math.round(hours),
+          values: { ...settings.values, [spec.key]: Math.round(amount) },
         } as unknown as Prisma.InputJsonValue,
       } as unknown as Parameters<typeof prisma.user.update>[0]["data"],
     });
