@@ -87,6 +87,10 @@ export const en = {
     needInvoiceLate: "{amount} is {days} days late.",
     needProjectLate: "{title} has work {days} days overdue.",
     needQuoteQuiet: "{client} has had your quote {days} days with no answer.",
+    needStageAccepted:
+      "{stage} has had no response for {days} business days. By your own terms it counts as accepted, so it can be invoiced.",
+    needStageFeedback:
+      "{stage} has been with {client} {days} business days. Past your feedback window, so the delivery date moves with it.",
     aClient: "A client",
     outWithClients: "Out with clients",
     inHand: "Work in hand",

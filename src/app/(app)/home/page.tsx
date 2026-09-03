@@ -6,7 +6,18 @@ import type { InvoiceLineItem } from "@/lib/invoice-pdf";
 import { resolveExpertise } from "@/lib/quote-defaults";
 import { patternsFor, type QuoteFact, type InvoiceFact } from "@/lib/quote-patterns";
 import type { Benchmark } from "@/lib/benchmarks";
+import { needsAction, watchStages } from "@/lib/stage-watch";
+import { parseRuleSettings, ruleValues } from "@/lib/ground-rules";
 import { HomeView, type HomeData } from "./home-view";
+
+/** A stage, as the include above returns it. */
+interface WatchedMilestone {
+  id: string;
+  name: string;
+  amount: number;
+  invoicedAt: Date | null;
+  deliverables: { done: boolean; doneAt: Date | null }[];
+}
 
 /** The benchmark row, as the newer-than-the-client cast returns it. */
 interface BenchmarkRow {
@@ -72,7 +83,17 @@ export default async function HomePage() {
       where: { ...scope, status: "ACTIVE" },
       orderBy: { createdAt: "desc" },
       take: 6,
-      include: { deliverables: { select: { id: true, done: true, dueAt: true } } },
+      include: {
+        deliverables: { select: { id: true, done: true, dueAt: true } },
+        // The stages, with when each piece of them landed and whether it has
+        // been billed. This is what lets the acceptance clause actually run.
+        milestones: {
+          orderBy: { order: "asc" },
+          include: {
+            deliverables: { select: { done: true, doneAt: true } },
+          },
+        },
+      },
     }),
     prisma.invoice.findMany({
       where: { userId: user.id, paid: false },
@@ -201,7 +222,56 @@ export default async function HomePage() {
       }
     : null;
 
+  /**
+   * The clauses, running.
+   *
+   * The quote says delivered work with no response after so many business days
+   * counts as accepted and is invoiced. Until this, nothing watched for that
+   * happening and the sentence sat on the document while somebody waited.
+   */
+  const ruleWindows = ruleValues(
+    parseRuleSettings((user as unknown as { groundRules?: unknown }).groundRules)
+  );
+  const watched = needsAction(
+    watchStages(
+      projects.flatMap((project) =>
+        (project as unknown as { milestones?: WatchedMilestone[] }).milestones?.map(
+          (milestone) => ({
+            id: milestone.id,
+            projectId: project.id,
+            projectTitle: project.title,
+            client: project.client,
+            name: milestone.name,
+            amount: milestone.amount,
+            currency: project.currency,
+            invoicedAt: milestone.invoicedAt?.toISOString() ?? null,
+            deliverables: milestone.deliverables.map((d) => ({
+              done: d.done,
+              doneAt: d.doneAt?.toISOString() ?? null,
+            })),
+          })
+        ) ?? []
+      ),
+      {
+        acceptanceDays: ruleWindows.acceptanceDays,
+        feedbackDays: ruleWindows.feedbackDays,
+      }
+    )
+  );
+
   const data: HomeData = {
+    // needsAction has already dropped the ones still inside their window,
+    // so the narrower type here is the honest one.
+    stages: watched.map((watch) => ({
+      kind: watch.kind as "deemedAccepted" | "feedbackOverdue",
+      projectId: watch.stage.projectId,
+      projectTitle: watch.stage.projectTitle,
+      client: watch.stage.client,
+      name: watch.stage.name,
+      amount: watch.stage.amount,
+      currency: watch.stage.currency,
+      businessDays: watch.businessDays,
+    })),
     // Capped at two. A page that names three things you are doing wrong every
     // morning is a page you scroll past.
     patterns: patternsFor(facts, invoiceFacts, reference).slice(0, 2),

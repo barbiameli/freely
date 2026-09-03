@@ -47,7 +47,27 @@ export interface HomeInvoice {
   overdueDays: number;
 }
 
+/** A stage waiting on the client, and what the clause says about it. */
+export interface HomeStage {
+  kind: "deemedAccepted" | "feedbackOverdue";
+  projectId: string;
+  projectTitle: string;
+  client: string;
+  name: string;
+  amount: number;
+  currency: string | null;
+  businessDays: number;
+}
+
 export interface HomeData {
+  /**
+   * The acceptance and feedback clauses, actually running.
+   *
+   * The quote says delivered work with no response after so many business days
+   * counts as accepted and is invoiced. Nothing used to watch for that, so the
+   * sentence sat on the document while somebody waited.
+   */
+  stages: HomeStage[];
   /**
    * What their own quoting looks like across a run of quotes, against what
    * freelancers like them do. See lib/quote-patterns.
@@ -91,6 +111,23 @@ function needsYou(data: HomeData, t: Dictionary): Item[] {
       });
     }
   }
+  /**
+   * Said before the overdue invoices, because it is money that has not been
+   * asked for yet, which is worse than money that has been asked for and not
+   * arrived.
+   */
+  for (const stage of data.stages) {
+    if (stage.kind === "deemedAccepted") {
+      items.push({
+        key: `accepted-${stage.projectId}-${stage.name}`,
+        text: t.home.needStageAccepted
+          .replace("{stage}", stage.name)
+          .replace("{days}", String(stage.businessDays)),
+        href: `/track/${stage.projectId}`,
+        urgent: true,
+      });
+    }
+  }
   for (const invoice of data.invoices) {
     if (invoice.overdueDays > 0) {
       items.push({
@@ -100,6 +137,19 @@ function needsYou(data: HomeData, t: Dictionary): Item[] {
           .replace("{days}", String(invoice.overdueDays)),
         href: `/invoices/${invoice.id}`,
         urgent: true,
+      });
+    }
+  }
+  for (const stage of data.stages) {
+    if (stage.kind === "feedbackOverdue") {
+      items.push({
+        key: `feedback-${stage.projectId}-${stage.name}`,
+        text: t.home.needStageFeedback
+          .replace("{stage}", stage.name)
+          .replace("{client}", stage.client || t.home.aClient)
+          .replace("{days}", String(stage.businessDays)),
+        href: `/track/${stage.projectId}`,
+        urgent: false,
       });
     }
   }

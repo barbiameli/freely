@@ -96,6 +96,10 @@ export const es: Dictionary = {
     needInvoiceLate: "{amount} llevan {days} días de retraso.",
     needProjectLate: "{title} tiene trabajo con {days} días de retraso.",
     needQuoteQuiet: "{client} lleva {days} días con tu presupuesto sin contestar.",
+    needStageAccepted:
+      "{stage} lleva {days} días hábiles sin respuesta. Según tus propias condiciones se da por aceptado, así que se puede facturar.",
+    needStageFeedback:
+      "{stage} lleva {days} días hábiles con {client}. Pasado tu plazo de respuesta, así que la fecha de entrega se mueve con él.",
     aClient: "Un cliente",
     outWithClients: "En manos de clientes",
     inHand: "Trabajo en marcha",
