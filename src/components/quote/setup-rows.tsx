@@ -30,7 +30,6 @@ import type { Dictionary } from "@/lib/i18n";
 import type { QuoteDraftPayload } from "@/actions/briefs";
 import { researchRateAction, type ResearchedRate } from "@/actions/rate";
 import { Reveal } from "@/components/ui/reveal";
-import type { SectionSuggestion } from "@/lib/suggest-sections";
 import { rateFor, disciplineLabel } from "@/lib/discipline-rates";
 
 /**
@@ -76,9 +75,6 @@ export function SetupRows({
   pricedFor,
   savedCountry,
   disciplines,
-  suggestions = [],
-  suggesting = false,
-  sightUnseen = false,
   problemRow,
   problemMessage,
 }: {
@@ -108,11 +104,6 @@ export function SetupRows({
   savedCountry?: string | null;
   /** What this account does, main one first. See RateBody. */
   disciplines?: { key: string; label: string }[];
-  /** What Freely thinks this quote should carry. See lib/suggest-sections. */
-  suggestions?: SectionSuggestion[];
-  suggesting?: boolean;
-  /** The brief describes something nobody has opened yet. */
-  sightUnseen?: boolean;
   /** A row that is missing something, and what to say about it.
    *
    * Shown inside the row rather than at the foot of the form. A message by the
@@ -351,9 +342,6 @@ export function SetupRows({
                     setSectionNotes={setSectionNotes}
                     availabilityNote={availabilityNote}
                     setAvailabilityNote={setAvailabilityNote}
-                    suggestions={suggestions}
-                    suggesting={suggesting}
-                    sightUnseen={sightUnseen}
                   />
                 )}
                 {row === "presentation" && (
@@ -853,9 +841,6 @@ export function SectionsBody({
   setSectionNotes,
   availabilityNote,
   setAvailabilityNote,
-  suggestions = [],
-  suggesting = false,
-  sightUnseen = false,
 }: {
   draft: QuoteDraftPayload;
   setDraft: Dispatch<SetStateAction<QuoteDraftPayload>>;
@@ -863,80 +848,13 @@ export function SectionsBody({
   setSectionNotes: Dispatch<SetStateAction<SectionNotes>>;
   availabilityNote: string;
   setAvailabilityNote: Dispatch<SetStateAction<string>>;
-  /** Read off the brief, with a reason each. See lib/suggest-sections. */
-  suggestions?: SectionSuggestion[];
-  suggesting?: boolean;
-  sightUnseen?: boolean;
 }) {
   const t = useT();
   const questions = SECTION_QUESTIONS.filter(
     (q) => draft[q.inclusion as keyof QuoteDraftPayload]
   );
-  const notTaken = suggestions.filter((s) => !draft[s.key as keyof QuoteDraftPayload]);
-
-  function takeAll() {
-    setDraft((d) => {
-      const next = { ...d };
-      for (const item of suggestions) {
-        (next as Record<string, unknown>)[item.key] = true;
-      }
-      return next;
-    });
-  }
-
   return (
     <>
-      {/* Read from the brief, offered rather than applied.
-          The old order asked somebody to decide whether this job needed an
-          assumptions list before anything had read the brief, which is a
-          question only the people who least need the help can answer. Now the
-          brief is read first and each suggestion carries the reason it is
-          here, so taking one is a decision rather than a default. */}
-      {suggesting && notTaken.length === 0 && (
-        <p className="text-caption text-text-muted mt-0 mb-3">{t.quote.readingBrief}</p>
-      )}
-
-      {notTaken.length > 0 && (
-        <Reveal
-          title={t.quote.suggestedTitle}
-          hint={sightUnseen ? t.quote.suggestedSightUnseen : t.quote.suggestedHint}
-          tone={sightUnseen ? "coral" : "violet"}
-          className="mt-0 mb-4"
-        >
-          <ul className="list-none p-0 m-0 flex flex-col gap-2">
-            {notTaken.map((item) => (
-              <li key={item.key} className="flex items-start gap-2.5">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setDraft((d) => ({ ...d, [item.key]: true }) as QuoteDraftPayload)
-                  }
-                  aria-label={sectionName(item.key, t)}
-                  className="mt-[2px] w-[15px] h-[15px] rounded border border-line bg-white shrink-0 cursor-pointer p-0 tap"
-                />
-                <span className="min-w-0">
-                  <span className="block font-body font-semibold text-small text-ink">
-                    {sectionName(item.key, t)}
-                  </span>
-                  <span className="block text-caption text-slate mt-0.5 text-pretty">
-                    {/* A rule's own words when a rule put it here, since
-                        "your own rule says so" beats anything written now. */}
-                    {item.rule ? t.quote.suggestedByRule.replace("{rule}", item.reason) : item.reason}
-                  </span>
-                </span>
-              </li>
-            ))}
-          </ul>
-          <button
-            type="button"
-            onClick={takeAll}
-            className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 mt-3 tap"
-          >
-            {t.quote.suggestedTakeAll}
-          </button>
-        </Reveal>
-      )}
-
       <div className="flex flex-wrap gap-1.5">
         {ALL_SECTIONS.map((key) => (
           <Chip

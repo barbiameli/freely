@@ -119,31 +119,18 @@ describe("the request", () => {
   });
 });
 
-describe("how it behaves in the wizard", () => {
-  const action = readFileSync("src/actions/suggest.ts", "utf8");
-  const wizard = readFileSync("src/app/(app)/quote/quote-wizard.tsx", "utf8");
-  const rows = readFileSync("src/components/quote/setup-rows.tsx", "utf8");
+describe("where it is used", () => {
+  const plan = readFileSync("src/lib/quote-plan.ts", "utf8");
+  const action = readFileSync("src/actions/plan.ts", "utf8");
 
-  it("never hands the wizard an error to display", () => {
-    // An offer nobody asked for should not be able to interrupt somebody
-    // halfway through writing a quote.
-    expect(action).toContain("const empty = { suggestions: [], sightUnseen: false }");
-    expect(action).not.toContain("ok: false");
+  it("merges the model's reading with the account's rules, in the plan step", () => {
+    // This used to run twice: once in a panel inside the form, before
+    // anything had read the brief, and once after. The blind one went.
+    expect(action).toContain("mergeSuggestions(");
+    expect(action).toContain("ruleSuggestions(");
   });
 
-  it("says nothing about a brief too short to read", () => {
-    expect(action).toContain("input.sourceText.trim().length < 120");
-  });
-
-  it("does not re-read on every keystroke", () => {
-    expect(wizard).toContain("suggestedFrom");
-    expect(wizard).toContain("}, 1400);");
-  });
-
-  it("offers rather than applies", () => {
-    // Nothing is ticked on the freelancer's behalf. The reason is shown next
-    // to each one, so taking it is a decision.
-    expect(rows).toContain("notTaken");
-    expect(rows).toContain("suggestedTakeAll");
+  it("plans the sections after the brief has been read", () => {
+    expect(plan).toContain('"sections" names the parts of the quote worth carrying');
   });
 });

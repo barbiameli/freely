@@ -134,11 +134,22 @@ export const SETUP_ROWS: SetupRowKey[] = ["rate", "payment", "sections", "presen
  * Presentation is format, branding and style: how the finished document looks.
  * The wizard was asking for all three before the document existed, so the
  * choice was made blind and its result was not seen until a client saw it.
- * Those now live on the quote page, next to a preview.
+ * They live on the quote page now, next to the preview they change.
  *
- * What is left all changes what gets written. That is the line.
+ * Sections went the same way, for the same reason and one better. Choosing
+ * which parts a quote carries is a question about the job, and on this form
+ * nothing has read the job yet: the freelancer is picking from a list of seven
+ * before Freely has seen a word of the brief. The plan step asks it after the
+ * reading, with a line each saying what in this brief wants it. Asking twice,
+ * once blind and once informed, is asking the blind one for nothing.
+ *
+ * What is left is the two things that cannot be worked out from a brief and
+ * are needed before anything can be priced: what you charge, and when you are
+ * paid.
  */
-export const WIZARD_ROWS: SetupRowKey[] = SETUP_ROWS.filter((row) => row !== "presentation");
+export const WIZARD_ROWS: SetupRowKey[] = SETUP_ROWS.filter(
+  (row) => row !== "presentation" && row !== "sections"
+);
 
 /**
  * Seniority, resolved.

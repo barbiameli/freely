@@ -333,13 +333,6 @@ export const es: Dictionary = {
     planRules: "Ya resuelto por tus reglas de base",
     planWrite: "Escribir el presupuesto",
     planBack: "Volver al proyecto",
-    readingBrief: "Leyendo el proyecto.",
-    suggestedTitle: "Vale la pena añadir a este",
-    suggestedHint: "Sacado del proyecto. Coge lo que encaje.",
-    suggestedSightUnseen:
-      "Este proyecto describe algo que todavía no has abierto, así que el precio depende de cantidades que nadie ha contado.",
-    suggestedByRule: "Tus reglas de base: {rule}.",
-    suggestedTakeAll: "Añadir todas",
     sectionAssumptions: "Qué se da por hecho",
     sectionScopeChanges: "Qué cambiaría el precio",
     sectionAi: "Uso de IA",

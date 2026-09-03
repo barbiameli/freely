@@ -47,7 +47,6 @@ import {
   uploadBrandLogoAction,
 } from "@/actions/memory";
 import { SetupRows, setupFromDraft } from "@/components/quote/setup-rows";
-import { suggestSectionsAction } from "@/actions/suggest";
 import { planQuoteAction, type PlannedQuote } from "@/actions/plan";
 import { PlanReview } from "@/components/quote/plan-review";
 import { sectionName } from "@/components/quote/setup-rows";
@@ -56,7 +55,6 @@ import {
   milestonesForPrompt,
   type PlanAnswer,
 } from "@/lib/quote-plan";
-import type { SectionSuggestion } from "@/lib/suggest-sections";
 import {
   learnQuoteDefaultsAction,
   keepQuoteDefaultAction,
@@ -271,21 +269,14 @@ export function QuoteWizard({
   const [keptRows, setKeptRows] = useState<SetupRowKey[]>([]);
 
   /**
-   * What Freely thinks this quote should carry, read off the brief.
+   * The plan, once the brief has been read. Null means the form is showing.
    *
-   * Arrives on its own once there is enough to read, because a suggestion
-   * behind a button is a suggestion nobody asks for. Nothing is applied: the
-   * sections row shows them as offers with the reason attached.
+   * This replaced a suggestion panel that sat inside the form and read the
+   * brief while somebody typed. Two things asking the same question, one of
+   * them before anything had been read, so the earlier one went.
    */
-  const [suggestions, setSuggestions] = useState<SectionSuggestion[]>([]);
-  const [sightUnseen, setSightUnseen] = useState(false);
-  const [suggesting, setSuggesting] = useState(false);
-  /** The plan, once it has been read. Null means the form is still showing. */
   const [plan, setPlan] = useState<PlannedQuote | null>(null);
   const [planning, setPlanning] = useState(false);
-  /** The text the current suggestions were read from, so typing on does not
-   * fire a call per pause. */
-  const suggestedFrom = useRef("");
   // Branding can be added without leaving the wizard, so a half-filled brief
   // isn't lost to a trip to Memory.
   const [showBrandUpload, setShowBrandUpload] = useState(false);
@@ -641,34 +632,6 @@ export function QuoteWizard({
 
 
   /** "Make this my usual", for the row that was changed. */
-  /**
-   * Reading the brief, once it has settled.
-   *
-   * Fires on its own rather than behind a button: a suggestion you have to ask
-   * for is one nobody asks for. It waits for typing to stop, and only when the
-   * text has moved by a couple of hundred characters, so pasting a brief costs
-   * one small call and writing one costs a handful rather than one per pause.
-   */
-  useEffect(() => {
-    const text = draft.sourceText.trim();
-    // Too little to read is not a brief. Below this a model produces confident
-    // guesses about a job nobody has described yet.
-    if (text.length < 160) return;
-    if (Math.abs(text.length - suggestedFrom.current.length) < 200) return;
-
-    const timer = window.setTimeout(() => {
-      suggestedFrom.current = text;
-      setSuggesting(true);
-      void suggestSectionsAction({ sourceText: text, instructions: draft.instructions })
-        .then((result) => {
-          setSuggestions(result.suggestions);
-          setSightUnseen(result.sightUnseen);
-        })
-        .finally(() => setSuggesting(false));
-    }, 1400);
-    return () => window.clearTimeout(timer);
-  }, [draft.sourceText, draft.instructions]);
-
   async function handleKeepRow(row: SetupRowKey) {
     setKeptRows((rows) => (rows.includes(row) ? rows : [...rows, row]));
     const result = await keepQuoteDefaultAction(
@@ -1089,9 +1052,6 @@ export function QuoteWizard({
             pricedFor={pricedForFields}
             savedCountry={savedCountry}
             disciplines={disciplines}
-            suggestions={suggestions}
-            suggesting={suggesting}
-            sightUnseen={sightUnseen}
             problemRow={problem.row}
             problemMessage={problem.message}
           />
