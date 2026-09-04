@@ -31,6 +31,11 @@ const config: Config = {
         // colour failing it. This clears 4.5 on white, paper and mint, and
         // is close enough to the old value that nothing looks different.
         "text-muted": "#737279",
+        // The middle light. Dark enough to clear 4.5:1 on white and on paper,
+        // since it is used at 11px next to the other two.
+        amber: "#9A5B00",
+        "amber-tint": "rgba(154,91,0,0.08)",
+        "success-tint": "rgba(6,95,70,0.08)",
         "coral-tint": "rgba(244,91,105,0.08)",
         overdue: "#C4302E",
         "overdue-tint": "rgba(196,48,46,0.08)",
