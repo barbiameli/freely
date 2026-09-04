@@ -12,7 +12,7 @@ import { groupDeliverables, milestoneLines, type QuoteMilestone } from "@/lib/mi
 import { groupsByMilestone, showsMilestoneSection } from "@/lib/quote-layout";
 import type { Locale } from "@/lib/i18n";
 import { hasStrategyContent } from "@/lib/strategy";
-import { paymentClause, revisionsClause, type BillingBasis, milestoneDefinition, roundDefinition, type DefinitionOverrides } from "@/lib/quote-definitions";
+import { basisDefinition, paymentClause, revisionsClause, type BillingBasis, milestoneDefinition, roundDefinition, type DefinitionOverrides } from "@/lib/quote-definitions";
 import type { BriefExtras } from "@/lib/anthropic";
 import { AcceptBlock } from "./accept-block";
 import { dict, type Dictionary } from "@/lib/i18n";
@@ -102,6 +102,11 @@ function extraBlocks(
           hasMilestones: (brief.milestones?.length ?? 0) > 0,
           milestonesBillable: brief.milestonesBillable !== false,
           definition: milestoneDefinition(brief.definitions ?? {}, q, brief.milestonesBillable !== false),
+          basis: basisDefinition(
+            brief.definitions ?? {},
+            q,
+            (brief.billing as BillingBasis) ?? "FIXED_TOTAL"
+          ),
           billing: (brief.billing as BillingBasis) ?? "FIXED_TOTAL",
           fixedPrice: brief.rateUnit === "FIXED",
         },

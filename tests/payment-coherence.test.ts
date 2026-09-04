@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { paymentProblems } from "@/lib/payment-coherence";
 import {
+  basisDefinition,
   milestoneDefinition,
   paymentClause,
   revisionsClause,
@@ -167,5 +168,51 @@ describe("the definition agrees with the schedule", () => {
     };
     expect(milestoneDefinition({ milestone: "Mine" }, words, true)).toBe("Mine");
     expect(milestoneDefinition({}, words, false)).toBe("shape definition");
+  });
+});
+
+describe("the sentence about how the total works", () => {
+  const words = {
+    milestoneMeans: "billable definition",
+    milestoneMeansShape: "shape definition",
+    roundMeans: "round definition",
+    billedFixed: "This is a fixed total for the scope on this page.",
+    billedTracked:
+      "This is an estimate. You are billed for the hours actually worked, at the rate above. I will tell you when tracked time reaches 80% of the estimate.",
+  };
+
+  it("stays away from a paragraph that already explains itself", () => {
+    // The real one, which the old word list missed: it said the same thing in
+    // words the list did not have, so the quote said it twice and the second
+    // version promised a ceiling the first did not.
+    const own =
+      "Hours are tracked in Toggl and invoiced at $50 per hour based on actual time recorded. " +
+      "Delivered work with no response after 10 business days counts as accepted.";
+    const out = paymentClause(
+      own,
+      { hasMilestones: false, billing: "HOURLY_TRACKED", fixedPrice: false },
+      words
+    );
+    expect(out).toBe(own);
+  });
+
+  it("can be reworded", () => {
+    expect(basisDefinition({ basis: "Mine" }, words, "HOURLY_TRACKED")).toBe("Mine");
+  });
+
+  it("can be removed, and then nothing is appended", () => {
+    expect(basisDefinition({ basis: null }, words, "HOURLY_TRACKED")).toBe("");
+    const out = paymentClause(
+      "Paid on delivery.",
+      { hasMilestones: false, billing: "HOURLY_TRACKED", fixedPrice: false, basis: "" },
+      words
+    );
+    expect(out).toBe("Paid on delivery.");
+  });
+
+  it("is reachable from the editor", () => {
+    const view = readFileSync("src/app/(app)/quote/[briefId]/brief-view.tsx", "utf8");
+    expect(view).toContain('saveDefinition("basis"');
+    expect(view).toContain("appended.basis");
   });
 });

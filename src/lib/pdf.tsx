@@ -22,7 +22,7 @@ import { parseTimelineStages, isRoadmapWorthy, roadmapTicks, timelineTotal } fro
 import { dict, fill } from "@/lib/i18n";
 import type { BriefExtras } from "@/lib/anthropic";
 import { hasStrategyContent } from "@/lib/strategy";
-import { paymentClause, revisionsClause, type BillingBasis, milestoneDefinition, roundDefinition, type DefinitionOverrides } from "@/lib/quote-definitions";
+import { basisDefinition, paymentClause, revisionsClause, type BillingBasis, milestoneDefinition, roundDefinition, type DefinitionOverrides } from "@/lib/quote-definitions";
 import { groupDeliverables, milestoneLines, type QuoteMilestone } from "@/lib/milestone-lines";
 import { groupsByMilestone, showsMilestoneSection } from "@/lib/quote-layout";
 import type { Locale } from "@/lib/i18n";
@@ -515,6 +515,11 @@ function ExtraSections({
           hasMilestones: (brief.milestones?.length ?? 0) > 0,
           milestonesBillable: brief.milestonesBillable !== false,
           definition: milestoneDefinition(brief.definitions ?? {}, w, brief.milestonesBillable !== false),
+          basis: basisDefinition(
+            brief.definitions ?? {},
+            w,
+            (brief.billing as BillingBasis) ?? "FIXED_TOTAL"
+          ),
           billing: (brief.billing as BillingBasis) ?? "FIXED_TOTAL",
           fixedPrice: brief.rateUnit === "FIXED",
         },

@@ -49,6 +49,7 @@ import { lockReason } from "@/lib/quote-lock";
 import { brokenRules, type RuleSettings } from "@/lib/ground-rules";
 import { applyHiddenSections, type HideableSection } from "@/lib/hidden-sections";
 import {
+  basisDefinition,
   milestoneDefinition,
   roundDefinition,
   type DefinitionOverrides,
@@ -391,30 +392,6 @@ export function BriefView({
    */
   const [hidden, setHidden] = useState<string[]>(brief.hiddenSections ?? []);
 
-  /**
-   * The sentences the client sees that are not in any editable field.
-   *
-   * paymentClause and revisionsClause append a definition at render time, on
-   * every template and the PDF. Useful, and invisible here, so a definition
-   * saying each milestone is invoiced sat under payment terms saying the hours
-   * are invoiced once at the end, and there was no box to correct it in.
-   */
-  const overrides = brief.definitions ?? {};
-  const appended = {
-    payment:
-      (brief.milestones?.length ?? 0) > 0
-        ? milestoneDefinition(overrides, t.publicQuote, brief.milestonesBillable !== false)
-        : "",
-    revisions: roundDefinition(overrides, t.publicQuote),
-  };
-
-  /** Rewording one, or dropping it. Null is "say nothing here". */
-  async function saveDefinition(key: "milestone" | "round", value: string | null) {
-    const next: DefinitionOverrides = { ...overrides, [key]: value };
-    const result = await updateBriefContentAction(brief.id, { definitions: next });
-    if (!result.ok) setError(result.error);
-    else router.refresh();
-  }
 
   const sectionWords = {
     remove: t.brief.sectionRemove,
@@ -462,6 +439,39 @@ export function BriefView({
   }
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
+
+  /**
+   * The sentences the client sees that are not in any editable field.
+   *
+   * paymentClause and revisionsClause append a definition at render time, on
+   * every template and the PDF. Useful, and invisible here, so a definition
+   * saying each milestone is invoiced sat under payment terms saying the hours
+   * are invoiced once at the end, and there was no box to correct it in.
+   */
+  const overrides = brief.definitions ?? {};
+  const appended = {
+    payment:
+      (brief.milestones?.length ?? 0) > 0
+        ? milestoneDefinition(overrides, t.publicQuote, brief.milestonesBillable !== false)
+        : "",
+    revisions: roundDefinition(overrides, t.publicQuote),
+    basis:
+      brief.rateUnit === "FIXED"
+        ? ""
+        : basisDefinition(
+            overrides,
+            t.publicQuote,
+            (brief.billing as "FIXED_TOTAL" | "HOURLY_TRACKED") ?? "FIXED_TOTAL"
+          ),
+  };
+
+  /** Rewording one, or dropping it. Null is "say nothing here". */
+  async function saveDefinition(key: "milestone" | "round" | "basis", value: string | null) {
+    const next: DefinitionOverrides = { ...overrides, [key]: value };
+    const result = await updateBriefContentAction(brief.id, { definitions: next });
+    if (!result.ok) setError(result.error);
+    else router.refresh();
+  }
 
   async function startFollowOn() {
     setStartingFollowOn(true);
@@ -1088,6 +1098,18 @@ export function BriefView({
                   text={appended.payment}
                   onSave={(next) => void saveDefinition("milestone", next)}
                   ariaLabel="What a milestone means"
+                  t={t}
+                />
+              )}
+              {/* The sentence promising a warning at 80% and no overrun
+                  without written approval, sitting under payment terms the
+                  freelancer wrote themselves. Two answers to one question,
+                  and until now no way to reach the second one. */}
+              {appended.basis && (
+                <DefinitionLine
+                  text={appended.basis}
+                  onSave={(next) => void saveDefinition("basis", next)}
+                  ariaLabel="How the total works"
                   t={t}
                 />
               )}

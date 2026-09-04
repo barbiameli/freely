@@ -58,9 +58,17 @@ const SAYS_TRACKED = [
   "hours actually worked",
   "hours worked",
   "tracked and billed",
-  "this is an estimate",
+  "hours are tracked",
+  "hours tracked",
+  "time tracked",
+  "tracked time",
+  "actual time",
+  "time recorded",
+  "an estimate",
   "horas realmente trabajadas",
-  "es una estimación",
+  "horas trabajadas",
+  "tiempo registrado",
+  "una estimación",
 ];
 const SAYS_FIXED = ["fixed total", "fixed price", "precio cerrado", "precio fijo"];
 
@@ -102,6 +110,16 @@ function append(text: string, sentence: string): string {
 export interface DefinitionOverrides {
   milestone?: string | null;
   round?: string | null;
+  /**
+   * "This is an estimate. You are billed for the hours actually worked..."
+   *
+   * The last of the three appended sentences, and the one that caused the most
+   * trouble: it promises a warning at 80% and no overrun without written
+   * approval, which is a commitment, sitting under payment terms the
+   * freelancer wrote themselves. Where the two disagree the client picks. It
+   * is theirs to reword or remove like the others.
+   */
+  basis?: string | null;
 }
 
 export function definitionsFromSettings(settings: unknown): DefinitionOverrides {
@@ -119,6 +137,18 @@ export function milestoneDefinition(
   if (override === null) return "";
   if (typeof override === "string" && override.trim()) return override.trim();
   return billable ? words.milestoneMeans : words.milestoneMeansShape;
+}
+
+/** How this quote says the total works, or "" if it says nothing. */
+export function basisDefinition(
+  overrides: DefinitionOverrides,
+  words: DefinitionWords,
+  billing: BillingBasis
+): string {
+  const override = overrides.basis;
+  if (override === null) return "";
+  if (typeof override === "string" && override.trim()) return override.trim();
+  return billing === "HOURLY_TRACKED" ? words.billedTracked : words.billedFixed;
 }
 
 /** What this quote says a round of revisions is, or "" if it says nothing. */
@@ -154,6 +184,8 @@ export function paymentClause(
      * removed it gets their version on every template and in the PDF.
      */
     definition?: string;
+    /** How the total works, as this quote states it. Same reasoning. */
+    basis?: string;
   },
   words: DefinitionWords
 ): string {
@@ -168,7 +200,10 @@ export function paymentClause(
   // A fixed-price quote never shows a rate, so there is nothing to be
   // ambiguous about and the sentence would be noise.
   if (!options.fixedPrice && !alreadySaysTheBasis(out, options.billing)) {
-    out = append(out, options.billing === "HOURLY_TRACKED" ? words.billedTracked : words.billedFixed);
+    const basis =
+      options.basis ??
+      (options.billing === "HOURLY_TRACKED" ? words.billedTracked : words.billedFixed);
+    if (basis.trim()) out = append(out, basis);
   }
   return out;
 }
