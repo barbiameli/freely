@@ -104,11 +104,38 @@ describe("the starter set", () => {
     expect(ruleFix("paymentBasis", values)).toContain("7 days");
   });
 
-  it("keeps exactly three rules able to block publishing", () => {
+  it("keeps the set of rules able to block publishing small", () => {
     // Deliberately few. A gate people meet on every quote is a gate they
     // learn to click through without reading.
+    //
+    // paymentTermsAgree is the fourth and is a different kind from the other
+    // three. Those fire on an absence, so a bare quote meets all of them and
+    // they are the common case. This one fires only when the paragraph
+    // actually contradicts itself, which is rare and is the one section a
+    // client will hold somebody to. It costs nothing on a quote that is fine.
     const blocking = GROUND_RULES.filter((r) => r.severity === "blocking").map((r) => r.key);
-    expect(blocking).toEqual(["paymentBasis", "revisionRounds", "assumptions"]);
+    expect(blocking).toEqual([
+      "paymentBasis",
+      "revisionRounds",
+      "assumptions",
+      "paymentTermsAgree",
+    ]);
+  });
+
+  it("does not block a quote whose payment terms are coherent", () => {
+    // The point of the rule above: it must be silent on the ordinary case.
+    const fine: CheckableQuote = {
+      hours: 10,
+      price: 500,
+      milestoneCount: 0,
+      billing: "HOURLY_TRACKED",
+      extras: {
+        paymentTerms: "The hours worked are invoiced on delivery, due within 14 days.",
+      },
+    };
+    expect(brokenRules(fine, DEFAULT_RULE_SETTINGS).map((r) => r.key)).not.toContain(
+      "paymentTermsAgree"
+    );
   });
 
   it("never flags a rule that cannot be read off a quote", () => {

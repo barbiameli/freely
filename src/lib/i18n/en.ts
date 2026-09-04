@@ -1004,6 +1004,13 @@ export const en = {
     ownershipRule:
       "Rights to the final work transfer when the final payment lands. Working files and unused concepts stay yours unless you agree otherwise.",
     exclusionsRule: "Every quote names the adjacent work it does not cover, and says it is quoted separately.",
+    paymentTermsAgreeTitle: "The payment terms say one thing",
+    paymentTermsAgreeWhy:
+      "A paragraph that promises the hours worked in one sentence and the full amount in the next has already lost the argument about which it meant, and the client picks the reading that suits them.",
+    paymentTermsAgreeCost:
+      "A capped estimate is the worst of both: you carry every hour over the cap and you can never earn more than it.",
+    paymentTermsAgreeRule:
+      "An estimate invoices the hours actually worked, with no ceiling. A fixed total invoices the total. A quote never says both, and never invoices a stage it does not have.",
     deliverablesAreThingsTitle: "Every deliverable is something they receive",
     deliverablesAreThingsWhy:
       "A round of revisions only happens if the client comes back. Promising it as an item being bought means promising something that may never exist.",

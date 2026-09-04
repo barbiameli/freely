@@ -28,6 +28,7 @@ import {
   HOURS_PER_DAY,
   type RateUnit,
 } from "@/lib/rate-unit";
+import type { BillingBasis } from "@/lib/quote-definitions";
 
 /**
  * Two models, chosen per job rather than one for everything.
@@ -1059,6 +1060,21 @@ export interface RefineContext {
   currency?: string;
   rateUnit?: RateUnit;
   hourlyRate?: number | null;
+  /**
+   * Whether the number at the bottom is a price or an estimate.
+   *
+   * Carried because a refine can rewrite the payment terms, and one written
+   * without knowing this produces a paragraph that argues with itself. A real
+   * quote came back saying "you pay only for the hours worked" and "the full
+   * amount is invoiced" in consecutive sentences, and offered a ceiling, which
+   * this app deliberately does not do. The generate path had the instruction.
+   * The refine that applied a ground-rule fix did not.
+   */
+  billing?: BillingBasis;
+  /** How the money is split, so a rewrite cannot invent a different schedule. */
+  paymentPlan?: string | null;
+  /** Whether the stages are payment points, or only the shape of the work. */
+  milestonesBillable?: boolean;
   /** Sections the freelancer has taken out. Named so a refine can put one
    * back when asked and leave it out when not. */
   removedSections?: string[];
@@ -1092,6 +1108,41 @@ export function buildRefineUserPrompt(
           ? "per day"
           : "per hour";
     facts.push(`The rate behind the price is ${context.hourlyRate} ${context.currency ?? "USD"} ${unit}.`);
+  }
+  /**
+   * The things a refine may not quietly change.
+   *
+   * Stated as prohibitions rather than as description, because the failure is
+   * always the model writing a schedule that is reasonable in general and
+   * wrong for this quote.
+   */
+  if (context.billing && context.rateUnit !== "FIXED") {
+    facts.push(
+      context.billing === "HOURLY_TRACKED"
+        ? "The total on this quote is an estimate and the client is billed for the hours actually worked at the stated rate. Never call it a fixed price, and never introduce a ceiling, a cap, a maximum or a not-to-exceed figure. Never say the full amount, the total or the balance is invoiced: what is invoiced is the hours worked."
+        : "The total on this quote is a fixed total for this scope, whatever the hours turn out to be. Never describe it as an estimate, and never make it subject to the hours worked."
+    );
+  }
+  if (context.paymentPlan) {
+    const plan = context.paymentPlan;
+    const schedule =
+      plan === "UPFRONT"
+        ? "the whole amount is due before the work starts"
+        : plan === "ON_DELIVERY"
+          ? "nothing is due up front and the whole amount is invoiced on delivery"
+          : plan === "MILESTONE"
+            ? "each milestone is invoiced when it is completed"
+            : "part is due before the work starts and the rest on delivery";
+    facts.push(
+      `The agreed schedule is that ${schedule}. Do not replace it with a different one unless the instruction asks for that.`
+    );
+  }
+  // A quote whose stages are only the shape of the work has no milestone to
+  // invoice, so a clause that invoices one describes a schedule nobody agreed.
+  if (context.milestonesBillable === false) {
+    facts.push(
+      "The stages on this quote are the shape of the work only. They are not payment points, so never write that a stage or milestone is invoiced, and never write that the next milestone starts on payment or acceptance."
+    );
   }
   if (context.removedSections?.length) {
     facts.push(

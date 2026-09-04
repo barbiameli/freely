@@ -1,6 +1,7 @@
 import type { BriefExtras } from "@/lib/anthropic";
 import { isProtectionLevel, protectionFor } from "@/lib/protection";
 import { happenings } from "@/lib/deliverable-check";
+import { paymentProblems } from "@/lib/payment-coherence";
 
 /**
  * The things a quote should say before it goes out, and what it costs when it
@@ -38,6 +39,7 @@ export type RuleKey =
   | "exclusions"
   | "includedCalls"
   | "deliverablesAreThings"
+  | "paymentTermsAgree"
   | "beforeSignature"
   | "noNumberBeforeScope";
 
@@ -159,6 +161,15 @@ export const GROUND_RULES: GroundRule[] = [
    * client responding, as though it were an item being bought, is the mistake.
    */
   { key: "deliverablesAreThings", severity: "suggestion", checkable: true },
+  /**
+   * The payment paragraph does not contradict itself.
+   *
+   * Blocking, unlike the rest of the suggestions, because this is the one
+   * section a client reads twice and the one they will hold you to. A quote
+   * that says both "you pay only for the hours worked" and "the full amount is
+   * invoiced" has already lost the argument about which it meant.
+   */
+  { key: "paymentTermsAgree", severity: "blocking", checkable: true },
   {
     key: "includedCalls",
     severity: "suggestion",
@@ -280,6 +291,8 @@ export interface CheckableQuote {
    */
   paymentPlan?: string | null;
   milestoneCount: number;
+  /** Whether the stages are payment points, or only the shape of the work. */
+  milestonesBillable?: boolean;
   /** Sections the freelancer removed. A removed section is not a present one. */
   hidden?: string[];
   /** The deliverables as written, for checking they are things. */
@@ -434,6 +447,16 @@ export function brokenRules(quote: CheckableQuote, settings: RuleSettings): Grou
     // are buying: there may be no response, and then there is nothing to hand
     // over. See lib/deliverable-check.
     deliverablesAreThings: () => happenings(quote.deliverables ?? []).length > 0,
+
+    // Says two incompatible things about what is owed, caps an estimate, or
+    // invoices a stage this quote does not have. See lib/payment-coherence.
+    paymentTermsAgree: () =>
+      present(quote, "paymentTerms") &&
+      paymentProblems(extras.paymentTerms, {
+        billing: quote.billing === "HOURLY_TRACKED" ? "HOURLY_TRACKED" : "FIXED_TOTAL",
+        milestonesBillable: quote.milestonesBillable ?? false,
+        fixedPrice: quote.rateUnit === "FIXED",
+      }).length > 0,
 
     beforeSignature: () => false,
     noNumberBeforeScope: () => false,

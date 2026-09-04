@@ -51,7 +51,7 @@ import {
   GROUND_RULES,
 } from "@/lib/ground-rules";
 import { billingFromSettings } from "@/lib/quote-definitions";
-import { milestonesFromSettings } from "@/lib/milestone-lines";
+import { milestonesBillableFromSettings, milestonesFromSettings } from "@/lib/milestone-lines";
 import type { RateUnit } from "@/lib/rate-unit";
 
 export type ActionResult<T = undefined> =
@@ -729,6 +729,12 @@ export async function refineBriefAction(
         | "DAY"
         | "FIXED",
       hourlyRate: brief.hourlyRate,
+      // The three things a rewrite of the payment terms must not contradict.
+      // Without them a refine applying one rule's fix wrote a schedule that
+      // argued with the rest of the document.
+      billing: billingFromSettings(brief.settings),
+      paymentPlan: (brief as unknown as { paymentPlan?: string }).paymentPlan ?? null,
+      milestonesBillable: milestonesBillableFromSettings(brief.settings),
       removedSections: removed,
     });
   } catch (err) {
@@ -979,6 +985,7 @@ export async function setBriefPublishedAction(
           rateUnit: (brief as unknown as { rateUnit?: string }).rateUnit ?? "HOUR",
           billing: billingFromSettings(brief.settings),
           milestoneCount: milestonesFromSettings(brief.settings).length,
+          milestonesBillable: milestonesBillableFromSettings(brief.settings),
           hidden: (brief as unknown as { hiddenSections?: string[] }).hiddenSections ?? [],
         },
         rules
@@ -1070,12 +1077,20 @@ export async function applyRuleAction(
   const settings = parseRuleSettings((user as unknown as { groundRules?: unknown }).groundRules);
   const values = ruleValues(settings);
 
+  // Whether this quote invoices per stage, so the acceptance fix does not
+  // promise a payment schedule the quote does not have.
+  const brief = await prisma.brief.findFirst({
+    where: { id: briefId, ...teamScopeWhere(user) },
+  });
+  if (!brief) return { ok: false, error: "That quote no longer exists." };
+  const billsPerMilestone = milestonesBillableFromSettings(brief.settings);
+
   const applied: string[] = [];
   const instructions: string[] = [];
   for (const key of asked) {
     const found = ruleOf(key);
     if (!found) continue;
-    const instruction = ruleFix(found.key, values);
+    const instruction = ruleFix(found.key, values, billsPerMilestone);
     // The two rules about what happens before a quote exists. Nothing on the
     // document can satisfy them, so there is nothing to run.
     if (!instruction) continue;

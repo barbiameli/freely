@@ -55,7 +55,7 @@ export interface Protection {
 const KNOWN: Protection = {
   // Even here: a deliverables list that promises a review session is confusing
   // to somebody who trusts you, not only to somebody who does not.
-  rules: ["paymentBasis", "revisionRounds", "deliverablesAreThings"],
+  rules: ["paymentBasis", "revisionRounds", "deliverablesAreThings", "paymentTermsAgree"],
   sections: ["includeSOW", "includeRevisions"],
   paidDiscovery: false,
 };
@@ -72,6 +72,7 @@ const NEW: Protection = {
     "paymentBasis",
     "revisionRounds",
     "deliverablesAreThings",
+    "paymentTermsAgree",
     "assumptions",
     "scopeChanges",
     "cancellation",
@@ -106,6 +107,7 @@ const GUARDED: Protection = {
     "paymentBasis",
     "revisionRounds",
     "deliverablesAreThings",
+    "paymentTermsAgree",
     "assumptions",
     "scopeChanges",
     "cancellation",

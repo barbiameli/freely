@@ -848,6 +848,7 @@ export function BriefView({
                 paymentPlan: brief.paymentPlan ?? null,
                 protection: brief.protection ?? null,
                 milestoneCount: brief.milestones?.length ?? 0,
+                milestonesBillable: brief.milestonesBillable ?? false,
                 hidden,
               },
               rules

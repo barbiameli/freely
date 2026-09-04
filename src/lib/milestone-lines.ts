@@ -1,5 +1,18 @@
 import { formatMoney } from "@/lib/money";
 import type { Locale } from "@/lib/i18n";
+/**
+ * Whether this quote's stages are where money moves.
+ *
+ * Read from the settings rather than inferred, and defaulting to false, so a
+ * quote paid in one sum never has a clause written about invoicing a stage.
+ * Inferring it from the payment plan was how "the next milestone starts"
+ * reached a quote that had no payment milestones.
+ */
+export function milestonesBillableFromSettings(settings: unknown): boolean {
+  const parsed = (settings as { milestonesBillable?: unknown } | null) ?? {};
+  return parsed.milestonesBillable === true;
+}
+
 /** One billable chunk, as it is stored on the quote's settings. */
 export interface QuoteMilestone {
   name: string;

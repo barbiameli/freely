@@ -51,6 +51,13 @@ export function ruleWords(key: RuleKey, t: Dictionary): RuleWords {
       return { title: r.cancellationTitle, why: r.cancellationWhy, cost: r.cancellationCost, statement: r.cancellationRule };
     case "ownership":
       return { title: r.ownershipTitle, why: r.ownershipWhy, cost: r.ownershipCost, statement: r.ownershipRule };
+    case "paymentTermsAgree":
+      return {
+        title: r.paymentTermsAgreeTitle,
+        why: r.paymentTermsAgreeWhy,
+        cost: r.paymentTermsAgreeCost,
+        statement: r.paymentTermsAgreeRule,
+      };
     case "deliverablesAreThings":
       return {
         title: r.deliverablesAreThingsTitle,
@@ -117,7 +124,19 @@ export function valueLabel(key: ValueKey, t: Dictionary): string {
  * instruction to a model rather than copy for a person, and the quote's own
  * language is carried separately by the refine context.
  */
-export function ruleFix(key: RuleKey, values: Record<ValueKey, number>): string {
+export function ruleFix(
+  key: RuleKey,
+  values: Record<ValueKey, number>,
+  /**
+   * Whether this quote actually invoices per stage.
+   *
+   * The acceptance fix used to end "and the next milestone starts" on every
+   * quote, including one paid in a single sum on delivery whose stages were
+   * the shape of the work. That sentence, added to fix one rule, described a
+   * payment schedule the rest of the document did not have.
+   */
+  billsPerMilestone = true
+): string {
   switch (key) {
     case "paymentBasis":
       return `Add payment terms saying when money is due: ${values.depositPercent}% before the work starts for a new client, the rest invoiced on delivery, and every invoice due within ${values.paymentDays} days. Keep it to one or two plain sentences and do not include any bank or card details.`;
@@ -132,13 +151,17 @@ export function ruleFix(key: RuleKey, values: Record<ValueKey, number>): string 
     case "feedbackWindow":
       return `Say that feedback and sign-off come back within ${values.feedbackDays} business days, and that the delivery date moves by the same number of days when they do not.`;
     case "deemedAcceptance":
-      return `Add to the payment terms that delivered work with no response after ${values.acceptanceDays} business days counts as accepted, is invoiced, and that the next milestone starts.`;
+      return billsPerMilestone
+        ? `Add to the payment terms that delivered work with no response after ${values.acceptanceDays} business days counts as accepted, is invoiced, and that the next milestone starts.`
+        : `Add to the payment terms that delivered work with no response after ${values.acceptanceDays} business days counts as accepted and the work carries on. Do not say it is invoiced at that point and do not mention milestones: this quote is paid on its own schedule, not per stage.`;
     case "cancellation":
       return "Add a cancellation clause: completed work is invoiced, the part in progress is invoiced in full, and anything not started is not charged.";
     case "ownership":
       return "Add an ownership clause: rights to the final deliverables transfer on final payment rather than on delivery, and working files and unused concepts stay with the freelancer unless separately agreed.";
     case "exclusions":
       return "Name the work adjacent to this job that is not included, drawn from this brief, and say plainly that it is quoted separately.";
+    case "paymentTermsAgree":
+      return "Rewrite the payment terms so they say one thing about what is owed. If the total is an estimate billed on tracked hours, say that the hours actually worked are invoiced, and never also say that the full amount, the total or the balance is invoiced. Remove any ceiling, cap, maximum or not-to-exceed figure: capping an estimate leaves the overrun unpaid and removes any upside, so a capped job should be quoted as a fixed price instead. If the stages on this quote are the shape of the work rather than payment points, do not say a stage or milestone is invoiced and do not say the next milestone starts. Keep it to one or two plain sentences and do not include any bank or card details.";
     case "deliverablesAreThings":
       return "Rewrite the deliverables so every line is something the client is handed or shown: a file, a document, a set of screens, a corrected version of one of those. Take out any line that is a review, a call, a session, a walkthrough, a handover or a round of revisions, and fold what it covered into the revisions policy or the timeline instead. One artifact is one line, whatever states it passes through.";
     case "includedCalls":

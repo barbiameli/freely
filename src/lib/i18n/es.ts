@@ -1002,6 +1002,13 @@ export const es: Dictionary = {
     ownershipRule:
       "Los derechos del trabajo final pasan cuando llega el pago final. Los archivos de trabajo y las propuestas descartadas siguen siendo tuyos salvo que acordéis otra cosa.",
     exclusionsRule: "Cada presupuesto nombra el trabajo de al lado que no cubre, y dice que se presupuesta aparte.",
+    paymentTermsAgreeTitle: "Las condiciones de pago dicen una sola cosa",
+    paymentTermsAgreeWhy:
+      "Un párrafo que promete las horas trabajadas en una frase y el importe total en la siguiente ya ha perdido la discusión sobre qué quería decir, y el cliente elige la lectura que le conviene.",
+    paymentTermsAgreeCost:
+      "Una estimación con tope es lo peor de las dos: cargas con cada hora por encima del tope y nunca puedes cobrar más que él.",
+    paymentTermsAgreeRule:
+      "Una estimación factura las horas realmente trabajadas, sin tope. Un precio cerrado factura el total. Un presupuesto nunca dice las dos cosas, ni factura una fase que no tiene.",
     deliverablesAreThingsTitle: "Cada entregable es algo que reciben",
     deliverablesAreThingsWhy:
       "Una ronda de revisiones solo ocurre si el cliente responde. Prometerla como algo que se compra es prometer algo que puede no existir.",
