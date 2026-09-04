@@ -2186,24 +2186,56 @@ export async function suggestSections(input: {
  * Returns nothing on failure. The wizard falls back to writing the quote
  * directly, which is exactly what it did before this step existed.
  */
+/**
+ * A plan, or which of the three ways it failed.
+ *
+ * It used to be `QuotePlan | null`, so a truncated response, a response with
+ * no JSON in it and a response the schema rejected were one value, and the
+ * freelancer was told the same wrong thing for all three.
+ */
+export type PlanResult =
+  | { ok: true; plan: QuotePlan }
+  | { ok: false; reason: "unreadable" | "tooLong" };
+
 export async function planQuote(input: {
   sourceText: string;
   instructions?: string;
   disciplineLine?: string;
   language: string;
   ruleStatements: string[];
-}): Promise<QuotePlan | null> {
+}): Promise<PlanResult> {
   const { system, user } = buildPlanPrompt(input);
   try {
-    const text = await callClaude("planQuote", system, user, { maxTokens: 1600 });
+    // 1600 was not enough room. A plan carries a reading, the stages with what
+    // each delivers, the sections with a reason each, the open questions, the
+    // money the brief asks for and the risks, and a long pasted brief produces
+    // all of them. It ran out mid-JSON, callClaude threw the "got cut off"
+    // error, and the catch below turned that into "couldn't make sense of that
+    // brief", which is a different thing and sent people looking at their
+    // brief instead of at the length.
+    const text = await callClaude("planQuote", system, user, { maxTokens: 3000 });
     const start = text.indexOf("{");
     const end = text.lastIndexOf("}");
-    if (start === -1 || end <= start) return null;
+    if (start === -1 || end <= start) {
+      console.error("[planQuote] no JSON object in the response", { length: text.length });
+      return { ok: false, reason: "unreadable" };
+    }
     const parsed = planSchema.safeParse(JSON.parse(text.slice(start, end + 1)));
-    return parsed.success ? parsed.data : null;
+    if (!parsed.success) {
+      // Logged in full. A plan rejected by the schema used to be silent, so
+      // the only evidence a field had changed shape was a freelancer being
+      // told their brief made no sense.
+      console.error("[planQuote] failed validation", parsed.error.issues);
+      return { ok: false, reason: "unreadable" };
+    }
+    return { ok: true, plan: parsed.data };
   } catch (err) {
     console.error("[planQuote] failed", err);
-    return null;
+    // Running out of room is not the same as an unreadable brief, and the two
+    // want different things from the reader: one is "try again", the other is
+    // "write more". callClaude already says which happened.
+    const cutOff = err instanceof Error && err.message.includes("cut off");
+    return { ok: false, reason: cutOff ? "tooLong" : "unreadable" };
   }
 }
 

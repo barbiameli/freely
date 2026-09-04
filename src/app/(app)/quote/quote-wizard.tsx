@@ -1237,12 +1237,15 @@ export function QuoteWizard({
             </div>
           )}
 
-          {error && <div className="text-overdue text-small">{error}</div>}
+          {/* Not when the plan failed: the row below says the same sentence
+              and carries the way out of it, and the same words twice on one
+              screen reads as two separate faults. */}
+          {error && !planFailed && <div className="text-overdue text-small">{error}</div>}
           {/* Said where the button is, with both ways on. */}
           {planFailed && (
             <div className="flex flex-wrap items-center justify-end gap-3 mt-2">
               <span className="text-caption text-slate text-pretty">{error}</span>
-              {planFailed === "busy" && (
+              {(planFailed === "busy" || planFailed === "tooLong") && (
                 <button
                   type="button"
                   onClick={() => void handleGenerate()}

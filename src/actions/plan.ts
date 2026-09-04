@@ -20,7 +20,7 @@ import { dict, resolveQuoteLocale } from "@/lib/i18n";
  * too short to read, a busy minute and a genuine failure all looked identical
  * from the outside, which is to say they looked like the step not existing.
  */
-export type PlanFailure = "tooShort" | "busy" | "unreadable";
+export type PlanFailure = "tooShort" | "busy" | "unreadable" | "tooLong";
 
 /** Below this there is not enough to read. */
 const MIN_BRIEF = 120;
@@ -121,7 +121,7 @@ export async function planQuoteAction(input: {
       (user as unknown as { otherIndustries?: string[] }).otherIndustries
     );
 
-    const plan = await planQuote({
+    const planned = await planQuote({
       sourceText: input.sourceText,
       instructions: input.instructions,
       disciplineLine: disciplineLine(
@@ -132,13 +132,21 @@ export async function planQuoteAction(input: {
       ruleStatements: active.map((rule) => rule.statement),
     });
 
-    if (!plan) {
-      return {
-        ok: false,
-        reason: "unreadable",
-        error: "Couldn't make sense of that brief. You can still write the quote.",
-      };
+    if (!planned.ok) {
+      return planned.reason === "tooLong"
+        ? {
+            ok: false,
+            reason: "tooLong",
+            error:
+              "That brief is long enough that the plan got cut off. Try again, or write the quote as it is.",
+          }
+        : {
+            ok: false,
+            reason: "unreadable",
+            error: "Couldn't make sense of that brief. You can still write the quote.",
+          };
     }
+    const plan = planned.plan;
 
     // The account's own rules get the last word on which sections appear, the
     // same way they do in the wizard.
