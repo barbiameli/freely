@@ -9,6 +9,12 @@ import { Chip } from "@/components/ui/chip";
 import { useT } from "@/lib/i18n/context";
 import type { PlannedQuote } from "@/actions/plan";
 import type { PlanAnswer } from "@/lib/quote-plan";
+import {
+  conflictsFrom,
+  type MoneyConflict,
+  type MoneyState,
+  type MoneyTopic,
+} from "@/lib/money-asks";
 import { ALL_SECTIONS, type SectionKey } from "@/lib/quote-defaults";
 import {
   PROTECTION_LEVELS,
@@ -35,6 +41,30 @@ import type { Dictionary } from "@/lib/i18n";
  * carry. The rules sit at the bottom as a statement of what is already
  * settled, because they are not a decision to make here.
  */
+/** What a money question is called, in the reader's language. */
+function moneyLabel(topic: MoneyTopic, t: Dictionary): string {
+  if (topic === "rateUnit") return t.quote.moneyRateUnit;
+  if (topic === "billing") return t.quote.moneyBilling;
+  if (topic === "paymentPlan") return t.quote.moneyPaymentPlan;
+  return t.quote.moneyDeposit;
+}
+
+/** One of the app's own values, said in words rather than in caps. */
+function moneyValue(value: string, t: Dictionary): string {
+  const words: Record<string, string> = {
+    FIXED: t.quote.rateFixed,
+    HOUR: t.quote.perHour,
+    DAY: t.quote.perDay,
+    FIXED_TOTAL: t.quote.billingFixed,
+    HOURLY_TRACKED: t.quote.billingTracked,
+    UPFRONT: t.quote.paymentUpfront,
+    SPLIT: t.quote.paymentSplit,
+    ON_DELIVERY: t.quote.paymentOnDelivery,
+    MILESTONE: t.quote.paymentMilestone,
+  };
+  return words[value] ?? `${value}%`;
+}
+
 /** Why a section is here when the level rather than the brief put it there. */
 function protectionReason(level: ProtectionLevel, t: Dictionary): string {
   return level === "KNOWN"
@@ -50,6 +80,7 @@ export function PlanReview({
   onWrite,
   onBack,
   working,
+  money,
   defaultBillable = false,
 }: {
   plan: PlannedQuote;
@@ -62,9 +93,16 @@ export function PlanReview({
     protection: ProtectionLevel;
     /** Whether the stages are payment points, or only the shape of the work. */
     milestonesBillable: boolean;
+    /** Whether the work runs in stages at all. */
+    phased: boolean;
+    /** The money questions where the brief is to be followed. */
+    followBrief: MoneyTopic[];
+    conflicts: MoneyConflict[];
   }) => void;
   onBack: () => void;
   working: boolean;
+  /** The money the draft has already decided, for comparing against the brief. */
+  money: MoneyState;
   /**
    * Whether the stages start as payment points.
    *
@@ -95,6 +133,19 @@ export function PlanReview({
    * nobody made should not be the assumption.
    */
   const [billable, setBillable] = useState(defaultBillable);
+  /**
+   * One phase, or stages.
+   *
+   * Always asked, whatever the brief says and whatever the account's default
+   * is, because it is a question about how this job runs rather than a
+   * preference: the same freelancer does both, and the answer changes the
+   * document more than anything else on this screen.
+   */
+  const [phased, setPhased] = useState(plan.milestones.length > 1);
+  /** Conflicts where the freelancer chose to follow the brief. */
+  const [followBrief, setFollowBrief] = useState<MoneyTopic[]>(() =>
+    conflicts.map((conflict) => conflict.topic)
+  );
   const [answers, setAnswers] = useState<Record<string, string>>({});
   /**
    * How much armour this quote carries.
@@ -127,6 +178,14 @@ export function PlanReview({
   }
 
   const chosen = protectionFor(protection);
+
+  /**
+   * Where the brief and the saved setup disagree about money.
+   *
+   * Computed here rather than sent from the server so it reacts to the
+   * protection level, which can change the payment plan underneath it.
+   */
+  const conflicts = conflictsFrom(plan.moneyAsks, money);
 
   /**
    * The sections to show: the ones the plan proposed, plus anything on that it
@@ -204,20 +263,90 @@ export function PlanReview({
         </p>
       </Card>
 
-      {plan.milestones.length > 0 && (
+      <Card>
+        <SubLabel>{t.quote.planPhases}</SubLabel>
+        <p className="text-caption text-slate mt-1 mb-3 text-pretty">{t.quote.planPhasesHint}</p>
+        <div className="flex flex-wrap gap-1.5">
+          <Chip active={!phased} onClick={() => setPhased(false)}>
+            {t.quote.planOnePhase}
+          </Chip>
+          <Chip active={phased} onClick={() => setPhased(true)}>
+            {t.quote.planStages}
+          </Chip>
+        </div>
+
+        {/* The second question, and only inside the first. Stages are the
+            shape of the work; whether money moves at each one is separate,
+            and a project can run in stages and still be paid in two lumps. */}
+        {phased && (
+          <div className="mt-4">
+            <SubLabel>{t.quote.planStagesFor}</SubLabel>
+            <div className="flex flex-wrap gap-1.5 mt-1.5">
+              <Chip active={!billable} onClick={() => setBillable(false)}>
+                {t.quote.planStagesShape}
+              </Chip>
+              <Chip active={billable} onClick={() => setBillable(true)}>
+                {t.quote.planStagesBillable}
+              </Chip>
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* What the client asked for, where it differs from what you normally
+          do. The brief wins, because it is the client describing the
+          engagement they want and the setup is only a default. But it wins out
+          loud, before anything is written, with both answers side by side. */}
+      {conflicts.length > 0 && (
+        <Card tone="quiet">
+          <SubLabel>{t.quote.planBriefAsks}</SubLabel>
+          <p className="text-caption text-slate mt-1 mb-3 max-w-prose text-pretty">
+            {t.quote.planBriefAsksHint}
+          </p>
+          <div className="flex flex-col gap-3">
+            {conflicts.map((conflict) => {
+              const following = followBrief.includes(conflict.topic);
+              return (
+                <div key={conflict.topic}>
+                  <div className="font-body font-semibold text-small text-ink text-pretty">
+                    {moneyLabel(conflict.topic, t)}
+                  </div>
+                  {conflict.quote && (
+                    <p className="text-caption text-slate mt-0.5 mb-0 text-pretty">
+                      {t.quote.planBriefSays.replace("{quote}", conflict.quote)}
+                    </p>
+                  )}
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    <Chip
+                      active={following}
+                      onClick={() =>
+                        setFollowBrief((all) =>
+                          all.includes(conflict.topic) ? all : [...all, conflict.topic]
+                        )
+                      }
+                    >
+                      {t.quote.planUseBrief.replace("{value}", moneyValue(conflict.theirs, t))}
+                    </Chip>
+                    <Chip
+                      active={!following}
+                      onClick={() =>
+                        setFollowBrief((all) => all.filter((topic) => topic !== conflict.topic))
+                      }
+                    >
+                      {t.quote.planKeepMine.replace("{value}", moneyValue(conflict.yours, t))}
+                    </Chip>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
+      {phased && plan.milestones.length > 0 && (
         <Card>
           <SubLabel>{t.quote.planMilestones}</SubLabel>
           <p className="text-caption text-slate mt-1 mb-3 text-pretty">{t.quote.planMilestonesHint}</p>
-
-          {/* Two questions, not one. */}
-          <div className="flex flex-wrap gap-1.5 mb-4">
-            <Chip active={!billable} onClick={() => setBillable(false)}>
-              {t.quote.planStagesShape}
-            </Chip>
-            <Chip active={billable} onClick={() => setBillable(true)}>
-              {t.quote.planStagesBillable}
-            </Chip>
-          </div>
           <ul className="list-none p-0 m-0 flex flex-col gap-2.5">
             {plan.milestones.map((milestone) => {
               const on = milestones.includes(milestone.name);
@@ -362,7 +491,10 @@ export function PlanReview({
                 .filter(([, value]) => value.trim())
                 .map(([ask, answer]) => ({ ask, answer })),
               protection,
-              milestonesBillable: billable,
+              milestonesBillable: phased && billable,
+              phased,
+              followBrief,
+              conflicts,
             })
           }
         >

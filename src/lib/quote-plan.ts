@@ -63,6 +63,23 @@ export const planSchema = z.object({
   /** The brief describes something nobody has opened yet. */
   sightUnseen: z.boolean().default(false),
   /**
+   * What the brief says about money, where it says anything.
+   *
+   * The client describing the engagement they want beats a saved default, and
+   * a brief asking for a fixed price used to reach somebody whose setup said
+   * fifty an hour with nothing anywhere reconciling the two. Reported rather
+   * than applied: the brief wins, but out loud. See lib/money-asks.
+   */
+  moneyAsks: z
+    .array(
+      z.object({
+        topic: z.enum(["rateUnit", "billing", "paymentPlan", "deposit"]),
+        value: z.string(),
+        quote: z.string().default(""),
+      })
+    )
+    .default([]),
+  /**
    * How much armour this job looks like it needs.
    *
    * Proposed rather than decided: the freelancer knows things about a client
@@ -145,6 +162,13 @@ export function buildPlanPrompt(input: {
     )}. Choose between two and five.`,
     '"questions" is at most four things you could not work out that would change the work or the price: quantities, how many people review, what already exists and in what condition, who supplies what, whether the freelancer has seen the thing being worked on. Each "ask" is one short question. Each "assume" is what you will assume if it goes unanswered, phrased as a fact rather than a sentence. Ask nothing whose answer is already in the brief, and nothing that would not move the price or the shape.',
     '"sightUnseen" is true when the brief describes a product, file, codebase or body of work the freelancer has clearly not opened.',
+    '"moneyAsks" is what the brief EXPLICITLY says about how the money works, and nothing it merely implies. Leave it empty when the brief does not raise the subject, which is most of the time.',
+    'Each entry has a "topic", a "value" from the fixed list below, and "quote": the words in the brief that say so, copied exactly and kept short.',
+    '- topic "rateUnit": value "FIXED" when the client asks for a fixed price or a total for the whole job, "HOUR" when they ask to be billed hourly, "DAY" for a day rate.',
+    '- topic "billing": value "FIXED_TOTAL" when the number is to be the price whatever the work takes, "HOURLY_TRACKED" when they want to pay for hours actually worked.',
+    '- topic "paymentPlan": value "UPFRONT", "SPLIT", "ON_DELIVERY" or "MILESTONE", when the brief says when they will pay.',
+    '- topic "deposit": value is the percentage as a bare number, when the brief names one.',
+    'Never infer from a budget figure or from the shape of the work. A client saying what they can spend is not a client asking for a fixed price.',
     '"protection" is how much this engagement needs written down. "KNOWN" only when the source shows they have worked together before, for example a reference to a previous project or an ongoing relationship. "GUARDED" when the brief carries real risk markers. "NEW" otherwise, and NEW is the right answer most of the time.',
     'Risk markers that point to GUARDED: no budget or timeline named anywhere; scope described in adjectives rather than quantities; the decision-maker is not the person writing; several stakeholders with no named owner; urgency with no reason; a product, file or codebase the freelancer has not seen; a payment arrangement the client has proposed that leaves the freelancer paid last; anything the client says about a previous freelancer.',
     '"risks" is up to three short phrases naming what you actually saw, in the freelancer\'s language and never the client\'s. Empty when the answer is KNOWN. Never guess at the client\'s character: name what is in the text.',

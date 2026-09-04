@@ -56,6 +56,12 @@ import {
   type PlanAnswer,
 } from "@/lib/quote-plan";
 import {
+  applyChoices,
+  reconcile,
+  type MoneyConflict,
+  type MoneyTopic,
+} from "@/lib/money-asks";
+import {
   discoveryInstruction,
   protectionFor,
   protectionInstruction,
@@ -381,6 +387,9 @@ export function QuoteWizard({
     answers: PlanAnswer[];
     protection: ProtectionLevel;
     milestonesBillable: boolean;
+    phased: boolean;
+    followBrief: MoneyTopic[];
+    conflicts: MoneyConflict[];
   }) {
     if (!plan) return;
     // Built with a loop rather than a mapped object literal: the generic in
@@ -394,10 +403,33 @@ export function QuoteWizard({
 
     const armour = protectionFor(choices.protection);
 
+    /**
+     * The money, settled before anything is written.
+     *
+     * The brief's answers where the freelancer took them, their own where they
+     * did not, and then the quote's own contradictions corrected: a fixed
+     * price that was also billed by the hour is a leftover rather than a
+     * decision. See lib/money-asks.
+     */
+    const money = reconcile(
+      applyChoices(
+        {
+          rateUnit: draft.rateUnit ?? "HOUR",
+          billing: draft.billing ?? "FIXED_TOTAL",
+          paymentPlan: draft.paymentPlan ?? "SPLIT",
+          upfrontPercent: draft.upfrontPercent ?? 50,
+        },
+        choices.conflicts,
+        choices.followBrief
+      ),
+      { hasMilestones: choices.phased, milestonesBillable: choices.milestonesBillable }
+    );
+
     const extra = [
       protectionInstruction(choices.protection),
       answersForPrompt(plan, choices.answers),
-      milestonesForPrompt(plan, choices.milestones),
+      // Only when they are actually running it in stages.
+      choices.phased ? milestonesForPrompt(plan, choices.milestones) : "",
       // Only when the brief actually describes something nobody has opened.
       // Proposing discovery for a job already scoped is padding.
       armour.paidDiscovery && plan.sightUnseen
@@ -421,18 +453,24 @@ export function QuoteWizard({
       ]
         .filter(Boolean)
         .join("\n\n"),
+      rateUnit: money.rateUnit as QuoteDraftPayload["rateUnit"],
+      billing: money.billing as QuoteDraftPayload["billing"],
+      upfrontPercent: money.upfrontPercent,
       // The top level insists on billing per milestone, because being owed one
       // chunk of work rather than the whole project is what actually protects
-      // somebody. Otherwise keeping stages is not a decision about money:
-      // their payment plan stands unless they said these are payment points.
+      // somebody. Otherwise the answers above stand: running in stages is not
+      // by itself a decision about money.
       ...(armour.paymentPlan
         ? {
             paymentPlan: armour.paymentPlan,
             milestoneCount: Math.max(choices.milestones.length, 2),
           }
-        : choices.milestonesBillable && choices.milestones.length > 1
+        : choices.phased && choices.milestonesBillable && choices.milestones.length > 1
         ? { paymentPlan: "MILESTONE" as const, milestoneCount: choices.milestones.length }
-        : { milestoneCount: choices.milestones.length || undefined }),
+        : {
+            paymentPlan: money.paymentPlan as QuoteDraftPayload["paymentPlan"],
+            milestoneCount: choices.phased ? choices.milestones.length || undefined : undefined,
+          }),
       milestonesBillable: choices.milestonesBillable || Boolean(armour.paymentPlan),
       protection: choices.protection,
       clientName: clientName.trim() || undefined,
@@ -847,6 +885,14 @@ export function QuoteWizard({
             sectionName={sectionName}
             working={generating}
             defaultBillable={draft.paymentPlan === "MILESTONE"}
+            // What the draft has already decided, so the plan can say where
+            // the brief disagrees with it.
+            money={{
+              rateUnit: draft.rateUnit ?? "HOUR",
+              billing: draft.billing ?? "FIXED_TOTAL",
+              paymentPlan: draft.paymentPlan ?? "SPLIT",
+              upfrontPercent: draft.upfrontPercent ?? 50,
+            }}
             onWrite={(choices) => void handleWriteFromPlan(choices)}
             onBack={() => setPlan(null)}
           />
