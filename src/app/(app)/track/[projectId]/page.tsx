@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { hasCalendar } from "@/lib/google-calendar";
+import { modeForProject } from "@/lib/time-tracking";
 import { GuideMount } from "@/components/guide/guide-mount";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
@@ -12,6 +14,13 @@ import { ProjectTabs } from "./project-tabs";
 // Breaking a deliverable down is a real model call, so give the route the
 // same headroom the quote page has.
 export const maxDuration = 60;
+
+/** One stretch of work, as this page reads it. */
+interface TimeRow {
+  minutes: number;
+  endedAt: Date | null;
+  startedAt: Date;
+}
 
 export default async function ProjectPage({
   params,
@@ -37,6 +46,24 @@ export default async function ProjectPage({
     }),
   ]);
   if (!project) notFound();
+
+  /**
+   * The hours on this engagement, and whether a clock is running.
+   *
+   * Through the cast client, since TimeEntry is newer than the generated one
+   * in this environment. Same pattern as the deliverables below.
+   */
+  const timeRows = (prisma as unknown as {
+    timeEntry: { findMany(args: Record<string, unknown>): Promise<TimeRow[]> };
+  }).timeEntry;
+
+  const [timeEntries, calendarConnected] = await Promise.all([
+    timeRows
+      .findMany({ where: { projectId: project.id } })
+      .catch(() => [] as TimeRow[]),
+    hasCalendar(user.id).catch(() => false),
+  ]);
+  const runningEntry = timeEntries.find((entry) => entry.endedAt === null) ?? null;
 
   // Steps and flags come through the cast client, since the generated one in
   // this environment predates those tables. See lib/track-db.
@@ -122,6 +149,20 @@ export default async function ProjectPage({
         />
       ) : (
     <ProjectDetail
+      // What tracking is for on this engagement, the hours already on it, and
+      // whether a timer is running. Read here so the panel is a plain
+      // component rather than one that fetches.
+      time={{
+        mode: modeForProject(
+          project as unknown as { timeTracking?: unknown },
+          user as unknown as { timeTracking?: unknown; timeTrackingAsk?: unknown }
+        ),
+        loggedMinutes: timeEntries.reduce((sum, entry) => sum + entry.minutes, 0),
+        running: runningEntry
+          ? { startedAt: runningEntry.startedAt.toISOString() }
+          : null,
+        hasCalendar: calendarConnected,
+      }}
       tabs={<ProjectTabs projectId={project.id} published={project.published} />}
       // A project with milestones bills per milestone by definition, so that
       // wins over reading the payment terms. Detection is the fallback for

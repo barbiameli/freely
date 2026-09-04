@@ -173,6 +173,20 @@ model User {
   // only ever holds what somebody changed about them.
   groundRules        Json?
 
+  // What time tracking is for, by default, on new engagements.
+  //
+  // "OFF" | "RECORD" | "LEARN" | "BILLING", each including the one before it.
+  // See lib/time-tracking. A default rather than a setting, because the answer
+  // is per engagement: the same person tracks a fixed-price job to learn what
+  // it really cost and an hourly one because the client is paying for the
+  // hours. It is set from the first project they set up and reused after.
+  timeTracking       String   @default("OFF")
+  // Whether to ask again on each new project rather than applying the default.
+  //
+  // True until somebody says otherwise, since the first time they answer they
+  // have no way of knowing whether the answer generalises.
+  timeTrackingAsk    Boolean  @default(true)
+
   // The quote setup: everything the wizard used to ask on every quote that is
   // actually a property of the freelancer rather than of the job. Asking for
   // it once and remembering it is what took the first screen from fourteen
@@ -253,6 +267,7 @@ model User {
 
   briefs      Brief[]
   clients     Client[]
+  timeEntries TimeEntry[]
   projects    Project[]
   passwordResets PasswordReset[]
   emails         EmailLog[]
@@ -471,6 +486,10 @@ model Project {
   price       Float         @default(0)
   hours       Float         @default(0)
   hoursLogged Float         @default(0)
+  // What time tracking is for on this engagement, or null while nobody has
+  // said. Null is what puts the "set up the tracker" button on the project
+  // rather than a timer nobody asked for. See lib/time-tracking.
+  timeTracking String?
   timeline    String        @default("")
   currency    String        @default("USD")
   // When the work actually starts. Everything else in Track hangs off this:
@@ -497,6 +516,7 @@ model Project {
   stripePaymentIntentId String?
 
   deliverables Deliverable[]
+  timeEntries  TimeEntry[]
   milestones   Milestone[]
   diaryEntries DiaryEntry[]
 
@@ -654,6 +674,7 @@ model Deliverable {
   // Cleared when something is unticked, so a correction does not leave a
   // completion date on unfinished work.
   doneAt    DateTime?
+  timeEntries TimeEntry[]
   // The Google Calendar event this became, if the freelancer connected one.
   //
   // Stored so a date change updates the event that exists rather than creating
@@ -952,6 +973,61 @@ model MarketRateCache {
   @@unique([country, industry, currency, rateUnit])
 }
 
+// A stretch of work, on a project, for a client.
+//
+// Freely quotes in hours and then never learns what the hours were. So a
+// freelancer who consistently runs a third over on design system work has no
+// way to know it, prices the next one the same way, and absorbs the difference
+// again. And the "estimate, billed by the hour" option promises a client they
+// pay for hours actually worked, which the app had no way to know.
+//
+// What this is for is a choice, and it is the account's: see
+// User.timeTracking. Some people will run a timer religiously, some want a
+// private record of where the week went, and some want neither until an
+// invoice needs line items.
+//
+// Minutes rather than a computed difference, because an entry can come from a
+// calendar block that was moved after the fact, or be typed in from memory,
+// and "how long was this" should not depend on which.
+model TimeEntry {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  clientId  String?
+  client    Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  /// Which piece of the work, where it is known.
+  deliverableId String?
+  deliverable   Deliverable? @relation(fields: [deliverableId], references: [id], onDelete: SetNull)
+
+  startedAt DateTime
+  /// Null while a timer is still running. One running entry per account.
+  endedAt   DateTime?
+  /// The length, settled. Zero while running.
+  minutes   Int      @default(0)
+  note      String   @default("")
+
+  /// "TIMER" | "CALENDAR" | "MANUAL". Kept so an hour is never counted twice
+  /// when the same work exists as both a timer run and a calendar block.
+  source String @default("TIMER")
+  /// The Google Calendar event this came from, or was written to. The unique
+  /// index is what stops a re-import creating a second copy of one block.
+  calendarEventId String?
+
+  /// Whether this time is chargeable. A client call is; reading their brief
+  /// before quoting is not, and counting it would flatter the effective rate.
+  billable Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, calendarEventId])
+  @@index([userId, startedAt])
+  @@index([projectId])
+  @@index([clientId])
+}
+
 // The person or company on the other side of the work.
 //
 // Freely had no such thing. A client was a free-text string on a Brief, a
@@ -984,6 +1060,7 @@ model Client {
   briefs   Brief[]
   projects Project[]
   invoices Invoice[]
+  timeEntries TimeEntry[]
 
   createdAt DateTime @default(now())
 

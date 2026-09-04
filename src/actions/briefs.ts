@@ -33,6 +33,12 @@ import { allDisciplines, disciplineLine, industryLabel } from "@/lib/industries"
 import { withRate } from "@/lib/discipline-rates";
 import { isProtectionLevel } from "@/lib/protection";
 import { clientFor } from "@/lib/client-db";
+import {
+  estimateHabit,
+  habitInstruction,
+  learnsFromTime,
+  parseTimeMode,
+} from "@/lib/time-tracking";
 import { ruleFix } from "@/lib/rule-words";
 import {
   brokenRules,
@@ -310,6 +316,7 @@ export async function generateBriefAction(
     language: quoteLanguage,
     activeRules,
     ruleValues: ruleValues(ruleSettings),
+    estimateHabit: await estimateHabitFor(user),
     chooseSections,
     // Only when there is a choice. One discipline is a fact, not a question.
     ...(disciplines.length > 1 ? { disciplines } : {}),
@@ -941,6 +948,66 @@ export async function applyRuleAction(
   const result = await refineBriefAction(briefId, instruction);
   if (!result.ok) return result;
   return { ok: true, data: { changed: result.data.changed, applied } };
+}
+
+/**
+ * Which way this account's estimates usually miss.
+ *
+ * From finished projects with both a quoted figure and tracked time, and only
+ * where the freelancer turned tracking up to the mode that says they want it
+ * used. Below three projects, or where the habit is small enough to be
+ * ordinary, it says nothing: telling somebody they run 4% over is noise
+ * dressed as insight, and it makes the useful version easier to ignore.
+ *
+ * Never fatal. A quote must not fail to generate because a sum did not add up.
+ */
+async function estimateHabitFor(user: { id: string }): Promise<string> {
+  try {
+    const account = (await prisma.user.findUnique({
+      where: { id: user.id },
+    })) as unknown as { timeTracking?: unknown } | null;
+    const mode = parseTimeMode(account?.timeTracking);
+    if (!learnsFromTime(mode)) return "";
+
+    const projects = (await prisma.project.findMany({
+      where: { userId: user.id, status: "DONE" },
+      select: { id: true, hours: true },
+      take: 40,
+      orderBy: { createdAt: "desc" },
+    })) as unknown as { id: string; hours: number }[];
+    if (projects.length < 3) return "";
+
+    const entries = (await (
+      prisma as unknown as {
+        timeEntry: {
+          findMany(args: Record<string, unknown>): Promise<
+            { projectId: string | null; minutes: number }[]
+          >;
+        };
+      }
+    ).timeEntry.findMany({
+      where: { projectId: { in: projects.map((p) => p.id) } },
+    })) as { projectId: string | null; minutes: number }[];
+
+    const byProject = new Map<string, number>();
+    for (const entry of entries) {
+      if (!entry.projectId) continue;
+      byProject.set(entry.projectId, (byProject.get(entry.projectId) ?? 0) + entry.minutes);
+    }
+
+    return habitInstruction(
+      estimateHabit(
+        projects.map((project) => ({
+          quotedHours: project.hours,
+          actualMinutes: byProject.get(project.id) ?? 0,
+        }))
+      ),
+      mode
+    );
+  } catch (err) {
+    console.error("[briefs] could not read the estimate habit", err);
+    return "";
+  }
 }
 
 /** Attaches a reference file (screenshot, moodboard, past landing page...) to

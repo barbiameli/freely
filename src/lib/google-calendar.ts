@@ -162,6 +162,80 @@ export async function upsertEvent(
   }
 }
 
+/** A block of time already in somebody's calendar. */
+export interface TimedEvent {
+  id: string;
+  title: string;
+  start: Date;
+  end: Date;
+}
+
+/**
+ * Reading back the blocks somebody has already made.
+ *
+ * The other direction, and the one that costs nobody a new habit: most
+ * freelancers already block time in their calendar, and asking them to also
+ * start a timer is asking them to do the same work twice. The same
+ * calendar.events scope covers it, so this needs no new permission.
+ *
+ * Timed events only. An all-day entry is a note to self, a holiday or one of
+ * Freely's own deliverable markers, and counting any of those as hours worked
+ * would put a day of "time" against a project nobody touched.
+ */
+export async function listTimedEvents(
+  userId: string,
+  from: Date,
+  to: Date
+): Promise<TimedEvent[]> {
+  const token = await accessTokenFor(userId);
+  if (!token) return [];
+
+  try {
+    const url = new URL(EVENTS_URL);
+    url.searchParams.set("timeMin", from.toISOString());
+    url.searchParams.set("timeMax", to.toISOString());
+    // Recurring events expanded into the actual instances, since an hour
+    // worked is an instance rather than a rule.
+    url.searchParams.set("singleEvents", "true");
+    url.searchParams.set("orderBy", "startTime");
+    url.searchParams.set("maxResults", "250");
+
+    const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      console.warn("[calendar] list failed", res.status);
+      return [];
+    }
+
+    const data = (await res.json()) as {
+      items?: {
+        id?: string;
+        summary?: string;
+        status?: string;
+        start?: { dateTime?: string };
+        end?: { dateTime?: string };
+      }[];
+    };
+
+    return (data.items ?? [])
+      .filter((item) => item.status !== "cancelled")
+      .map((item) => ({
+        id: item.id ?? "",
+        title: item.summary ?? "",
+        start: item.start?.dateTime ? new Date(item.start.dateTime) : null,
+        end: item.end?.dateTime ? new Date(item.end.dateTime) : null,
+      }))
+      .filter(
+        (item): item is TimedEvent =>
+          Boolean(item.id) && item.start !== null && item.end !== null && item.end > item.start
+      );
+  } catch (err) {
+    console.warn("[calendar] list threw", err);
+    return [];
+  }
+}
+
 /** Removes an event, quietly. A 404 is success: it is already not there. */
 export async function deleteEvent(userId: string, eventId: string): Promise<void> {
   const token = await accessTokenFor(userId);

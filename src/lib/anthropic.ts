@@ -329,6 +329,13 @@ export interface QuoteDraftInput {
    */
   ruleValues?: Partial<Record<string, number>>;
   /**
+   * Which way this freelancer's estimates habitually miss.
+   *
+   * Only present at the LEARN mode and above, and only ever a correction to
+   * apply rather than a number to copy. See lib/time-tracking.
+   */
+  estimateHabit?: string;
+  /**
    * Nobody picked any sections, so the model picks them.
    *
    * Set by the action when every include flag is false, which is now what a
@@ -1000,6 +1007,8 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
     milestoneInstruction,
     part === "all" ? extraSectionsInstruction : "",
     part === "all" ? ruleInstruction : "",
+    // Which way their estimates usually miss, from time they actually tracked.
+    part === "all" ? draft.estimateHabit ?? "" : "",
     // A real client could not tell whether "Design review session" and
     // "Feedback-incorporated final files" were the one included round or two
     // more on top of it. They were the same round, listed twice as though

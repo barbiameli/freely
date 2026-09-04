@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { CalendarDays, Trash2 } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
+import { TimePanel } from "@/components/track/time-panel";
+import type { TimeMode } from "@/lib/time-tracking";
 import { Label } from "@/components/ui/label";
 import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
@@ -175,10 +177,18 @@ export function ProjectDetail({
   milestones: quotedMilestones = [],
   /** The Your work / What the client sees strip, placed in the title row. */
   tabs,
+  time,
 }: {
   project: Project;
   projectList: ProjectSummary[];
   billing: BillingMode;
+  /** Hours on this engagement, and what tracking them is for. */
+  time: {
+    mode: TimeMode | null;
+    loggedMinutes: number;
+    running: { startedAt: string } | null;
+    hasCalendar: boolean;
+  };
   /**
    * The milestones agreed on the quote, in order.
    *
@@ -315,6 +325,18 @@ export function ProjectDetail({
                 ]
               : []),
           ]}
+        />
+
+        {/* Where the hours went, above the schedule: what a project has cost
+            so far is a more immediate question than when the next thing is
+            due, and it is the one nothing in the app could answer. */}
+        <TimePanel
+          projectId={project.id}
+          quotedHours={project.hours}
+          loggedMinutes={time.loggedMinutes}
+          running={time.running}
+          hasCalendar={time.hasCalendar}
+          mode={time.mode}
         />
 
         {!scheduled ? (
