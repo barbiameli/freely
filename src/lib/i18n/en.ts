@@ -328,7 +328,7 @@ export const en = {
     quoteLanguage: "Quote language",
     quoteLanguageHint: "The language the quote is written in, which need not be yours.",
 
-    generate: "Generate the quote",
+    generate: "Read the brief",
     stop: "Stop",
     generatingTooLong:
       "This is taking longer than it should. It may still finish in the background, but don't wait on it. Try again, or simplify the source material first (a very large uploaded file slows this down a lot).",

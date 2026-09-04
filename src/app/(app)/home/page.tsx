@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
@@ -171,6 +172,19 @@ export default async function HomePage() {
       },
     }),
   ]);
+
+  /**
+   * An account with nothing in it goes to the wizard instead.
+   *
+   * Sign-in lands on Home, which for somebody who has just finished onboarding
+   * is a page saying "nothing here yet" and one paragraph. The old behaviour
+   * dropped them on the quote form, which at least had something to do, and
+   * this page becomes worth seeing the moment there is a single quote behind
+   * it.
+   */
+  if (briefs.length === 0 && projects.length === 0 && invoices.length === 0) {
+    redirect("/quote");
+  }
 
   const now = Date.now();
 

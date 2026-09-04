@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { totalInOneCurrency } from "@/lib/money";
 import { protectionFor } from "@/lib/protection";
+import { dict } from "@/lib/i18n";
 
 /**
  * The bugs the audit found, pinned so they cannot come back.
@@ -132,5 +133,34 @@ describe("the form has a hierarchy again", () => {
     const en = readFileSync("src/lib/i18n/en.ts", "utf8");
     expect(en).toContain("referencesWhen:");
     expect(wizard).toContain("t.quote.referencesWhen");
+  });
+});
+
+
+describe("the rest of the audit", () => {
+  it("does not land a brand new account on an empty page", () => {
+    // Sign-in goes to Home, which for somebody straight out of onboarding was
+    // "nothing here yet" and one paragraph.
+    const page = readFileSync("src/app/(app)/home/page.tsx", "utf8");
+    expect(page).toContain('redirect("/quote")');
+  });
+
+  it("stops the button promising something it does not produce", () => {
+    // It said "Generate the quote" and produced a plan.
+    expect(dict("en").quote.generate).toBe("Read the brief");
+    expect(dict("en").quote.planWrite).toBe("Write the quote");
+  });
+
+  it("bounds the first-time relink", () => {
+    // It ran on the path of saving a quote and read the whole account.
+    const db = readFileSync("src/lib/client-db.ts", "utf8");
+    expect(db).toContain("const BACKFILL_WINDOW = 500;");
+  });
+
+  it("shows the protection level on the quote it shaped", () => {
+    // Decided before a word was written, stored, and never shown, so a quote
+    // with eight clauses and one with two looked like the same decision.
+    const view = readFileSync("src/app/(app)/quote/[briefId]/brief-view.tsx", "utf8");
+    expect(view).toContain("t.quote.protectionGuarded");
   });
 });

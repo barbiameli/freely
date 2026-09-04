@@ -34,6 +34,14 @@ function table() {
 }
 
 /**
+ * How far back the first-time relink looks.
+ *
+ * Large enough that a normal account is covered whole, small enough that it
+ * cannot become three unbounded reads on the path of saving a quote.
+ */
+const BACKFILL_WINDOW = 500;
+
+/**
  * The client for this name, created if there is not one yet.
  *
  * Called on the way to saving a quote, so the record appears as a side effect
@@ -75,10 +83,34 @@ export async function clientFor(userId: string, name: string): Promise<string | 
  */
 async function backfill(userId: string, clientId: string, slug: string): Promise<void> {
   try {
+    /**
+     * Bounded, and recent first.
+     *
+     * This ran on the path of saving a quote and read every brief, project and
+     * invoice on the account to match by name in memory. Fine at twenty
+     * quotes and three unbounded queries at two thousand. The names people
+     * still quote are recent ones, so the window is where the matches are.
+     */
+    const take = BACKFILL_WINDOW;
     const [briefs, projects, invoices] = await Promise.all([
-      prisma.brief.findMany({ where: { userId }, select: { id: true, client: true } }),
-      prisma.project.findMany({ where: { userId }, select: { id: true, client: true } }),
-      prisma.invoice.findMany({ where: { userId }, select: { id: true, clientName: true } }),
+      prisma.brief.findMany({
+        where: { userId },
+        select: { id: true, client: true },
+        orderBy: { createdAt: "desc" },
+        take,
+      }),
+      prisma.project.findMany({
+        where: { userId },
+        select: { id: true, client: true },
+        orderBy: { createdAt: "desc" },
+        take,
+      }),
+      prisma.invoice.findMany({
+        where: { userId },
+        select: { id: true, clientName: true },
+        orderBy: { issuedAt: "desc" },
+        take,
+      }),
     ]);
 
     const briefIds = briefs.filter((b) => clientSlug(b.client) === slug).map((b) => b.id);

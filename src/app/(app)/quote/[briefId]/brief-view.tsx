@@ -782,6 +782,19 @@ export function BriefView({
           <span className="font-body font-semibold text-caption uppercase tracking-wide text-white/60">
             {brief.accepted ? "Accepted" : published ? "Published" : "Draft"}
           </span>
+          {/* Why this quote carries what it carries. It was decided before a
+              word was written, stored, and then never shown, so a quote with
+              eight clauses and one with two looked like the same decision made
+              twice. */}
+          {brief.protection && (
+            <span className="font-body font-semibold text-caption uppercase tracking-wide text-white/60">
+              {brief.protection === "KNOWN"
+                ? t.quote.protectionKnown
+                : brief.protection === "GUARDED"
+                ? t.quote.protectionGuarded
+                : t.quote.protectionNew}
+            </span>
+          )}
           <BeforeYouSend
             briefId={brief.id}
             questions={content.strategy?.openQuestions ?? []}

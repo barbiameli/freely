@@ -330,7 +330,7 @@ export const es: Dictionary = {
     quoteLanguage: "Idioma del presupuesto",
     quoteLanguageHint: "El idioma del presupuesto, que no tiene por qué ser el tuyo.",
 
-    generate: "Generar el presupuesto",
+    generate: "Leer el proyecto",
     stop: "Parar",
     generatingTooLong: "Está tardando más de la cuenta. Puede que acabe solo, pero no te quedes esperando. Prueba otra vez, o quita peso al material de partida: un archivo muy grande lo ralentiza mucho.",
     generateFailed: "Algo ha fallado al generarlo. Prueba otra vez.",
