@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { milestonesFromSettings } from "@/lib/milestone-lines";
 import { GuideMount } from "@/components/guide/guide-mount";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
@@ -80,19 +81,10 @@ export default async function BriefPage({ params }: { params: { briefId: string 
         // The milestone split, so it can be checked before the quote goes out.
         // Stored on the quote at generation, because that is what the client
         // agrees to.
-        milestones:
-          (brief.settings as { useMilestones?: boolean; milestones?: unknown } | null)
-            ?.useMilestones
-            ? ((brief.settings as {
-                milestones?: {
-                  name: string;
-                  deliverableIndexes: number[];
-                  gate?: string;
-                  amount: number;
-                }[];
-              })
-                .milestones ?? [])
-            : [],
+        // useMilestones now records that this quote runs in stages rather
+        // than that it bills by them, which is what hid the stages of every
+        // quote whose stages were only the shape of the work.
+        milestones: milestonesFromSettings(brief.settings),
         accepted: acceptance.acceptedAt
           ? {
               name: acceptance.acceptedName || "the client",

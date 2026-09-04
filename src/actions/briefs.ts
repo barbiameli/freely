@@ -129,14 +129,17 @@ function rebalancedSettings(
   deliverableCount: number,
   totalPrice: number
 ): Record<string, unknown> {
-  if (!settings.useMilestones) return settings;
+  // Stages exist on quotes that do not bill by them, so this can no longer
+  // read useMilestones to decide whether there is anything here to rebalance.
+  if (!Array.isArray(settings.milestones)) return settings;
+  const billable = settings.milestonesBillable === true;
   const current = Array.isArray(settings.milestones)
     ? (settings.milestones as { name: string; deliverableIndexes: number[]; gate?: string; amount: number }[])
     : [];
   if (current.length === 0) return settings;
   return {
     ...settings,
-    milestones: reconcileMilestones(current, deliverableCount, totalPrice).map((ms) => ({
+    milestones: reconcileMilestones(current, deliverableCount, totalPrice, billable).map((ms) => ({
       name: ms.name,
       deliverableIndexes: ms.deliverableIndexes,
       ...(ms.gate ? { gate: ms.gate } : {}),
@@ -586,14 +589,17 @@ export async function generateBriefAction(
           // How this bills, as agreed with the client. Kept on the brief
           // rather than only on the project, because the milestones are part
           // of what the client signed and the project is created from this.
-          useMilestones: draft.paymentPlan === "MILESTONE",
+          // Whether this quote runs in stages, which is not the same as
+          // whether it bills by them. See milestonesBillable just below.
+          useMilestones: Boolean(generated.milestones?.length),
           paymentPlan: draft.paymentPlan ?? "SPLIT",
           upfrontPercent: draft.upfrontPercent ?? 50,
           milestones: generated.milestones?.length
             ? reconcileMilestones(
                 generated.milestones.map((ms) => ({ ...ms, name: clean(ms.name) })),
                 generated.deliverables.length,
-                generated.price
+                generated.price,
+                draft.milestonesBillable ?? draft.paymentPlan === "MILESTONE"
               ).map((ms) => ({
                 // Spread into a plain object: Prisma's Json input type rejects
                 // a declared interface, even a structurally identical one.

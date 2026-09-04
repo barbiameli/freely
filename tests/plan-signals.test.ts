@@ -110,3 +110,47 @@ describe("stages get a section of their own", () => {
     expect(anthropic).toContain("Do not repeat that structure here.");
   });
 });
+
+/**
+ * Stages existed in three places and were hidden by all three.
+ *
+ * The prompt's authoritative schema never listed "milestones" while a separate
+ * paragraph asked for one, so the model was told to match a schema without
+ * stages and produce stages at the same time. What did come back was saved
+ * behind useMilestones, a flag set from the payment plan. And every reader in
+ * the app went through milestonesFromSettings, which returned nothing unless
+ * that same flag was true. A quote could run in stages, say so in its payment
+ * terms, its revisions and its cancellation clause, and have no stages
+ * anywhere on the page.
+ */
+describe("stages survive being written down", () => {
+  const anthropic = readFileSync("src/lib/anthropic.ts", "utf8");
+  const lines = readFileSync("src/lib/milestone-lines.ts", "utf8");
+  const actions = readFileSync("src/actions/briefs.ts", "utf8");
+  const milestones = readFileSync("src/lib/milestones.ts", "utf8");
+
+  it("names the key in the schema the model is told to match", () => {
+    const schema = anthropic.slice(anthropic.indexOf("matching exactly this schema"));
+    expect(schema.slice(0, 1200)).toContain('"milestones"');
+  });
+
+  it("keeps the guard, on a flag that means having stages", () => {
+    // The guard is right: a leftover array from a plan somebody changed their
+    // mind about must not put stages on a quote that has none. What was wrong
+    // was the flag, which was set from the payment plan.
+    expect(lines).toContain("if (!parsed.useMilestones) return [];");
+    expect(lines).toContain("rather than that it bills by them");
+  });
+
+  it("records that a quote has stages, not that it bills by them", () => {
+    expect(actions).toContain("useMilestones: Boolean(generated.milestones?.length)");
+    expect(actions).not.toContain('useMilestones: draft.paymentPlan === "MILESTONE"');
+  });
+
+  it("leaves shape-only stages without amounts", () => {
+    // balanceAmounts spread the whole price across them regardless, which
+    // invents the payment schedule the plan step exists to avoid.
+    expect(milestones).toContain("billable = true");
+    expect(milestones).toContain("withWork.map((milestone) => ({ ...milestone, amount: 0 }))");
+  });
+});

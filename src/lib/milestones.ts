@@ -68,7 +68,16 @@ export interface DeliverableInMilestone {
 export function reconcileMilestones(
   milestones: GeneratedMilestone[],
   deliverableCount: number,
-  totalPrice: number
+  totalPrice: number,
+  /**
+   * Whether these stages are payment points.
+   *
+   * False means the freelancer chose "just the shape of the work", and then
+   * balanceAmounts spreading the whole price across them invents the payment
+   * schedule the plan step exists to avoid. The prompt asks for zeroes; this
+   * is what stops them being filled back in on the way to the database.
+   */
+  billable = true
 ): GeneratedMilestone[] {
   if (milestones.length === 0 || deliverableCount === 0) return [];
 
@@ -97,7 +106,9 @@ export function reconcileMilestones(
   const withWork = cleaned.filter((m) => m.deliverableIndexes.length > 0);
   if (withWork.length === 0) return [];
 
-  return balanceAmounts(withWork, totalPrice);
+  return billable
+    ? balanceAmounts(withWork, totalPrice)
+    : withWork.map((milestone) => ({ ...milestone, amount: 0 }));
 }
 
 /**

@@ -43,6 +43,8 @@ export async function createProjectFromBrief(
       amount: number;
     }[];
   };
+  // Stages are worth tracking whether or not they are payment points.
+  // useMilestones now records having stages rather than billing by them.
   const quoted = settings.useMilestones ? settings.milestones ?? [] : [];
 
   const project = await prisma.$transaction(async (tx) => {

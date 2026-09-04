@@ -26,12 +26,23 @@ export interface QuoteMilestone {
  * Reads the milestones off a quote's stored settings.
  *
  * They live inside the settings JSON rather than in a column, so every reader
- * needs the same cast and the same guard: milestones only count when the quote
- * is actually billed that way, since a leftover array from a plan somebody
- * changed their mind about would put a schedule on a quote that has none.
+ * needs the same cast.
+ *
+ * useMilestones used to be set from the payment plan, so a quote that ran in
+ * stages without billing by them had its stages read back as none. Every
+ * reader in the app goes through this function, so the section never appeared,
+ * while the payment terms, revisions and cancellation clause all went on
+ * referring to "Milestone 1" and "Milestone 2".
+ *
+ * Whether stages exist and whether money moves at each one are two questions.
+ * This answers the first. milestonesBillableFromSettings answers the second.
  */
 export function milestonesFromSettings(settings: unknown): QuoteMilestone[] {
   const parsed = (settings as { useMilestones?: boolean; milestones?: QuoteMilestone[] } | null) ?? {};
+  // The guard stays, because a leftover array from a plan somebody changed
+  // their mind about must not put stages on a quote that has none. What
+  // changed is what the flag means: it now records that this quote runs in
+  // stages, rather than that it bills by them.
   if (!parsed.useMilestones) return [];
   return Array.isArray(parsed.milestones) ? parsed.milestones : [];
 }
