@@ -27,13 +27,24 @@ export function TimeSetUp({
   projectId,
   open,
   onClose,
+  current,
 }: {
   projectId: string;
   open: boolean;
   onClose: () => void;
+  /**
+   * What it is set to now, when it is set to anything.
+   *
+   * The answer moves: a job somebody tracked privately becomes one the client
+   * is billed for, and a setup that could only be answered once would make
+   * them start a new project to change their mind.
+   */
+  current?: TimeMode | null;
 }) {
   const t = useT();
-  const [mode, setMode] = useState<TimeMode>("RECORD");
+  const [mode, setMode] = useState<TimeMode>(
+    current && current !== "OFF" ? current : "RECORD"
+  );
   const [asDefault, setAsDefault] = useState(false);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");

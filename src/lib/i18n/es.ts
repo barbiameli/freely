@@ -524,6 +524,10 @@ export const es: Dictionary = {
   },
 
   track: {
+    whatAreYouDoing: "¿En qué estás trabajando?",
+    stop: "Parar",
+    timeChangeUse: "Cambiar para qué es",
+    timeCurrently: "Ahora mismo: {mode}",
     mon: "Lun",
     tue: "Mar",
     wed: "Mié",

@@ -175,7 +175,12 @@ export default async function ProjectPage({
             deliverableId: entry.deliverableId,
           })),
         running: runningEntry
-          ? { startedAt: runningEntry.startedAt.toISOString() }
+          ? {
+              startedAt: runningEntry.startedAt.toISOString(),
+              // What they said they were doing when they started it, which is
+              // the only moment anybody reliably knows.
+              note: runningEntry.note,
+            }
           : null,
         hasCalendar: calendarConnected,
       }}

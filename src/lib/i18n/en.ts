@@ -524,6 +524,10 @@ export const en = {
   },
 
   track: {
+    whatAreYouDoing: "What are you working on?",
+    stop: "Stop",
+    timeChangeUse: "Change what this is for",
+    timeCurrently: "Currently: {mode}",
     mon: "Mon",
     tue: "Tue",
     wed: "Wed",

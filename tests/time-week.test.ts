@@ -141,6 +141,41 @@ describe("what the hours were spent on", () => {
 describe("how the panel behaves", () => {
   const panel = readFileSync("src/components/track/time-panel.tsx", "utf8");
 
+  it("is one line until it is wanted", () => {
+    // It was a card the height of the schedule, open on every project whether
+    // or not anybody tracked time, which is most projects.
+    expect(panel).toContain("setOpen((o) => !o)");
+    expect(panel).toContain("aria-expanded={open}");
+  });
+
+  it("can be stopped without opening it", () => {
+    // A timer you have to go looking for is a timer that runs all night.
+    const closedPart = panel.slice(0, panel.indexOf("{open && ("));
+    expect(closedPart).toContain("stopTimerAction()");
+  });
+
+  it("asks what you are doing before the timer starts", () => {
+    /**
+     * Afterwards it is a question about something already finished, and the
+     * honest answer by then is often that nobody remembers, which is how a
+     * week of tracked time becomes a column of durations against nothing.
+     */
+    expect(panel).toContain("t.track.whatAreYouDoing");
+    expect(panel).toContain("startTimerAction(projectId, what.trim())");
+  });
+
+  it("shows what a running timer is for", () => {
+    expect(panel).toContain("running.note");
+  });
+
+  it("lets the answer be changed later", () => {
+    // A job tracked privately becomes one the client is billed for.
+    expect(panel).toContain("t.track.timeChangeUse");
+    const setUp = readFileSync("src/components/track/time-set-up.tsx", "utf8");
+    expect(setUp).toContain("current && current !== \"OFF\" ? current : \"RECORD\"");
+  });
+
+
   it("ticks every second while something is running", () => {
     expect(panel).toContain("setNow(Date.now()), 1000)");
   });

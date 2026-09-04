@@ -189,7 +189,7 @@ export function ProjectDetail({
     loggedSeconds: number;
     /** Everything logged on this project, for the week view and the log. */
     entries: WeekEntry[];
-    running: { startedAt: string } | null;
+    running: { startedAt: string; note?: string } | null;
     hasCalendar: boolean;
   };
   /**
