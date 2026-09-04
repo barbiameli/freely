@@ -817,12 +817,17 @@ export async function startFollowOnAction(
   if (!original) return { ok: false, error: "Quote not found." };
 
   const settings = (original.settings as Record<string, unknown> | null) ?? {};
+  const followOnCount = await prisma.brief.count({
+    where: { followsOnFromId: original.id } as unknown as { userId: string },
+  });
 
   try {
     const created = await prisma.brief.create({
       data: {
         userId: user.id,
-        title: `${original.title} (2)`,
+        // Numbered by how many there already are, so a third follow-on is
+        // not a second copy of "(2)".
+        title: `${original.title} (${followOnCount + 2})`,
         client: original.client,
         ...((original as unknown as { clientId?: string | null }).clientId
           ? { clientId: (original as unknown as { clientId: string }).clientId }
@@ -876,10 +881,26 @@ export async function setBriefPublishedAction(
   });
   if (!brief) return { ok: false, error: "Brief not found." };
 
+  /**
+   * A signed quote stays up.
+   *
+   * The email the client gets when they sign says the link will always show
+   * what was signed. Unpublishing breaks it, which turns a promise Freely made
+   * on the freelancer's behalf into a dead page, and there is no way to tell
+   * the client it happened.
+   */
+  if (!published && brief.acceptedAt) {
+    return {
+      ok: false,
+      error:
+        "Your client signed this and has a link to it. Taking it down would break the copy they were sent.",
+    };
+  }
+
   // A quote whose second half is still being written is a quote missing its
   // terms and its payment sentence. Publishing puts it at a URL a client can
   // open, and the sections landing a few seconds later would change a document
-  // somebody may already be reading. Unpublishing is always allowed.
+  // somebody may already be reading.
   const settings = (brief.settings as { extrasPending?: boolean } | null) ?? {};
   if (published && settings.extrasPending) {
     return {

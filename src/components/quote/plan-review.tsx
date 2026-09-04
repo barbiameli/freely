@@ -88,7 +88,7 @@ export function PlanReview({
   sectionName: (key: SectionKey, t: Dictionary) => string;
   onWrite: (choices: {
     sections: SectionKey[];
-    milestones: string[];
+    milestones: number[];
     answers: PlanAnswer[];
     protection: ProtectionLevel;
     /** Whether the stages are payment points, or only the shape of the work. */
@@ -118,8 +118,10 @@ export function PlanReview({
   const [sections, setSections] = useState<SectionKey[]>(
     () => plan.sections.map((s) => s.key as SectionKey)
   );
-  const [milestones, setMilestones] = useState<string[]>(
-    () => plan.milestones.map((m) => m.name)
+  // Kept by position, since a model can name two stages the same and keeping
+  // one by name would keep or drop both.
+  const [milestones, setMilestones] = useState<number[]>(() =>
+    plan.milestones.map((_, index) => index)
   );
   /**
    * Whether the stages are where money moves.
@@ -146,7 +148,8 @@ export function PlanReview({
   const [followBrief, setFollowBrief] = useState<MoneyTopic[]>(() =>
     conflicts.map((conflict) => conflict.topic)
   );
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  /** Keyed on position, since two questions can read identically. */
+  const [answers, setAnswers] = useState<Record<number, string>>({});
   /**
    * How much armour this quote carries.
    *
@@ -217,9 +220,9 @@ export function PlanReview({
     );
   }
 
-  function toggleMilestone(name: string) {
+  function toggleMilestone(index: number) {
     setMilestones((current) =>
-      current.includes(name) ? current.filter((n) => n !== name) : [...current, name]
+      current.includes(index) ? current.filter((n) => n !== index) : [...current, index]
     );
   }
 
@@ -375,13 +378,13 @@ export function PlanReview({
           <SubLabel>{t.quote.planMilestones}</SubLabel>
           <p className="text-caption text-slate mt-1 mb-3 text-pretty">{t.quote.planMilestonesHint}</p>
           <ul className="list-none p-0 m-0 flex flex-col gap-2.5">
-            {plan.milestones.map((milestone) => {
-              const on = milestones.includes(milestone.name);
+            {plan.milestones.map((milestone, index) => {
+              const on = milestones.includes(index);
               return (
-                <li key={milestone.name}>
+                <li key={index}>
                   <button
                     type="button"
-                    onClick={() => toggleMilestone(milestone.name)}
+                    onClick={() => toggleMilestone(index)}
                     aria-pressed={on}
                     className="w-full flex items-start gap-2.5 text-left bg-none border-none cursor-pointer p-0 tap-row"
                   >
@@ -425,21 +428,21 @@ export function PlanReview({
             {plan.sightUnseen ? t.quote.planSightUnseen : t.quote.planQuestionsHint}
           </p>
           <div className="flex flex-col gap-4">
-            {plan.questions.map((question) => (
-              <div key={question.ask}>
+            {plan.questions.map((question, index) => (
+              <div key={index}>
                 <label className="block font-body font-semibold text-small text-ink mb-1.5 text-pretty">
                   {question.ask}
                 </label>
                 <input
                   type="text"
-                  value={answers[question.ask] ?? ""}
+                  value={answers[index] ?? ""}
                   onChange={(e) =>
-                    setAnswers((current) => ({ ...current, [question.ask]: e.target.value }))
+                    setAnswers((current) => ({ ...current, [index]: e.target.value }))
                   }
                   placeholder={t.quote.planSkip}
                   className="w-full bg-paper rounded-lg border-none px-3 py-2.5 text-sm text-ink outline-none"
                 />
-                {question.assume && !answers[question.ask]?.trim() && (
+                {question.assume && !answers[index]?.trim() && (
                   <p className="text-caption text-text-muted mt-1 mb-0 text-pretty">
                     {t.quote.planAssume.replace("{assume}", question.assume)}
                   </p>
@@ -514,9 +517,13 @@ export function PlanReview({
             onWrite({
               sections,
               milestones,
-              answers: Object.entries(answers)
-                .filter(([, value]) => value.trim())
-                .map(([ask, answer]) => ({ ask, answer })),
+              answers: plan.questions
+                .map((question, index) => ({
+                  index,
+                  ask: question.ask,
+                  answer: answers[index] ?? "",
+                }))
+                .filter((entry) => entry.answer.trim()),
               protection,
               milestonesBillable: phased && billable,
               phased,

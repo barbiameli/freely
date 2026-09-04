@@ -75,6 +75,19 @@ async function modeForProjectId(
   );
 }
 
+/**
+ * Names that are not a client.
+ *
+ * What the model writes when a brief names nobody. Long enough to pass a
+ * length check and vague enough to match half a calendar.
+ */
+const GENERIC_CLIENTS = ["client", "a client", "the client", "cliente", "el cliente", "unknown"];
+
+/** So a client called "C++ Studio" does not become a regular expression. */
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 /** The timer that is running, if one is. */
 export async function runningEntryAction(): Promise<
   ActionResult<{ id: string; projectId: string | null; startedAt: string } | null>
@@ -303,14 +316,21 @@ export async function importCalendarTimeAction(
     const from = new Date(to.getTime() - Math.min(days, 90) * 86_400_000);
     const events = await listTimedEvents(user.id, from, to);
 
-    const needle = project.title.toLowerCase().slice(0, 40);
-    const clientNeedle = project.client.toLowerCase();
+    /**
+     * Matched on whole words, and never on a name too short to be one.
+     *
+     * A substring match claimed "Ergonomics workshop" for a client called
+     * Ergo, and the stand-in name a brief without a client produces is long
+     * enough to pass a length check and match half a calendar. An hour wrongly
+     * billed to a client is worse than an hour nobody imported.
+     */
+    const needles = [project.title.toLowerCase().slice(0, 40), project.client.toLowerCase()]
+      .map((needle) => needle.trim())
+      .filter((needle) => needle.length >= 4 && !GENERIC_CLIENTS.includes(needle));
+
     const mine = events.filter((event) => {
       const title = event.title.toLowerCase();
-      return (
-        (needle.length > 3 && title.includes(needle)) ||
-        (clientNeedle.length > 3 && title.includes(clientNeedle))
-      );
+      return needles.some((needle) => new RegExp(`\\b${escapeRegex(needle)}\\b`).test(title));
     });
 
     if (mine.length === 0) return { ok: true, data: { added: 0 } };

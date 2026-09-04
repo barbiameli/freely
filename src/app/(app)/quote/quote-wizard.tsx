@@ -400,7 +400,7 @@ export function QuoteWizard({
    */
   async function handleWriteFromPlan(choices: {
     sections: SectionKey[];
-    milestones: string[];
+    milestones: number[];
     answers: PlanAnswer[];
     protection: ProtectionLevel;
     milestonesBillable: boolean;
@@ -451,7 +451,12 @@ export function QuoteWizard({
       // Proposing discovery for a job already scoped is padding.
       armour.paidDiscovery && plan.sightUnseen
         ? discoveryInstruction(
-            draft.hourlyRate > 0 ? draft.hourlyRate * 8 : 40,
+            // The plan's own estimate of the job, not a number derived from
+            // the rate. This was passing rate times eight as if it were hours,
+            // which for a fifty an hour rate claimed a four hundred hour
+            // project and only produced a sane answer because the fee is
+            // capped at four hours.
+            plan.milestones.length * 8 || 20,
             currencySymbol(draft.currency),
             draft.hourlyRate
           )

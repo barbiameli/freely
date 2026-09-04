@@ -219,9 +219,11 @@ describe("how the app uses it", () => {
   });
 
   it("only claims calendar blocks that name the project or the client", () => {
-    // A looser match would claim the client's own meetings as work on it.
-    expect(actions).toContain("title.includes(needle)");
-    expect(actions).toContain("title.includes(clientNeedle)");
+    // On whole words, and never on a name too short to be one: a substring
+    // match claimed "Ergonomics workshop" for a client called Ergo.
+    expect(actions).toContain("needle.length >= 4");
+    expect(actions).toContain("GENERIC_CLIENTS");
+    expect(actions).toContain("escapeRegex(needle)");
   });
 
   it("never lets a calendar failure lose somebody's afternoon", () => {

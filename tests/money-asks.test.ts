@@ -144,10 +144,25 @@ describe("what the reading step is told to look for", () => {
     expect(planSchema.parse({}).moneyAsks).toEqual([]);
   });
 
-  it("refuses a topic it does not know", () => {
-    expect(
-      planSchema.safeParse({ moneyAsks: [{ topic: "vibes", value: "x" }] }).success
-    ).toBe(false);
+  it("drops a topic it does not know rather than losing the plan", () => {
+    /**
+     * A strict enum meant the model inventing one topic lost the entire
+     * reading: the paragraph, the stages, the questions, all of it, and the
+     * freelancer was told the brief could not be understood. One unusable
+     * line is not a reason to throw away nine good ones.
+     */
+    const parsed = planSchema.safeParse({
+      reading: "A real reading.",
+      moneyAsks: [
+        { topic: "vibes", value: "x" },
+        { topic: "rateUnit", value: "FIXED", quote: "a fixed fee" },
+      ],
+    });
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    expect(parsed.data.reading).toBe("A real reading.");
+    expect(parsed.data.moneyAsks).toHaveLength(1);
+    expect(parsed.data.moneyAsks[0].topic).toBe("rateUnit");
   });
 });
 

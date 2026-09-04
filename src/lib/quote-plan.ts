@@ -70,15 +70,27 @@ export const planSchema = z.object({
    * fifty an hour with nothing anywhere reconciling the two. Reported rather
    * than applied: the brief wins, but out loud. See lib/money-asks.
    */
+  /**
+   * Dropped one by one rather than rejected together.
+   *
+   * A strict enum here meant the model inventing one topic, "budget" say, lost
+   * the entire plan: the reading, the stages, the questions, all of it, and
+   * the freelancer was told the brief could not be understood. One unusable
+   * line is not a reason to throw away nine good ones.
+   */
   moneyAsks: z
     .array(
-      z.object({
-        topic: z.enum(["rateUnit", "billing", "paymentPlan", "deposit"]),
-        value: z.string(),
-        quote: z.string().default(""),
-      })
+      z
+        .object({
+          topic: z.enum(["rateUnit", "billing", "paymentPlan", "deposit"]),
+          value: z.string(),
+          quote: z.string().default(""),
+        })
+        .nullable()
+        .catch(null)
     )
-    .default([]),
+    .default([])
+    .transform((asks) => asks.filter((ask): ask is NonNullable<typeof ask> => ask !== null)),
   /**
    * How much armour this job looks like it needs.
    *
@@ -87,7 +99,8 @@ export const planSchema = z.object({
    * shrug, and a proposal with its reasons attached gets a considered yes or
    * a considered no.
    */
-  protection: z.enum(["KNOWN", "NEW", "GUARDED"]).default("NEW"),
+  /** Anything unrecognised falls back rather than losing the plan. */
+  protection: z.enum(["KNOWN", "NEW", "GUARDED"]).catch("NEW").default("NEW"),
   /**
    * What in the brief led to that, in the freelancer's language.
    *
@@ -102,6 +115,8 @@ export type QuotePlan = z.infer<typeof planSchema>;
 
 /** One answered question, on its way into the quote. */
 export interface PlanAnswer {
+  /** Which question, by position. Two can read identically. */
+  index: number;
   ask: string;
   answer: string;
 }
@@ -115,11 +130,15 @@ export interface PlanAnswer {
  * quietly guessed.
  */
 export function answersForPrompt(plan: QuotePlan, answers: PlanAnswer[]): string {
-  const given = new Map(answers.map((a) => [a.ask, a.answer.trim()]));
+  // Keyed on position rather than on the question's text: a model that asks
+  // the same thing twice would otherwise have one answer applied to both, and
+  // the second assumption would silently disappear.
+  const given = new Map(answers.map((a) => [a.index, a.answer.trim()]));
   const lines: string[] = [];
 
-  for (const question of plan.questions) {
-    const answer = given.get(question.ask);
+  // Array.from rather than entries(): this target has no downlevel iteration.
+  for (const { index, question } of plan.questions.map((question, index) => ({ index, question }))) {
+    const answer = given.get(index);
     if (answer) lines.push(`- ${question.ask} ${answer}`);
     else if (question.assume) lines.push(`- ${question.ask} Not answered, so assume: ${question.assume}`);
   }
@@ -131,8 +150,10 @@ export function answersForPrompt(plan: QuotePlan, answers: PlanAnswer[]): string
 }
 
 /** The agreed milestones, as instruction rather than suggestion. */
-export function milestonesForPrompt(plan: QuotePlan, keep: string[]): string {
-  const kept = plan.milestones.filter((m) => keep.includes(m.name));
+export function milestonesForPrompt(plan: QuotePlan, keep: number[]): string {
+  // By position, for the same reason: a model that names two stages the same
+  // would have both kept or both dropped by one press.
+  const kept = plan.milestones.filter((_, index) => keep.includes(index));
   if (kept.length === 0) return "";
   return `The freelancer has already agreed this split, so use it exactly: ${kept.length} milestones, in this order, with these names and these gates. Do not merge them, split them further, or rename them.\n${kept
     .map(

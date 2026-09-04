@@ -93,8 +93,12 @@ describe("the plan proposes a level", () => {
     expect(planSchema.parse({}).risks).toEqual([]);
   });
 
-  it("refuses a level it does not recognise", () => {
-    expect(planSchema.safeParse({ protection: "PARANOID" }).success).toBe(false);
+  it("falls back on a level it does not recognise rather than losing the plan", () => {
+    // Same reason as the money asks: one invented word should not cost the
+    // whole reading.
+    const parsed = planSchema.safeParse({ reading: "x", protection: "PARANOID" });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.protection).toBe("NEW");
   });
 
   it("asks for the reasons, in the freelancer's language", () => {

@@ -92,7 +92,7 @@ describe("the plan", () => {
 describe("what the answers become", () => {
   it("turns an answer into a fact", () => {
     const out = answersForPrompt(plan, [
-      { ask: "How many screens are in the two flows?", answer: "About 9." },
+      { index: 0, ask: "How many screens are in the two flows?", answer: "About 9." },
     ]);
     expect(out).toContain("How many screens are in the two flows? About 9.");
   });
@@ -111,7 +111,7 @@ describe("what the answers become", () => {
 
   it("treats a blank answer as a skip", () => {
     const out = answersForPrompt(plan, [
-      { ask: "Who signs off?", answer: "   " },
+      { index: 1, ask: "Who signs off?", answer: "   " },
     ]);
     expect(out).toContain("Not answered, so assume: one reviewer");
   });
@@ -119,14 +119,14 @@ describe("what the answers become", () => {
 
 describe("the milestones the freelancer kept", () => {
   it("sends them as an instruction rather than a suggestion", () => {
-    const out = milestonesForPrompt(plan, ["Review and interviews", "Redesign"]);
+    const out = milestonesForPrompt(plan, [0, 1]);
     expect(out).toContain("use it exactly");
     expect(out).toContain("Do not merge them, split them further, or rename them");
     expect(out).toContain("1. Review and interviews (closes on: Findings agreed)");
   });
 
   it("drops the ones they unticked", () => {
-    const out = milestonesForPrompt(plan, ["Redesign"]);
+    const out = milestonesForPrompt(plan, [1]);
     expect(out).toContain("Redesign");
     expect(out).not.toContain("Review and interviews");
   });
