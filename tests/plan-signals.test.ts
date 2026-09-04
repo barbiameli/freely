@@ -154,3 +154,39 @@ describe("stages survive being written down", () => {
     expect(milestones).toContain("withWork.map((milestone) => ({ ...milestone, amount: 0 }))");
   });
 });
+
+/**
+ * Nothing opens itself over the quote any more.
+ *
+ * "Before you send" appeared 2.2 seconds after the quote loaded, once per
+ * quote. That was right when the plan step did not exist, because there was no
+ * earlier moment to raise any of it. There is now: the plan screen asks about
+ * protection, the money the brief wants, the questions and the sections before
+ * a word is written, which is when the answers are cheap. After that, a panel
+ * covering the quote uninvited interrupts somebody reading the thing they just
+ * made to tell them something they could have been told before it existed.
+ */
+describe("before you send waits to be asked", () => {
+  const panel = readFileSync("src/components/quote/before-you-send.tsx", "utf8");
+
+  it("does not open on a timer", () => {
+    expect(panel).not.toContain("setTimeout");
+    expect(panel).not.toContain("setOpen(true)");
+    expect(panel).not.toContain("useEffect");
+  });
+
+  it("keeps the button and its count", () => {
+    // Available, just not uninvited.
+    expect(panel).toContain("setOpen((current) => !current)");
+    expect(panel).toContain("{unchecked}");
+  });
+
+  it("stops promising publishing is never blocked while blocking it", () => {
+    // The header said "Publishing is not blocked" with a red line underneath
+    // saying settle these before it can be published. Both at once.
+    const en = readFileSync("src/lib/i18n/en.ts", "utf8");
+    expect(en).toContain("beforeYouSendBlocked:");
+    expect(en).not.toContain("Publishing is not blocked, these are notes for you.");
+    expect(panel).toContain("blocking > 0");
+  });
+});

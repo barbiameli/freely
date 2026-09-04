@@ -513,7 +513,11 @@ export const en = {
     stillWritingHint: "The terms, revisions and anything else you asked for are on their way. Everything above is finished.",
     quotedAs: "Quoted as",
     beforeYouSend: "Before you send",
-    beforeYouSendOpen: "{count} still to check. Publishing is not blocked, these are notes for you.",
+    // Two versions, because the old one claimed publishing was never blocked
+    // while the line under it said the opposite whenever a blocking rule was
+    // open. Both were on screen at once.
+    beforeYouSendOpen: "{count} still to check. None of them blocks publishing, they are notes for you.",
+    beforeYouSendBlocked: "{count} still to check. One of them has to be settled or marked deliberate before this can be published.",
     beforeYouSendDone: "All checked. Nothing here reaches your client.",
     publishWhileOpen: "{count} unchecked above",
     editingLive: "This quote is published. Changes show up on the link your client already has.",

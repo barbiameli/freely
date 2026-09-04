@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Check, Lightbulb, AlertTriangle } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
@@ -8,29 +8,6 @@ import { clearQuestionAction, acknowledgeRuleAction, applyRuleAction } from "@/a
 import { useT } from "@/lib/i18n/context";
 import type { GroundRule } from "@/lib/ground-rules";
 import { ruleWords } from "@/lib/rule-words";
-
-/** One flag per quote, so the overlay arrives once and never again. */
-function seenKey(briefId: string): string {
-  return `freely.beforeYouSend.${briefId}`;
-}
-
-function alreadySeen(briefId: string): boolean {
-  try {
-    return window.localStorage.getItem(seenKey(briefId)) === "1";
-  } catch {
-    // Private browsing, or storage full. Not being able to remember is a
-    // reason to stay quiet rather than to interrupt on every visit.
-    return true;
-  }
-}
-
-function markSeen(briefId: string): void {
-  try {
-    window.localStorage.setItem(seenKey(briefId), "1");
-  } catch {
-    // Nothing to do. Worst case it opens again next time.
-  }
-}
 
 /**
  * The questions the AI raised, as a list you can finish.
@@ -105,23 +82,21 @@ export function BeforeYouSend({
   const unchecked = questions.filter((q) => !cleared.includes(q)).length + openRules.length;
   const hasQuestions = questions.length > 0 || broken.length > 0;
 
-  useEffect(() => {
-    if (!hasQuestions) return;
-    // Only when something is still outstanding, and only the first time this
-    // quote is opened. A checklist that reopens itself after you have been
-    // through it is nagging.
-    if (unchecked === 0) return;
-    if (alreadySeen(briefId)) return;
-
-    const timer = window.setTimeout(() => {
-      markSeen(briefId);
-      setOpen(true);
-    }, 2200);
-    return () => window.clearTimeout(timer);
-    // Deliberately keyed on the quote alone: ticking a box mid-timer should
-    // not restart the wait.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [briefId, hasQuestions]);
+  /*
+   * This no longer opens itself.
+   *
+   * It used to appear 2.2 seconds after the quote loaded, once per quote, and
+   * that was the right call when the plan step did not exist: there was no
+   * earlier moment to raise any of this, so the choice was between a modal and
+   * saying nothing. There is an earlier moment now. The plan screen asks about
+   * protection, the money the brief wants, the open questions and the sections
+   * before a word is written, which is when the answers are cheap.
+   *
+   * By the time the quote exists, a panel that covers it uninvited is
+   * interrupting somebody reading the thing they just made, to tell them
+   * something they could have been told before it was made. The count on the
+   * button says how many are open; opening it is their decision.
+   */
 
   if (!hasQuestions) return null;
 
@@ -203,9 +178,12 @@ export function BeforeYouSend({
         onClose={() => setOpen(false)}
         title={t.brief.beforeYouSend}
         hint={
-          unchecked > 0
-            ? t.brief.beforeYouSendOpen.replace("{count}", String(unchecked))
-            : t.brief.beforeYouSendDone
+          unchecked === 0
+            ? t.brief.beforeYouSendDone
+            : (blocking > 0
+                ? t.brief.beforeYouSendBlocked
+                : t.brief.beforeYouSendOpen
+              ).replace("{count}", String(unchecked))
         }
         wide
       >
