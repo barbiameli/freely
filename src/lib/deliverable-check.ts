@@ -119,3 +119,43 @@ export function happenings(deliverables: string[]): { index: number; text: strin
     .map((text, index) => ({ index, text }))
     .filter((item) => isHappening(item.text));
 }
+
+/**
+ * A label that names where something sits, rather than what it is.
+ *
+ * "Milestone 1", "Phase 2", "Week 1", "End of Week 2" and their Spanish
+ * equivalents. None of them is the name of a thing being handed over, and all
+ * of them turn up at the front of deliverables written by a model that has
+ * just been asked to produce milestones.
+ */
+const POSITION_LABEL =
+  /^(?:(?:the\s+)?(?:end\s+of\s+)?(?:milestone|phase|stage|sprint|week|day|hito|fase|etapa|semana|día|dia)\s*\d*|fin(?:al)?\s+de\s+(?:la\s+)?semana\s*\d*)\s*$/i;
+
+/** Whether this is a position rather than a name. */
+export function isPositionLabel(text: string): boolean {
+  return POSITION_LABEL.test(text.trim().replace(/[:,\-–—]\s*$/, ""));
+}
+
+/**
+ * A deliverable without the scaffolding in front of it.
+ *
+ * A real quote listed six deliverables whose names read "Milestone 1",
+ * "Milestone 1", "Milestone 1", "Milestone 2", "Milestone 2", "Milestone 2",
+ * because each string had been written as "Milestone 1: End of Week 1: Flow
+ * review doc covering...". Which milestone something belongs to and when it
+ * lands are both already on the milestone; repeating them here cost the reader
+ * the only part that says what they are getting.
+ *
+ * Stripped at render as well as forbidden in the prompt, so quotes written
+ * before this read correctly too.
+ */
+export function withoutPositionPrefix(text: string): string {
+  let out = text.trim();
+  // Repeatedly, since "Milestone 1: End of Week 1: ..." carries two.
+  for (let pass = 0; pass < 3; pass += 1) {
+    const match = out.match(/^([^:]{1,24}):\s*([\s\S]+)$/);
+    if (!match || !isPositionLabel(match[1])) break;
+    out = match[2].trim();
+  }
+  return out;
+}

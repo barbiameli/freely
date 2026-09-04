@@ -1,3 +1,4 @@
+import { isPositionLabel } from "@/lib/deliverable-check";
 /**
  * Making generated quote text readable.
  *
@@ -44,6 +45,11 @@ export function splitDeliverable(text: string): SplitText {
   }
   // A lead that is itself a full sentence is not a name.
   if (/[.!?]$/.test(lead.trim())) return { lead: trimmed, detail: "" };
+  // Nor is a position. "Milestone 1" and "End of Week 2" say where something
+  // sits, not what it is, and promoting one to the heading is how six
+  // deliverables came to be titled "Milestone 1" three times and "Milestone 2"
+  // three times, with the actual artifact demoted to the small grey line.
+  if (isPositionLabel(lead)) return { lead: trimmed, detail: "" };
 
   return { lead: lead.trim(), detail: detail.trim() };
 }

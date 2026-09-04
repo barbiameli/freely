@@ -137,3 +137,25 @@ describe("which failure it was", () => {
     expect(wizard).toContain("{error && !planFailed && <div");
   });
 });
+
+/**
+ * One bad optional field does not take the quote with it.
+ *
+ * Asking a refine to add a milestone section produced an object where the
+ * schema wanted an array, and the whole response was rejected: the scope, the
+ * deliverables and the payment terms that had just been corrected all went
+ * with it, and the freelancer was shown "Brief response failed validation:
+ * expected array".
+ */
+describe("a malformed milestones field", () => {
+  const anthropic = readFileSync("src/lib/anthropic.ts", "utf8");
+  const field = anthropic.slice(anthropic.indexOf("milestones: z"), anthropic.indexOf("milestones: z") + 400);
+
+  it("is dropped rather than fatal", () => {
+    expect(field).toContain(".catch(undefined)");
+  });
+
+  it("drops one bad stage rather than all of them", () => {
+    expect(field).toContain("milestoneSchema.nullable().catch(null)");
+  });
+});

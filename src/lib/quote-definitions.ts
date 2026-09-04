@@ -43,6 +43,31 @@ export function billingFromSettings(settings: unknown): BillingBasis {
   return parsed.billing === "HOURLY_TRACKED" ? "HOURLY_TRACKED" : "FIXED_TOTAL";
 }
 
+/**
+ * Whether the paragraph has already said which of the two this is.
+ *
+ * The standard sentence exists for the quotes that leave it unsaid. Appended
+ * to one that has already said it, in the freelancer's own words, it reads as
+ * the document repeating itself and, worse, disagreeing with itself: a
+ * paragraph explaining an hourly arrangement followed by a second paragraph
+ * explaining the same arrangement differently is two answers to one question.
+ */
+const SAYS_TRACKED = [
+  "hours actually worked",
+  "hours worked",
+  "tracked and billed",
+  "this is an estimate",
+  "horas realmente trabajadas",
+  "es una estimación",
+];
+const SAYS_FIXED = ["fixed total", "fixed price", "precio cerrado", "precio fijo"];
+
+function alreadySaysTheBasis(text: string, billing: BillingBasis): boolean {
+  const lower = text.toLowerCase();
+  const phrases = billing === "HOURLY_TRACKED" ? SAYS_TRACKED : SAYS_FIXED;
+  return phrases.some((phrase) => lower.includes(phrase));
+}
+
 function append(text: string, sentence: string): string {
   if (!text?.trim()) return text;
   // Already said, in whatever words the model chose. Saying it twice reads as
@@ -70,7 +95,7 @@ export function paymentClause(
 
   // A fixed-price quote never shows a rate, so there is nothing to be
   // ambiguous about and the sentence would be noise.
-  if (!options.fixedPrice) {
+  if (!options.fixedPrice && !alreadySaysTheBasis(out, options.billing)) {
     out = append(out, options.billing === "HOURLY_TRACKED" ? words.billedTracked : words.billedFixed);
   }
   return out;

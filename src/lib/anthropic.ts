@@ -208,7 +208,21 @@ export const briefSchema = z.object({
   price: z.number().nonnegative(),
   hours: z.number().nonnegative(),
   /** Only present when the quote is being billed in milestones. */
-  milestones: z.array(milestoneSchema).optional(),
+  /**
+   * Dropped one at a time, and dropped whole rather than taking the quote down.
+   *
+   * Asking a refine to "add a milestone section" produced an object rather than
+   * an array, the schema rejected the entire response, and the freelancer was
+   * told "Brief response failed validation: expected array". Everything else in
+   * that rewrite, the scope, the deliverables, the payment terms they had just
+   * asked to fix, was thrown away with it. A shape this optional is never worth
+   * the rest of the quote.
+   */
+  milestones: z
+    .array(milestoneSchema.nullable().catch(null))
+    .transform((rows) => rows.filter((row): row is NonNullable<typeof row> => row !== null))
+    .optional()
+    .catch(undefined),
   terms: briefExtrasSchema.shape.terms,
   revisions: briefExtrasSchema.shape.revisions,
   availability: briefExtrasSchema.shape.availability,
@@ -1020,7 +1034,9 @@ Apply this test to every line before you write it: would this exist even if the 
 
 So: never list a revision round, an amends pass, a feedback cycle, an iteration, a review, a walkthrough, a call, a session, a workshop, a check-in or a handover meeting as a deliverable. Where those are part of the deal they belong in the revisions policy, the payment terms or the timeline, which are the places that describe how the work runs.
 
-One artifact is one deliverable, whatever states it passes through. Screens in draft and the same screens after feedback are one line, not two, and listing both charges twice for one thing and reads as double-counting the revision round.`,
+One artifact is one deliverable, whatever states it passes through. Screens in draft and the same screens after feedback are one line, not two, and listing both charges twice for one thing and reads as double-counting the revision round.
+
+Start every line with the artifact itself. Never begin one with a position: not "Milestone 1", not "Phase 2", not "Stage 1", not "Week 1", not "End of Week 2", and not a date. Which milestone a thing belongs to and when it lands are already carried by the milestone, and repeating them here pushes the only part that says what the client is getting into second place. Write "Flow review document, covering both priority flows" rather than "Milestone 1: End of Week 1: Flow review document".`,
     `\nWrite a project quote based on this. Keep deliverables as a list of short, concrete items (4-7 items), name actual artifacts, not phases. Give a realistic timeline, a price in ${currencyCode}, and estimated hours that are consistent with the pricing approach above.`,
   ]
     .filter(Boolean)

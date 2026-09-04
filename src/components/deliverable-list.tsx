@@ -1,4 +1,5 @@
 import { splitDeliverable } from "@/lib/rich-text";
+import { withoutPositionPrefix } from "@/lib/deliverable-check";
 
 /**
  * Deliverables, with the name separated from what it covers.
@@ -23,7 +24,9 @@ export function DeliverableList({
   return (
     <div className={`flex flex-col ${gap}`}>
       {deliverables.map((d, i) => {
-        const { lead, detail } = splitDeliverable(d);
+        // Stripped here rather than only in the prompt, so quotes written
+        // before this stopped happening read correctly too.
+        const { lead, detail } = splitDeliverable(withoutPositionPrefix(d));
         return (
           <div key={i} className="flex items-start gap-2.5">
             {marker?.(i)}

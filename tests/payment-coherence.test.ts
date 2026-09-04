@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { paymentProblems } from "@/lib/payment-coherence";
+import { paymentClause } from "@/lib/quote-definitions";
 
 const tracked = {
   billing: "HOURLY_TRACKED" as const,
@@ -55,5 +56,31 @@ describe("a payment paragraph that argues with itself", () => {
       "Pagas solo las horas realmente trabajadas. El importe total se factura a la entrega.";
     expect(paymentProblems(es, tracked)).toContain("ceilingOnEstimate");
     expect(paymentProblems(es, tracked)).toContain("bothAmounts");
+  });
+});
+
+describe("the standard sentence is not added twice", () => {
+  const words = {
+    milestoneMeans: "A milestone is a named set of deliverables.",
+    roundMeans: "A round is one consolidated set of feedback.",
+    billedFixed: "This is a fixed total for the scope on this page.",
+    billedTracked: "This is an estimate. You are billed for the hours actually worked.",
+  };
+
+  it("stays away when the paragraph already explains the basis", () => {
+    // The freelancer's own words came first and said the same thing. A second
+    // paragraph saying it differently is two answers to one question.
+    const own =
+      "All hours are tracked and billed at $50 per hour. The hours worked are invoiced on delivery.";
+    expect(
+      paymentClause(own, { hasMilestones: false, billing: "HOURLY_TRACKED", fixedPrice: false }, words)
+    ).toBe(own);
+  });
+
+  it("still adds it when the paragraph leaves it unsaid", () => {
+    const silent = "Payment is due within 14 days of the invoice.";
+    expect(
+      paymentClause(silent, { hasMilestones: false, billing: "HOURLY_TRACKED", fixedPrice: false }, words)
+    ).toContain(words.billedTracked);
   });
 });

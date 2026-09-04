@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { happenings, isHappening } from "@/lib/deliverable-check";
+import { happenings, isHappening, isPositionLabel, withoutPositionPrefix } from "@/lib/deliverable-check";
+import { splitDeliverable } from "@/lib/rich-text";
 import { brokenRules, DEFAULT_RULE_SETTINGS } from "@/lib/ground-rules";
 
 /**
@@ -105,5 +106,48 @@ describe("as a ground rule", () => {
     // you, not only to somebody who does not.
     const protection = readFileSync("src/lib/protection.ts", "utf8");
     expect(protection.match(/"deliverablesAreThings"/g)?.length).toBe(3);
+  });
+});
+
+describe("a deliverable is not a position on a calendar", () => {
+  // The six lines from a real quote. Three read "Milestone 1" and three read
+  // "Milestone 2", because the split promoted the prefix to the heading and
+  // demoted the artifact to the grey line under it.
+  const real = [
+    "Milestone 1: End of Week 1: Flow review doc covering both priority flows, with friction points and drop-off risks identified",
+    "Milestone 1: End of Week 1: Stakeholder interview guide, a structured question set built around current behaviour, workarounds, and goals",
+    "Milestone 2: End of Week 2: Redesigned Figma screens for Flow 1, covering the updated user journey with interaction states at PoC level",
+  ];
+
+  it("strips both prefixes, not just the first", () => {
+    expect(withoutPositionPrefix(real[0])).toBe(
+      "Flow review doc covering both priority flows, with friction points and drop-off risks identified"
+    );
+  });
+
+  it("leaves the lines with names of their own", () => {
+    const names = real.map((line) => splitDeliverable(withoutPositionPrefix(line)).lead);
+    expect(new Set(names).size).toBe(names.length);
+    expect(names[0]).toBe("Flow review doc covering both priority flows");
+  });
+
+  it("knows a position from a name", () => {
+    for (const label of ["Milestone 1", "Phase 2", "Week 1", "End of Week 2", "Hito 1", "Semana 2"]) {
+      expect(isPositionLabel(label)).toBe(true);
+    }
+    for (const name of ["Flow review document", "Annotated Figma screens", "Interview guide"]) {
+      expect(isPositionLabel(name)).toBe(false);
+    }
+  });
+
+  it("refuses to make a heading out of a position", () => {
+    // Belt and braces: even unstripped, the splitter must not promote it.
+    const split = splitDeliverable("Milestone 1: Flow review doc covering both priority flows");
+    expect(split.lead).not.toBe("Milestone 1");
+  });
+
+  it("leaves an honest deliverable alone", () => {
+    const plain = "Annotated Figma screens for Flow 1, covering the updated journey";
+    expect(withoutPositionPrefix(plain)).toBe(plain);
   });
 });
