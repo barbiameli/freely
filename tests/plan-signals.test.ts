@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "fs";
 import { planCards, decisionCount, type PlanShape } from "@/lib/plan-signals";
 
 const calm: PlanShape = {
@@ -74,5 +75,38 @@ describe("what the plan screen is made of", () => {
   it("counts what needs you", () => {
     expect(decisionCount(planCards(calm))).toBe(0);
     expect(decisionCount(planCards({ ...calm, conflictCount: 2, sightUnseen: true }))).toBe(2);
+  });
+});
+
+/**
+ * Running in stages and paying per stage are two questions.
+ *
+ * The generate prompt asked for a milestones array only when the payment plan
+ * was MILESTONE, so choosing "in stages" and "just the shape of the work"
+ * produced no milestones at all. The stages had nowhere to go, so the model
+ * wrote them into the timeline, and the quote's payment terms, revisions,
+ * assumptions and cancellation clause all referred to "Milestone 1" and
+ * "Milestone 2" while no milestone section existed on the document.
+ */
+describe("stages get a section of their own", () => {
+  const anthropic = readFileSync("src/lib/anthropic.ts", "utf8");
+
+  it("asks for stages whenever the work runs in them", () => {
+    expect(anthropic).toContain("const runsInStages =");
+    expect(anthropic).toContain("const milestoneInstruction = runsInStages");
+    // The old gate, which read the payment plan to answer a question about shape.
+    expect(anthropic).not.toContain('const milestoneInstruction = draft.paymentPlan === "MILESTONE"');
+  });
+
+  it("puts no amounts on stages that are not payment points", () => {
+    expect(anthropic).toContain("const stagesArePaid =");
+    expect(anthropic).toContain("they carry no amounts");
+  });
+
+  it("stops the timeline restating the stages", () => {
+    // Both sections were asking for the same staged breakdown, so the quote
+    // said it twice and the client could not tell which was the schedule.
+    expect(anthropic).toContain("timelineDefersToStages");
+    expect(anthropic).toContain("Do not repeat that structure here.");
   });
 });

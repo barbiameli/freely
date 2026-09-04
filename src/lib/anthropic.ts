@@ -703,10 +703,28 @@ Use web search to find the going ${unitNoun(unit, promptWords)} rate, and the ty
       ? `\nThis is quoted as a fixed price for the whole project, not as a rate. Still estimate hours honestly, since they inform the timeline, but the client is agreeing to the total. Never present an hourly or daily rate anywhere in the output.`
       : "";
 
-  const milestoneInstruction = draft.paymentPlan === "MILESTONE"
+  /**
+   * Whether the work runs in stages at all.
+   *
+   * It used to ask this question by reading the payment plan, so choosing "in
+   * stages" and "just the shape of the work" produced no milestones array at
+   * all. The stages then had nowhere to go, and the model wrote them into the
+   * timeline instead: a quote whose payment terms, revisions, assumptions and
+   * cancellation clause all referred to "Milestone 1" and "Milestone 2" while
+   * no milestone section existed anywhere on the document.
+   *
+   * Running in stages and paying per stage are two questions. The plan step
+   * has asked them separately since the four-questions work; this is the last
+   * place that still treated them as one.
+   */
+  const runsInStages =
+    draft.paymentPlan === "MILESTONE" || (draft.milestoneCount ?? 0) > 0;
+  const stagesArePaid = draft.milestonesBillable ?? draft.paymentPlan === "MILESTONE";
+
+  const milestoneInstruction = runsInStages
     ? `\nInclude a "milestones" array.
 
-A milestone is a billable chunk of the project, and it is NOT one deliverable renamed: a six-deliverable project is usually three or four milestones, not six.
+A milestone is a chunk of the project, and it is NOT one deliverable renamed: a six-deliverable project is usually three or four milestones, not six.
 
 If the source material already names the milestones, or describes the project in phases with dates attached, use those exactly: their number, their boundaries and their dates. Somebody who has written out "milestone 1 at the end of week 1, milestone 2 at the end of week 2" has told you the answer, and a different split invented here contradicts what they have already said to their client.
 
@@ -716,9 +734,17 @@ Each entry has:
 - "name": 2-5 words for this chunk of work.
 - "deliverableIndexes": 0-based positions in the deliverables array you produced, in order.
 - "gate": what closes this milestone beyond its deliverables, when there is one. Usually an agreement rather than an artifact, phrased as a short concrete event: "Direction agreed with stakeholders", "Analytics access confirmed", "Content signed off". Omit it on a milestone that genuinely ends when the work is simply done.
-- "amount": this milestone's share of the total price.
+- "amount": ${
+        stagesArePaid
+          ? "this milestone's share of the total price."
+          : "0. The stages on this quote are the shape of the work and not payment points, so they carry no amounts. Do not split the price across them and do not describe any of them as invoiced."
+      }
 
-Rules: every deliverable appears in exactly one milestone, never two and never none. The amounts sum to exactly the total price. Weight each amount by how much work it represents, not by dividing equally, unless the chunks genuinely are equal.${
+Rules: every deliverable appears in exactly one milestone, never two and never none.${
+        stagesArePaid
+          ? " The amounts sum to exactly the total price. Weight each amount by how much work it represents, not by dividing equally, unless the chunks genuinely are equal."
+          : ""
+      }${
         draft.milestoneCount
           ? ` Use exactly ${draft.milestoneCount} milestones.`
           : " Choose the number of milestones yourself from the natural shape of the work, usually between two and four."
@@ -793,7 +819,19 @@ Rules: every deliverable appears in exactly one milestone, never two and never n
           )}. Return a "discipline" key naming which one this job mostly is, using exactly one of those keys. Judge it by what the client is actually buying, not by which words appear most. A job that spans two is named by whichever carries the larger share of the work, and if it is genuinely even, name the first. Write the whole quote as that kind of work: its deliverables, its vocabulary and the stages a client of that discipline expects. A build quoted in the language of a design sprint reads like it was written for somebody else.`
       : "";
 
-  const timelineInstruction = draft.includeTimeline
+  /**
+   * The timeline stops describing the stages once the stages exist.
+   *
+   * Both sections were asking for the same thing: a staged, line-by-line
+   * breakdown of the work. With a milestones array as well, the quote said it
+   * twice, and where the two disagreed the client had no way to tell which was
+   * the real schedule.
+   */
+  const timelineDefersToStages = runsInStages
+    ? `\n\nThis quote carries a milestones array, which is where the stages of the work and what lands in each of them are described. Do not repeat that structure here. "timeline" gives the dates and the overall duration only: when each stage runs and what is needed from the client and when. Never name a milestone's deliverables again in the timeline.`
+    : "";
+
+  const timelineInstruction = (draft.includeTimeline
     ? `\nTimeline requirements. Return "timeline" as 4-6 stages, EACH ON ITS OWN LINE separated by a newline character, in the exact form "Week 1-2: Label - what actually happens". Rules:
 - Start every line with a concrete week or day range ("Week 1", "Week 2-3", "Day 1-3"). Never "Phase one" or "Later" with no timing.
 - Use the same unit on every line: all weeks, or all days. Never mix them.
@@ -806,7 +844,7 @@ Good: "Week 3-4: Design - wireframes for the 6 core screens, then two rounds of 
 Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
     : decides
     ? `\nTimeline requirements. You are choosing whether Timeline is its own section. If it is, return "timeline" as 4-6 stages, EACH ON ITS OWN LINE, in the form "Week 1-2: Label - what actually happens", naming real activities and saying what is needed from the client and when. If it is not, return "timeline" as a single short sentence giving the overall duration and rough shape.`
-    : `\nTimeline requirements. Timeline is NOT being broken out as its own section on this quote, so return "timeline" as a single short sentence giving the overall duration and rough shape, e.g. "About 6 weeks from kickoff to handover, with design in the first half and build in the second." Do not return a staged, line-by-line breakdown.`;
+    : `\nTimeline requirements. Timeline is NOT being broken out as its own section on this quote, so return "timeline" as a single short sentence giving the overall duration and rough shape, e.g. "About 6 weeks from kickoff to handover, with design in the first half and build in the second." Do not return a staged, line-by-line breakdown.`) + timelineDefersToStages;
 
   // Optional sections. Each is off unless asked for, so the baseline quote
   // stays scope, deliverables and price rather than a wall of boilerplate.
