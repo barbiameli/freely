@@ -383,6 +383,23 @@ export function BriefView({
    */
   const [hidden, setHidden] = useState<string[]>(brief.hiddenSections ?? []);
 
+  /**
+   * The sentences the client sees that are not in any editable field.
+   *
+   * paymentClause and revisionsClause append a definition at render time, on
+   * every template and the PDF. Useful, and invisible here, so a definition
+   * saying each milestone is invoiced sat under payment terms saying the hours
+   * are invoiced once at the end, and there was no box to correct it in.
+   */
+  const appended = {
+    payment:
+      (brief.milestones?.length ?? 0) > 0
+        ? brief.milestonesBillable !== false
+          ? t.publicQuote.milestoneMeans
+          : t.publicQuote.milestoneMeansShape
+        : "",
+  };
+
   const sectionWords = {
     remove: t.brief.sectionRemove,
     removed: t.brief.sectionRemoved,
@@ -1041,8 +1058,19 @@ export function BriefView({
                 ariaLabel="Payment terms"
                 className="text-sm leading-relaxed text-ink"
               />
+              {/* What the client will read that is not in the box above.
+                  These definitions are appended at render, so they were on the
+                  document and nowhere in the editor: a sentence defining a
+                  payment schedule could contradict the paragraph three lines
+                  above it and there was no field to correct. Shown here, said
+                  to be automatic, so nothing reaches a client unseen. */}
+              {appended.payment && (
+                <p className="text-xs text-slate mt-2 mb-0 italic text-pretty">
+                  {appended.payment}
+                </p>
+              )}
               <p className="text-xs text-text-muted mt-2 m-0">
-                {t.brief.bankDetailsOnInvoice}
+                {t.brief.autoAdded} {t.brief.bankDetailsOnInvoice}
               </p>
             </Section>
           )}
@@ -1057,6 +1085,10 @@ export function BriefView({
                 ariaLabel="Revisions"
                 className="text-sm leading-relaxed text-ink"
               />
+              <p className="text-xs text-slate mt-2 mb-0 italic text-pretty">
+                {t.publicQuote.roundMeans}
+              </p>
+              <p className="text-xs text-text-muted mt-2 m-0">{t.brief.autoAdded}</p>
             </Section>
           )}
 

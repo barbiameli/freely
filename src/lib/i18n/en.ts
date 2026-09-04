@@ -523,6 +523,7 @@ export const en = {
     editingLive: "This quote is published. Changes show up on the link your client already has.",
     worthThinkingAbout: "Worth thinking about",
     notesForYouOnly: "Notes for you, not for the client.",
+    autoAdded: "Added automatically to what the client sees.",
     bankDetailsOnInvoice: "Bank details go on the invoice.",
     whatTheAiUnderstood: "What the brief was understood to be about. Edit anything that misses the mark.",
     addToTrackFailed: "Couldn't send that to Track. Try again.",
@@ -1135,6 +1136,8 @@ export const en = {
     scopeChanges: "What would change the price",
     milestoneMeans:
       "A milestone is a named set of deliverables with its own date and price. Each one is invoiced when it is delivered.",
+    milestoneMeansShape:
+      "A milestone is a named set of deliverables with its own date. It marks a stage of the work, not a payment: the payment terms above are the whole schedule.",
     roundMeans:
       "A round of revisions is one consolidated set of feedback covering the whole deliverable, gathered from everyone involved and sent once.",
     billedFixed: "This is a fixed total for the scope on this page.",

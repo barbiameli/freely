@@ -15,6 +15,8 @@
  */
 export interface DefinitionWords {
   milestoneMeans: string;
+  /** The same word, on a quote where the stages are not payment points. */
+  milestoneMeansShape: string;
   roundMeans: string;
   billedFixed: string;
   billedTracked: string;
@@ -87,11 +89,32 @@ function append(text: string, sentence: string): string {
  */
 export function paymentClause(
   text: string | undefined,
-  options: { hasMilestones: boolean; billing: BillingBasis; fixedPrice: boolean },
+  options: {
+    hasMilestones: boolean;
+    billing: BillingBasis;
+    fixedPrice: boolean;
+    /**
+     * Whether the stages are payment points.
+     *
+     * The definition used to say "each one is invoiced when it is delivered"
+     * on every quote that had stages. Once stages could exist without billing
+     * by them, that sentence landed under payment terms reading "hours worked
+     * are invoiced on completion of the project", so the document defined a
+     * payment schedule it did not have, three lines below saying it had a
+     * different one. The freelancer could not even delete it: it is appended
+     * at render, so it never appears in the editor.
+     */
+    milestonesBillable?: boolean;
+  },
   words: DefinitionWords
 ): string {
   let out = text ?? "";
-  if (options.hasMilestones) out = append(out, words.milestoneMeans);
+  if (options.hasMilestones) {
+    out = append(
+      out,
+      options.milestonesBillable === false ? words.milestoneMeansShape : words.milestoneMeans
+    );
+  }
 
   // A fixed-price quote never shows a rate, so there is nothing to be
   // ambiguous about and the sentence would be noise.

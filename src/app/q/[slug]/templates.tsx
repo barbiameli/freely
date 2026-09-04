@@ -98,6 +98,7 @@ function extraBlocks(
         extras.paymentTerms,
         {
           hasMilestones: (brief.milestones?.length ?? 0) > 0,
+          milestonesBillable: brief.milestonesBillable !== false,
           billing: (brief.billing as BillingBasis) ?? "FIXED_TOTAL",
           fixedPrice: brief.rateUnit === "FIXED",
         },

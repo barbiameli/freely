@@ -520,6 +520,7 @@ export const es: Dictionary = {
     editingLive: "Este presupuesto esta publicado. Los cambios se ven en el enlace que ya tiene tu cliente.",
     worthThinkingAbout: "Para pensar",
     notesForYouOnly: "Notas para ti, no para el cliente.",
+    autoAdded: "Se añade automáticamente a lo que ve el cliente.",
     bankDetailsOnInvoice: "Los datos bancarios van en la factura.",
     whatTheAiUnderstood: "Lo que se ha entendido del proyecto. Cambia lo que no encaje.",
     addToTrackFailed: "No se ha podido pasar a Seguimiento. Prueba otra vez.",
@@ -1130,6 +1131,8 @@ export const es: Dictionary = {
     scopeChanges: "Qué cambiaría el precio",
     milestoneMeans:
       "Un hito es un conjunto de entregables con su propia fecha y su propio precio. Cada uno se factura al entregarlo.",
+    milestoneMeansShape:
+      "Un hito es un conjunto de entregables con su propia fecha. Marca una fase del trabajo, no un pago: las condiciones de pago de arriba son todo el calendario.",
     roundMeans:
       "Una ronda de revisiones es un único bloque de comentarios sobre todo el entregable, reunido entre todas las personas implicadas y enviado de una vez.",
     billedFixed: "Es un precio cerrado por el alcance de esta página.",
