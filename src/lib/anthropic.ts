@@ -1508,6 +1508,17 @@ export async function generateBriefFromDraft(
   return applyHourlyRate(merged, draft.hourlyRate, draft.rateUnit ?? "HOUR");
 }
 
+const extrasOnlySchema = z.object({
+  strategy: strategySchema.optional(),
+  terms: briefExtrasSchema.shape.terms,
+  revisions: briefExtrasSchema.shape.revisions,
+  availability: briefExtrasSchema.shape.availability,
+  assumptions: briefExtrasSchema.shape.assumptions,
+  scopeChanges: briefExtrasSchema.shape.scopeChanges,
+  paymentTerms: briefExtrasSchema.shape.paymentTerms,
+  aiUsage: briefExtrasSchema.shape.aiUsage,
+});
+
 /**
  * The add-on sections, or nothing.
  *
@@ -1537,16 +1548,6 @@ export function parseExtrasResponse(text: string): Partial<GeneratedBrief> {
 }
 
 /** The second half's shape. Every key optional, since every section is. */
-const extrasOnlySchema = z.object({
-  strategy: strategySchema.optional(),
-  terms: briefExtrasSchema.shape.terms,
-  revisions: briefExtrasSchema.shape.revisions,
-  availability: briefExtrasSchema.shape.availability,
-  assumptions: briefExtrasSchema.shape.assumptions,
-  scopeChanges: briefExtrasSchema.shape.scopeChanges,
-  paymentTerms: briefExtrasSchema.shape.paymentTerms,
-  aiUsage: briefExtrasSchema.shape.aiUsage,
-});
 
 export interface MarketRateQuery {
   /** ISO 3166-1 alpha-2. Their stated country, or the one their currency

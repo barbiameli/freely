@@ -340,16 +340,6 @@ export function BriefView({
   const locked = lockReason({ acceptedAt: brief.accepted?.at ?? null, status: brief.status });
   const [startingFollowOn, setStartingFollowOn] = useState(false);
 
-  async function startFollowOn() {
-    setStartingFollowOn(true);
-    const result = await startFollowOnAction(brief.id);
-    setStartingFollowOn(false);
-    if (!result.ok) {
-      setError(result.error);
-      return;
-    }
-    router.push(`/quote/${result.data.briefId}`);
-  }
   /**
    * The last refine's result, kept after the highlight fades.
    *
@@ -439,6 +429,17 @@ export function BriefView({
   }
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
+
+  async function startFollowOn() {
+    setStartingFollowOn(true);
+    const result = await startFollowOnAction(brief.id);
+    setStartingFollowOn(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    router.push(`/quote/${result.data.briefId}`);
+  }
   // Used for the actions that redirect, where a failure otherwise looks like
   // nothing happening at all.
   const { run: track, error: trackError } = useAction();
@@ -505,16 +506,6 @@ export function BriefView({
   const [showSource, setShowSource] = useState(false);
   const [examples, setExamples] = useState(brief.examples);
 
-  async function handleCopyLink() {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard access can be denied; the link is right there to copy by
-      // hand, so there's nothing useful to say here.
-    }
-  }
 
   async function handleTogglePublish() {
     setPublishing(true);
@@ -525,6 +516,17 @@ export function BriefView({
 
   const shareUrl =
     typeof window !== "undefined" ? `${window.location.origin}/q/${brief.publicSlug}` : `/q/${brief.publicSlug}`;
+
+  async function handleCopyLink() {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard access can be denied; the link is right there to copy by
+      // hand, so there's nothing useful to say here.
+    }
+  }
 
   useEffect(() => {
     if (!brief.extrasPending || askedForExtras.current) return;

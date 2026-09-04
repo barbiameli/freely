@@ -144,6 +144,22 @@ export function PlanReview({
    * document more than anything else on this screen.
    */
   const [phased, setPhased] = useState(plan.milestones.length > 1);
+  /**
+   * Where the brief and the saved setup disagree about money.
+   *
+   * Computed here rather than sent from the server so it reacts to the
+   * protection level, which can change the payment plan underneath it.
+   *
+   * Declared above the state that seeds itself from it, and that is the whole
+   * point rather than tidiness. It used to sit forty lines lower, and the
+   * lazy initialiser below runs during the first render, so it reached this
+   * const while it was still in the temporal dead zone and threw "Cannot
+   * access 'D' before initialization" against the production bundle, D being
+   * the minified name. Every quote died at the plan step. TypeScript compiles
+   * it, the tests pass, the build succeeds, and only a browser ever sees it.
+   */
+  const conflicts = conflictsFrom(plan.moneyAsks, money);
+
   /** Conflicts where the freelancer chose to follow the brief. */
   const [followBrief, setFollowBrief] = useState<MoneyTopic[]>(() =>
     conflicts.map((conflict) => conflict.topic)
@@ -181,14 +197,6 @@ export function PlanReview({
   }
 
   const chosen = protectionFor(protection);
-
-  /**
-   * Where the brief and the saved setup disagree about money.
-   *
-   * Computed here rather than sent from the server so it reacts to the
-   * protection level, which can change the payment plan underneath it.
-   */
-  const conflicts = conflictsFrom(plan.moneyAsks, money);
 
   /**
    * Whether the protection level is about to beat the payment answer.
