@@ -31,6 +31,7 @@ import { CURRENT_LAYOUT } from "@/lib/quote-layout";
 import { hasStrategyContent } from "@/lib/strategy";
 import { allDisciplines, disciplineLine, industryLabel } from "@/lib/industries";
 import { withRate } from "@/lib/discipline-rates";
+import { reconcilePrice } from "@/lib/quote-arithmetic";
 import { isProtectionLevel } from "@/lib/protection";
 import { lockMessage, lockReason } from "@/lib/quote-lock";
 import { clientFor } from "@/lib/client-db";
@@ -455,6 +456,31 @@ export async function generateBriefAction(
         includeAI: draft.includeAI,
       };
 
+  /**
+   * The arithmetic, checked.
+   *
+   * The prompt says the rate is fixed, that the model's only real decision is
+   * the hours, and that price is hours times rate. Nothing verified it, so a
+   * quote could go out saying fifty an hour, thirteen hours and nine hundred
+   * pounds, and the only person who would notice is the client doing the
+   * multiplication they were asked to trust.
+   *
+   * Corrected rather than flagged: given a rate the freelancer set and hours
+   * the model chose, the total is arithmetic.
+   */
+  const numbers = reconcilePrice(
+    { price: generated.price, hours: generated.hours },
+    draft.hourlyRate,
+    (draft.rateUnit ?? "HOUR") as RateUnit
+  );
+  if (numbers.saidPrice !== null) {
+    console.warn(
+      "[generateBriefAction] the model's total did not match its own hours",
+      { said: numbers.saidPrice, used: numbers.price, hours: numbers.hours }
+    );
+  }
+  generated.price = numbers.price;
+
   // The client record, from the name the quote ended up with. Never fatal: a
   // quote that generated fine must not fail to save because a lookup did.
   try {
@@ -713,6 +739,26 @@ export async function refineBriefAction(
   }
 
   // Worked out before the write, because the write is what makes the two equal.
+  /**
+   * The refined numbers, kept and made to agree.
+   *
+   * Price and hours used to be dropped: everything else came back and these
+   * two were quietly discarded, so "make it three thousand" appeared to do
+   * nothing. Worse, the milestones were rebalanced against the new price while
+   * the quote kept the old one, so the stages summed to a total the document
+   * did not show.
+   *
+   * A scoped refine cannot reach these at all now, since it returns one named
+   * section, so the drift this guarded against has a better guard.
+   */
+  const refined = reconcilePrice(
+    { price: updated.price, hours: updated.hours },
+    brief.hourlyRate,
+    ((brief as unknown as { rateUnit?: string }).rateUnit ?? "HOUR") as RateUnit
+  );
+  updated.price = refined.price;
+  updated.hours = refined.hours;
+
   const changed = changedSections(current, updated);
 
   await prisma.brief.update({
@@ -723,6 +769,10 @@ export async function refineBriefAction(
       scope: clean(updated.scope),
       deliverables: updated.deliverables.map(clean),
       timeline: clean(updated.timeline),
+      // Kept, so a refine about the money can change the money, and so the
+      // stages below are not balanced against a total nothing stores.
+      price: updated.price,
+      hours: updated.hours,
       ...(updated.strategy ? { strategy: sanitizeStrategy(updated.strategy) } : {}),
       // Written back whole, so a section can be added, rewritten or dropped.
       //
@@ -764,8 +814,6 @@ export async function refineBriefAction(
             ),
           } as unknown as Record<string, unknown>)
         : {}),
-      price: updated.price,
-      hours: updated.hours,
     },
   });
 
