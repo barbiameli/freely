@@ -36,12 +36,23 @@ export function currencyName(code?: string | null): string {
   return BY_CODE.get(code)?.name ?? code;
 }
 
-/**
- * Moved to lib/money.
+/*
+ * formatMoney used to live here and now lives in lib/money.
  *
- * This asked for no fraction digits, so 1234.5 rendered as "£1,234.5", and it
- * passed no locale, so it followed whichever machine happened to run it.
- * Re-exported here so the old import path keeps working, with the language
- * defaulting to English as it effectively did before.
+ * It was re-exported from this file so the old import path kept working, and
+ * that one line was an import cycle: lib/money imports currencySymbol from
+ * here, and this file pulled lib/money back in. Nothing imports formatMoney
+ * through this path any more, so the line is gone.
+ *
+ * The cycle was harmless until the module graph changed shape around it, and
+ * then it crashed the quote page in production with "Cannot access 'D' before
+ * initialization", D being the minified BY_CODE map above: the bundler
+ * suspended this module halfway through to evaluate lib/money, and a
+ * currencySymbol call in a useState initialiser reached BY_CODE while it was
+ * still in the temporal dead zone. Nothing catches this. TypeScript is happy,
+ * every test passes, the build succeeds, and it only fails in a browser
+ * against a production bundle.
+ *
+ * So: a compatibility re-export is never worth an import cycle. Change the
+ * callers instead. tests/import-cycles.test.ts now fails on any new one.
  */
-export { formatMoney } from "@/lib/money";
