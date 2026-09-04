@@ -1,7 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { paymentProblems } from "@/lib/payment-coherence";
-import { paymentClause } from "@/lib/quote-definitions";
+import {
+  milestoneDefinition,
+  paymentClause,
+  revisionsClause,
+  roundDefinition,
+} from "@/lib/quote-definitions";
 
 const tracked = {
   billing: "HOURLY_TRACKED" as const,
@@ -118,12 +123,49 @@ describe("the definition agrees with the schedule", () => {
     expect(out).toContain(words.milestoneMeans);
   });
 
-  it("is shown in the editor as well as on the document", () => {
+  it("is editable and removable, not just visible", () => {
     // It is appended at render, so it was on the client's copy and in no
-    // editable field: a contradiction with no box to correct it in.
+    // editable field. Showing it was the first fix and was not enough: it is
+    // their document, so the wording is theirs, including deleting it.
     const view = readFileSync("src/app/(app)/quote/[briefId]/brief-view.tsx", "utf8");
-    expect(view).toContain("appended.payment");
-    expect(view).toContain("t.publicQuote.roundMeans");
-    expect(view).toContain("t.brief.autoAdded");
+    const line = readFileSync("src/components/quote/definition-line.tsx", "utf8");
+    expect(view).toContain("DefinitionLine");
+    expect(view).toContain('saveDefinition("milestone"');
+    expect(view).toContain('saveDefinition("round"');
+    expect(line).toContain("EditableBlock");
+    expect(line).toContain("onSave(null)");
+    expect(line).toContain("t.brief.definitionRestore");
+  });
+
+  it("says nothing when the freelancer removed it", () => {
+    const words = {
+      milestoneMeans: "billable definition",
+      milestoneMeansShape: "shape definition",
+      roundMeans: "round definition",
+      billedFixed: "fixed",
+      billedTracked: "tracked",
+    };
+    expect(milestoneDefinition({ milestone: null }, words, true)).toBe("");
+    expect(roundDefinition({ round: null }, words)).toBe("");
+    // And the clause does not append an empty line.
+    const out = paymentClause(
+      "Paid on delivery.",
+      { hasMilestones: true, milestonesBillable: true, billing: "FIXED_TOTAL", fixedPrice: true, definition: "" },
+      words
+    );
+    expect(out).toBe("Paid on delivery.");
+    expect(revisionsClause("Two rounds.", words, "")).toBe("Two rounds.");
+  });
+
+  it("uses the freelancer's wording over the default", () => {
+    const words = {
+      milestoneMeans: "billable definition",
+      milestoneMeansShape: "shape definition",
+      roundMeans: "round definition",
+      billedFixed: "fixed",
+      billedTracked: "tracked",
+    };
+    expect(milestoneDefinition({ milestone: "Mine" }, words, true)).toBe("Mine");
+    expect(milestoneDefinition({}, words, false)).toBe("shape definition");
   });
 });

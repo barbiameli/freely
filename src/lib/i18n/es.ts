@@ -520,6 +520,8 @@ export const es: Dictionary = {
     editingLive: "Este presupuesto esta publicado. Los cambios se ven en el enlace que ya tiene tu cliente.",
     worthThinkingAbout: "Para pensar",
     notesForYouOnly: "Notas para ti, no para el cliente.",
+    definitionRemove: "Quitar",
+    definitionRestore: "Volver a añadir la definición de Freely",
     autoAdded: "Se añade automáticamente a lo que ve el cliente.",
     bankDetailsOnInvoice: "Los datos bancarios van en la factura.",
     whatTheAiUnderstood: "Lo que se ha entendido del proyecto. Cambia lo que no encaje.",

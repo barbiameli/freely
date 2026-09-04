@@ -12,7 +12,7 @@ import { groupDeliverables, milestoneLines, type QuoteMilestone } from "@/lib/mi
 import { groupsByMilestone, showsMilestoneSection } from "@/lib/quote-layout";
 import type { Locale } from "@/lib/i18n";
 import { hasStrategyContent } from "@/lib/strategy";
-import { paymentClause, revisionsClause, type BillingBasis } from "@/lib/quote-definitions";
+import { paymentClause, revisionsClause, type BillingBasis, milestoneDefinition, roundDefinition, type DefinitionOverrides } from "@/lib/quote-definitions";
 import type { BriefExtras } from "@/lib/anthropic";
 import { AcceptBlock } from "./accept-block";
 import { dict, type Dictionary } from "@/lib/i18n";
@@ -45,6 +45,8 @@ export interface PublicBrief {
   layout?: number;
   /** Whether the stages are payment points, or only the shape of the work. */
   milestonesBillable?: boolean;
+  /** Reworded or removed per quote. Resolved below, where the words are. */
+  definitions?: DefinitionOverrides;
   /**
    * Whether the total is the price or an estimate of hours to be billed.
    *
@@ -99,6 +101,7 @@ function extraBlocks(
         {
           hasMilestones: (brief.milestones?.length ?? 0) > 0,
           milestonesBillable: brief.milestonesBillable !== false,
+          definition: milestoneDefinition(brief.definitions ?? {}, q, brief.milestonesBillable !== false),
           billing: (brief.billing as BillingBasis) ?? "FIXED_TOTAL",
           fixedPrice: brief.rateUnit === "FIXED",
         },
@@ -106,7 +109,7 @@ function extraBlocks(
       ),
     ]);
   }
-  if (extras.revisions) blocks.push([q.revisions, revisionsClause(extras.revisions, q)]);
+  if (extras.revisions) blocks.push([q.revisions, revisionsClause(extras.revisions, q, roundDefinition(brief.definitions ?? {}, q))]);
   if (extras.availability) blocks.push([q.availability, extras.availability]);
   // Bulleted, because these are lists a client checks line by line rather
   // than prose they read once.

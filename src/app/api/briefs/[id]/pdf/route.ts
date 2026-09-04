@@ -6,7 +6,7 @@ import { renderBriefPdf, type StrategyPdfData, type PdfTemplate } from "@/lib/pd
 import type { BriefExtras } from "@/lib/anthropic";
 import { resolveBrand } from "@/lib/branding";
 import { milestonesFromSettings } from "@/lib/milestone-lines";
-import { billingFromSettings } from "@/lib/quote-definitions";
+import { billingFromSettings, definitionsFromSettings } from "@/lib/quote-definitions";
 import { milestonesAreBillable } from "@/lib/quote-layout";
 import { layoutOf } from "@/lib/quote-layout";
 
@@ -51,6 +51,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     milestones: milestonesFromSettings(brief.settings),
     billing: billingFromSettings(brief.settings),
     milestonesBillable: milestonesAreBillable(brief.settings),
+    // Carried as written, and resolved where the dictionary is, so a
+    // definition the freelancer reworded or removed reaches every template
+    // and the PDF rather than only the editor.
+    definitions: definitionsFromSettings(brief.settings),
     layout: layoutOf(brief.settings),
     price: brief.price,
     hours: brief.hours,

@@ -22,7 +22,7 @@ import { parseTimelineStages, isRoadmapWorthy, roadmapTicks, timelineTotal } fro
 import { dict, fill } from "@/lib/i18n";
 import type { BriefExtras } from "@/lib/anthropic";
 import { hasStrategyContent } from "@/lib/strategy";
-import { paymentClause, revisionsClause, type BillingBasis } from "@/lib/quote-definitions";
+import { paymentClause, revisionsClause, type BillingBasis, milestoneDefinition, roundDefinition, type DefinitionOverrides } from "@/lib/quote-definitions";
 import { groupDeliverables, milestoneLines, type QuoteMilestone } from "@/lib/milestone-lines";
 import { groupsByMilestone, showsMilestoneSection } from "@/lib/quote-layout";
 import type { Locale } from "@/lib/i18n";
@@ -91,6 +91,8 @@ export interface BriefPdfData {
   billing?: string | null;
   /** Whether the stages are payment points, or only the shape of the work. */
   milestonesBillable?: boolean;
+  /** Reworded or removed per quote. Resolved below, where the words are. */
+  definitions?: DefinitionOverrides;
 }
 
 /** The words for one quote. Read once per document and passed down. */
@@ -512,6 +514,7 @@ function ExtraSections({
         {
           hasMilestones: (brief.milestones?.length ?? 0) > 0,
           milestonesBillable: brief.milestonesBillable !== false,
+          definition: milestoneDefinition(brief.definitions ?? {}, w, brief.milestonesBillable !== false),
           billing: (brief.billing as BillingBasis) ?? "FIXED_TOTAL",
           fixedPrice: brief.rateUnit === "FIXED",
         },
@@ -519,7 +522,7 @@ function ExtraSections({
       ),
     ]);
   }
-  if (extras.revisions) blocks.push([w.revisions, revisionsClause(extras.revisions, w)]);
+  if (extras.revisions) blocks.push([w.revisions, revisionsClause(extras.revisions, w, roundDefinition(brief.definitions ?? {}, w))]);
   if (extras.availability) blocks.push([w.availability, extras.availability]);
   // Bulleted, because these are lists a client checks line by line rather
   // than prose they read once.

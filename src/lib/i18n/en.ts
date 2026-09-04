@@ -523,6 +523,8 @@ export const en = {
     editingLive: "This quote is published. Changes show up on the link your client already has.",
     worthThinkingAbout: "Worth thinking about",
     notesForYouOnly: "Notes for you, not for the client.",
+    definitionRemove: "Remove",
+    definitionRestore: "Add Freely's definition back",
     autoAdded: "Added automatically to what the client sees.",
     bankDetailsOnInvoice: "Bank details go on the invoice.",
     whatTheAiUnderstood: "What the brief was understood to be about. Edit anything that misses the mark.",

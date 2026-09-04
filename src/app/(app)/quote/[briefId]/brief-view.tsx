@@ -44,9 +44,15 @@ import { SubLabel } from "@/components/ui/label";
 import { RenderedQuote } from "@/components/quote/rendered-quote";
 import { QuotePreview } from "@/components/quote/quote-preview";
 import { BeforeYouSend } from "@/components/quote/before-you-send";
+import { DefinitionLine } from "@/components/quote/definition-line";
 import { lockReason } from "@/lib/quote-lock";
 import { brokenRules, type RuleSettings } from "@/lib/ground-rules";
 import { applyHiddenSections, type HideableSection } from "@/lib/hidden-sections";
+import {
+  milestoneDefinition,
+  roundDefinition,
+  type DefinitionOverrides,
+} from "@/lib/quote-definitions";
 import { hasStrategyContent } from "@/lib/strategy";
 import type { BrandSource } from "@/lib/branding";
 import type { PublicBrief } from "@/app/q/[slug]/templates";
@@ -105,6 +111,8 @@ interface Brief {
   protection?: string | null;
   /** Whether the stages are payment points. See lib/quote-layout. */
   milestonesBillable?: boolean;
+  /** The two appended definitions, where this quote has reworded or dropped one. */
+  definitions?: DefinitionOverrides;
   /** Changes with every save, so the editor knows to take the server's copy. */
   updatedAt?: string;
   /** The add-on sections are still being written. See generateExtrasAction. */
@@ -391,14 +399,22 @@ export function BriefView({
    * saying each milestone is invoiced sat under payment terms saying the hours
    * are invoiced once at the end, and there was no box to correct it in.
    */
+  const overrides = brief.definitions ?? {};
   const appended = {
     payment:
       (brief.milestones?.length ?? 0) > 0
-        ? brief.milestonesBillable !== false
-          ? t.publicQuote.milestoneMeans
-          : t.publicQuote.milestoneMeansShape
+        ? milestoneDefinition(overrides, t.publicQuote, brief.milestonesBillable !== false)
         : "",
+    revisions: roundDefinition(overrides, t.publicQuote),
   };
+
+  /** Rewording one, or dropping it. Null is "say nothing here". */
+  async function saveDefinition(key: "milestone" | "round", value: string | null) {
+    const next: DefinitionOverrides = { ...overrides, [key]: value };
+    const result = await updateBriefContentAction(brief.id, { definitions: next });
+    if (!result.ok) setError(result.error);
+    else router.refresh();
+  }
 
   const sectionWords = {
     remove: t.brief.sectionRemove,
@@ -1064,13 +1080,19 @@ export function BriefView({
                   payment schedule could contradict the paragraph three lines
                   above it and there was no field to correct. Shown here, said
                   to be automatic, so nothing reaches a client unseen. */}
-              {appended.payment && (
-                <p className="text-xs text-slate mt-2 mb-0 italic text-pretty">
-                  {appended.payment}
-                </p>
+              {/* Appended to the client's copy, and editable here. Showing it
+                  was not enough: it is their document, so the wording is
+                  theirs, including deleting it. */}
+              {(brief.milestones?.length ?? 0) > 0 && (
+                <DefinitionLine
+                  text={appended.payment}
+                  onSave={(next) => void saveDefinition("milestone", next)}
+                  ariaLabel="What a milestone means"
+                  t={t}
+                />
               )}
               <p className="text-xs text-text-muted mt-2 m-0">
-                {t.brief.autoAdded} {t.brief.bankDetailsOnInvoice}
+                {t.brief.bankDetailsOnInvoice}
               </p>
             </Section>
           )}
@@ -1085,10 +1107,12 @@ export function BriefView({
                 ariaLabel="Revisions"
                 className="text-sm leading-relaxed text-ink"
               />
-              <p className="text-xs text-slate mt-2 mb-0 italic text-pretty">
-                {t.publicQuote.roundMeans}
-              </p>
-              <p className="text-xs text-text-muted mt-2 m-0">{t.brief.autoAdded}</p>
+              <DefinitionLine
+                text={appended.revisions}
+                onSave={(next) => void saveDefinition("round", next)}
+                ariaLabel="What a round of revisions means"
+                t={t}
+              />
             </Section>
           )}
 

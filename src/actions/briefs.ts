@@ -50,7 +50,7 @@ import {
   ruleOf,
   GROUND_RULES,
 } from "@/lib/ground-rules";
-import { billingFromSettings } from "@/lib/quote-definitions";
+import { billingFromSettings, type DefinitionOverrides } from "@/lib/quote-definitions";
 import { milestonesBillableFromSettings, milestonesFromSettings } from "@/lib/milestone-lines";
 import type { RateUnit } from "@/lib/rate-unit";
 
@@ -1553,6 +1553,14 @@ export async function updateBriefContentAction(
     hours?: number;
     extras?: BriefExtras;
     strategy?: Strategy;
+    /**
+     * The appended definitions, reworded or removed.
+     *
+     * Stored on settings rather than in extras, because extras is what the
+     * model returns from a refine and anything it does not know about would be
+     * dropped the next time somebody asked for a change.
+     */
+    definitions?: DefinitionOverrides;
   }
 ): Promise<ActionResult<undefined>> {
   const user = await requireFullUser();
@@ -1579,6 +1587,19 @@ export async function updateBriefContentAction(
     await prisma.brief.update({
       where: { id: brief.id },
       data: {
+        ...(patch.definitions !== undefined
+          ? {
+              settings: {
+                ...((brief.settings as Record<string, unknown> | null) ?? {}),
+                definitions: Object.fromEntries(
+                  Object.entries(patch.definitions).map(([key, value]) => [
+                    key,
+                    typeof value === "string" ? sanitizeText(value) : value,
+                  ])
+                ),
+              } as Prisma.InputJsonValue,
+            }
+          : {}),
         ...(patch.title !== undefined ? { title: sanitizeText(patch.title) } : {}),
         ...(patch.client !== undefined ? { client: sanitizeText(patch.client) } : {}),
         ...(patch.scope !== undefined ? { scope: sanitizeText(patch.scope) } : {}),

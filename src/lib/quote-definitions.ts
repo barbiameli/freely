@@ -87,6 +87,48 @@ function append(text: string, sentence: string): string {
  * cannot tell whether an hourly quote of 13 hours at 50 means they owe 650 or
  * they owe whatever the hours come to.
  */
+/**
+ * A definition the freelancer has rewritten, or taken out.
+ *
+ * These sentences are appended at render, so for a long time they were on the
+ * client's copy and in no editable field: a definition could contradict the
+ * paragraph above it and there was no box to correct it in. Showing them was
+ * not enough. It is their document and their client, so the wording is theirs.
+ *
+ * A string replaces the default. Null means removed. Undefined means they have
+ * not touched it and the standard wording stands, which is what almost every
+ * quote wants.
+ */
+export interface DefinitionOverrides {
+  milestone?: string | null;
+  round?: string | null;
+}
+
+export function definitionsFromSettings(settings: unknown): DefinitionOverrides {
+  const parsed = (settings as { definitions?: DefinitionOverrides } | null) ?? {};
+  return parsed.definitions ?? {};
+}
+
+/** What this quote actually says a milestone is, or "" if it says nothing. */
+export function milestoneDefinition(
+  overrides: DefinitionOverrides,
+  words: DefinitionWords,
+  billable: boolean
+): string {
+  const override = overrides.milestone;
+  if (override === null) return "";
+  if (typeof override === "string" && override.trim()) return override.trim();
+  return billable ? words.milestoneMeans : words.milestoneMeansShape;
+}
+
+/** What this quote says a round of revisions is, or "" if it says nothing. */
+export function roundDefinition(overrides: DefinitionOverrides, words: DefinitionWords): string {
+  const override = overrides.round;
+  if (override === null) return "";
+  if (typeof override === "string" && override.trim()) return override.trim();
+  return words.roundMeans;
+}
+
 export function paymentClause(
   text: string | undefined,
   options: {
@@ -105,15 +147,22 @@ export function paymentClause(
      * at render, so it never appears in the editor.
      */
     milestonesBillable?: boolean;
+    /**
+     * The milestone definition as this quote states it.
+     *
+     * Passed in rather than looked up, so a freelancer who has reworded it or
+     * removed it gets their version on every template and in the PDF.
+     */
+    definition?: string;
   },
   words: DefinitionWords
 ): string {
   let out = text ?? "";
   if (options.hasMilestones) {
-    out = append(
-      out,
-      options.milestonesBillable === false ? words.milestoneMeansShape : words.milestoneMeans
-    );
+    const definition =
+      options.definition ??
+      (options.milestonesBillable === false ? words.milestoneMeansShape : words.milestoneMeans);
+    if (definition.trim()) out = append(out, definition);
   }
 
   // A fixed-price quote never shows a rate, so there is nothing to be
@@ -124,7 +173,12 @@ export function paymentClause(
   return out;
 }
 
-/** The revisions clause, with "round" defined. */
-export function revisionsClause(text: string | undefined, words: DefinitionWords): string {
-  return append(text ?? "", words.roundMeans);
+/** The revisions clause, with "round" defined as this quote defines it. */
+export function revisionsClause(
+  text: string | undefined,
+  words: DefinitionWords,
+  definition?: string
+): string {
+  const sentence = definition ?? words.roundMeans;
+  return sentence.trim() ? append(text ?? "", sentence) : (text ?? "");
 }

@@ -7,7 +7,7 @@ import { teamScopeWhere } from "@/lib/team-scope";
 import type { Strategy, BriefExtras } from "@/lib/anthropic";
 import { BriefView } from "./brief-view";
 import { layoutOf, milestonesAreBillable } from "@/lib/quote-layout";
-import { billingFromSettings } from "@/lib/quote-definitions";
+import { billingFromSettings, definitionsFromSettings } from "@/lib/quote-definitions";
 import { parseRuleSettings } from "@/lib/ground-rules";
 import { allDisciplines, industryLabel } from "@/lib/industries";
 
@@ -62,6 +62,10 @@ export default async function BriefPage({ params }: { params: { briefId: string 
         layout: layoutOf(brief.settings),
         billing: billingFromSettings(brief.settings),
         milestonesBillable: milestonesAreBillable(brief.settings),
+    // Carried as written, and resolved where the dictionary is, so a
+    // definition the freelancer reworded or removed reaches every template
+    // and the PDF rather than only the editor.
+    definitions: definitionsFromSettings(brief.settings),
         // What they chose, so a rule that only matters under another plan
         // stays quiet rather than arguing with the choice.
         paymentPlan:
