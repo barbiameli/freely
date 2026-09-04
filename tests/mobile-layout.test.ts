@@ -21,6 +21,20 @@ function tsxFiles(dir: string, found: string[] = []): string[] {
 
 const files = tsxFiles("src").map((path) => ({ path, source: readFileSync(path, "utf8") }));
 
+/**
+ * Grids that are meant to keep their column count on a phone.
+ *
+ * The rule below exists because three cards in 390px is 110px each for a
+ * label. A week strip is not that: seven columns of a bar and a three-letter
+ * day is exactly what it should be at any width, and stacking it into a column
+ * of seven rows would stop it being a week.
+ *
+ * Listed by file rather than silenced with a comment in the markup, so adding
+ * one is a decision somebody makes here, in the test, where it can be argued
+ * with.
+ */
+const KEEPS_ITS_COLUMNS = ["src/components/track/time-week.tsx"];
+
 describe("mobile layout", () => {
   it("finds the components to check", () => {
     expect(files.length).toBeGreaterThan(30);
@@ -31,6 +45,7 @@ describe("mobile layout", () => {
     // 110px each for a label like "Deliverables done".
     const offenders: string[] = [];
     for (const { path, source } of files) {
+      if (KEEPS_ITS_COLUMNS.includes(path)) continue;
       for (const line of source.split("\n")) {
         // A responsive prefix on the multi-column class is the fix, and so is
         // declaring grid-cols-1 or grid-cols-2 as the base.

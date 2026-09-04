@@ -7,6 +7,7 @@ import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { TimePanel } from "@/components/track/time-panel";
 import type { TimeMode } from "@/lib/time-tracking";
+import type { WeekEntry } from "@/lib/time-week";
 import { Label } from "@/components/ui/label";
 import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
@@ -185,7 +186,9 @@ export function ProjectDetail({
   /** Hours on this engagement, and what tracking them is for. */
   time: {
     mode: TimeMode | null;
-    loggedMinutes: number;
+    loggedSeconds: number;
+    /** Everything logged on this project, for the week view and the log. */
+    entries: WeekEntry[];
     running: { startedAt: string } | null;
     hasCalendar: boolean;
   };
@@ -333,7 +336,9 @@ export function ProjectDetail({
         <TimePanel
           projectId={project.id}
           quotedHours={project.hours}
-          loggedMinutes={time.loggedMinutes}
+          loggedSeconds={time.loggedSeconds}
+          entries={time.entries}
+          deliverables={project.deliverables.map((d) => ({ id: d.id, name: d.name }))}
           running={time.running}
           hasCalendar={time.hasCalendar}
           mode={time.mode}

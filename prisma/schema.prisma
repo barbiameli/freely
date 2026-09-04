@@ -1015,8 +1015,19 @@ model TimeEntry {
   startedAt DateTime
   /// Null while a timer is still running. One running entry per account.
   endedAt   DateTime?
-  /// The length, settled. Zero while running.
+  /// The length, settled, in whole minutes. Zero while running.
+  ///
+  /// Kept alongside the seconds below rather than replaced: entries written
+  /// before seconds existed have only this, and dropping the column to rename
+  /// it would throw those away. Read through secondsOf() in lib/time-tracking,
+  /// which prefers seconds and falls back to this.
   minutes   Int      @default(0)
+  /// The same length, exactly.
+  ///
+  /// A timer that reports in whole minutes tells somebody who worked for
+  /// fifty seconds that they worked for nothing, and rounds every session in
+  /// the same direction across a month.
+  seconds   Int      @default(0)
   note      String   @default("")
 
   /// "TIMER" | "CALENDAR" | "MANUAL". Kept so an hour is never counted twice

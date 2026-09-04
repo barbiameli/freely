@@ -7,7 +7,16 @@ import { CardHeader } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ActionError } from "@/components/ui/action-error";
 import { useT } from "@/lib/i18n/context";
-import { accuracyOf, sayHours, thresholdReached, type TimeMode } from "@/lib/time-tracking";
+import {
+  accuracyOf,
+  sayClock,
+  sayDuration,
+  secondsBetween,
+  thresholdReached,
+  type TimeMode,
+} from "@/lib/time-tracking";
+import { TimeWeek } from "@/components/track/time-week";
+import type { WeekEntry } from "@/lib/time-week";
 import { TimeSetUp } from "@/components/track/time-set-up";
 import {
   addTimeAction,
@@ -44,15 +53,21 @@ type Promised = Promise<{ ok: boolean; error?: string }>;
 export function TimePanel({
   projectId,
   quotedHours,
-  loggedMinutes,
+  loggedSeconds,
   running,
   hasCalendar,
   mode,
+  entries,
+  deliverables,
 }: {
   projectId: string;
   /** What the quote estimated. Zero on a fixed-price job with no hours. */
   quotedHours: number;
-  loggedMinutes: number;
+  loggedSeconds: number;
+  /** Everything logged on this project, for the week view and the log. */
+  entries: WeekEntry[];
+  /** For saying what a stretch was spent on without typing it. */
+  deliverables: { id: string; name: string }[];
   /** The running timer, when it belongs to this project. */
   running: { startedAt: string } | null;
   hasCalendar: boolean;
@@ -66,18 +81,23 @@ export function TimePanel({
   const [manual, setManual] = useState("");
   const [added, setAdded] = useState<number | null>(null);
 
-  /** Ticks while a timer runs, so the number on screen is the true one. */
+  /**
+   * Ticks every second while a timer runs.
+   *
+   * A number that changes once a minute looks stuck, and the point of a live
+   * clock is that it is visibly moving. Off entirely when nothing is running,
+   * so an idle project page is not re-rendering once a second forever.
+   */
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!running) return;
-    const id = window.setInterval(() => setNow(Date.now()), 30_000);
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
   }, [running]);
 
-  const liveMinutes = running
-    ? Math.max(0, Math.round((now - Date.parse(running.startedAt)) / 60_000))
-    : 0;
-  const total = loggedMinutes + liveMinutes;
+  const liveSeconds = running ? secondsBetween(running.startedAt, new Date(now)) : 0;
+  const totalSeconds = loggedSeconds + liveSeconds;
+  const total = Math.round(totalSeconds / 60);
   const accuracy = accuracyOf(quotedHours, total);
   const past = thresholdReached(quotedHours, total);
   /** Nobody has said what tracking is for here yet. */
@@ -120,8 +140,15 @@ export function TimePanel({
       <CardHeader title={<>{t.track.timeTitle}</>} hint={<>{t.track.timeHint}</>} />
 
       <div className="flex items-baseline gap-3 flex-wrap">
-        <div className="font-display italic text-[28px] leading-none text-ink">
-          {sayHours(total)}
+        {/* The running clock reads as a clock, seconds and all. A finished
+            total reads as a length, because "2h 15m 40s" is a stopwatch
+            reading nobody asked for. */}
+        <div
+          className={`font-display italic text-[28px] leading-none ${
+            running ? "text-violet tabular-nums" : "text-ink"
+          }`}
+        >
+          {running ? sayClock(totalSeconds) : sayDuration(totalSeconds)}
         </div>
         {quotedHours > 0 && (
           <div className="text-caption text-slate">
@@ -151,7 +178,7 @@ export function TimePanel({
             loading={working === "stop"}
             onClick={() => void run("stop", () => stopTimerAction())}
           >
-            {t.track.timeStop.replace("{length}", sayHours(liveMinutes))}
+            {t.track.timeStop.replace("{length}", sayClock(liveSeconds))}
           </Button>
         ) : (
           <Button
@@ -221,6 +248,14 @@ export function TimePanel({
           {t.track.timeAdd}
         </Button>
       </div>
+
+      {/* The week, under the controls. A list of durations is a receipt; a
+          week is a shape, and it shows the day nothing happened. */}
+      {entries.length > 0 && (
+        <div className="mt-5 pt-5 border-t border-line">
+          <TimeWeek entries={entries} deliverables={deliverables} />
+        </div>
+      )}
 
       <ActionError error={error} className="mt-3" />
     </Card>

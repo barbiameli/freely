@@ -94,7 +94,9 @@ describe("counting", () => {
       { minutes: 60, billable: true, startedAt: "" },
       { minutes: 30, billable: false, startedAt: "" },
     ]);
-    expect(out).toEqual({ minutes: 90, billableMinutes: 60, entries: 2 });
+    expect(out.minutes).toBe(90);
+    expect(out.billableMinutes).toBe(60);
+    expect(out.entries).toBe(2);
   });
 });
 
@@ -205,7 +207,9 @@ describe("how the app uses it", () => {
   });
 
   it("throws away a misclick rather than logging it", () => {
-    expect(actions).toContain("if (stopped.minutes < 1)");
+    // Ten seconds, not a minute: a minute threw away the shortest real thing
+    // anybody does, like two minutes on a call or forty seconds fixing a typo.
+    expect(actions).toContain("secondsOf(stopped) < 10");
   });
 
   it("cannot count one calendar block twice", () => {

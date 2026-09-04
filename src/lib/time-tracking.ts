@@ -48,9 +48,60 @@ export function billsFromTime(mode: TimeMode): boolean {
 /** One stretch of work, as the sums need it. */
 export interface Entry {
   minutes: number;
+  /** Zero on entries written before seconds were recorded. */
+  seconds?: number;
   billable: boolean;
   projectId?: string | null;
   startedAt: string;
+}
+
+/**
+ * How long an entry was, exactly.
+ *
+ * Seconds where they were recorded, and the old whole minutes where they were
+ * not. Every sum goes through this so one column can be the answer without the
+ * other having to be thrown away.
+ */
+export function secondsOf(entry: { seconds?: number | null; minutes: number }): number {
+  return entry.seconds && entry.seconds > 0 ? entry.seconds : entry.minutes * 60;
+}
+
+/** Whole seconds between two moments, never negative. */
+export function secondsBetween(from: Date | string, to: Date | string): number {
+  const start = typeof from === "string" ? Date.parse(from) : from.getTime();
+  const end = typeof to === "string" ? Date.parse(to) : to.getTime();
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return 0;
+  return Math.floor((end - start) / 1000);
+}
+
+/**
+ * A running clock, as somebody watching it expects to read one.
+ *
+ * Seconds included and zero-padded, because the point of a live timer is that
+ * it is visibly moving: a number that changes once a minute looks stuck.
+ */
+export function sayClock(seconds: number): string {
+  const whole = Math.max(0, Math.floor(seconds));
+  const h = Math.floor(whole / 3600);
+  const m = Math.floor((whole % 3600) / 60);
+  const s = whole % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+}
+
+/**
+ * A finished stretch, said the way somebody would say it.
+ *
+ * Seconds only when they are all there is: "2h 15m" is how long a session was,
+ * and "2h 15m 40s" is a stopwatch reading nobody asked for.
+ */
+export function sayDuration(seconds: number): string {
+  const whole = Math.max(0, Math.round(seconds));
+  if (whole < 60) return `${whole}s`;
+  const h = Math.floor(whole / 3600);
+  const m = Math.round((whole % 3600) / 60);
+  if (h === 0) return `${m}m`;
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
 }
 
 /** How long a stretch was, in whole minutes, never negative. */
@@ -79,17 +130,24 @@ export function toHours(minutes: number, step = 0.25): number {
 }
 
 export interface TimeTotals {
-  /** Everything, billable or not. */
+  /** Everything, billable or not, rounded to minutes for display. */
   minutes: number;
   /** Only what may be charged for. */
   billableMinutes: number;
+  /** The same two, exactly, for anything that adds up. */
+  seconds: number;
+  billableSeconds: number;
   entries: number;
 }
 
 export function totals(entries: Entry[]): TimeTotals {
+  const seconds = entries.reduce((sum, e) => sum + secondsOf(e), 0);
+  const billable = entries.filter((e) => e.billable).reduce((sum, e) => sum + secondsOf(e), 0);
   return {
-    minutes: entries.reduce((sum, e) => sum + e.minutes, 0),
-    billableMinutes: entries.filter((e) => e.billable).reduce((sum, e) => sum + e.minutes, 0),
+    minutes: Math.round(seconds / 60),
+    billableMinutes: Math.round(billable / 60),
+    seconds,
+    billableSeconds: billable,
     entries: entries.length,
   };
 }

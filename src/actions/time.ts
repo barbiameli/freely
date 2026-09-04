@@ -8,6 +8,8 @@ import { listTimedEvents, upsertEvent } from "@/lib/google-calendar";
 import {
   minutesBetween,
   modeForProject,
+  secondsBetween,
+  secondsOf,
   parseTimeMode,
   tracksTime,
   type TimeMode,
@@ -27,6 +29,7 @@ interface EntryRow {
   startedAt: Date;
   endedAt: Date | null;
   minutes: number;
+  seconds: number;
   note: string;
 }
 
@@ -149,9 +152,15 @@ async function stopRunning(userId: string): Promise<EntryRow | null> {
   if (!running) return null;
 
   const endedAt = new Date();
+  // Both, so nothing that already reads minutes has to change and nothing
+  // rounds a fifty-second session down to nothing. See lib/time-tracking.
   return table().update({
     where: { id: running.id },
-    data: { endedAt, minutes: minutesBetween(running.startedAt, endedAt) },
+    data: {
+      endedAt,
+      minutes: minutesBetween(running.startedAt, endedAt),
+      seconds: secondsBetween(running.startedAt, endedAt),
+    },
   });
 }
 
@@ -169,8 +178,10 @@ export async function stopTimerAction(): Promise<ActionResult<{ minutes: number 
     const stopped = await stopRunning(user.id);
     if (!stopped) return { ok: false, error: "Nothing was running." };
 
-    // Under a minute is a misclick, not a work session.
-    if (stopped.minutes < 1) {
+    // Under ten seconds is a misclick, not a work session. It used to be a
+    // minute, which threw away the shortest real thing anybody does: a two
+    // minute call, or forty seconds of fixing a typo somebody flagged.
+    if (secondsOf(stopped) < 10) {
       await table().delete({ where: { id: stopped.id } });
       return { ok: true, data: { minutes: 0 } };
     }
@@ -233,6 +244,7 @@ export async function addTimeAction(input: {
         startedAt,
         endedAt: new Date(startedAt.getTime() + Math.round(input.minutes) * 60_000),
         minutes: Math.round(input.minutes),
+        seconds: Math.round(input.minutes) * 60,
         note: (input.note ?? "").slice(0, 200),
         billable: input.billable !== false,
         source: "MANUAL",
@@ -311,6 +323,7 @@ export async function importCalendarTimeAction(
         startedAt: event.start,
         endedAt: event.end,
         minutes: minutesBetween(event.start, event.end),
+        seconds: secondsBetween(event.start, event.end),
         note: event.title.slice(0, 200),
         source: "CALENDAR",
         calendarEventId: event.id,
@@ -322,6 +335,59 @@ export async function importCalendarTimeAction(
     return { ok: true, data: { added: count } };
   } catch {
     return { ok: false, error: "Couldn't read your calendar." };
+  }
+}
+
+/**
+ * What you did in that time.
+ *
+ * The note is the part that makes a week of tracked hours worth keeping. A
+ * list of durations tells you that Tuesday had six hours in it; a list with
+ * lines against them tells you what those six hours bought, which is what
+ * somebody needs when a client asks, or when they are working out why a job
+ * ran over.
+ *
+ * Either typed, or taken from the deliverables already on the project, since
+ * most of the time the honest answer is the name of the thing being worked on.
+ */
+export async function logTimeAction(input: {
+  entryId: string;
+  note?: string;
+  deliverableId?: string | null;
+  billable?: boolean;
+}): Promise<ActionResult<undefined>> {
+  try {
+    const user = await requireFullUser();
+    const entry = await table().findFirst({ where: { id: input.entryId, userId: user.id } });
+    if (!entry) return { ok: false, error: "Not found." };
+
+    // Theirs, or nothing: the id arrives from a client and points at a row on
+    // a project somebody else might own.
+    let deliverableId: string | null | undefined;
+    if (input.deliverableId !== undefined) {
+      deliverableId = null;
+      if (input.deliverableId && entry.projectId) {
+        const owned = await prisma.deliverable.findFirst({
+          where: { id: input.deliverableId, projectId: entry.projectId },
+          select: { id: true },
+        });
+        deliverableId = owned?.id ?? null;
+      }
+    }
+
+    await table().update({
+      where: { id: entry.id },
+      data: {
+        ...(input.note !== undefined ? { note: input.note.slice(0, 200) } : {}),
+        ...(deliverableId !== undefined ? { deliverableId } : {}),
+        ...(input.billable !== undefined ? { billable: input.billable } : {}),
+      },
+    });
+
+    if (entry.projectId) revalidatePath(`/track/${entry.projectId}`);
+    return { ok: true, data: undefined };
+  } catch {
+    return { ok: false, error: "Couldn't save that." };
   }
 }
 

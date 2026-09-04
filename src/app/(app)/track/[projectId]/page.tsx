@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { hasCalendar } from "@/lib/google-calendar";
-import { modeForProject } from "@/lib/time-tracking";
+import { modeForProject, secondsOf } from "@/lib/time-tracking";
 import { GuideMount } from "@/components/guide/guide-mount";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
@@ -17,7 +17,12 @@ export const maxDuration = 60;
 
 /** One stretch of work, as this page reads it. */
 interface TimeRow {
+  id: string;
   minutes: number;
+  seconds: number;
+  note: string;
+  billable: boolean;
+  deliverableId: string | null;
   endedAt: Date | null;
   startedAt: Date;
 }
@@ -157,7 +162,18 @@ export default async function ProjectPage({
           project as unknown as { timeTracking?: unknown },
           user as unknown as { timeTracking?: unknown; timeTrackingAsk?: unknown }
         ),
-        loggedMinutes: timeEntries.reduce((sum, entry) => sum + entry.minutes, 0),
+        loggedSeconds: timeEntries.reduce((sum, entry) => sum + secondsOf(entry), 0),
+        entries: timeEntries
+          .filter((entry) => entry.endedAt !== null)
+          .map((entry) => ({
+            id: entry.id,
+            startedAt: entry.startedAt.toISOString(),
+            minutes: entry.minutes,
+            seconds: entry.seconds,
+            note: entry.note,
+            billable: entry.billable,
+            deliverableId: entry.deliverableId,
+          })),
         running: runningEntry
           ? { startedAt: runningEntry.startedAt.toISOString() }
           : null,
