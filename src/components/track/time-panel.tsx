@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CalendarDays, ChevronDown, ChevronRight, Play, Plus, Square, Timer } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -128,40 +129,59 @@ export function TimePanel({
   return (
     <>
       <Card className="p-0 overflow-hidden">
-        {/* The line it is when closed. Both facts, and the stop button, without
-            opening anything. */}
-        <div className="flex items-center gap-3 px-5 py-4">
+        {/* The line it is when closed, and it has to read as a timer.
+            It was a quiet row of text with a chevron, which is what a
+            disclosure looks like rather than what a stopwatch looks like: the
+            one control on the page somebody presses before starting work
+            looked exactly like the ones they press to read something.
+
+            So: its own tint, the clock at the size of a number worth reading,
+            and Start on the line. Nothing needs opening to use it. */}
+        <div
+          className={`flex items-center gap-3 px-5 py-4 ${
+            running ? "bg-violet text-white" : "bg-violet-tint"
+          }`}
+        >
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
             aria-expanded={open}
-            className="flex items-center gap-2 min-w-0 flex-1 text-left bg-none border-none cursor-pointer p-0 tap-row"
+            aria-label={t.track.timeTitle}
+            className={`shrink-0 border-none bg-none cursor-pointer p-0 tap ${
+              running ? "text-white/70" : "text-violet/60"
+            }`}
           >
-            {open ? (
-              <ChevronDown size={14} className="text-text-muted shrink-0" />
-            ) : (
-              <ChevronRight size={14} className="text-text-muted shrink-0" />
-            )}
-            <span className="font-body font-semibold text-small text-ink">
-              {t.track.timeTitle}
-            </span>
-            <span
-              className={`font-body font-semibold text-small tabular-nums ${
-                running ? "text-violet" : "text-slate"
-              }`}
-            >
-              {running ? sayClock(totalSeconds) : sayDuration(totalSeconds)}
-            </span>
-            {quotedHours > 0 && !running && (
-              <span className="text-caption text-text-muted truncate">
-                {t.track.timeOfQuoted.replace("{hours}", String(quotedHours))}
-              </span>
-            )}
+            {open ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
           </button>
 
-          {/* Stoppable while closed: a timer you have to go looking for is a
-              timer that runs all night. */}
-          {running && (
+          <div className="min-w-0 flex-1">
+            <div
+              className={`font-body font-bold text-caption uppercase tracking-[0.08em] ${
+                running ? "text-white/70" : "text-violet/70"
+              }`}
+            >
+              {t.track.timeTitle}
+            </div>
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span
+                className={`font-display italic text-[26px] leading-none tabular-nums ${
+                  running ? "text-white" : "text-ink"
+                }`}
+              >
+                {running ? sayClock(totalSeconds) : sayDuration(totalSeconds)}
+              </span>
+              {quotedHours > 0 && (
+                <span className={`text-caption ${running ? "text-white/70" : "text-slate"}`}>
+                  {t.track.timeOfQuoted.replace("{hours}", String(quotedHours))}
+                </span>
+              )}
+            </div>
+            {running && running.note && (
+              <div className="text-caption text-white/80 truncate mt-0.5">{running.note}</div>
+            )}
+          </div>
+
+          {running ? (
             <Button
               variant="danger"
               icon={Square}
@@ -175,6 +195,36 @@ export function TimePanel({
               }
             >
               {t.track.stop}
+            </Button>
+          ) : (
+            // Start without opening anything. Opening it first to find the
+            // button is a step nobody should have to learn.
+            <Button
+              icon={Play}
+              loading={working === "start"}
+              onClick={() => {
+                if (!open) {
+                  setOpen(true);
+                  return;
+                }
+                void run("start", async () => {
+                  const description = what.trim();
+                  const result = await startTimerAction(projectId, description);
+                  if (result.ok) {
+                    setWhat("");
+                    announceTimerChange({
+                      id: result.data.id,
+                      projectId,
+                      projectTitle: "",
+                      note: description,
+                      startedAt: new Date().toISOString(),
+                    });
+                  }
+                  return result;
+                });
+              }}
+            >
+              {t.track.timeStart}
             </Button>
           )}
         </div>
@@ -274,7 +324,11 @@ export function TimePanel({
                 {t.track.timeAdd}
               </Button>
 
-              {hasCalendar && (
+              {/* Shown whether or not a calendar is connected. Hidden when it
+                  was not, this button was indistinguishable from a feature
+                  that did not exist, and the place to connect one is two
+                  pages away in Memory. */}
+              {hasCalendar ? (
                 <Button
                   variant="outline"
                   icon={CalendarDays}
@@ -289,16 +343,36 @@ export function TimePanel({
                 >
                   {t.track.timeFromCalendar}
                 </Button>
+              ) : (
+                <Link
+                  href="/memory?tab=you#connectors"
+                  className="inline-flex items-center gap-1.5 text-meta font-semibold text-violet no-underline tap"
+                >
+                  <CalendarDays size={14} />
+                  {t.track.timeConnectCalendar}
+                </Link>
               )}
+            </div>
 
-              {/* Changeable, because the answer moves: a job tracked privately
-                  becomes one the client is billed for. */}
+            {/* What this time is for, stated rather than linked to.
+                It was a link reading "Change what this is for", which asks
+                somebody to open a modal to find out what the current answer
+                is. The answer matters: whether these hours reach an invoice
+                is the difference between a private note and a bill. */}
+            <div className="flex items-start gap-3 mt-4 pt-3 border-t border-line">
+              <p className="text-caption text-slate m-0 flex-1">
+                {mode === "BILLING"
+                  ? t.track.timeUseBilling
+                  : mode === "LEARN"
+                    ? t.track.timeUseLearn
+                    : t.track.timeUseRecord}
+              </p>
               <button
                 type="button"
                 onClick={() => setSetUp(true)}
-                className="ml-auto text-meta font-semibold text-slate bg-none border-none cursor-pointer p-0 tap"
+                className="shrink-0 text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
               >
-                {t.track.timeChangeUse}
+                {t.track.timeEditUse}
               </button>
             </div>
 

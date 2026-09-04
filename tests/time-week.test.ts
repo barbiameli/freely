@@ -169,8 +169,11 @@ describe("how the panel behaves", () => {
   });
 
   it("lets the answer be changed later", () => {
-    // A job tracked privately becomes one the client is billed for.
-    expect(panel).toContain("t.track.timeChangeUse");
+    // A job tracked privately becomes one the client is billed for, so the
+    // panel says which of the two it currently is and puts an edit beside it.
+    expect(panel).toContain("t.track.timeUseRecord");
+    expect(panel).toContain("t.track.timeUseBilling");
+    expect(panel).toContain("t.track.timeEditUse");
     const setUp = readFileSync("src/components/track/time-set-up.tsx", "utf8");
     expect(setUp).toContain("current && current !== \"OFF\" ? current : \"RECORD\"");
   });
@@ -255,5 +258,30 @@ describe("doing it again", () => {
   it("is one press on a past entry", () => {
     expect(log).toContain("void again(entry)");
     expect(log).toContain("t.track.timeContinue");
+  });
+});
+
+describe("the panel reads as a timer", () => {
+  const panel = readFileSync("src/components/track/time-panel.tsx", "utf8");
+
+  it("can be started without being opened first", () => {
+    // The one control somebody presses before starting work should not be
+    // behind a disclosure.
+    const closed = panel.slice(0, panel.indexOf("{open && ("));
+    expect(closed).toContain("t.track.timeStart");
+    expect(closed).toContain("t.track.stop");
+  });
+
+  it("carries a background of its own", () => {
+    // It was plain text on a white card next to other plain text on white
+    // cards, which is how it went unnoticed.
+    expect(panel).toContain("bg-violet-tint");
+    expect(panel).toContain("bg-violet text-white");
+  });
+
+  it("offers the calendar even when none is connected", () => {
+    // Hidden, the button was indistinguishable from a missing feature.
+    expect(panel).toContain("t.track.timeConnectCalendar");
+    expect(panel).toContain("hasCalendar ?");
   });
 });
