@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import clsx from "@/lib/clsx";
 import { Topbar } from "@/components/topbar";
-import { Card } from "@/components/ui/card";
 import { Label, SubLabel } from "@/components/ui/label";
 import { Chip } from "@/components/ui/chip";
 import { TextField } from "@/components/ui/text-field";
@@ -1045,11 +1044,14 @@ export function QuoteWizard({
                 </div>
               </div>
             </div>
-          </div>
 
-          <Card>
-            <FieldHeading>{t.quote.visualReferences}</FieldHeading>
-            <p className="text-meta text-text-muted mb-3">
+            {/* A row of the brief card rather than a card of its own.
+                Three stacked cards made the form long enough that the button
+                at the bottom was below the fold on a laptop, and references
+                are part of describing the job rather than a separate step. */}
+            <div className="border-t border-line px-5 py-4">
+              <FieldHeading>{t.quote.visualReferences}</FieldHeading>
+              <p className="text-meta text-text-muted mb-3">
               {t.quote.referencesHint}
             </p>
             <DropZone
@@ -1094,14 +1096,14 @@ export function QuoteWizard({
                 ))}
               </div>
             )}
-          </Card>
+            </div>
 
-
-          {/* Everything that used to be asked on every quote and is actually
-              a property of the freelancer rather than of the job. Four
-              readable lines, remembered after the first quote. See
-              components/quote/setup-rows and lib/quote-defaults. */}
-          <SetupRows
+            {/* Inside the same card, for the same reason: what you charge and
+                when you are paid belong to the same act of describing this
+                job, and a card of their own made the page taller than the
+                decision deserved. */}
+            <SetupRows
+              inline
             draft={draft}
             setDraft={setDraft}
             sectionNotes={sectionNotes}
@@ -1118,9 +1120,10 @@ export function QuoteWizard({
             pricedFor={pricedForFields}
             savedCountry={savedCountry}
             disciplines={disciplines}
-            problemRow={problem.row}
-            problemMessage={problem.message}
-          />
+              problemRow={problem.row}
+              problemMessage={problem.message}
+            />
+          </div>
 
           {generating && (
             <div className="flex flex-col gap-2">

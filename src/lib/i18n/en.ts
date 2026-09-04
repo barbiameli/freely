@@ -62,6 +62,16 @@ export const en = {
     patternSources: "Where this came from",
     patternDismiss: "Not for my work",
 
+    fixSetDeposit: "Make {percent}% up front my default",
+    fixSetRate: "Set my rate to {low}",
+    fixTurnOnAcceptance: "Turn on the acceptance clause",
+    fixSetAcceptance: "Shorten it to {norm} business days",
+    fixSetPaymentDays: "Make my terms {norm} days",
+    fixTurnOnAssumptions: "Turn this rule back on",
+    fixDone: "Changed",
+    patternAssumptionsOff: "Your assumptions rule is switched off",
+    patternAssumptionsOffNorm:
+      "So your quotes go out without saying what the price rests on, and a project that turns out bigger than the brief suggested is your mistake rather than a change you both agreed to handle.",
     patternNoDeposit: "{count} of your last {total} quotes took nothing up front",
     patternNoDepositNorm:
       "Freelancers in your field usually take {percent}% before starting. On a quote billed entirely on delivery you carry the whole project until it is finished.",

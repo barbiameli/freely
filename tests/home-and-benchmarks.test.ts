@@ -45,6 +45,7 @@ function quote(over: Partial<QuoteFact> = {}): QuoteFact {
     paymentPlan: "ON_DELIVERY",
     upfrontPercent: 0,
     hasAssumptions: false,
+    couldCarryAssumptions: true,
     hasPaymentTerms: true,
     createdAt: daysAgo(40).toISOString(),
     acceptedAt: null,
@@ -259,6 +260,77 @@ describe("patterns in somebody's own quoting", () => {
         expect(fill(compared, pattern.values)).not.toMatch(/\{\w+\}/);
       }
     }
+  });
+});
+
+describe("a flag that says what to change", () => {
+  const quotes = Array.from({ length: 5 }, () => quote());
+
+  it("names the change with its numbers, not a link to a settings page", () => {
+    // It used to link to "Your ground rules" whichever problem it was, so it
+    // named neither the rule nor what to do about it.
+    const deposit = patternsFor(quotes, [], reference).find((p) => p.key === "noDeposit");
+    expect(deposit?.fix).toEqual({
+      action: "setDeposit",
+      amount: 50,
+      label: "fixSetDeposit",
+    });
+  });
+
+  it("offers the bottom of the researched range for a rate", () => {
+    // A suggestion somebody can accept without arguing with themselves.
+    const rate = patternsFor(quotes, [], reference).find((p) => p.key === "rateBelow");
+    expect(rate?.fix?.amount).toBe(65);
+  });
+
+  it("offers to switch a rule back on when it is off", () => {
+    const off = patternsFor(quotes, [], reference, { off: ["assumptions"], values: {} });
+    const found = off.find((p) => p.key === "assumptionsOff");
+    expect(found?.fix).toEqual({
+      action: "ruleOn",
+      rule: "assumptions",
+      label: "fixTurnOnAssumptions",
+    });
+  });
+
+  it("does not count quotes that could never have carried an assumptions list", () => {
+    /**
+     * Nineteen of twenty quotes lack one because the section did not exist
+     * when they were written. Telling somebody off for that is a flag that is
+     * simply wrong.
+     */
+    const old = Array.from({ length: 20 }, () => quote({ couldCarryAssumptions: false }));
+    expect(patternsFor(old, [], reference).map((p) => p.key)).not.toContain("noAssumptions");
+  });
+
+  it("does raise it once enough recent quotes could have carried one", () => {
+    const recent = Array.from({ length: 5 }, () => quote({ couldCarryAssumptions: true }));
+    expect(patternsFor(recent, [], reference).map((p) => p.key)).toContain("noAssumptions");
+  });
+
+  it("has a readable button label for every fix it offers", () => {
+    const all = [
+      ...patternsFor(quotes, [], reference),
+      ...patternsFor(quotes, [], reference, { off: ["assumptions", "deemedAcceptance"], values: {} }),
+    ];
+    for (const locale of ["en", "es"] as const) {
+      const words = dict(locale).home as unknown as Record<string, string>;
+      for (const pattern of all) {
+        if (!pattern.fix) continue;
+        const label = words[pattern.fix.label];
+        expect(label, `${pattern.key} ${locale}`).toBeTruthy();
+        expect(fill(label, pattern.values)).not.toMatch(/\{\w+\}/);
+      }
+    }
+  });
+
+  it("makes the change rather than pointing at where to make it", () => {
+    const action = readFileSync("src/actions/patterns.ts", "utf8");
+    expect(action).toContain("defaultPaymentPlan");
+    expect(action).toContain("defaultRate");
+    // Standing preferences only: a change here is about the next quote, not a
+    // rewrite of the last twenty.
+    expect(action).toContain("Nothing here alters a quote that has");
   });
 });
 

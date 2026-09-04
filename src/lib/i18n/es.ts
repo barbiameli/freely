@@ -71,6 +71,16 @@ export const es: Dictionary = {
     patternSources: "De dónde sale esto",
     patternDismiss: "No es para mi trabajo",
 
+    fixSetDeposit: "Poner un {percent}% por adelantado por defecto",
+    fixSetRate: "Poner mi tarifa en {low}",
+    fixTurnOnAcceptance: "Activar la aceptación tácita",
+    fixSetAcceptance: "Bajarlo a {norm} días hábiles",
+    fixSetPaymentDays: "Poner mis plazos en {norm} días",
+    fixTurnOnAssumptions: "Volver a activar esta regla",
+    fixDone: "Cambiado",
+    patternAssumptionsOff: "Tienes desactivada la regla de supuestos",
+    patternAssumptionsOffNorm:
+      "Así que tus presupuestos salen sin decir en qué se apoya el precio, y un proyecto que resulta más grande de lo que sugería el brief es culpa tuya y no un cambio que acordáis gestionar.",
     patternNoDeposit: "{count} de tus últimos {total} presupuestos no pedían nada por adelantado",
     patternNoDepositNorm:
       "En tu campo lo normal es cobrar un {percent}% antes de empezar. En un presupuesto que se cobra todo al entregar, cargas con el proyecto entero hasta terminarlo.",

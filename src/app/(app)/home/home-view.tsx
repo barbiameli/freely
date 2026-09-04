@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Plus, ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import { formatMoney } from "@/lib/money";
 import { useT } from "@/lib/i18n/context";
 import { fill, type Dictionary } from "@/lib/i18n";
 import type { Pattern } from "@/lib/quote-patterns";
+import { applyPatternFixAction } from "@/actions/patterns";
 
 export interface HomeQuote {
   id: string;
@@ -199,6 +201,26 @@ function needsYou(data: HomeData, t: Dictionary): Item[] {
  */
 export function HomeView({ data, name }: { data: HomeData; name: string }) {
   const t = useT();
+  /** The pattern currently being acted on, and the ones already settled. */
+  const [fixing, setFixing] = useState("");
+  const [done, setDone] = useState<string[]>([]);
+  const [fixError, setFixError] = useState("");
+
+  async function applyFix(pattern: Pattern) {
+    if (!pattern.fix) return;
+    setFixError("");
+    setFixing(pattern.key);
+    const result = await applyPatternFixAction(pattern.fix);
+    setFixing("");
+    if (!result.ok) {
+      setFixError(result.error);
+      return;
+    }
+    // Marked here rather than waiting for the page to recompute: the change is
+    // made, and a button that still reads "make this change" says otherwise.
+    setDone((current) => [...current, pattern.key]);
+  }
+
   const items = needsYou(data, t);
 
   // Only the quotes still out: a tracked or lost quote is not money in flight,
@@ -387,18 +409,33 @@ export function HomeView({ data, name }: { data: HomeData; name: string }) {
                   <p className="text-caption text-slate mt-1.5 mb-0 max-w-prose text-pretty">
                     {fill(t.home[pattern.compared as keyof typeof t.home], pattern.values)}
                   </p>
-                  {pattern.fixHref && (
+                  {/* The change itself, with its numbers in the label. This
+                      was a link reading "Your ground rules" whichever problem
+                      it was, so it named neither the rule nor what to do
+                      about it, and left the work where it started. */}
+                  {pattern.fix && (
                     <div className="mt-2.5">
-                      <Link
-                        href={pattern.fixHref}
-                        className="text-meta font-semibold text-violet no-underline tap"
+                      <button
+                        type="button"
+                        disabled={Boolean(fixing) || done.includes(pattern.key)}
+                        onClick={() => void applyFix(pattern)}
+                        className="font-body font-semibold text-caption text-white bg-violet border-none rounded-full px-3 py-1.5 cursor-pointer tap disabled:opacity-60"
                       >
-                        {t.home.yourRules}
-                      </Link>
+                        {done.includes(pattern.key)
+                          ? t.home.fixDone
+                          : fill(
+                              t.home[pattern.fix.label as keyof typeof t.home],
+                              pattern.values
+                            )}
+                      </button>
                     </div>
                   )}
                 </div>
               ))}
+
+              {fixError && (
+                <p className="font-body font-semibold text-caption text-overdue m-0">{fixError}</p>
+              )}
 
               <p className="text-caption text-text-muted m-0 max-w-prose text-pretty">
                 {t.home.patternSource}

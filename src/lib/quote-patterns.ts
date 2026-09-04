@@ -1,4 +1,5 @@
 import type { Benchmark } from "@/lib/benchmarks";
+import type { RuleKey, RuleSettings } from "@/lib/ground-rules";
 
 /**
  * What somebody's own quoting looks like from the outside, and where it sits
@@ -31,6 +32,13 @@ export interface QuoteFact {
   upfrontPercent: number;
   /** Whether the quote actually carries these, after removals. */
   hasAssumptions: boolean;
+  /**
+   * Whether this quote was written when an assumptions list was possible.
+   *
+   * Everything older lacks one because the section did not exist, not because
+   * anybody chose to leave it out.
+   */
+  couldCarryAssumptions: boolean;
   hasPaymentTerms: boolean;
   createdAt: string;
   /** When it was signed, where it was. */
@@ -56,8 +64,33 @@ export interface Pattern {
   /** What it is being compared against, and from where. */
   compared: string;
   values: Record<string, string>;
-  /** The rule or page that acts on it, where there is one. */
-  fixHref?: string;
+  /**
+   * The change this suggests, as something Freely can carry out.
+   *
+   * Naming a problem and linking to a settings page is most of the work still
+   * to do, and the link said "Your ground rules" whichever problem it was, so
+   * it told nobody which rule or what to change about it. Each pattern now
+   * knows the actual change, with its numbers in the label, and the button
+   * makes it.
+   */
+  fix?: PatternFix;
+}
+
+/** One change, ready to be made. */
+export interface PatternFix {
+  /** What to do. See actions/patterns. */
+  action:
+    | "ruleOn"
+    | "setDeposit"
+    | "setPaymentDays"
+    | "setAcceptanceDays"
+    | "setRate";
+  /** The rule to switch on, where the action is about one. */
+  rule?: RuleKey;
+  /** The figure to set, where the action sets one. */
+  amount?: number;
+  /** The dictionary key for the button, filled from `values`. */
+  label: string;
 }
 
 /** Enough of a sample that a pattern is a pattern rather than a coincidence. */
@@ -89,10 +122,13 @@ function days(from: string, to: string): number {
 export function patternsFor(
   quotes: QuoteFact[],
   invoices: InvoiceFact[],
-  benchmark: Benchmark | null
+  benchmark: Benchmark | null,
+  rules: RuleSettings = { off: [], values: {} }
 ): Pattern[] {
   const found: Pattern[] = [];
   if (quotes.length < MIN_QUOTES) return found;
+
+  const ruleIsOff = (key: RuleKey) => rules.off.includes(key);
 
   // Nothing up front, on most of them. The one that turns into an unpaid
   // invoice for the whole project rather than for the last part of it.
@@ -117,7 +153,11 @@ export function patternsFor(
         total: String(quotes.length),
         percent: String(benchmark.depositPercent),
       },
-      fixHref: "/memory?tab=rules",
+      fix: {
+        action: "setDeposit",
+        amount: benchmark.depositPercent,
+        label: "fixSetDeposit",
+      },
     });
   }
 
@@ -144,7 +184,14 @@ export function patternsFor(
         high: String(Math.round(benchmark.rateHigh)),
         count: String(rates.length),
       },
-      fixHref: "/memory#quotes",
+      // The bottom of the researched range, not the middle. A suggestion
+      // somebody can accept without arguing with themselves is the one that
+      // actually moves a rate that has not moved in a year.
+      fix: {
+        action: "setRate",
+        amount: Math.round(benchmark.rateLow),
+        label: "fixSetRate",
+      },
     });
   }
 
@@ -168,7 +215,9 @@ export function patternsFor(
       observed: "patternSlowAnswers",
       compared: "patternSlowAnswersNorm",
       values: { days: String(Math.round(typicalWait)), norm: String(benchmark.acceptanceDays) },
-      fixHref: "/memory?tab=rules",
+      fix: ruleIsOff("deemedAcceptance")
+        ? { action: "ruleOn", rule: "deemedAcceptance", label: "fixTurnOnAcceptance" }
+        : { action: "setAcceptanceDays", amount: benchmark.acceptanceDays, label: "fixSetAcceptance" },
     });
   }
 
@@ -187,20 +236,43 @@ export function patternsFor(
         count: String(paid.length),
         norm: benchmark?.paymentDays != null ? String(benchmark.paymentDays) : "14",
       },
-      fixHref: "/memory?tab=rules",
+      fix: {
+        action: "setPaymentDays",
+        amount: benchmark?.paymentDays ?? 14,
+        label: "fixSetPaymentDays",
+      },
     });
   }
 
-  // Quotes going out with nothing saying what the price rests on.
-  const noAssumptions = quotes.filter((q) => !q.hasAssumptions);
-  if (share(noAssumptions.length, quotes.length) >= 0.6) {
+  /**
+   * Quotes going out with nothing saying what the price rests on.
+   *
+   * Only counted where the quote could have carried one. Every quote written
+   * before the assumptions section existed lacks it, and telling somebody that
+   * nineteen of their last twenty are missing something that was not possible
+   * to include is a flag that is simply wrong. What is worth saying is either
+   * "your rule is off" or "it is on and your recent quotes still go without".
+   */
+  const couldHave = quotes.filter((q) => q.couldCarryAssumptions);
+  const noAssumptions = couldHave.filter((q) => !q.hasAssumptions);
+
+  if (ruleIsOff("assumptions")) {
+    found.push({
+      key: "assumptionsOff",
+      tone: "mild",
+      observed: "patternAssumptionsOff",
+      compared: "patternAssumptionsOffNorm",
+      values: {},
+      fix: { action: "ruleOn", rule: "assumptions", label: "fixTurnOnAssumptions" },
+    });
+  } else if (couldHave.length >= MIN_QUOTES && share(noAssumptions.length, couldHave.length) >= 0.6) {
     found.push({
       key: "noAssumptions",
       tone: "mild",
       observed: "patternNoAssumptions",
       compared: "patternNoAssumptionsNorm",
-      values: { count: String(noAssumptions.length), total: String(quotes.length) },
-      fixHref: "/memory?tab=rules",
+      values: { count: String(noAssumptions.length), total: String(couldHave.length) },
+      fix: { action: "ruleOn", rule: "assumptions", label: "fixTurnOnAssumptions" },
     });
   }
 

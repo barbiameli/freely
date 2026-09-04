@@ -75,6 +75,7 @@ export function SetupRows({
   pricedFor,
   savedCountry,
   disciplines,
+  inline = false,
   problemRow,
   problemMessage,
 }: {
@@ -104,6 +105,8 @@ export function SetupRows({
   savedCountry?: string | null;
   /** What this account does, main one first. See RateBody. */
   disciplines?: { key: string; label: string }[];
+  /** Rendered as a section of a larger card rather than as a card. */
+  inline?: boolean;
   /** A row that is missing something, and what to say about it.
    *
    * Shown inside the row rather than at the foot of the form. A message by the
@@ -172,7 +175,16 @@ export function SetupRows({
   const anyDecided = decided.length > 0;
 
   return (
-    <div className="bg-white border border-line rounded-card overflow-hidden">
+    <div
+      className={
+        // Bordered when it stands alone, bare when it is a section inside
+        // something else. The wizard folds it into the brief card so the form
+        // is one card rather than three stacked ones.
+        inline
+          ? "border-t border-line"
+          : "bg-white border border-line rounded-card overflow-hidden"
+      }
+    >
       <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-3">
         <div className="min-w-0">
           <div className="font-body font-bold text-body text-ink">

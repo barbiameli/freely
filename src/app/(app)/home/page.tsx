@@ -7,6 +7,7 @@ import { resolveExpertise } from "@/lib/quote-defaults";
 import { patternsFor, type QuoteFact, type InvoiceFact } from "@/lib/quote-patterns";
 import type { Benchmark } from "@/lib/benchmarks";
 import { needsAction, watchStages } from "@/lib/stage-watch";
+import { layoutOf } from "@/lib/quote-layout";
 import { parseRuleSettings, ruleValues } from "@/lib/ground-rules";
 import { HomeView, type HomeData } from "./home-view";
 
@@ -175,6 +176,11 @@ export default async function HomePage() {
         (extras.assumptions?.length ?? 0) > 0 && !hidden.includes("assumptions")
       ),
       hasPaymentTerms: Boolean(extras.paymentTerms && !hidden.includes("paymentTerms")),
+      // Layout 3 is the first that could carry one. Everything older lacks an
+      // assumptions list because the section did not exist, not because
+      // anybody chose to leave it out, and counting those would tell somebody
+      // off for something that was not possible.
+      couldCarryAssumptions: layoutOf(brief.settings) >= 3,
       createdAt: brief.createdAt.toISOString(),
       acceptedAt: brief.acceptedAt?.toISOString() ?? null,
     };
@@ -229,9 +235,10 @@ export default async function HomePage() {
    * counts as accepted and is invoiced. Until this, nothing watched for that
    * happening and the sentence sat on the document while somebody waited.
    */
-  const ruleWindows = ruleValues(
-    parseRuleSettings((user as unknown as { groundRules?: unknown }).groundRules)
+  const ruleSettings = parseRuleSettings(
+    (user as unknown as { groundRules?: unknown }).groundRules
   );
+  const ruleWindows = ruleValues(ruleSettings);
   const watched = needsAction(
     watchStages(
       projects.flatMap((project) =>
@@ -274,7 +281,7 @@ export default async function HomePage() {
     })),
     // Capped at two. A page that names three things you are doing wrong every
     // morning is a page you scroll past.
-    patterns: patternsFor(facts, invoiceFacts, reference).slice(0, 2),
+    patterns: patternsFor(facts, invoiceFacts, reference, ruleSettings).slice(0, 2),
     researchedAt: reference?.refreshedAt ?? null,
     sources: reference?.sources ?? [],
     quotes: briefs.map((brief) => ({

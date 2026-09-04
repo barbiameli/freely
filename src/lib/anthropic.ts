@@ -8,6 +8,7 @@ import type { SectionNotes } from "@/lib/quote-prompts";
 import type { Locale } from "@/lib/i18n/types";
 import { dict } from "@/lib/i18n";
 import { sanitizeText } from "@/lib/sanitize-text";
+import { keepOnly, keyFor, scopeOf, type RefineScope } from "@/lib/refine-scope";
 import { buildPlanPrompt, planSchema, type QuotePlan } from "@/lib/quote-plan";
 import {
   benchmarkSchema,
@@ -1854,6 +1855,28 @@ export async function refineBrief(
   context: RefineContext = {}
 ): Promise<GeneratedBrief> {
   const system = buildSystemPrompt(memory);
+
+  /**
+   * One section, when the instruction is clearly about one.
+   *
+   * "Add a cancellation clause" used to send the whole quote and get the whole
+   * quote back, rewriting the scope, the deliverables and the timeline on the
+   * way past. That is most of the wait, and it is why a sentence somebody
+   * liked could come back subtly different after an instruction about
+   * something else entirely.
+   *
+   * Anything ambiguous still rewrites everything, because an instruction that
+   * appears to do nothing is worse than one that is slow. See lib/refine-scope.
+   */
+  const scope = scopeOf(refinePrompt);
+  if (scope) {
+    const scoped = await refineSection(system, current, refinePrompt, scope, context);
+    if (scoped) return scoped;
+    // The narrow answer came back unusable. Falling through costs the wait it
+    // was trying to save and produces a correct quote, which is the right way
+    // round.
+  }
+
   const user = buildRefineUserPrompt(current, refinePrompt, context);
   // Room for the whole quote coming back rather than just its core, which is
   // what the default 2000 was sized for.
@@ -1861,6 +1884,48 @@ export async function refineBrief(
   // In the language it was written in. Without this a Spanish quote could come
   // back with an English placeholder title.
   return parseBriefResponse(text, context.language);
+}
+
+/**
+ * Rewriting one section, with the rest of the quote as context.
+ *
+ * The whole quote still goes in, because a revisions policy written without
+ * sight of the deliverables is a policy about nothing. Only one key comes
+ * back, and only that key is kept: the model can return more than it was
+ * asked for, and a scoped refine that quietly rewrote the deliverables would
+ * be exactly the failure this exists to prevent, and invisible.
+ */
+async function refineSection(
+  system: string,
+  current: GeneratedBrief,
+  refinePrompt: string,
+  scope: RefineScope,
+  context: RefineContext
+): Promise<GeneratedBrief | null> {
+  const key = keyFor(scope);
+  const user = [
+    buildRefineUserPrompt(current, refinePrompt, context),
+    `\nAnswer with ONE key only: {"${key}": ...}, in the same shape that key has above. Do not return any other key, and do not return the rest of the quote: everything else is staying exactly as it is and anything else you send will be discarded.`,
+  ].join("\n");
+
+  try {
+    const text = await callClaude("refineBrief", system, user, { maxTokens: 1500 });
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start === -1 || end <= start) return null;
+
+    const answer = JSON.parse(text.slice(start, end + 1)) as Record<string, unknown>;
+    const kept = keepOnly(answer, scope);
+    if (Object.keys(kept).length === 0) return null;
+
+    // Validated as a whole quote, so a malformed section cannot land as one.
+    const merged = { ...current, ...kept } as unknown;
+    const parsed = briefSchema.safeParse(merged);
+    return parsed.success ? parsed.data : null;
+  } catch (err) {
+    console.error("[refineSection] failed", err);
+    return null;
+  }
 }
 
 
