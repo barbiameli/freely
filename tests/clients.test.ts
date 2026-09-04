@@ -137,7 +137,11 @@ describe("how the app uses it", () => {
 
   it("creates the record as a side effect of work already being done", () => {
     // A client list maintained by hand is admin, and admin gets abandoned.
-    expect(briefs).toContain("clientFor(user.id, generated.client)");
+    // And on the name they typed, not the one the model wrote: those differ
+    // often enough to make duplicate clients.
+    expect(briefs).toContain(
+      "clientFor(user.id, draftInput.clientName?.trim() || generated.client)"
+    );
     expect(invoices).toContain("clientFor(user.id, seed.clientName)");
   });
 
@@ -149,6 +153,12 @@ describe("how the app uses it", () => {
   it("never lets a lookup stop somebody quoting or invoicing", () => {
     expect(briefs).toContain("could not resolve client");
     expect(invoices).toContain("could not resolve client");
+  });
+
+  it("reads the whole studio's history, not one person's", () => {
+    // Every other read in the app goes through teamScopeWhere. This did not,
+    // so two people quoting the same client built separate histories.
+    expect(db).toContain("teamScopeWhere(user)");
   });
 
   it("lets the history override what the brief implied", () => {

@@ -76,6 +76,8 @@ export function SetupRows({
   savedCountry,
   disciplines,
   inline = false,
+  openRow,
+  onOpenRow,
   problemRow,
   problemMessage,
 }: {
@@ -107,6 +109,15 @@ export function SetupRows({
   disciplines?: { key: string; label: string }[];
   /** Rendered as a section of a larger card rather than as a card. */
   inline?: boolean;
+  /**
+   * The open row, when something outside owns that decision.
+   *
+   * The wizard puts its own rows in the same list, and one at a time has to
+   * mean one across all of them: two open panels in one card is the wall of
+   * controls this pattern replaced.
+   */
+  openRow?: SetupRowKey | null;
+  onOpenRow?: (row: SetupRowKey | null) => void;
   /** A row that is missing something, and what to say about it.
    *
    * Shown inside the row rather than at the foot of the form. A message by the
@@ -133,23 +144,31 @@ export function SetupRows({
   // where there is not, so nothing is hidden. It just is not all shouting at
   // once. Memory's copy of this card already worked this way, so the two now
   // behave alike as well as looking alike.
-  const [open, setOpen] = useState<SetupRowKey | null>(
+  const [ownOpen, setOwnOpen] = useState<SetupRowKey | null>(
     () => WIZARD_ROWS.find((row) => !decided.includes(row)) ?? null
   );
+  const controlled = onOpenRow !== undefined;
+  const open = controlled ? openRow ?? null : ownOpen;
+  const setOpen = (next: SetupRowKey | null) => {
+    if (controlled) onOpenRow?.(next);
+    else setOwnOpen(next);
+  };
 
   // Except when generating was refused for want of a rate. The message would
   // otherwise point at a control inside a closed row.
   useEffect(() => {
     if (rateHelpOpen) setOpen("rate");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rateHelpOpen]);
 
   // And when something required is missing, the row holding it comes forward.
   useEffect(() => {
     if (problemRow) setOpen(problemRow);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [problemRow]);
 
   function toggle(row: SetupRowKey) {
-    setOpen((current) => (current === row ? null : row));
+    setOpen(open === row ? null : row);
   }
 
   function putBack(row: SetupRowKey) {

@@ -9,7 +9,7 @@ import { Chip } from "@/components/ui/chip";
 import { useT } from "@/lib/i18n/context";
 import type { PlannedQuote } from "@/actions/plan";
 import type { PlanAnswer } from "@/lib/quote-plan";
-import type { SectionKey } from "@/lib/quote-defaults";
+import { ALL_SECTIONS, type SectionKey } from "@/lib/quote-defaults";
 import {
   PROTECTION_LEVELS,
   protectionFor,
@@ -35,12 +35,22 @@ import type { Dictionary } from "@/lib/i18n";
  * carry. The rules sit at the bottom as a statement of what is already
  * settled, because they are not a decision to make here.
  */
+/** Why a section is here when the level rather than the brief put it there. */
+function protectionReason(level: ProtectionLevel, t: Dictionary): string {
+  return level === "KNOWN"
+    ? t.quote.protectionKnown
+    : level === "NEW"
+    ? t.quote.protectionNew
+    : t.quote.protectionGuarded;
+}
+
 export function PlanReview({
   plan,
   sectionName,
   onWrite,
   onBack,
   working,
+  defaultBillable = false,
 }: {
   plan: PlannedQuote;
   /** The dictionary lookup for a section key, owned by the wizard. */
@@ -55,6 +65,16 @@ export function PlanReview({
   }) => void;
   onBack: () => void;
   working: boolean;
+  /**
+   * Whether the stages start as payment points.
+   *
+   * False in general, because billing per stage is a commitment and a
+   * commitment nobody made should not be the assumption. True when their saved
+   * plan already says milestone billing, since otherwise the quote said "these
+   * are the stages, payment follows the terms below" while the terms said
+   * payment is per stage.
+   */
+  defaultBillable?: boolean;
 }) {
   const t = useT();
   const [sections, setSections] = useState<SectionKey[]>(
@@ -74,7 +94,7 @@ export function PlanReview({
    * Off by default: billing per stage is a commitment, and a commitment
    * nobody made should not be the assumption.
    */
-  const [billable, setBillable] = useState(false);
+  const [billable, setBillable] = useState(defaultBillable);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   /**
    * How much armour this quote carries.
@@ -86,21 +106,41 @@ export function PlanReview({
    */
   const [protection, setProtection] = useState<ProtectionLevel>(plan.protection);
 
+  /**
+   * Changing the level moves the sections it is responsible for, and nothing
+   * else.
+   *
+   * It used to rebuild the whole list from the new level, which threw away
+   * anything ticked or unticked by hand and applied sections that were never
+   * shown in the list below, so a quote could carry a section its author had
+   * neither seen nor chosen. Now it removes what the old level brought,
+   * adds what the new one brings, and leaves every other decision alone.
+   */
   function chooseProtection(level: ProtectionLevel) {
+    const before = protectionFor(protection).sections;
+    const after = protectionFor(level).sections;
     setProtection(level);
-    // The level decides the sections, so choosing one replaces whatever the
-    // last choice put there rather than adding to it. Anything the plan
-    // proposed on top of the level survives, since that came from the brief.
-    const wanted = protectionFor(level).sections;
-    setSections(() => {
-      const fromPlan = plan.sections
-        .map((s) => s.key as SectionKey)
-        .filter((key) => wanted.includes(key));
-      return Array.from(new Set([...wanted, ...fromPlan]));
+    setSections((current) => {
+      const kept = current.filter((key) => !before.includes(key) || after.includes(key));
+      return Array.from(new Set([...kept, ...after]));
     });
   }
 
   const chosen = protectionFor(protection);
+
+  /**
+   * The sections to show: the ones the plan proposed, plus anything on that it
+   * did not, in the app's own order.
+   */
+  const listedSections = (() => {
+    const byKey = new Map(plan.sections.map((section) => [section.key, section]));
+    for (const key of sections) {
+      if (!byKey.has(key)) {
+        byKey.set(key, { key, reason: protectionReason(protection, t) });
+      }
+    }
+    return ALL_SECTIONS.filter((key) => byKey.has(key)).map((key) => byKey.get(key)!);
+  })();
 
   function toggleSection(key: SectionKey) {
     setSections((current) =>
@@ -258,7 +298,11 @@ export function PlanReview({
         <SubLabel>{t.quote.planSections}</SubLabel>
         <p className="text-caption text-slate mt-1 mb-3 text-pretty">{t.quote.planSectionsHint}</p>
         <div className="flex flex-col gap-2.5">
-          {plan.sections.map((section) => {
+          {/* Everything the quote will carry, whatever put it there. The list
+              showed only what the plan proposed, so sections added by the
+              protection level were applied invisibly and could not be
+              unticked. A choice you cannot see is not a choice. */}
+          {listedSections.map((section) => {
             const key = section.key as SectionKey;
             const on = sections.includes(key);
             return (

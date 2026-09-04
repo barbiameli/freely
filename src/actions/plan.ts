@@ -121,7 +121,7 @@ export async function planQuoteAction(input: {
      * different engagement from a stranger with the same brief, and an
      * invoice of theirs already overdue is a different one again.
      */
-    const history = input.client ? await historyForClient(user.id, input.client) : NO_HISTORY;
+    const history = input.client ? await historyForClient(user, input.client) : NO_HISTORY;
     const fromHistory = levelFromHistory(history);
     const known = fromHistory && fromHistory.reason !== "new" && fromHistory.reason !== "unproven";
 

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { clientSlug, historyFrom, isRealName, NO_HISTORY, type ClientHistory } from "@/lib/clients";
+import { teamScopeWhere } from "@/lib/team-scope";
 
 /**
  * Reaching the Client table.
@@ -103,9 +104,10 @@ async function backfill(userId: string, clientId: string, slug: string): Promise
 
 /** What has happened with this client, read from their own rows. */
 export async function historyForClient(
-  userId: string,
+  user: { id: string; teamId: string | null },
   name: string
 ): Promise<ClientHistory> {
+  const userId = user.id;
   const trimmed = name.trim();
   if (!isRealName(trimmed)) return NO_HISTORY;
   const slug = clientSlug(trimmed);
@@ -114,13 +116,22 @@ export async function historyForClient(
     const client = await table().findUnique({ where: { userId_slug: { userId, slug } } });
     if (!client) return NO_HISTORY;
 
+    /**
+     * Everything the studio has done with them, not just this person.
+     *
+     * Every other read in the app goes through teamScopeWhere, and this did
+     * not, so on a team account two people quoting the same client each built
+     * a separate history and the protection level was computed from half the
+     * facts.
+     */
+    const scope = teamScopeWhere(user);
     const [quotes, invoices] = await Promise.all([
       prisma.brief.findMany({
-        where: { clientId: client.id } as unknown as { userId: string },
+        where: { ...scope, clientId: client.id } as unknown as { userId: string },
         select: { outcome: true, createdAt: true, acceptedAt: true },
       }),
       prisma.invoice.findMany({
-        where: { clientId: client.id } as unknown as { userId: string },
+        where: { ...scope, clientId: client.id } as unknown as { userId: string },
         select: { dueAt: true, paidAt: true },
       }),
     ]);

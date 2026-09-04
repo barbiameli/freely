@@ -125,3 +125,36 @@ export function invoiceTotals(
   const tax = taxRatePercent > 0 ? roundTo((subtotal * taxRatePercent) / 100, currency) : 0;
   return { subtotal, tax, total: roundTo(subtotal + tax, currency) };
 }
+
+/**
+ * A total that is only shown when there is one currency to show it in.
+ *
+ * Home summed every invoice and labelled the result with the first row's
+ * currency, so a freelancer with one client in dollars and one in euros saw a
+ * number that was neither, presented as fact. Adding across currencies is not
+ * a rounding problem, it is a wrong answer with a confident face.
+ *
+ * Returns the dominant currency and how many rows were left out, so the page
+ * can say "and 2 more in other currencies" rather than quietly folding them in.
+ */
+export function totalInOneCurrency(
+  rows: { amount: number; currency?: string | null }[]
+): { total: number; currency: string | null; otherCurrencies: number } {
+  if (rows.length === 0) return { total: 0, currency: null, otherCurrencies: 0 };
+
+  const counts = new Map<string, number>();
+  for (const row of rows) {
+    const key = row.currency ?? "";
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  // The one most rows are in. Ties go to the first seen, which is the most
+  // recent row, and that is as good an answer as any.
+  const dominant = Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0][0];
+
+  const matching = rows.filter((row) => (row.currency ?? "") === dominant);
+  return {
+    total: matching.reduce((sum, row) => sum + row.amount, 0),
+    currency: dominant || null,
+    otherCurrencies: rows.length - matching.length,
+  };
+}

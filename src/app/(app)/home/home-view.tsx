@@ -6,7 +6,7 @@ import { Plus, ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
-import { formatMoney } from "@/lib/money";
+import { formatMoney, totalInOneCurrency } from "@/lib/money";
 import { useT } from "@/lib/i18n/context";
 import { fill, type Dictionary } from "@/lib/i18n";
 import type { Pattern } from "@/lib/quote-patterns";
@@ -82,6 +82,11 @@ export interface HomeData {
   quotes: HomeQuote[];
   projects: HomeProject[];
   invoices: HomeInvoice[];
+}
+
+/** A figure, and an honest note when rows in other currencies were left out. */
+function withOthers(text: string, others: number, t: Dictionary): string {
+  return others > 0 ? `${text} ${t.home.plusOtherCurrencies.replace("{count}", String(others))}` : text;
 }
 
 /** One thing that wants doing, and where to do it. */
@@ -228,8 +233,22 @@ export function HomeView({ data, name }: { data: HomeData; name: string }) {
   const outstanding = data.quotes.filter(
     (q) => q.published && !q.tracked && q.outcome === "PENDING"
   );
-  const owed = data.invoices.reduce((sum, invoice) => sum + invoice.total, 0);
-  const currency = data.invoices[0]?.currency ?? data.quotes[0]?.currency ?? null;
+  /**
+   * Each figure in one currency, or not at all.
+   *
+   * These used to sum everything and label it with the first row's currency,
+   * which is a wrong answer with a confident face on any account working in
+   * two. See lib/money.
+   */
+  const owedTotal = totalInOneCurrency(
+    data.invoices.map((invoice) => ({ amount: invoice.total, currency: invoice.currency }))
+  );
+  const outTotal = totalInOneCurrency(
+    outstanding.map((quote) => ({ amount: quote.price, currency: quote.currency }))
+  );
+  const inHandTotal = totalInOneCurrency(
+    data.projects.map((project) => ({ amount: project.price, currency: project.currency }))
+  );
   const nothingYet =
     data.quotes.length === 0 && data.projects.length === 0 && data.invoices.length === 0;
 
@@ -289,10 +308,7 @@ export function HomeView({ data, name }: { data: HomeData; name: string }) {
               value={String(outstanding.length)}
               note={
                 outstanding.length > 0
-                  ? formatMoney(
-                      outstanding.reduce((sum, q) => sum + q.price, 0),
-                      outstanding[0].currency
-                    )
+                  ? withOthers(formatMoney(outTotal.total, outTotal.currency), outTotal.otherCurrencies, t)
                   : t.home.none
               }
               href="/quote"
@@ -302,9 +318,10 @@ export function HomeView({ data, name }: { data: HomeData; name: string }) {
               value={String(data.projects.length)}
               note={
                 data.projects.length > 0
-                  ? formatMoney(
-                      data.projects.reduce((sum, p) => sum + p.price, 0),
-                      data.projects[0].currency
+                  ? withOthers(
+                      formatMoney(inHandTotal.total, inHandTotal.currency),
+                      inHandTotal.otherCurrencies,
+                      t
                     )
                   : t.home.none
               }
@@ -312,10 +329,18 @@ export function HomeView({ data, name }: { data: HomeData; name: string }) {
             />
             <Figure
               label={t.home.owedToYou}
-              value={owed > 0 ? formatMoney(owed, currency) : t.home.none}
+              value={
+                owedTotal.total > 0
+                  ? formatMoney(owedTotal.total, owedTotal.currency)
+                  : t.home.none
+              }
               note={
                 data.invoices.length > 0
-                  ? t.home.unpaidCount.replace("{count}", String(data.invoices.length))
+                  ? withOthers(
+                      t.home.unpaidCount.replace("{count}", String(data.invoices.length)),
+                      owedTotal.otherCurrencies,
+                      t
+                    )
                   : t.home.allSettled
               }
               href="/invoices"

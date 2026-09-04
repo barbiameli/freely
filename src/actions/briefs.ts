@@ -450,7 +450,15 @@ export async function generateBriefAction(
   // The client record, from the name the quote ended up with. Never fatal: a
   // quote that generated fine must not fail to save because a lookup did.
   try {
-    clientId = await clientFor(user.id, generated.client);
+    /**
+     * The name they typed beats the one the model wrote.
+     *
+     * Type "Beyond Data", let the model return "Beyond Data Ltd", and the next
+     * quote returns "Beyond Data" again: two client records for one client,
+     * with the history that drives the protection level split across both.
+     * Invisible, and it corrupts the thing the record exists for.
+     */
+    clientId = await clientFor(user.id, draftInput.clientName?.trim() || generated.client);
   } catch (err) {
     console.error("[generateBriefAction] could not resolve client", err);
   }

@@ -306,6 +306,14 @@ export interface QuoteDraftInput {
    */
   protection?: "KNOWN" | "NEW" | "GUARDED";
   /**
+   * The client's name, as the freelancer typed it.
+   *
+   * Carried so the client record is matched on what they wrote rather than on
+   * whatever the model put in the quote, which differ often enough to make
+   * duplicates.
+   */
+  clientName?: string;
+  /**
    * Whether the stages are payment points, or only the shape of the work.
    *
    * Two questions that used to be one. A project can run in stages and still

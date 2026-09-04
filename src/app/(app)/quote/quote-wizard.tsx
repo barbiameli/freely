@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Upload,
@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import clsx from "@/lib/clsx";
 import { Topbar } from "@/components/topbar";
-import { Label, SubLabel } from "@/components/ui/label";
+import { SubLabel } from "@/components/ui/label";
 import { Chip } from "@/components/ui/chip";
 import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,7 @@ import { SetupRows, setupFromDraft } from "@/components/quote/setup-rows";
 import { planQuoteAction, type PlannedQuote } from "@/actions/plan";
 import { PlanReview } from "@/components/quote/plan-review";
 import { sectionName } from "@/components/quote/setup-rows";
+import { DisclosureRow } from "@/components/quote/disclosure-row";
 import {
   answersForPrompt,
   milestonesForPrompt,
@@ -82,6 +83,9 @@ import { ActionError } from "@/components/ui/action-error";
 /** A visual reference held in wizard state. These can only be saved once the
  * brief exists (a BriefExample needs a briefId), so they're attached
  * immediately after generation succeeds. */
+/** Which row of the form is open, if any. */
+type WizardRow = "client" | "instructions" | "references" | SetupRowKey | null;
+
 interface ReferenceImage {
   name: string;
   dataUrl: string;
@@ -124,26 +128,6 @@ const GENERATION_STATUS_MESSAGES = [
   "Nearly there, promise...",
 ];
 
-/** Marks a field as required or optional, as plain text. A pill here reads as
- * a chip, and chips in this interface are things you click. */
-function FieldBadge({ required }: { required?: boolean }) {
-  const t = useT();
-  return (
-    <span className="text-caption text-text-muted">
-      {required ? t.common.required : t.common.optional}
-    </span>
-  );
-}
-
-/** A Label with a required/optional badge alongside it. */
-function FieldHeading({ children, required }: { children: ReactNode; required?: boolean }) {
-  return (
-    <div className="flex items-baseline gap-2 flex-wrap mb-1">
-      <Label>{children}</Label>
-      <FieldBadge required={required} />
-    </div>
-  );
-}
 
 export function QuoteWizard({
   recentBriefs,
@@ -293,6 +277,15 @@ export function QuoteWizard({
    * the model will still find it.
    */
   const [clientName, setClientName] = useState("");
+  /**
+   * The one open row, across the whole list.
+   *
+   * Owned here rather than inside SetupRows because the wizard's own rows sit
+   * in the same card, and one at a time has to mean one across all of them:
+   * two open panels is most of the way back to the wall of controls this
+   * replaced.
+   */
+  const [openRow, setOpenRow] = useState<WizardRow>(null);
   // Branding can be added without leaving the wizard, so a half-filled brief
   // isn't lost to a trip to Memory.
   const [showBrandUpload, setShowBrandUpload] = useState(false);
@@ -442,6 +435,7 @@ export function QuoteWizard({
         : { milestoneCount: choices.milestones.length || undefined }),
       milestonesBillable: choices.milestonesBillable || Boolean(armour.paymentPlan),
       protection: choices.protection,
+      clientName: clientName.trim() || undefined,
     };
     setDraft(next);
     await writeQuote(next);
@@ -852,6 +846,7 @@ export function QuoteWizard({
             plan={plan}
             sectionName={sectionName}
             working={generating}
+            defaultBillable={draft.paymentPlan === "MILESTONE"}
             onWrite={(choices) => void handleWriteFromPlan(choices)}
             onBack={() => setPlan(null)}
           />
@@ -972,6 +967,37 @@ export function QuoteWizard({
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Everything that is not the brief, one line each.
+              The form grew a card per question, each with its own heading
+              style and its own idea of how much room it deserved. Folding them
+              into one card made the page shorter and the hierarchy worse:
+              five sections with no ranking between them is a list of equals,
+              and only one of them is the thing somebody came here to do.
+
+              So the brief keeps its own card and its own size, and everything
+              else is a row that costs one line whether it holds a text field
+              or four chips. That is what puts the button above the fold. */}
+          <div className="bg-white border border-line rounded-card overflow-hidden">
+            <DisclosureRow
+              label={t.quote.clientLabel}
+              value={clientName.trim() || t.quote.setupChoose}
+              answered={Boolean(clientName.trim())}
+              open={openRow === "client"}
+              onToggle={() => setOpenRow(openRow === "client" ? null : "client")}
+            >
+              <p className="text-caption text-slate mt-0 mb-3 max-w-prose text-pretty">
+                {t.quote.clientHint}
+              </p>
+              <input
+                type="text"
+                value={clientName}
+                onChange={(e) => setClientName(e.target.value)}
+                placeholder={t.quote.unnamedClient}
+                className="w-full bg-white border border-line rounded-lg px-3 py-2.5 text-sm text-ink outline-none focus:border-violet"
+              />
+            </DisclosureRow>
 
             {/* Your notes about the job, in the same card as their material.
                 One question, "what are we quoting", answered in two parts.
@@ -984,27 +1010,18 @@ export function QuoteWizard({
                 the box holds what the client sent and this holds what you want
                 done with it. Behind a press, the field that shapes the quote
                 most was the one nobody opened. */}
-            {/* Asked before the quote is written, because whether these
-                people have paid you before is exactly what should shape it.
-                Optional: plenty of briefs name the client and the model finds
-                it anyway. */}
-            <div className="border-t border-line px-5 py-4">
-              <SubLabel>{t.quote.clientLabel}</SubLabel>
-              <input
-                type="text"
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-                placeholder={t.quote.unnamedClient}
-                className="w-full mt-1.5 bg-paper rounded-lg border-none px-3 py-2.5 text-sm text-ink outline-none"
-              />
-              <p className="text-caption text-text-muted mt-1.5 mb-0 text-pretty">
-                {t.quote.clientHint}
-              </p>
-            </div>
-
-            <div className="border-t border-line px-5 py-4 bg-paper">
-              <SubLabel>{t.quote.howShouldItRun}</SubLabel>
-              <p className="text-caption text-text-muted mt-0 mb-2.5 text-pretty">
+            <DisclosureRow
+              label={t.quote.howShouldItRun}
+              value={
+                draft.instructions.trim()
+                  ? t.quote.rowSaidSomething
+                  : t.quote.rowWorkedOutFromBrief
+              }
+              answered={Boolean(draft.instructions.trim())}
+              open={openRow === "instructions"}
+              onToggle={() => setOpenRow(openRow === "instructions" ? null : "instructions")}
+            >
+              <p className="text-caption text-slate mt-0 mb-2.5 text-pretty">
                 {t.quote.howShouldItRunHint}
               </p>
               <TextField
@@ -1043,17 +1060,28 @@ export function QuoteWizard({
                   })}
                 </div>
               </div>
-            </div>
+            </DisclosureRow>
 
-            {/* A row of the brief card rather than a card of its own.
-                Three stacked cards made the form long enough that the button
-                at the bottom was below the fold on a laptop, and references
-                are part of describing the job rather than a separate step. */}
-            <div className="border-t border-line px-5 py-4">
-              <FieldHeading>{t.quote.visualReferences}</FieldHeading>
-              <p className="text-meta text-text-muted mb-3">
-              {t.quote.referencesHint}
-            </p>
+            {/* A row, and closed by default.
+                It was a card with a drop zone the size of the brief box, which
+                gave an optional extra the same weight as the required thing
+                above it. Most quotes have no references at all, and the row
+                now says when they earn their place rather than sitting open
+                waiting for a file nobody has. */}
+            <DisclosureRow
+              label={t.quote.visualReferences}
+              value={
+                references.length > 0
+                  ? t.quote.rowImages.replace("{count}", String(references.length))
+                  : t.quote.rowNone
+              }
+              answered={references.length > 0}
+              open={openRow === "references"}
+              onToggle={() => setOpenRow(openRow === "references" ? null : "references")}
+            >
+              <p className="text-caption text-slate mt-0 mb-3 max-w-prose text-pretty">
+                {t.quote.referencesWhen}
+              </p>
             <DropZone
               onFile={handleReferenceImage}
               accept="image/png,image/jpeg"
@@ -1096,14 +1124,19 @@ export function QuoteWizard({
                 ))}
               </div>
             )}
-            </div>
+            </DisclosureRow>
 
-            {/* Inside the same card, for the same reason: what you charge and
-                when you are paid belong to the same act of describing this
-                job, and a card of their own made the page taller than the
-                decision deserved. */}
+            {/* Rate and payment, in the same list. They are the same kind of
+                question as the ones above: one line, answered in public,
+                opened only when something needs changing. */}
             <SetupRows
               inline
+              openRow={
+                openRow === "client" || openRow === "instructions" || openRow === "references"
+                  ? null
+                  : (openRow as SetupRowKey | null)
+              }
+              onOpenRow={(row) => setOpenRow(row)}
             draft={draft}
             setDraft={setDraft}
             sectionNotes={sectionNotes}

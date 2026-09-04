@@ -61,7 +61,8 @@ export default async function HomePage() {
     (user as unknown as { inferredExpertise?: string | null }).inferredExpertise
   );
 
-  const [briefs, projects, invoices, quoteHistory, invoiceHistory, benchmark] = await Promise.all([
+  const [briefs, projects, invoices, staged, quoteHistory, invoiceHistory, benchmark] =
+    await Promise.all([
     prisma.brief.findMany({
       where: scope,
       orderBy: { createdAt: "desc" },
@@ -84,17 +85,7 @@ export default async function HomePage() {
       where: { ...scope, status: "ACTIVE" },
       orderBy: { createdAt: "desc" },
       take: 6,
-      include: {
-        deliverables: { select: { id: true, done: true, dueAt: true } },
-        // The stages, with when each piece of them landed and whether it has
-        // been billed. This is what lets the acceptance clause actually run.
-        milestones: {
-          orderBy: { order: "asc" },
-          include: {
-            deliverables: { select: { done: true, doneAt: true } },
-          },
-        },
-      },
+      include: { deliverables: { select: { id: true, done: true, dueAt: true } } },
     }),
     prisma.invoice.findMany({
       where: { userId: user.id, paid: false },
@@ -108,6 +99,33 @@ export default async function HomePage() {
         taxRate: true,
         lineItems: true,
         dueAt: true,
+      },
+    }),
+    /**
+     * Every active project's stages, not just the six the list shows.
+     *
+     * This used to read off the same capped query as the list above, so a
+     * seventh project's stage could sit unanswered past its window forever and
+     * never appear. An alert derived from a page-sized slice is an alert that
+     * misses things, which is the one thing this feature cannot do.
+     */
+    prisma.project.findMany({
+      where: { ...scope, status: "ACTIVE" },
+      select: {
+        id: true,
+        title: true,
+        client: true,
+        currency: true,
+        milestones: {
+          orderBy: { order: "asc" },
+          select: {
+            id: true,
+            name: true,
+            amount: true,
+            invoicedAt: true,
+            deliverables: { select: { done: true, doneAt: true } },
+          },
+        },
       },
     }),
     // A wider window than the lists above, because a pattern needs a run of
@@ -241,7 +259,7 @@ export default async function HomePage() {
   const ruleWindows = ruleValues(ruleSettings);
   const watched = needsAction(
     watchStages(
-      projects.flatMap((project) =>
+      staged.flatMap((project) =>
         (project as unknown as { milestones?: WatchedMilestone[] }).milestones?.map(
           (milestone) => ({
             id: milestone.id,
