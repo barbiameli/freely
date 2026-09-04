@@ -524,6 +524,7 @@ export const es: Dictionary = {
   },
 
   track: {
+    timeContinue: "Hacerlo otra vez",
     whatAreYouDoing: "¿En qué estás trabajando?",
     stop: "Parar",
     timeChangeUse: "Cambiar para qué es",

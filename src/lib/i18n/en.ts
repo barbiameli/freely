@@ -524,6 +524,7 @@ export const en = {
   },
 
   track: {
+    timeContinue: "Do this again",
     whatAreYouDoing: "What are you working on?",
     stop: "Stop",
     timeChangeUse: "Change what this is for",

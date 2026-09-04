@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Play, Trash2 } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 import { sayDuration, secondsOf } from "@/lib/time-tracking";
 import type { WeekEntry } from "@/lib/time-week";
-import { deleteTimeAction, logTimeAction } from "@/actions/time";
+import { useRouter } from "next/navigation";
+import { continueTimerAction, deleteTimeAction, logTimeAction } from "@/actions/time";
+import { announceTimerChange } from "@/components/track/timer-bar";
 
 /**
  * What each stretch of time was actually spent on.
@@ -28,10 +30,27 @@ export function TimeLog({
   deliverables: { id: string; name: string }[];
 }) {
   const t = useT();
+  const router = useRouter();
   const [notes, setNotes] = useState<Record<string, string>>(() =>
     Object.fromEntries(entries.map((entry) => [entry.id, entry.note]))
   );
   const [saving, setSaving] = useState("");
+  const [busy, setBusy] = useState("");
+
+  async function again(entry: WeekEntry) {
+    setBusy(entry.id);
+    const result = await continueTimerAction(entry.id);
+    setBusy("");
+    if (!result.ok) return;
+    announceTimerChange({
+      id: result.data.id,
+      projectId: "",
+      projectTitle: "",
+      note: entry.note,
+      startedAt: new Date().toISOString(),
+    });
+    router.refresh();
+  }
 
   async function save(entry: WeekEntry, patch: { note?: string; deliverableId?: string | null }) {
     setSaving(entry.id);
@@ -53,11 +72,25 @@ export function TimeLog({
                 minute: "2-digit",
               })}
             </span>
+            {/* The commonest thing anybody wants from a list of past work:
+                the same task again, without retyping what it was. Retyping is
+                where descriptions get shorter each time until they stop being
+                written. */}
+            <button
+              type="button"
+              disabled={busy === entry.id}
+              onClick={() => void again(entry)}
+              aria-label={t.track.timeContinue}
+              title={t.track.timeContinue}
+              className="ml-auto p-1 rounded text-text-muted hover:text-violet border-none bg-none cursor-pointer tap disabled:opacity-50"
+            >
+              <Play size={13} />
+            </button>
             <button
               type="button"
               onClick={() => void deleteTimeAction(entry.id)}
               aria-label={t.track.timeDelete}
-              className="ml-auto p-1 rounded text-text-muted hover:text-overdue border-none bg-none cursor-pointer tap"
+              className="p-1 rounded text-text-muted hover:text-overdue border-none bg-none cursor-pointer tap"
             >
               <Trash2 size={13} />
             </button>

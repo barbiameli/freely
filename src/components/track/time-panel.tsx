@@ -23,6 +23,7 @@ import {
   startTimerAction,
   stopTimerAction,
 } from "@/actions/time";
+import { announceTimerChange } from "@/components/track/timer-bar";
 
 /** What an action here answers with. Named so the generic is not read as JSX. */
 type Promised = Promise<{ ok: boolean; error?: string }>;
@@ -165,7 +166,13 @@ export function TimePanel({
               variant="danger"
               icon={Square}
               loading={working === "stop"}
-              onClick={() => void run("stop", () => stopTimerAction())}
+              onClick={() =>
+                void run("stop", async () => {
+                  const result = await stopTimerAction();
+                  if (result.ok) announceTimerChange(null);
+                  return result;
+                })
+              }
             >
               {t.track.stop}
             </Button>
@@ -189,8 +196,20 @@ export function TimePanel({
                   loading={working === "start"}
                   onClick={() =>
                     void run("start", async () => {
-                      const result = await startTimerAction(projectId, what.trim());
-                      if (result.ok) setWhat("");
+                      const description = what.trim();
+                      const result = await startTimerAction(projectId, description);
+                      if (result.ok) {
+                        setWhat("");
+                        // So the bar in the shell shows it without waiting for
+                        // a navigation.
+                        announceTimerChange({
+                          id: result.data.id,
+                          projectId,
+                          projectTitle: "",
+                          note: description,
+                          startedAt: new Date().toISOString(),
+                        });
+                      }
                       return result;
                     })
                   }

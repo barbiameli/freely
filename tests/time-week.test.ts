@@ -161,7 +161,7 @@ describe("how the panel behaves", () => {
      * week of tracked time becomes a column of durations against nothing.
      */
     expect(panel).toContain("t.track.whatAreYouDoing");
-    expect(panel).toContain("startTimerAction(projectId, what.trim())");
+    expect(panel).toContain("startTimerAction(projectId, description)");
   });
 
   it("shows what a running timer is for", () => {
@@ -187,5 +187,73 @@ describe("how the panel behaves", () => {
 
   it("reads as a clock while running and a length once stopped", () => {
     expect(panel).toContain("running ? sayClock(totalSeconds) : sayDuration(totalSeconds)");
+  });
+});
+
+describe("the timer follows you", () => {
+  const bar = readFileSync("src/components/track/timer-bar.tsx", "utf8");
+  const layout = readFileSync("src/app/(app)/layout.tsx", "utf8");
+  const panel = readFileSync("src/components/track/time-panel.tsx", "utf8");
+
+  it("is read once for the whole shell", () => {
+    // A timer only visible on the project it belongs to is a timer that runs
+    // through lunch, an afternoon on another client, and occasionally a night.
+    expect(layout).toContain("runningAnywhereAction()");
+    expect(layout).toContain("<TimerBar");
+  });
+
+  it("costs no space when nothing is running", () => {
+    expect(bar).toContain("if (!running) return null;");
+  });
+
+  it("appears without waiting for a navigation", () => {
+    // The shell does not re-render because somebody pressed start three levels
+    // down, and a timer that only shows up once you leave the page you started
+    // it on is the opposite of the point.
+    expect(bar).toContain("TIMER_CHANGED");
+    expect(panel).toContain("announceTimerChange({");
+  });
+
+  it("lets the server's answer win on navigation", () => {
+    expect(bar).toContain("useEffect(() => setRunning(initial), [initial]);");
+  });
+
+  it("says what is running, not just that something is", () => {
+    // A clock with no subject is a clock somebody has to go and identify.
+    expect(bar).toContain("running.note || running.projectTitle");
+  });
+
+  it("never stops somebody using the app when it cannot be read", () => {
+    expect(layout).toContain(".catch(() => ({ ok: true, data: null })");
+  });
+});
+
+describe("doing it again", () => {
+  const actions = readFileSync("src/actions/time.ts", "utf8");
+  const log = readFileSync("src/components/track/time-log.tsx", "utf8");
+
+  it("starts a fresh stretch rather than reopening the old one", () => {
+    // Tuesday afternoon and Thursday morning are two pieces of work even when
+    // they are the same task, and merging them would lose when each happened.
+    expect(actions).toContain("continueTimerAction");
+    expect(actions).toContain("Starts a new stretch rather than reopening");
+  });
+
+  it("carries the description and the deliverable across", () => {
+    // Retyping is where descriptions get shorter each time until they stop
+    // being written at all.
+    const block = actions.slice(actions.indexOf("continueTimerAction"));
+    expect(block).toContain("note: previous.note");
+    expect(block).toContain("deliverableId: previous.deliverableId");
+  });
+
+  it("stops whatever was already running", () => {
+    const block = actions.slice(actions.indexOf("continueTimerAction"));
+    expect(block).toContain("await stopRunning(user.id)");
+  });
+
+  it("is one press on a past entry", () => {
+    expect(log).toContain("void again(entry)");
+    expect(log).toContain("t.track.timeContinue");
   });
 });

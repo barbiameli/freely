@@ -26,6 +26,8 @@ import type { ActionResult } from "@/actions/briefs";
 interface EntryRow {
   id: string;
   projectId: string | null;
+  clientId: string | null;
+  deliverableId: string | null;
   startedAt: Date;
   endedAt: Date | null;
   minutes: number;
@@ -218,6 +220,95 @@ export async function stopTimerAction(): Promise<ActionResult<{ minutes: number 
     return { ok: true, data: { minutes: stopped.minutes } };
   } catch {
     return { ok: false, error: "Couldn't stop the timer." };
+  }
+}
+
+/**
+ * Doing again what you were doing before.
+ *
+ * The commonest thing anybody wants from a list of past work: the same task,
+ * started again, without retyping what it was. Retyping is where descriptions
+ * get shorter each time until they stop being written at all.
+ *
+ * Starts a new stretch rather than reopening the old one, because Tuesday
+ * afternoon and Thursday morning are two pieces of work even when they are the
+ * same task, and merging them would lose when each happened.
+ */
+export async function continueTimerAction(
+  entryId: string
+): Promise<ActionResult<{ id: string }>> {
+  try {
+    const user = await requireFullUser();
+    const previous = await table().findFirst({ where: { id: entryId, userId: user.id } });
+    if (!previous || !previous.projectId) return { ok: false, error: "Not found." };
+
+    const mode = await modeForProjectId(user.id, previous.projectId);
+    if (!mode || !tracksTime(mode)) {
+      return { ok: false, error: "Set up the tracker on this project first." };
+    }
+
+    await stopRunning(user.id);
+
+    const created = await table().create({
+      data: {
+        userId: user.id,
+        projectId: previous.projectId,
+        clientId: previous.clientId ?? null,
+        // The same task, so the same deliverable it was against.
+        deliverableId: previous.deliverableId ?? null,
+        startedAt: new Date(),
+        note: previous.note,
+        source: "TIMER",
+      },
+    });
+    revalidatePath(`/track/${previous.projectId}`);
+    return { ok: true, data: { id: created.id } };
+  } catch {
+    return { ok: false, error: "Couldn't start the timer." };
+  }
+}
+
+/**
+ * Whatever is running, for the bar that follows you around.
+ *
+ * Read in the app shell, so a timer started on one project stays visible while
+ * somebody writes a quote for another. The project's name comes with it: a
+ * clock with no subject is a clock somebody has to go and identify.
+ */
+export async function runningAnywhereAction(): Promise<
+  ActionResult<{
+    id: string;
+    projectId: string;
+    projectTitle: string;
+    note: string;
+    startedAt: string;
+  } | null>
+> {
+  try {
+    const user = await requireFullUser();
+    const running = await table().findFirst({
+      where: { userId: user.id, endedAt: null },
+      orderBy: { startedAt: "desc" },
+    });
+    if (!running?.projectId) return { ok: true, data: null };
+
+    const project = await prisma.project.findUnique({
+      where: { id: running.projectId },
+      select: { title: true },
+    });
+
+    return {
+      ok: true,
+      data: {
+        id: running.id,
+        projectId: running.projectId,
+        projectTitle: project?.title ?? "",
+        note: running.note,
+        startedAt: running.startedAt.toISOString(),
+      },
+    };
+  } catch {
+    return { ok: true, data: null };
   }
 }
 
