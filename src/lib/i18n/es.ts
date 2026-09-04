@@ -425,6 +425,7 @@ export const es: Dictionary = {
       "Todo eso, y el dinero repartido en hitos para que nunca cargues con más de un tramo sin cobrar.",
     protectionGuardedDiscovery:
       "Y una fase corta de descubrimiento pagada para poder presupuestar bien el resto, que se descuenta del total si siguen adelante.",
+    writeWithoutPlan: "Escribirlo sin el plan",
     planTitle: "Antes de escribirlo",
     planSubtitle: "Lo que Freely ha entendido del trabajo. Corrige lo que haga falta y escribe a partir de eso.",
     planReading: "Qué es este trabajo",

@@ -12,6 +12,19 @@ import { historyForClient } from "@/lib/client-db";
 import { levelFromHistory, NO_HISTORY, type ClientHistory } from "@/lib/clients";
 import { dict, resolveQuoteLocale } from "@/lib/i18n";
 
+/**
+ * Why there is no plan.
+ *
+ * Named rather than folded into one message, because the wizard used to treat
+ * every failure the same way: it silently wrote the quote instead, so a brief
+ * too short to read, a busy minute and a genuine failure all looked identical
+ * from the outside, which is to say they looked like the step not existing.
+ */
+export type PlanFailure = "tooShort" | "busy" | "unreadable";
+
+/** Below this there is not enough to read. */
+const MIN_BRIEF = 120;
+
 export interface PlannedQuote extends QuotePlan {
   /** The rules that will be applied, already worded as positions. */
   rules: { key: string; statement: string }[];
@@ -55,13 +68,33 @@ export async function planQuoteAction(input: {
   instructions?: string;
   /** The client's name, when the freelancer already knows it. */
   client?: string;
-}): Promise<{ ok: true; data: PlannedQuote } | { ok: false; error: string }> {
+}): Promise<
+  { ok: true; data: PlannedQuote } | { ok: false; error: string; reason: PlanFailure }
+> {
   try {
     const user = await requireFullUser();
-    if (input.sourceText.trim().length < 120) {
-      return { ok: false, error: "Add some source material first." };
+    // Too little to read is not a brief. Below this a model produces confident
+    // guesses about a job nobody has described.
+    if (input.sourceText.trim().length < MIN_BRIEF) {
+      return {
+        ok: false,
+        reason: "tooShort",
+        error: "There is not enough here to read yet. Paste more, or write the quote as it is.",
+      };
     }
-    await enforceLlmRateLimit(user.id);
+
+    try {
+      await enforceLlmRateLimit(user.id);
+    } catch {
+      // Separated from the catch below so a queue does not read as an
+      // unreadable brief: one is worth waiting a moment for and the other is
+      // not.
+      return {
+        ok: false,
+        reason: "busy",
+        error: "Freely is busy for a moment. Try again, or write the quote as it is.",
+      };
+    }
 
     const settings = parseRuleSettings(
       (user as unknown as { groundRules?: unknown }).groundRules
@@ -100,7 +133,11 @@ export async function planQuoteAction(input: {
     });
 
     if (!plan) {
-      return { ok: false, error: "Couldn't read that brief. You can write the quote directly." };
+      return {
+        ok: false,
+        reason: "unreadable",
+        error: "Couldn't make sense of that brief. You can still write the quote.",
+      };
     }
 
     // The account's own rules get the last word on which sections appear, the
@@ -138,7 +175,12 @@ export async function planQuoteAction(input: {
         history,
       },
     };
-  } catch {
-    return { ok: false, error: "Couldn't read that brief. You can write the quote directly." };
+  } catch (err) {
+    console.error("[planQuoteAction] failed", err);
+    return {
+      ok: false,
+      reason: "unreadable",
+      error: "Couldn't make sense of that brief. You can still write the quote.",
+    };
   }
 }

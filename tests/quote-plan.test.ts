@@ -145,10 +145,16 @@ describe("how the wizard uses it", () => {
     expect(wizard).toContain("setPlan(result.data)");
   });
 
-  it("writes the quote directly when the plan cannot be read", () => {
-    // A step that can fail must not be a step that blocks. This is exactly
-    // what the button did before the plan existed.
-    expect(wizard).toContain("await writeQuote();");
+  it("offers to write the quote when the plan cannot be made, rather than doing it", () => {
+    /**
+     * A step that can fail must not be a step that blocks, and it used to
+     * handle that by silently writing the quote instead. Which made a failure
+     * indistinguishable from the step not existing: somebody who saw the plan
+     * once and then did not could not tell whether they had done something
+     * differently or whether Freely was broken. See tests/plan-failure.
+     */
+    expect(wizard).toContain("setPlanFailed(result.reason)");
+    expect(wizard).toContain("t.quote.writeWithoutPlan");
   });
 
   it("bills against a split the freelancer just agreed to", () => {

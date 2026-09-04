@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { planQuoteAction } from "@/actions/plan";
 import { requireFullUser } from "@/lib/session";
 import type { ActionResult } from "@/actions/briefs";
 
@@ -117,4 +118,39 @@ export async function resetMyAccountAction(): Promise<ActionResult<{ deleted: nu
       deleted: briefs.count + projects.count + invoices.count + assets.count,
     },
   };
+}
+
+/**
+ * Running a brief through the reading step, and nothing else.
+ *
+ * Tuning the plan prompt meant generating a whole quote each time: two model
+ * calls, a stored brief, a client record and a row in the list, to look at a
+ * paragraph and five section names. So the prompt got tuned rarely and by
+ * guesswork.
+ *
+ * This is the same call the wizard makes, with the result handed back whole
+ * and nothing written down. Admin-only, because it is a workbench rather than
+ * a feature, and because it spends a model call per press.
+ */
+export async function tryReadingAction(input: {
+  sourceText: string;
+  instructions?: string;
+  client?: string;
+}): Promise<
+  | { ok: true; data: { plan: unknown; ms: number } }
+  | { ok: false; error: string; reason?: string }
+> {
+  try {
+    await requireAdmin();
+    const startedAt = Date.now();
+    const result = await planQuoteAction(input);
+    const ms = Date.now() - startedAt;
+
+    // Failures come back as themselves rather than as an empty result: which
+    // of the three happened is most of what there is to learn here.
+    if (!result.ok) return { ok: false, error: result.error, reason: result.reason };
+    return { ok: true, data: { plan: result.data, ms } };
+  } catch {
+    return { ok: false, error: "Not found." };
+  }
 }

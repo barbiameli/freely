@@ -112,7 +112,10 @@ describe("the pages outside the app shell read every string from the dictionary"
     "src/app/(app)/insights/mailing-list.tsx",
     "src/app/(app)/insights/roadmap-card.tsx",
     "src/app/(app)/insights/testing-card.tsx",
-  ];
+    // Admin-only, same as the testing card beside it: a workbench nobody
+  // else can open does not need translating.
+  "src/app/(app)/insights/reading-card.tsx",
+];
   const exemptText = ["Freely"];
 
   const files = areas

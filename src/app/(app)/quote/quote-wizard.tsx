@@ -46,7 +46,7 @@ import {
   uploadBrandLogoAction,
 } from "@/actions/memory";
 import { SetupRows, setupFromDraft } from "@/components/quote/setup-rows";
-import { planQuoteAction, type PlannedQuote } from "@/actions/plan";
+import { planQuoteAction, type PlanFailure, type PlannedQuote } from "@/actions/plan";
 import { PlanReview } from "@/components/quote/plan-review";
 import { sectionName } from "@/components/quote/setup-rows";
 import { DisclosureRow } from "@/components/quote/disclosure-row";
@@ -273,6 +273,8 @@ export function QuoteWizard({
    */
   const [plan, setPlan] = useState<PlannedQuote | null>(null);
   const [planning, setPlanning] = useState(false);
+  /** Why there is no plan, when there is none. See actions/plan. */
+  const [planFailed, setPlanFailed] = useState<PlanFailure | null>(null);
   /**
    * Who the quote is for, asked before it is written.
    *
@@ -360,6 +362,7 @@ export function QuoteWizard({
     }
     setProblem({ row: null, message: "" });
     setError("");
+    setPlanFailed(null);
     setPlanning(true);
     const result = await planQuoteAction({
       sourceText: draft.sourceText,
@@ -371,7 +374,21 @@ export function QuoteWizard({
       setPlan(result.data);
       return;
     }
-    await writeQuote();
+
+    /**
+     * The plan could not be made, and that is said rather than skipped.
+     *
+     * It used to fall straight through to writing the quote, so a brief too
+     * short to read, a busy minute and a real failure all looked exactly like
+     * the step not existing. Somebody who had seen the plan once and then did
+     * not had no way to tell whether they had done something differently or
+     * whether Freely was broken.
+     *
+     * Both ways out are offered rather than chosen: waiting a moment is right
+     * for a queue and pointless for a brief with four words in it.
+     */
+    setPlanFailed(result.reason);
+    setError(result.error);
   }
 
   /**
@@ -1216,6 +1233,29 @@ export function QuoteWizard({
           )}
 
           {error && <div className="text-overdue text-small">{error}</div>}
+          {/* Said where the button is, with both ways on. */}
+          {planFailed && (
+            <div className="flex flex-wrap items-center justify-end gap-3 mt-2">
+              <span className="text-caption text-slate text-pretty">{error}</span>
+              {planFailed === "busy" && (
+                <button
+                  type="button"
+                  onClick={() => void handleGenerate()}
+                  className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
+                >
+                  {t.common.tryAgain}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => void writeQuote()}
+                className="text-meta font-semibold text-slate bg-none border-none cursor-pointer p-0 tap"
+              >
+                {t.quote.writeWithoutPlan}
+              </button>
+            </div>
+          )}
+
           <div className="flex justify-end mt-auto pt-2">
             {generating ? (
               <Button variant="ghost" icon={CircleStop} onClick={handleStopGenerating}>

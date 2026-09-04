@@ -425,6 +425,7 @@ export const en = {
       "All of that, and the money split into milestones so you are never carrying more than one chunk of unpaid work.",
     protectionGuardedDiscovery:
       "Plus a short paid discovery to price the rest properly, deducted from the total if they go ahead.",
+    writeWithoutPlan: "Write it without the plan",
     planTitle: "Before it writes",
     planSubtitle: "What Freely took the job to be. Correct anything here and it writes from that.",
     planReading: "What this job is",

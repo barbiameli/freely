@@ -8,6 +8,7 @@ import type { Subscriber, SendRow, Account } from "@/lib/mailing";
 import { MailingList } from "./mailing-list";
 import { RoadmapCard } from "./roadmap-card";
 import { TestingCard } from "./testing-card";
+import { ReadingCard } from "./reading-card";
 import { PageHeader } from "@/components/ui/page-header";
 
 /**
@@ -164,6 +165,7 @@ export function InsightsView({
       {/* First, because it is the only thing on this page that is a decision
           rather than a number. */}
       <RoadmapCard />
+      <ReadingCard />
       <TestingCard />
       <MailingList
         subscribers={subscribers}
