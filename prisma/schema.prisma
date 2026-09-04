@@ -336,6 +336,16 @@ model Brief {
   client         String
   clientId       String?
   clientRecord   Client?     @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  // The quote this one follows on from, where it does.
+  //
+  // A signed quote cannot be edited, so extra work becomes its own quote
+  // rather than a change to the agreed one. Keeping the link is what lets the
+  // pair read as one engagement instead of two unrelated jobs for the same
+  // client, and what stops the second one being written from nothing.
+  followsOnFromId String?
+  followsOnFrom   Brief?  @relation("FollowOn", fields: [followsOnFromId], references: [id], onDelete: SetNull)
+  followOns       Brief[] @relation("FollowOn")
   scope          String      @db.Text
   deliverables   Json
   timeline       String

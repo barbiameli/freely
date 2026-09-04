@@ -451,6 +451,9 @@ export const es: Dictionary = {
   },
 
   brief: {
+    lockedSigned: "Tu cliente lo firmó, así que queda fijo. Lo extra va en un presupuesto de continuación.",
+    lockedTracked: "Está en seguimiento como proyecto, así que queda fijo. Lo extra va en un presupuesto de continuación.",
+    followOn: "Presupuesto de continuación",
     quotationDraft: "Presupuesto, borrador",
     quotationPublished: "Presupuesto, publicado",
     editOverview: "Editar resumen",

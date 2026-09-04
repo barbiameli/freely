@@ -451,6 +451,9 @@ export const en = {
   },
 
   brief: {
+    lockedSigned: "Your client signed this, so it is fixed. Anything extra goes in a follow-on quote.",
+    lockedTracked: "This is being tracked as a project, so it is fixed. Anything extra goes in a follow-on quote.",
+    followOn: "Follow-on quote",
     quotationDraft: "Quotation, draft",
     quotationPublished: "Quotation, published",
     editOverview: "Edit overview",

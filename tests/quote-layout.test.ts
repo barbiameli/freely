@@ -42,9 +42,15 @@ describe("the layout is pinned to the quote", () => {
 
   it("never rewrites the stamp on an existing quote", () => {
     const actions = readFileSync("src/actions/briefs.ts", "utf8");
-    // One place sets it: the create. A refine, an edit, a publish or a section
-    // toggle must not touch it.
-    expect(actions.match(/layout: CURRENT_LAYOUT/g)?.length).toBe(1);
+    // Only ever set while a quote is being created: once at generation, once
+    // when a follow-on quote is started, and both of those are new documents.
+    // A refine, an edit, a publish or a section toggle must not touch it.
+    expect(actions.match(/layout: CURRENT_LAYOUT/g)?.length).toBe(2);
+
+    // The real rule, checked directly: no update anywhere carries it.
+    for (const block of actions.split("prisma.brief.update(").slice(1)) {
+      expect(block.slice(0, 600)).not.toContain("layout: CURRENT_LAYOUT");
+    }
   });
 });
 

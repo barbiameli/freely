@@ -117,11 +117,18 @@ describe("stage billing agrees with the payment plan", () => {
 describe("the form has a hierarchy again", () => {
   const wizard = readFileSync("src/app/(app)/quote/quote-wizard.tsx", "utf8");
 
-  it("keeps the brief in its own card and everything else as rows", () => {
-    // Five sections with no ranking between them is a list of equals, and only
-    // one of them is the thing somebody came here to do.
+  it("splits what you are saying now from what Memory already knows", () => {
+    /**
+     * Two cards, and the distinction is provenance rather than topic. The
+     * brief, the client, your instructions and any references are what you
+     * are telling Freely about this job. The rate and the payment split are
+     * what it already knows about how you work, brought forward so they can
+     * be overridden for this one quote. Folded together, your standing
+     * answers looked like questions being asked again.
+     */
     expect(wizard).toContain("<DisclosureRow");
-    expect(wizard).toContain("Everything that is not the brief, one line each");
+    expect(wizard).toContain("what you are telling Freely about this job");
+    expect(wizard).toContain("what it already knows about how you work");
   });
 
   it("opens one row at a time across the whole form", () => {

@@ -967,19 +967,13 @@ export function QuoteWizard({
                 )}
               </div>
             </div>
-          </div>
 
-          {/* Everything that is not the brief, one line each.
-              The form grew a card per question, each with its own heading
-              style and its own idea of how much room it deserved. Folding them
-              into one card made the page shorter and the hierarchy worse:
-              five sections with no ranking between them is a list of equals,
-              and only one of them is the thing somebody came here to do.
-
-              So the brief keeps its own card and its own size, and everything
-              else is a row that costs one line whether it holds a text field
-              or four chips. That is what puts the button above the fold. */}
-          <div className="bg-white border border-line rounded-card overflow-hidden">
+            {/* The same question as the box above, in three more parts: who
+                it is for, what you want done with it, and anything you were
+                sent to look at. One card, because they are one act of
+                describing the job, and because a row costs one line whether
+                it holds a text field or four chips, which is what keeps the
+                button above the fold. */}
             <DisclosureRow
               label={t.quote.clientLabel}
               value={clientName.trim() || t.quote.setupChoose}
@@ -1125,18 +1119,21 @@ export function QuoteWizard({
               </div>
             )}
             </DisclosureRow>
+          </div>
 
-            {/* Rate and payment, in the same list. They are the same kind of
-                question as the ones above: one line, answered in public,
-                opened only when something needs changing. */}
-            <SetupRows
-              inline
-              openRow={
-                openRow === "client" || openRow === "instructions" || openRow === "references"
-                  ? null
-                  : (openRow as SetupRowKey | null)
-              }
-              onOpenRow={(row) => setOpenRow(row)}
+          {/* A card of its own, because it is a different kind of thing.
+              Everything above is what you are telling Freely about this job.
+              This is what it already knows about how you work, brought
+              forward from Memory and shown so it can be overridden for this
+              one quote. Folding the two together made your standing answers
+              look like questions being asked again. */}
+          <SetupRows
+            openRow={
+              openRow === "client" || openRow === "instructions" || openRow === "references"
+                ? null
+                : (openRow as SetupRowKey | null)
+            }
+            onOpenRow={(row) => setOpenRow(row)}
             draft={draft}
             setDraft={setDraft}
             sectionNotes={sectionNotes}
@@ -1153,10 +1150,9 @@ export function QuoteWizard({
             pricedFor={pricedForFields}
             savedCountry={savedCountry}
             disciplines={disciplines}
-              problemRow={problem.row}
-              problemMessage={problem.message}
-            />
-          </div>
+            problemRow={problem.row}
+            problemMessage={problem.message}
+          />
 
           {generating && (
             <div className="flex flex-col gap-2">

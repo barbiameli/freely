@@ -7,10 +7,16 @@
  * everything up to and including the nudges is transactional, about work
  * somebody is doing and money they are owed, and MARKETING is the only kind
  * that has to check whether they want it.
+ *
+ * QUOTE_COPY is the one that goes to somebody else's client rather than to a
+ * Freely account: the copy of what they just signed. Transactional by any
+ * reading, since they asked for it by signing, and it goes to the address they
+ * typed in themselves and nowhere else.
  */
 export type EmailKind =
   | "PASSWORD_RESET"
   | "QUOTE_ACCEPTED"
+  | "QUOTE_COPY"
   | "TEAM_INVITE"
   | "NUDGE_TRACK_QUOTE"
   | "NUDGE_DUE_SOON"

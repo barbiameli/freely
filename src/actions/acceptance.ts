@@ -134,6 +134,42 @@ export async function acceptQuoteAction(
     { kind: "QUOTE_ACCEPTED", userId: brief.userId, subjectId: brief.id });
   }
 
+  /**
+   * The client's own copy, to the address they just typed.
+   *
+   * They have signed a document that lives at a URL, and until now the only
+   * record they had of it was that URL and their memory of pressing a button.
+   * A copy in their inbox is what makes the acceptance a thing either side can
+   * produce later, and it is the ordinary courtesy of any contract.
+   *
+   * A link rather than an attachment: the page is the document, it is already
+   * public to whoever has the address, and a PDF generated here would be a
+   * second version of the same thing that could drift from it.
+   *
+   * Not awaited into the result, like the message above it. The signature is
+   * recorded, and a client pressing accept must not see an error because an
+   * email provider was having a bad morning.
+   */
+  const studio = await prisma.user.findUnique({
+    where: { id: brief.userId },
+    select: { name: true, studioName: true },
+  });
+  const from = studio?.studioName || studio?.name || "";
+  await send(
+    {
+      to: cleanEmail,
+      subject: from ? `Your copy of "${brief.title}" from ${from}` : `Your copy of "${brief.title}"`,
+      lines: [
+        `Thanks ${cleanName}. This confirms you accepted "${brief.title}"${
+          from ? ` from ${from}` : ""
+        } on ${acceptedAt.toLocaleDateString("en-GB")}.`,
+        "The quote below is the version you agreed to. It cannot be changed from here on, so this link will always show what was signed.",
+      ],
+      action: { label: "Open your copy", url: `${appUrl()}/q/${publicSlug}` },
+    },
+    { kind: "QUOTE_COPY", userId: brief.userId, subjectId: brief.id }
+  );
+
   // The same news on the bell, so somebody who has turned emails off, or who
   // simply has not opened their inbox, still finds out.
   await notify({

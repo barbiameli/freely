@@ -32,6 +32,7 @@ import { hasStrategyContent } from "@/lib/strategy";
 import { allDisciplines, disciplineLine, industryLabel } from "@/lib/industries";
 import { withRate } from "@/lib/discipline-rates";
 import { isProtectionLevel } from "@/lib/protection";
+import { lockMessage, lockReason } from "@/lib/quote-lock";
 import { clientFor } from "@/lib/client-db";
 import {
   estimateHabit,
@@ -666,6 +667,8 @@ export async function refineBriefAction(
     where: { id: briefId, ...teamScopeWhere(user) },
   });
   if (!brief) return { ok: false, error: "Brief not found." };
+  const refineLocked = refuseIfLocked(brief);
+  if (refineLocked) return refineLocked;
   if (!refinePrompt.trim()) return { ok: false, error: "Add a refinement instruction." };
 
   // Everything, including the add-on sections. Sending the quote without them
@@ -771,6 +774,92 @@ export async function refineBriefAction(
   // A spinner that stops is not feedback: it says something finished, not what
   // it did, and on a long quote the changed paragraph is often off-screen.
   return { ok: true, data: { changed } };
+}
+
+/**
+ * Refusing to change a quote that has been agreed.
+ *
+ * One helper, used by every path that edits one, because a rule enforced in
+ * four places out of five is a rule that holds until somebody is in a hurry.
+ * The document a client signed is the document they signed.
+ */
+function refuseIfLocked(
+  brief: { acceptedAt?: Date | null; status?: string | null }
+): { ok: false; error: string } | null {
+  const reason = lockReason(brief);
+  return reason ? { ok: false, error: lockMessage(reason) } : null;
+}
+
+/**
+ * A second quote for extra work on an agreed job.
+ *
+ * The way out of the lock. A client asking for one more screen halfway through
+ * is the most ordinary thing in freelancing, and the old answer was to edit
+ * the quote they had signed, which changes a document underneath somebody.
+ * So the extra becomes its own quote, linked to the first.
+ *
+ * It starts from the original rather than from nothing: same client, same
+ * rate, same payment terms, same protection level. Somebody writing a
+ * follow-on has already made all of those decisions once, and asking again
+ * would be Freely pretending not to know its own history.
+ *
+ * Deliberately not a copy of the deliverables. The new quote is for the new
+ * work, and starting from the old scope invites somebody to send a document
+ * that re-quotes what has already been agreed.
+ */
+export async function startFollowOnAction(
+  briefId: string
+): Promise<ActionResult<{ briefId: string }>> {
+  const user = await requireFullUser();
+  const original = await prisma.brief.findFirst({
+    where: { id: briefId, ...teamScopeWhere(user) },
+  });
+  if (!original) return { ok: false, error: "Quote not found." };
+
+  const settings = (original.settings as Record<string, unknown> | null) ?? {};
+
+  try {
+    const created = await prisma.brief.create({
+      data: {
+        userId: user.id,
+        title: `${original.title} (2)`,
+        client: original.client,
+        ...((original as unknown as { clientId?: string | null }).clientId
+          ? { clientId: (original as unknown as { clientId: string }).clientId }
+          : {}),
+        followsOnFromId: original.id,
+        // Empty, and on purpose: the follow-on is for the new work, and
+        // starting from the old scope invites a document that re-quotes what
+        // has already been agreed.
+        scope: "",
+        deliverables: [],
+        timeline: "",
+        price: 0,
+        hours: 0,
+        hourlyRate: original.hourlyRate,
+        currency: original.currency,
+        expertiseLevel: original.expertiseLevel,
+        sourceText: "",
+        template: original.template,
+        branding: original.branding,
+        // The decisions they already made once.
+        settings: {
+          layout: CURRENT_LAYOUT,
+          paymentPlan: settings.paymentPlan,
+          upfrontPercent: settings.upfrontPercent,
+          billing: settings.billing,
+          protection: settings.protection,
+          discipline: settings.discipline,
+        } as unknown as Prisma.InputJsonValue,
+      } as unknown as Parameters<typeof prisma.brief.create>[0]["data"],
+    });
+
+    revalidatePath("/quote");
+    return { ok: true, data: { briefId: created.id } };
+  } catch (err) {
+    console.error("[startFollowOnAction] failed", err);
+    return { ok: false, error: "Couldn't start a follow-on quote." };
+  }
 }
 
 /** Publishes/unpublishes a brief as a real, shareable "HTML page" quote at
@@ -1156,6 +1245,8 @@ export async function toggleSectionAction(
     where: { id: briefId, ...teamScopeWhere(user) },
   });
   if (!brief) return { ok: false, error: "Quote not found." };
+  const sectionLocked = refuseIfLocked(brief);
+  if (sectionLocked) return sectionLocked;
 
   const current = (brief as unknown as { hiddenSections?: string[] }).hiddenSections ?? [];
   const key = sanitizeText(section);
@@ -1198,6 +1289,10 @@ export async function generateExtrasAction(
     where: { id: briefId, ...teamScopeWhere(user) },
   });
   if (!brief) return { ok: false, error: "Quote not found." };
+  // A signed quote is finished by definition, and writing the second half into
+  // one would change a document somebody agreed to.
+  const extrasLocked = refuseIfLocked(brief);
+  if (extrasLocked) return extrasLocked;
 
   const settings = (brief.settings as Record<string, unknown> | null) ?? {};
   // Already done, or never wanted. Either way there is nothing to write, and
@@ -1373,9 +1468,12 @@ export async function updateBriefContentAction(
   const user = await requireFullUser();
   const brief = await prisma.brief.findFirst({
     where: { id: briefId, ...teamScopeWhere(user) },
-    select: { id: true, price: true, deliverables: true, settings: true },
+    // Read whole rather than by column: the lock needs acceptedAt and status,
+    // and a narrowing select is how a guard silently stops guarding.
   });
   if (!brief) return { ok: false, error: "Quote not found." };
+  const contentLocked = refuseIfLocked(brief);
+  if (contentLocked) return contentLocked;
 
   if (patch.title !== undefined && !patch.title.trim()) {
     return { ok: false, error: "The quote needs a title." };
@@ -1501,9 +1599,10 @@ export async function setQuoteDisciplineAction(
   const user = await requireFullUser();
   const brief = await prisma.brief.findFirst({
     where: { id: briefId, ...teamScopeWhere(user) },
-    select: { id: true, settings: true },
   });
   if (!brief) return { ok: false, error: "Quote not found." };
+  const disciplineLocked = refuseIfLocked(brief);
+  if (disciplineLocked) return disciplineLocked;
 
   // Theirs, or nothing. This is a stored fact other quotes read.
   const mine = allDisciplines(

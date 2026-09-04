@@ -2,18 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Sparkles,
-  Check,
-  Link2,
-  CheckCircle2,
-  Trash2,
-  ChevronDown,
-  FileText,
-  Copy,
-  ExternalLink,
-  Eye,
-} from "lucide-react";
+import { Check, CheckCircle2, ChevronDown, Copy, ExternalLink, Eye, FileText, Link2, Plus, Sparkles, Trash2 } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -27,6 +16,7 @@ import {
   updateQuoteLookAction,
   generateExtrasAction,
   setQuoteDisciplineAction,
+  startFollowOnAction,
   toggleSectionAction,
   deleteBriefExampleAction,
 } from "@/actions/briefs";
@@ -54,6 +44,7 @@ import { SubLabel } from "@/components/ui/label";
 import { RenderedQuote } from "@/components/quote/rendered-quote";
 import { QuotePreview } from "@/components/quote/quote-preview";
 import { BeforeYouSend } from "@/components/quote/before-you-send";
+import { lockReason } from "@/lib/quote-lock";
 import { brokenRules, type RuleSettings } from "@/lib/ground-rules";
 import { applyHiddenSections, type HideableSection } from "@/lib/hidden-sections";
 import { hasStrategyContent } from "@/lib/strategy";
@@ -338,6 +329,27 @@ export function BriefView({
    * does the comparing, where both versions exist.
    */
   const [justChanged, setJustChanged] = useState<string[]>([]);
+  /**
+   * Whether this quote is still a draft.
+   *
+   * A signed quote is a document at a URL the client can reopen, and editing
+   * it changes what they agreed to underneath them. Tracked is the same
+   * argument: the deliverables and the price are what the work is being run
+   * against. See lib/quote-lock.
+   */
+  const locked = lockReason({ acceptedAt: brief.accepted?.at ?? null, status: brief.status });
+  const [startingFollowOn, setStartingFollowOn] = useState(false);
+
+  async function startFollowOn() {
+    setStartingFollowOn(true);
+    const result = await startFollowOnAction(brief.id);
+    setStartingFollowOn(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    router.push(`/quote/${result.data.briefId}`);
+  }
   /**
    * The last refine's result, kept after the highlight fades.
    *
@@ -625,6 +637,28 @@ export function BriefView({
   return (
     <>
       <Topbar />
+
+      {/* Said once, at the top, rather than by every control refusing.
+          A quote that is agreed is not broken, and a page full of disabled
+          buttons reads as broken. This says what happened and where to go
+          instead. */}
+      {locked && (
+        <Card tone="quiet" className="mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-small text-ink m-0 max-w-prose text-pretty">
+              {locked === "signed" ? t.brief.lockedSigned : t.brief.lockedTracked}
+            </p>
+            <Button
+              variant="outline"
+              icon={Plus}
+              loading={startingFollowOn}
+              onClick={() => void startFollowOn()}
+            >
+              {t.brief.followOn}
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {/* This page is a working view, not the finished article: it shows the
           content without any branding applied. That was reading as "done",
