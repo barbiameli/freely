@@ -412,6 +412,9 @@ export const es: Dictionary = {
     protectionTitle: "¿Cuánto conoces a este cliente?",
     protectionHint: "Decide qué deja por escrito el presupuesto y cómo se reparte el dinero.",
     protectionWhy: "Del proyecto:",
+    protectionChangesPayment: "Esto cambia tu cobro de {from} a {to}.",
+    protectionChangesWhy:
+      "Así lo máximo que te deben en cualquier momento es una etapa y no el proyecto entero. Es la parte de este nivel que de verdad te protege, y por eso las cláusulas solas serían la mitad floja.",
     protectionKnown: "Ya habéis trabajado juntos",
     protectionKnownWhat: "Lo justo que necesita. Sin cláusulas que suenen a desconfianza.",
     protectionNew: "Cliente nuevo",

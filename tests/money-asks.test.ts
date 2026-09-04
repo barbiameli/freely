@@ -9,6 +9,7 @@ import {
   type MoneyState,
 } from "@/lib/money-asks";
 import { planSchema } from "@/lib/quote-plan";
+import { dict } from "@/lib/i18n";
 
 const mine: MoneyState = {
   rateUnit: "HOUR",
@@ -173,5 +174,36 @@ describe("one phase or stages", () => {
 
   it("does not send a stage list for a one-phase quote", () => {
     expect(wizard).toContain('choices.phased ? milestonesForPrompt(plan, choices.milestones) : ""');
+  });
+});
+
+
+describe("nothing overrides silently", () => {
+  const review = readFileSync("src/components/quote/plan-review.tsx", "utf8");
+
+  it("says when the protection level beats the payment answer", () => {
+    /**
+     * The last silent override in the flow. Somebody could choose "paid in
+     * full up front" two cards down and get a milestone schedule without ever
+     * being told which answer won.
+     */
+    expect(review).toContain("overridesPayment");
+    expect(review).toContain("t.quote.protectionChangesPayment");
+  });
+
+  it("says which way, from and to", () => {
+    expect(dict("en").quote.protectionChangesPayment).toContain("{from}");
+    expect(dict("en").quote.protectionChangesPayment).toContain("{to}");
+  });
+
+  it("says why, not just what", () => {
+    // "This changes your payment" on its own reads as the app being difficult.
+    expect(dict("en").quote.protectionChangesWhy).toContain(
+      "one stage of work rather than the whole project"
+    );
+  });
+
+  it("stays quiet when it changes nothing", () => {
+    expect(review).toContain("chosen.paymentPlan !== money.paymentPlan");
   });
 });

@@ -412,6 +412,9 @@ export const en = {
     protectionTitle: "How well do you know this client?",
     protectionHint: "It decides what the quote writes down, and how the money is split.",
     protectionWhy: "From the brief:",
+    protectionChangesPayment: "This changes your payment from {from} to {to}.",
+    protectionChangesWhy:
+      "So the most you are ever owed is one stage of work rather than the whole project. It is the part of this level that actually protects you, and it is why the wording alone would be the weaker half.",
     protectionKnown: "Worked together before",
     protectionKnownWhat: "The terms it needs and nothing more. No clauses that read as guarding against them.",
     protectionNew: "New client",

@@ -188,6 +188,16 @@ export function PlanReview({
   const conflicts = conflictsFrom(plan.moneyAsks, money);
 
   /**
+   * Whether the protection level is about to beat the payment answer.
+   *
+   * Only when it actually differs: saying "this changes your payment to
+   * stages" to somebody who already chose stages is noise.
+   */
+  const overridesPayment = Boolean(
+    chosen.paymentPlan && chosen.paymentPlan !== money.paymentPlan
+  );
+
+  /**
    * The sections to show: the ones the plan proposed, plus anything on that it
    * did not, in the app's own order.
    */
@@ -244,6 +254,23 @@ export function PlanReview({
             ? ` ${t.quote.protectionGuardedDiscovery}`
             : ""}
         </p>
+
+        {/* What this level does to the money, said rather than done.
+            The top level switches the payment to stages, and it used to do
+            that silently: somebody could choose "paid in full up front" two
+            cards down and get a milestone schedule without ever being told
+            which answer won. It is the last override in the flow that did not
+            announce itself. */}
+        {overridesPayment && (
+          <p className="text-caption text-ink mt-3 mb-0 max-w-prose text-pretty">
+            <span className="font-body font-semibold">
+              {t.quote.protectionChangesPayment
+                .replace("{from}", moneyValue(money.paymentPlan, t))
+                .replace("{to}", moneyValue(chosen.paymentPlan ?? "MILESTONE", t))}
+            </span>{" "}
+            {t.quote.protectionChangesWhy}
+          </p>
+        )}
 
         {/* Why it proposed what it proposed. A level on its own is a machine
             telling somebody to be worried; a level with "no budget named, and
