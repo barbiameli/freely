@@ -112,8 +112,14 @@ describe("the price, or an estimate", () => {
 describe("what the model is told", () => {
   const prompt = readFileSync("src/lib/anthropic.ts", "utf8");
 
-  it("forbids listing a review or a revision round as a deliverable", () => {
-    expect(prompt).toContain("Never list a review, a feedback session, a revision round");
+  it("gives the test rather than a list of banned words", () => {
+    /**
+     * A blocklist misses "amends pass", "iteration cycle", "refinement round".
+     * The rule underneath all of them is whether the thing would exist if the
+     * client said nothing back.
+     */
+    expect(prompt).toContain("would this exist even if the client said nothing back");
+    expect(prompt).toContain("never list a revision round");
   });
 
   it("forbids an open-ended revisions count", () => {

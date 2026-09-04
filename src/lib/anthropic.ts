@@ -1013,7 +1013,13 @@ Bad: "Week 3-4: Design phase" or "Design and iterate on the concepts".`
     // "Feedback-incorporated final files" were the one included round or two
     // more on top of it. They were the same round, listed twice as though
     // they were things being bought.
-    `\nDeliverables are things the client ends up holding. Never list a review, a feedback session, a revision round, a handover call or an amends pass as a deliverable: those describe the process, and where they are part of the deal they belong in the revisions policy or the timeline. If a file exists in a draft form and a final form, that is one deliverable, not two.`,
+    `\nA deliverable is a thing the client is handed or shown: a file, a document, a set of screens, a working page, a corrected version of one of those. It is a noun they end up holding.
+
+Apply this test to every line before you write it: would this exist even if the client said nothing back? If it only happens because they responded, it is not a deliverable. A round of revisions is the clearest case. There may be no feedback, in which case there is nothing to hand over, and a quote cannot promise something conditional on the client doing their part as though it were an item being bought.
+
+So: never list a revision round, an amends pass, a feedback cycle, an iteration, a review, a walkthrough, a call, a session, a workshop, a check-in or a handover meeting as a deliverable. Where those are part of the deal they belong in the revisions policy, the payment terms or the timeline, which are the places that describe how the work runs.
+
+One artifact is one deliverable, whatever states it passes through. Screens in draft and the same screens after feedback are one line, not two, and listing both charges twice for one thing and reads as double-counting the revision round.`,
     `\nWrite a project quote based on this. Keep deliverables as a list of short, concrete items (4-7 items), name actual artifacts, not phases. Give a realistic timeline, a price in ${currencyCode}, and estimated hours that are consistent with the pricing approach above.`,
   ]
     .filter(Boolean)

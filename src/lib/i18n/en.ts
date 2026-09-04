@@ -1000,6 +1000,13 @@ export const en = {
     ownershipRule:
       "Rights to the final work transfer when the final payment lands. Working files and unused concepts stay yours unless you agree otherwise.",
     exclusionsRule: "Every quote names the adjacent work it does not cover, and says it is quoted separately.",
+    deliverablesAreThingsTitle: "Every deliverable is something they receive",
+    deliverablesAreThingsWhy:
+      "A round of revisions only happens if the client comes back. Promising it as an item being bought means promising something that may never exist.",
+    deliverablesAreThingsCost:
+      "A client reading a review session and a set of revised files as two deliverables cannot tell whether they are paying for one round or two, and will ask.",
+    deliverablesAreThingsRule:
+      "Deliverables are things you hand over. Reviews, calls and revision rounds live in the terms, not the list.",
     includedCallsTitle: "A set number of calls is included",
     includedCallsWhy:
       "Calls are the part of a project with no natural limit. A client who is not told a number will assume there is not one.",

@@ -53,7 +53,9 @@ export interface Protection {
  * clauses is a change in tone they will notice.
  */
 const KNOWN: Protection = {
-  rules: ["paymentBasis", "revisionRounds"],
+  // Even here: a deliverables list that promises a review session is confusing
+  // to somebody who trusts you, not only to somebody who does not.
+  rules: ["paymentBasis", "revisionRounds", "deliverablesAreThings"],
   sections: ["includeSOW", "includeRevisions"],
   paidDiscovery: false,
 };
@@ -69,6 +71,7 @@ const NEW: Protection = {
   rules: [
     "paymentBasis",
     "revisionRounds",
+    "deliverablesAreThings",
     "assumptions",
     "scopeChanges",
     "cancellation",
@@ -102,6 +105,7 @@ const GUARDED: Protection = {
   rules: [
     "paymentBasis",
     "revisionRounds",
+    "deliverablesAreThings",
     "assumptions",
     "scopeChanges",
     "cancellation",

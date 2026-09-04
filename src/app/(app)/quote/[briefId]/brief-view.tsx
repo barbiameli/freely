@@ -838,6 +838,7 @@ export function BriefView({
             broken={brokenRules(
               {
                 extras: content.extras ?? null,
+                deliverables: content.deliverables,
                 hours: content.hours,
                 price: content.price,
                 rateUnit: brief.rateUnit ?? "HOUR",

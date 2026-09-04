@@ -998,6 +998,13 @@ export const es: Dictionary = {
     ownershipRule:
       "Los derechos del trabajo final pasan cuando llega el pago final. Los archivos de trabajo y las propuestas descartadas siguen siendo tuyos salvo que acordéis otra cosa.",
     exclusionsRule: "Cada presupuesto nombra el trabajo de al lado que no cubre, y dice que se presupuesta aparte.",
+    deliverablesAreThingsTitle: "Cada entregable es algo que reciben",
+    deliverablesAreThingsWhy:
+      "Una ronda de revisiones solo ocurre si el cliente responde. Prometerla como algo que se compra es prometer algo que puede no existir.",
+    deliverablesAreThingsCost:
+      "Un cliente que lee una sesión de revisión y unos archivos revisados como dos entregables no sabe si paga una ronda o dos, y preguntará.",
+    deliverablesAreThingsRule:
+      "Los entregables son cosas que entregas. Las revisiones, llamadas y rondas van en las condiciones, no en la lista.",
     includedCallsTitle: "Se incluye un número fijo de llamadas",
     includedCallsWhy:
       "Las llamadas son la parte de un proyecto sin límite natural. Un cliente al que no le das un número dará por hecho que no lo hay.",

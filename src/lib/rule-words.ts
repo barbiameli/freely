@@ -51,6 +51,13 @@ export function ruleWords(key: RuleKey, t: Dictionary): RuleWords {
       return { title: r.cancellationTitle, why: r.cancellationWhy, cost: r.cancellationCost, statement: r.cancellationRule };
     case "ownership":
       return { title: r.ownershipTitle, why: r.ownershipWhy, cost: r.ownershipCost, statement: r.ownershipRule };
+    case "deliverablesAreThings":
+      return {
+        title: r.deliverablesAreThingsTitle,
+        why: r.deliverablesAreThingsWhy,
+        cost: r.deliverablesAreThingsCost,
+        statement: r.deliverablesAreThingsRule,
+      };
     case "includedCalls":
       return {
         title: r.includedCallsTitle,
@@ -132,6 +139,8 @@ export function ruleFix(key: RuleKey, values: Record<ValueKey, number>): string 
       return "Add an ownership clause: rights to the final deliverables transfer on final payment rather than on delivery, and working files and unused concepts stay with the freelancer unless separately agreed.";
     case "exclusions":
       return "Name the work adjacent to this job that is not included, drawn from this brief, and say plainly that it is quoted separately.";
+    case "deliverablesAreThings":
+      return "Rewrite the deliverables so every line is something the client is handed or shown: a file, a document, a set of screens, a corrected version of one of those. Take out any line that is a review, a call, a session, a walkthrough, a handover or a round of revisions, and fold what it covered into the revisions policy or the timeline instead. One artifact is one line, whatever states it passes through.";
     case "includedCalls":
       return `Say that ${values.callsIncluded} calls are included and that any beyond them are billed at the stated rate.`;
     case "beforeSignature":

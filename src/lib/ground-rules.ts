@@ -1,5 +1,6 @@
 import type { BriefExtras } from "@/lib/anthropic";
 import { isProtectionLevel, protectionFor } from "@/lib/protection";
+import { happenings } from "@/lib/deliverable-check";
 
 /**
  * The things a quote should say before it goes out, and what it costs when it
@@ -36,6 +37,7 @@ export type RuleKey =
   | "ownership"
   | "exclusions"
   | "includedCalls"
+  | "deliverablesAreThings"
   | "beforeSignature"
   | "noNumberBeforeScope";
 
@@ -148,6 +150,15 @@ export const GROUND_RULES: GroundRule[] = [
   { key: "cancellation", severity: "suggestion", checkable: true },
   { key: "ownership", severity: "suggestion", checkable: true },
   { key: "exclusions", severity: "suggestion", checkable: true },
+  /**
+   * Every line on the deliverables list is a thing, not a happening.
+   *
+   * A quote listed "Design review session" and "Feedback-incorporated final
+   * files" as deliverables seven and nine, and the client asked whether that
+   * was one round of revisions or two. Promising something conditional on the
+   * client responding, as though it were an item being bought, is the mistake.
+   */
+  { key: "deliverablesAreThings", severity: "suggestion", checkable: true },
   {
     key: "includedCalls",
     severity: "suggestion",
@@ -271,6 +282,8 @@ export interface CheckableQuote {
   milestoneCount: number;
   /** Sections the freelancer removed. A removed section is not a present one. */
   hidden?: string[];
+  /** The deliverables as written, for checking they are things. */
+  deliverables?: string[];
 }
 
 /** Whether some text names an actual number of anything. */
@@ -416,6 +429,11 @@ export function brokenRules(quote: CheckableQuote, settings: RuleSettings): Grou
         "llamada",
         "reunión",
       ]),
+
+    // A line that only happens if the client responds cannot be a thing they
+    // are buying: there may be no response, and then there is nothing to hand
+    // over. See lib/deliverable-check.
+    deliverablesAreThings: () => happenings(quote.deliverables ?? []).length > 0,
 
     beforeSignature: () => false,
     noNumberBeforeScope: () => false,
