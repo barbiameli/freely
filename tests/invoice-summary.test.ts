@@ -93,6 +93,23 @@ describe("the due date is optional", () => {
   });
 
   it("cannot be overdue without a date", () => {
-    expect(list).toContain("Boolean(inv.dueAt)");
+    expect(list).toContain("inv.dueAt !== null");
+  });
+});
+
+describe("the invoices list survives an invoice with no date", () => {
+  const page = readFileSync("src/app/(app)/invoices/page.tsx", "utf8");
+  const view = readFileSync("src/app/(app)/invoices/invoices-view.tsx", "utf8");
+
+  it("does not call toISOString on nothing", () => {
+    // The last reader still assuming a date. It threw for the whole page
+    // rather than for the one invoice, so a single dateless invoice hid every
+    // invoice behind an error screen.
+    expect(page).not.toContain("dueAt: inv.dueAt.toISOString()");
+    expect(page).toContain("inv.dueAt ? inv.dueAt.toISOString() : null");
+  });
+
+  it("shows one date rather than an invalid second one", () => {
+    expect(view).toContain("{inv.dueAt ? `");
   });
 });

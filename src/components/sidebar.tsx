@@ -64,17 +64,24 @@ export function Sidebar() {
               aria-current={active ? "page" : undefined}
               // Roomy tap target on mobile: the whole cell is tappable rather
               // than just the 34px glyph.
-              className="flex flex-col items-center gap-1 md:gap-1.5 flex-1 md:flex-none py-2.5 md:py-0"
+              className="group flex flex-col items-center gap-1 md:gap-1.5 flex-1 md:flex-none py-2.5 md:py-0"
             >
+              {/* No box. A rounded outline around every icon drew five
+                  containers down the rail and made the icons the small thing
+                  inside them; the icon is the thing, so it gets the space.
+                  The active one keeps its tint, which was the only job the
+                  container was still doing. */}
               <div
-                className={`w-[34px] h-[34px] rounded-[10px] flex items-center justify-center ${
-                  active ? "bg-violet-tint" : "border border-line"
+                className={`w-[38px] h-[38px] rounded-[11px] flex items-center justify-center transition-colors ${
+                  active ? "bg-violet-tint" : "bg-transparent"
                 }`}
               >
                 <Icon
-                  size={17}
-                  strokeWidth={active ? 2.25 : 1.75}
-                  className={active ? "text-violet" : "text-text-muted"}
+                  size={22}
+                  strokeWidth={active ? 2 : 1.6}
+                  className={`transition-transform duration-150 ease-marketing motion-reduce:transition-none group-hover:scale-110 ${
+                    active ? "text-violet" : "text-text-muted group-hover:text-ink"
+                  }`}
                   aria-hidden
                 />
               </div>

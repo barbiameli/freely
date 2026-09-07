@@ -79,7 +79,11 @@ export default async function InvoicesPage() {
     number: inv.number,
     clientName: inv.clientName,
     issuedAt: inv.issuedAt.toISOString(),
-    dueAt: inv.dueAt.toISOString(),
+    // Null since the due date became optional, and this was the last reader
+    // still assuming a date. It threw for the whole Invoices page rather than
+    // for the one invoice, so a single dateless invoice hid every invoice
+    // behind an error screen.
+    dueAt: inv.dueAt ? inv.dueAt.toISOString() : null,
     total: inv.lineItems.reduce((sum, i) => sum + i.amount, 0) * (1 + inv.taxRate / 100),
     currency: inv.currency,
     paid: inv.paid,

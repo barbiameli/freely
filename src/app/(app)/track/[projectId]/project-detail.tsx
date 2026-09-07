@@ -313,8 +313,11 @@ export function ProjectDetail({
      */
     <div className="flex flex-col gap-5 lg:gap-6 flex-1 min-h-0">
       <div className="flex flex-col gap-5 md:gap-6 flex-1 min-w-0">
-        <Topbar />
-
+        {/* The account controls share this row rather than having one of
+            their own. A bell and an avatar are not worth a band of the page,
+            and that band sat between the top of the screen and the project's
+            name on every visit. */}
+        <div className="flex items-center gap-3">
         {/* Where you are, and the way to somewhere else. */}
         <Popover
           label={t.track.allProjects}
@@ -359,6 +362,10 @@ export function ProjectDetail({
             </div>
           )}
         </Popover>
+          <div className="ml-auto">
+            <Topbar />
+          </div>
+        </div>
 
         {/* Only the invoice in the action slot. "Send to diary" used to sit
             alongside it, which put a client-facing action in the middle of the

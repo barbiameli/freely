@@ -17,7 +17,8 @@ export interface InvoiceRowView {
   number: number;
   clientName: string;
   issuedAt: string;
-  dueAt: string;
+  /** Null on an invoice with no due date, which is allowed. */
+  dueAt: string | null;
   total: number;
   currency: string;
   paid: boolean;
@@ -79,7 +80,7 @@ export function InvoicesView({
             // Not late during the day it is due, and not late a day early
             // for anybody west of UTC. See lib/schedule.
             // No date means nothing to be late for.
-            const overdue = !inv.paid && Boolean(inv.dueAt) && isPastDue(new Date(inv.dueAt));
+            const overdue = !inv.paid && inv.dueAt !== null && isPastDue(new Date(inv.dueAt));
             return (
               <Link key={inv.id} href={`/invoices/${inv.id}`} className="no-underline">
                 <Card className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 cursor-pointer">
@@ -90,9 +91,12 @@ export function InvoicesView({
                       </span>
                       <span className="text-body text-slate">{inv.clientName}</span>
                     </div>
+                    {/* One date when there is only one. "7 Sept · Invalid
+                        Date" is worse than saying nothing about a due date
+                        this invoice deliberately does not have. */}
                     <div className="text-meta text-text-muted mt-1">
-                      {formatCalendarDay(new Date(inv.issuedAt), locale)} ·{" "}
-                      {formatCalendarDay(new Date(inv.dueAt), locale)}
+                      {formatCalendarDay(new Date(inv.issuedAt), locale)}
+                      {inv.dueAt ? ` · ${formatCalendarDay(new Date(inv.dueAt), locale)}` : ""}
                     </div>
                   </div>
                   <div className="flex items-center gap-4 shrink-0">

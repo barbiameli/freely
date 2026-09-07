@@ -40,7 +40,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             separates the content from the edge, and the project tracker is the
             screen that felt it: two columns, a timeline and a flags panel all
             competing for the same width. */}
-        <div className="flex-1 min-w-0 px-5 py-6 pb-24 md:px-8 md:py-10 md:pb-12 xl:px-12 flex flex-col gap-5 md:gap-7">
+        {/* Top padding matches the rail's, so the first thing on a page
+            sits level with the logo rather than 40px below it. There was a
+            band of nothing above every heading, and on the project page that
+            band was the difference between seeing the board and scrolling
+            for it. */}
+        <div className="flex-1 min-w-0 px-5 py-6 pb-24 md:px-8 md:pt-7 md:pb-12 xl:px-12 flex flex-col gap-5 md:gap-6">
           <TimerBar initial={timer.ok ? timer.data : null} />
           {children}
         </div>

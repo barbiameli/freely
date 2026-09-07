@@ -62,3 +62,44 @@ describe("the timer asks once", () => {
     expect(timer).toContain("onSetUp()");
   });
 });
+
+describe("the rail's icons", () => {
+  const sidebar = readFileSync("src/components/sidebar.tsx", "utf8");
+
+  it("draws no box around them", () => {
+    // Five rounded outlines down the rail made the icons the small thing
+    // inside them. The icon is the thing.
+    expect(sidebar).not.toContain('"border border-line"');
+    expect(sidebar).toContain("bg-transparent");
+  });
+
+  it("makes them big enough to read as pictures", () => {
+    expect(sidebar).toContain("size={22}");
+  });
+
+  it("grows them under the pointer", () => {
+    expect(sidebar).toContain("group-hover:scale-110");
+    expect(sidebar).toContain("motion-reduce:transition-none");
+  });
+});
+
+describe("the page starts where the rail starts", () => {
+  const shell = readFileSync("src/app/(app)/layout.tsx", "utf8");
+  const detail = readFileSync("src/app/(app)/track/[projectId]/project-detail.tsx", "utf8");
+
+  it("does not leave a band of nothing above every heading", () => {
+    // The rail's logo sits at 28px and the content began at 40px, so every
+    // page started below its own navigation.
+    expect(shell).not.toContain("md:py-10");
+    expect(shell).toContain("md:pt-7");
+  });
+
+  it("does not spend a row on a bell and an avatar", () => {
+    // On the project page that row sat between the top of the screen and the
+    // project's name, on every visit.
+    const header = detail.slice(0, detail.indexOf("<RecordHeader"));
+    const topbar = header.lastIndexOf("<Topbar />");
+    const switcher = header.lastIndexOf("<Popover");
+    expect(topbar).toBeGreaterThan(switcher);
+  });
+});
