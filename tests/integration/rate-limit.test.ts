@@ -98,16 +98,26 @@ describe("checkRateLimit", () => {
 });
 
 describe("enforceLlmRateLimit", () => {
+  /**
+   * A pinned clock, because the window is a division of the wall clock.
+   *
+   * Without it these tests are right most of the time and wrong whenever a
+   * minute boundary falls between two of the calls in the loop: the count
+   * splits across two buckets and the call that should be refused is allowed.
+   * That failure is unreproducible, so it gets rerun rather than read.
+   */
+  const NOW = Date.parse("2026-09-07T10:00:00.000Z");
+
   afterEach(async () => {
     await resetTestDb();
   });
 
   it("shares one budget across every LLM-calling action for a user", async () => {
     for (let i = 0; i < 12; i++) {
-      await enforceLlmRateLimit("user-1");
+      await enforceLlmRateLimit("user-1", NOW);
     }
 
-    await expect(enforceLlmRateLimit("user-1")).rejects.toThrow(RateLimitError);
+    await expect(enforceLlmRateLimit("user-1", NOW)).rejects.toThrow(RateLimitError);
     // One row per (scope, identifier, window bucket) — not per call — proving
     // the budget really is shared rather than each call getting its own
     // counter. Two rows total: the per-user "llm" row and the "llm-global"
@@ -117,10 +127,10 @@ describe("enforceLlmRateLimit", () => {
 
   it("doesn't rate-limit one user's calls against another user's budget", async () => {
     for (let i = 0; i < 12; i++) {
-      await enforceLlmRateLimit("user-1");
+      await enforceLlmRateLimit("user-1", NOW);
     }
 
-    await expect(enforceLlmRateLimit("user-2")).resolves.toBeUndefined();
+    await expect(enforceLlmRateLimit("user-2", NOW)).resolves.toBeUndefined();
   });
 
   it("also enforces a global ceiling shared across every user", async () => {
@@ -129,10 +139,10 @@ describe("enforceLlmRateLimit", () => {
     const users = ["user-1", "user-2", "user-3", "user-4"];
     for (const user of users) {
       for (let i = 0; i < 10; i++) {
-        await enforceLlmRateLimit(user);
+        await enforceLlmRateLimit(user, NOW);
       }
     }
 
-    await expect(enforceLlmRateLimit("user-5")).rejects.toThrow(RateLimitError);
+    await expect(enforceLlmRateLimit("user-5", NOW)).rejects.toThrow(RateLimitError);
   });
 });

@@ -28,6 +28,9 @@ export interface StepView {
   /** When it moved into Doing, which is what puts it in the middle column. */
   startedAt?: string | null;
   order?: number;
+  /** Where it sits on the timeline, null until somebody has placed it. */
+  plannedStart?: string | null;
+  plannedEnd?: string | null;
 }
 
 export interface FlagView {

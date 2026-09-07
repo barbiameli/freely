@@ -139,6 +139,8 @@ export default async function ProjectPage({
                 // the timeline. See lib/board.
                 startedAt: s.startedAt?.toISOString() ?? null,
                 order: s.order,
+                plannedStart: s.plannedStart?.toISOString() ?? null,
+                plannedEnd: s.plannedEnd?.toISOString() ?? null,
               })),
               flags: (d.flags ?? []).map((f) => ({
                 id: f.id,

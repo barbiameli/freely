@@ -126,7 +126,21 @@ const LLM_RATE_LIMIT = { limit: 12, windowMs: 60_000 };
 const LLM_GLOBAL_RATE_LIMIT = { limit: 40, windowMs: 60_000 };
 const GLOBAL_IDENTIFIER = "all-users";
 
-export async function enforceLlmRateLimit(userId: string): Promise<void> {
-  await checkRateLimit("llm-global", GLOBAL_IDENTIFIER, LLM_GLOBAL_RATE_LIMIT);
-  await checkRateLimit("llm", userId, LLM_RATE_LIMIT);
+export async function enforceLlmRateLimit(
+  userId: string,
+  /**
+   * The current time, for tests. Nothing in the product passes it.
+   *
+   * checkRateLimit has taken this since the day a two-call test turned out to
+   * be right most of the time and wrong whenever a window boundary fell
+   * between the two calls. The same trap caught the global-ceiling test,
+   * which makes forty calls in a row: land a minute boundary anywhere in that
+   * loop and the count splits across two buckets, so the forty-first call is
+   * allowed and the test fails for no reason anybody can reproduce. This is
+   * the same escape hatch, passed one level up so a caller can pin the clock.
+   */
+  now = Date.now()
+): Promise<void> {
+  await checkRateLimit("llm-global", GLOBAL_IDENTIFIER, { ...LLM_GLOBAL_RATE_LIMIT, now });
+  await checkRateLimit("llm", userId, { ...LLM_RATE_LIMIT, now });
 }

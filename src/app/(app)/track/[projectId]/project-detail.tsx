@@ -42,6 +42,7 @@ import type { BillingMode } from "@/lib/invoice-queue";
 import { milestoneProgress, type MilestoneView } from "@/lib/milestones";
 import { RecordHeader } from "@/components/ui/page-header";
 import { Board } from "@/components/track/board";
+import { Timeline } from "@/components/track/timeline";
 
 interface Project {
   id: string;
@@ -227,7 +228,7 @@ export function ProjectDetail({
    * afternoon, not a setting, and a remembered view is one more thing that has
    * silently changed when somebody comes back to a page.
    */
-  const [view, setView] = useState<"board" | "list">("board");
+  const [view, setView] = useState<"board" | "timeline" | "list">("board");
 
   /**
    * Every task on the project, flattened out of its deliverable.
@@ -480,6 +481,9 @@ export function ProjectDetail({
                 <Chip active={view === "board"} onClick={() => setView("board")}>
                   {t.track.viewBoard}
                 </Chip>
+                <Chip active={view === "timeline"} onClick={() => setView("timeline")}>
+                  {t.track.viewTimeline}
+                </Chip>
                 <Chip active={view === "list"} onClick={() => setView("list")}>
                   {t.track.viewList}
                 </Chip>
@@ -491,6 +495,27 @@ export function ProjectDetail({
               <Board
                 steps={allSteps}
                 deliverables={project.deliverables.map((d) => ({ id: d.id, name: d.name }))}
+              />
+            </div>
+          ) : view === "timeline" && allSteps.length > 0 ? (
+            <div className="mt-3">
+              <Timeline
+                projectId={project.id}
+                tasks={project.deliverables.flatMap((d) =>
+                  d.steps.map((step) => ({
+                    id: step.id,
+                    name: step.name,
+                    deliverableId: d.id,
+                    estimateHours: step.estimateHours,
+                    order: step.order ?? 0,
+                    done: step.done,
+                    plannedStart: step.plannedStart ?? null,
+                    plannedEnd: step.plannedEnd ?? null,
+                  }))
+                )}
+                deliverables={project.deliverables.map((d) => ({ id: d.id, name: d.name }))}
+                startDate={project.startDate}
+                dueDate={project.dueDate}
               />
             </div>
           ) : project.deliverables.length === 0 ? (
