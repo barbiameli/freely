@@ -164,7 +164,13 @@ export function Timeline({
             <span
               key={task.id}
               draggable
-              onDragStart={() => setDragging(task)}
+              onDragStart={(e) => {
+                // See board.tsx: without this the drag is cancelled before a
+                // drop can happen.
+                e.dataTransfer.setData("text/plain", task.id);
+                e.dataTransfer.effectAllowed = "move";
+                setDragging(task);
+              }}
               onDragEnd={() => setDragging(null)}
               className={`inline-block rounded-full border px-2.5 py-1 text-caption font-semibold cursor-grab ${
                 tint.get(task.deliverableId) ?? TINTS[0]
@@ -227,7 +233,10 @@ export function Timeline({
                           key={day.toISOString()}
                           style={{ width: DAY_WIDTH }}
                           className="shrink-0"
-                          onDragOver={(e) => e.preventDefault()}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = "move";
+                          }}
                           onDrop={(e) => {
                             e.preventDefault();
                             if (dragging && !busy) void place(dragging, day);
@@ -238,7 +247,11 @@ export function Timeline({
                     </div>
                     <div
                       draggable
-                      onDragStart={() => setDragging(task)}
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData("text/plain", task.id);
+                        e.dataTransfer.effectAllowed = "move";
+                        setDragging(task);
+                      }}
                       onDragEnd={() => setDragging(null)}
                       style={{
                         marginLeft: bar.offset * DAY_WIDTH,

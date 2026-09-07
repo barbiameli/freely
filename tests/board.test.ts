@@ -152,3 +152,37 @@ describe("the board on the page", () => {
     expect(action).toContain("teamScopeWhere(user)");
   });
 });
+
+describe("a drag that actually starts", () => {
+  const board = readFileSync("src/components/track/board.tsx", "utf8");
+  const chart = readFileSync("src/components/track/timeline.tsx", "utf8");
+  const action = readFileSync("src/actions/board.ts", "utf8");
+
+  it("puts something on the dataTransfer", () => {
+    // Without it the browser cancels the drag straight after dragstart, so
+    // no dragover and no drop ever fire and the card simply does not move.
+    // Firefox refuses outright; Chrome is inconsistent. The payload is
+    // unused, the act of setting it is the point.
+    expect(board).toContain('e.dataTransfer.setData("text/plain"');
+    expect(chart).toContain('e.dataTransfer.setData("text/plain"');
+  });
+
+  it("says the drop is a move", () => {
+    expect(board).toContain('e.dataTransfer.effectAllowed = "move"');
+    expect(board).toContain('e.dataTransfer.dropEffect = "move"');
+  });
+
+  it("does not reach through a relation to find the tasks", () => {
+    // stepDb is a cast around the generated client, and a where clause
+    // reaching through a relation came back empty: the column being reordered
+    // was empty, so the move wrote nothing and the planner placed nothing
+    // while reporting that everything fitted.
+    expect(action).not.toContain("where: { deliverable: { projectId: project.id } }");
+    expect(action).toContain("include: { steps: { orderBy: { order: \"asc\" } } }");
+  });
+
+  it("refuses to call an empty plan a plan", () => {
+    expect(action).toContain("if (plan.length === 0)");
+    expect(action).toContain("There are no tasks to place yet");
+  });
+});

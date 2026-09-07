@@ -115,6 +115,7 @@ export function Board({
               key={column}
               onDragOver={(e) => {
                 e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
                 setOver(column);
               }}
               onDragLeave={() => setOver((c) => (c === column ? null : c))}
@@ -143,7 +144,17 @@ export function Board({
                   <li
                     key={card.id}
                     draggable={!busy}
-                    onDragStart={() => setDragging(card.id)}
+                    onDragStart={(e) => {
+                      // Required. Without something on the dataTransfer the
+                      // browser cancels the drag straight after dragstart, so
+                      // no dragover and no drop ever fire and the card simply
+                      // does not move. Firefox refuses outright; Chrome is
+                      // inconsistent. The payload is unused, the act of
+                      // setting it is the point.
+                      e.dataTransfer.setData("text/plain", card.id);
+                      e.dataTransfer.effectAllowed = "move";
+                      setDragging(card.id);
+                    }}
                     onDragEnd={() => setDragging(null)}
                     onDrop={(e) => {
                       e.preventDefault();

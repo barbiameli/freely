@@ -69,10 +69,19 @@ export async function moveStepAction(
 
   // Every step on the project, since a card can move between deliverables'
   // columns and the order is per column rather than per deliverable.
-  const all = await stepDb.findMany({
-    where: { deliverable: { projectId: project.id } },
+  // Through the deliverables, not a relation filter on Step. See the note in
+  // autoScheduleAction: that filter goes through a cast around the generated
+  // client and was coming back empty, so the column being reordered was empty
+  // and the move wrote nothing.
+  const withSteps = (await prisma.deliverable.findMany({
+    where: { projectId: project.id },
     orderBy: { order: "asc" },
-  });
+    include: { steps: { orderBy: { order: "asc" } } },
+  })) as unknown as {
+    id: string;
+    steps: { id: string; done: boolean; startedAt: Date | null; order: number }[];
+  }[];
+  const all = withSteps.flatMap((deliverable) => deliverable.steps);
 
   const from = columnOf({ done: step.done, startedAt: step.startedAt?.toISOString() ?? null });
   const changes = changesForMove(from, target, step.startedAt);
@@ -176,10 +185,28 @@ export async function autoScheduleAction(
   if (!row.startDate) return { ok: false, error: "Give the project a start date first." };
   if (!row.dueDate) return { ok: false, error: "Give the project an end date first." };
 
-  const steps = await stepDb.findMany({
-    where: { deliverable: { projectId: project.id } },
+  /*
+   * Through the deliverables rather than a relation filter on Step.
+   *
+   * `stepDb` is a cast around the generated client, and a where clause that
+   * reaches through a relation was returning nothing: the planner then had no
+   * tasks, placed nothing, and reported "it fits inside the dates", which is
+   * technically true of an empty plan and completely useless.
+   *
+   * Reading the deliverables with their steps included asks the same question
+   * without the relation filter, and the deliverables are already loaded.
+   */
+  const withSteps = (await prisma.deliverable.findMany({
+    where: { projectId: project.id },
     orderBy: { order: "asc" },
-  });
+    include: { steps: { orderBy: { order: "asc" } } },
+  })) as unknown as {
+    id: string;
+    steps: { id: string; estimateHours: number; order: number; done: boolean }[];
+  }[];
+  const steps = withSteps.flatMap((deliverable) =>
+    deliverable.steps.map((step) => ({ ...step, deliverableId: deliverable.id }))
+  );
 
   const shape = {
     hoursPerDay: row.hoursPerDay && row.hoursPerDay > 0 ? row.hoursPerDay : 6,
@@ -212,6 +239,17 @@ export async function autoScheduleAction(
    * the star earns its keep: it decides which corners get cut.
    */
   const plan = firstPlan(deliverables, tasks, row.startDate, row.dueDate, shape);
+  // Nothing to place is not the same as everything fitting, and saying so was
+  // the reason this looked like it had worked when it had done nothing.
+  if (plan.length === 0) {
+    return {
+      ok: false,
+      error:
+        tasks.length === 0
+          ? "There are no tasks to place yet. Break a deliverable down first."
+          : "There are no working days between those dates.",
+    };
+  }
   const allocation = shareOutDays(
     deliverables,
     tasks,
@@ -286,10 +324,17 @@ export async function planProjectAction(input: {
     return { ok: false, error: "Pick at least one day of the week you work." };
   }
 
-  const steps = await stepDb.findMany({
-    where: { deliverable: { projectId: project.id } },
+  const withSteps = (await prisma.deliverable.findMany({
+    where: { projectId: project.id },
     orderBy: { order: "asc" },
-  });
+    include: { steps: { orderBy: { order: "asc" } } },
+  })) as unknown as {
+    id: string;
+    steps: { id: string; estimateHours: number; order: number; done: boolean }[];
+  }[];
+  const steps = withSteps.flatMap((deliverable) =>
+    deliverable.steps.map((step) => ({ ...step, deliverableId: deliverable.id }))
+  );
 
   const starred = new Set(input.starred);
   const deliverables = project.deliverables.map((d, index) => ({
