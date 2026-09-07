@@ -12,7 +12,6 @@ import {
   Check,
 } from "lucide-react";
 import clsx from "@/lib/clsx";
-import { Topbar } from "@/components/topbar";
 import { SubLabel } from "@/components/ui/label";
 import { Chip } from "@/components/ui/chip";
 import { TextField } from "@/components/ui/text-field";
@@ -882,7 +881,6 @@ export function QuoteWizard({
     <>
       {tab === "all" && (
         <>
-          <Topbar />
           {/* Above the tabs, because this is news and a question, and both are
               worth reading before the list they are about. */}
           <SignedBanner signed={signed} />
@@ -899,7 +897,6 @@ export function QuoteWizard({
           all straight back, unchanged. */}
       {tab === "new" && plan && (
         <>
-          <Topbar />
           <QuoteTabs value={tab} onChange={setTab} count={recentBriefs.length} />
           <PageHeader title={t.quote.planTitle} subtitle={t.quote.planSubtitle} />
           <PlanReview
@@ -924,7 +921,6 @@ export function QuoteWizard({
 
       {tab === "new" && !plan && (
         <>
-          <Topbar />
           {/* The two halves of a first quote, one at a time.
               "Start with a brief" until there is one, then "now press this"
               once the form has everything it needs. Shown from here rather

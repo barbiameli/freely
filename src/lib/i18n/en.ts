@@ -542,6 +542,18 @@ export const en = {
     refine: "Refine",
   },
 
+  // Two letters each, for the day picker in the project setup. Short enough
+  // that seven of them fit on a phone without wrapping.
+  weekdays: {
+    sun: "Su",
+    mon: "Mo",
+    tue: "Tu",
+    wed: "We",
+    thu: "Th",
+    fri: "Fr",
+    sat: "Sa",
+  },
+
   track: {
     timeContinue: "Do this again",
     whatAreYouDoing: "What are you working on?",
@@ -578,6 +590,15 @@ export const en = {
     modeBillingWhat: "Hours fill the invoice, and Freely tells you at 80% of the estimate, which is what an hourly quote promises the client it will do.",
     timeAsDefault: "Use this on new projects too",
     timeAsDefaultHint: "Otherwise Freely asks again the next time you land one.",
+    planSetupTitle: "Set this project up",
+    planSetupHint: "Four things, then the board and the timeline fill in and you edit from there. A starred deliverable takes days from the others rather than making the project longer.",
+    planStarts: "Starts",
+    planEnds: "Ends",
+    planHoursADay: "Hours a day",
+    planWorkingDays: "Days you work",
+    planStarHint: "Star anything that deserves more of the time",
+    planSetupGo: "Plan it",
+    planShort: "This needs {days} more working days than the window holds.",
     timelinePlanIt: "Plan it for me",
     timelineFits: "It fits inside the dates.",
     timelineOverruns: "This runs {days} working days past the due date.",

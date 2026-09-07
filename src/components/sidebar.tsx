@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { FileText, FolderKanban, House, Receipt, Sparkles } from "lucide-react";
 import { FreelyLogo } from "@/components/freely-logo";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { Topbar } from "@/components/topbar";
 import { useT } from "@/lib/i18n/context";
 
 const ITEMS = [
@@ -102,7 +103,10 @@ export function Sidebar() {
 
       {/* Desktop only: on mobile the rail is a bottom bar with no room, so the
           switcher rides in the top bar there instead. */}
-      <div className="hidden md:block md:mt-auto">
+      {/* Account and notifications live with the navigation rather than in a
+          band across the top of every page. */}
+      <div className="hidden md:flex md:flex-col md:items-center md:gap-4 md:mt-auto">
+        <Topbar />
         <LanguageSwitcher compact />
       </div>
     </nav>

@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import { isStripeConfigured } from "@/lib/stripe";
-import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { currencySymbol } from "@/lib/currencies";
@@ -34,7 +33,6 @@ export default async function InvoicePage({ params }: { params: { projectId: str
 
   return (
     <>
-      <Topbar />
       <div>
         <h1 className="font-display italic text-[30px] text-coral m-0">{t.invoices.summary}</h1>
         <p className="text-slate text-small mt-1.5">

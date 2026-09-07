@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Download, Trash2, Check, Plus, ShieldOff } from "lucide-react";
-import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { Label, SubLabel } from "@/components/ui/label";
 import { INVOICE_NOTES, hasNote, toggleNote } from "@/lib/invoice-notes";
@@ -259,7 +258,6 @@ export function InvoiceEditor({
 
   return (
     <>
-      <Topbar />
 
       <RecordHeader
         title={`Invoice #${String(invoice.number).padStart(4, "0")}`}

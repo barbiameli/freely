@@ -3,6 +3,7 @@ import { requireFullUser } from "@/lib/session";
 import { Sidebar } from "@/components/sidebar";
 import { Providers } from "@/components/providers";
 import { TimerBar } from "@/components/track/timer-bar";
+import { Topbar } from "@/components/topbar";
 import { runningAnywhereAction } from "@/actions/time";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -46,6 +47,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             band was the difference between seeing the board and scrolling
             for it. */}
         <div className="flex-1 min-w-0 px-5 py-6 pb-24 md:px-8 md:pt-7 md:pb-12 xl:px-12 flex flex-col gap-5 md:gap-6">
+          {/* On a phone the rail is a bottom bar with five destinations in
+              it and no room for two more, so the account controls sit at the
+              top right there. On desktop they are in the rail and this is
+              not rendered at all. */}
+          <div className="flex md:hidden justify-end">
+            <Topbar />
+          </div>
           <TimerBar initial={timer.ok ? timer.data : null} />
           {children}
         </div>

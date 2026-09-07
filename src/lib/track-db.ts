@@ -50,6 +50,8 @@ export interface DeliverableRow {
   invoicedAt: Date | null;
   /** Which milestone covers it, null on a project not billed that way. */
   milestoneId: string | null;
+  /** How much of the window it deserves. 1 normally, 2 when starred. */
+  priority: number;
 }
 
 /** A deliverable with everything hanging off it, which is how Track reads
@@ -105,7 +107,10 @@ type DeliverableCreate = {
   summary?: string | null;
 };
 type DeliverableUpdate = Partial<
-  Pick<DeliverableRow, "name" | "done" | "order" | "dueAt" | "summary" | "brokenDownAt">
+  Pick<
+    DeliverableRow,
+    "name" | "done" | "order" | "dueAt" | "summary" | "brokenDownAt" | "priority"
+  >
 >;
 
 /**

@@ -531,6 +531,17 @@ model Project {
   diaryEntries DiaryEntry[]
 
   @@index([userId])
+  /// How the plan is worked out, asked once when the project starts.
+  ///
+  /// Defaults that suit almost everybody, and editable, because "six hours a
+  /// day, weekdays" is true of most freelancers and wrong for enough of them
+  /// that guessing silently would produce a plan nobody trusts.
+  hoursPerDay Float   @default(6)
+  /// Days of the week that are working days, 0 is Sunday. Weekdays by default.
+  workingDays Int[]   @default([1, 2, 3, 4, 5])
+  /// When the shape was last settled, so the setup asks once rather than
+  /// every visit. Null means it has never been planned.
+  plannedAt   DateTime?
 }
 
 // A billable chunk of the work, grouping one or more deliverables.
@@ -703,6 +714,12 @@ model Deliverable {
   // for it on demand rather than at project creation.
   clientName String? @db.Text
 
+  /// How much of the available time this deserves, 1 by default.
+  ///
+  /// Two on a starred deliverable, which takes days from the rest rather than
+  /// making the project longer: the window is what it is, so the only real
+  /// question is where the time goes inside it.
+  priority   Int     @default(1)
   steps Step[]
   flags Flag[]
 

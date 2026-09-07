@@ -95,11 +95,20 @@ describe("the page starts where the rail starts", () => {
   });
 
   it("does not spend a row on a bell and an avatar", () => {
-    // On the project page that row sat between the top of the screen and the
-    // project's name, on every visit.
-    const header = detail.slice(0, detail.indexOf("<RecordHeader"));
-    const topbar = header.lastIndexOf("<Topbar />");
-    const switcher = header.lastIndexOf("<Popover");
-    expect(topbar).toBeGreaterThan(switcher);
+    // It was rendered at the top of fourteen pages, so every screen in the
+    // app began with a band containing a bell and an avatar directly above
+    // its own heading. It lives in the rail now, with the rest of the
+    // navigation.
+    expect(detail).not.toContain("<Topbar />");
+    const sidebar = readFileSync("src/components/sidebar.tsx", "utf8");
+    expect(sidebar).toContain("<Topbar />");
+  });
+
+  it("keeps them reachable on a phone", () => {
+    // The rail is a bottom bar there with five destinations and no room for
+    // two more, so they sit top right instead.
+    const shell = readFileSync("src/app/(app)/layout.tsx", "utf8");
+    expect(shell).toContain("flex md:hidden justify-end");
+    expect(shell).toContain("<Topbar />");
   });
 });

@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Trash2, PenTool, Link2, Sparkles, Pencil, Upload, FileText, CheckCircle2, CalendarDays } from "lucide-react";
-import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { Label, SubLabel } from "@/components/ui/label";
 import { Chip } from "@/components/ui/chip";
@@ -195,7 +194,6 @@ export function MemoryView({
 
   return (
     <>
-      <Topbar />
       <PageHeader
         title={t.memory.whatItKnows}
         subtitle={

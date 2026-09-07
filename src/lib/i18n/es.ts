@@ -539,6 +539,16 @@ export const es: Dictionary = {
     refine: "Afinar",
   },
 
+  weekdays: {
+    sun: "Do",
+    mon: "Lu",
+    tue: "Ma",
+    wed: "Mi",
+    thu: "Ju",
+    fri: "Vi",
+    sat: "Sa",
+  },
+
   track: {
     timeContinue: "Hacerlo otra vez",
     whatAreYouDoing: "¿En qué estás trabajando?",
@@ -575,6 +585,15 @@ export const es: Dictionary = {
     modeBillingWhat: "Las horas rellenan la factura, y Freely te avisa al 80% de la estimación, que es lo que un presupuesto por horas le promete al cliente.",
     timeAsDefault: "Usar esto también en proyectos nuevos",
     timeAsDefaultHint: "Si no, Freely vuelve a preguntar la próxima vez.",
+    planSetupTitle: "Prepara este proyecto",
+    planSetupHint: "Cuatro cosas y el tablero y el cronograma se rellenan para que edites desde ahí. Un entregable con estrella se lleva días de los demás en vez de alargar el proyecto.",
+    planStarts: "Empieza",
+    planEnds: "Termina",
+    planHoursADay: "Horas al día",
+    planWorkingDays: "Días que trabajas",
+    planStarHint: "Marca lo que merece más tiempo",
+    planSetupGo: "Planificar",
+    planShort: "Esto necesita {days} días hábiles más de los que caben.",
     timelinePlanIt: "Planifícalo por mí",
     timelineFits: "Cabe dentro de las fechas.",
     timelineOverruns: "Esto se pasa {days} días hábiles de la fecha de entrega.",

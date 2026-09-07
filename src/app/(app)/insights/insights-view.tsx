@@ -1,6 +1,5 @@
 "use client";
 
-import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { CardHeader } from "@/components/ui/label";
 import type { Funnel, Retention, DayCount } from "@/lib/metrics";
@@ -66,7 +65,6 @@ export function InsightsView({
 
   return (
     <>
-      <Topbar />
       <PageHeader
         title="Insights"
         subtitle={`The last ${windowDays} days. Counts across every account, never one person.`}

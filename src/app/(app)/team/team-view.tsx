@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAction } from "@/lib/use-action";
 import { UserPlus, Copy, X } from "lucide-react";
-import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { ActionError } from "@/components/ui/action-error";
 import { Label } from "@/components/ui/label";
@@ -61,7 +60,6 @@ export function TeamView({
 
   return (
     <>
-      <Topbar />
       <PageHeader title={teamName ?? "Your studio"} subtitle={t.team.sharedWorkspace} />
 
       {isOwner || members.length <= 1 ? (

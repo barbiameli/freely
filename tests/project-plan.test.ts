@@ -1,0 +1,176 @@
+import { describe, it, expect } from "vitest";
+import { readFileSync } from "fs";
+import {
+  DEFAULT_SHAPE,
+  daysShort,
+  firstPlan,
+  shareOutDays,
+  workingDaysIn,
+  type PlannableDeliverable,
+  type PlannableTask,
+} from "@/lib/project-plan";
+
+// Monday 7 September to Friday 18 September 2026: ten working days.
+const START = "2026-09-07";
+const END = "2026-09-18";
+
+function task(over: Partial<PlannableTask> = {}): PlannableTask {
+  return { id: "t", deliverableId: "d1", estimateHours: 6, order: 0, done: false, ...over };
+}
+
+function deliverable(over: Partial<PlannableDeliverable> = {}): PlannableDeliverable {
+  return { id: "d1", order: 0, priority: 1, ...over };
+}
+
+describe("the working days in a window", () => {
+  it("counts the window rather than a number of days from the start", () => {
+    expect(workingDaysIn(START, END, [1, 2, 3, 4, 5])).toHaveLength(10);
+  });
+
+  it("leaves out the weekend", () => {
+    const days = workingDaysIn(START, END, [1, 2, 3, 4, 5]);
+    expect(days.every((day) => day.getUTCDay() !== 0 && day.getUTCDay() !== 6)).toBe(true);
+  });
+
+  it("believes somebody who works Saturdays", () => {
+    // One Saturday falls inside 7 to 18 September.
+    expect(workingDaysIn(START, END, [1, 2, 3, 4, 5, 6])).toHaveLength(11);
+  });
+
+  it("gives nothing back when the dates are the wrong way round", () => {
+    expect(workingDaysIn(END, START, [1, 2, 3, 4, 5])).toEqual([]);
+  });
+});
+
+describe("sharing the days out", () => {
+  const six = Array.from({ length: 6 }, (_, i) => deliverable({ id: `d${i}`, order: i }));
+  const tasks = six.map((d, i) => task({ id: `t${i}`, deliverableId: d.id }));
+
+  it("adds up to the window, not to one less", () => {
+    const share = shareOutDays(six, tasks, 10);
+    const total = Array.from(share.values()).reduce((sum, n) => sum + n, 0);
+    expect(total).toBe(10);
+  });
+
+  it("gives a starred deliverable more of the time", () => {
+    const starred = six.map((d, i) => (i === 0 ? { ...d, priority: 2 } : d));
+    const share = shareOutDays(starred, tasks, 10);
+    expect(share.get("d0")!).toBeGreaterThan(share.get("d1")!);
+  });
+
+  it("takes those days from the others rather than lengthening the project", () => {
+    // The end date was agreed with a client. The only real question is where
+    // the time goes inside the window.
+    const starred = six.map((d, i) => (i === 0 ? { ...d, priority: 2 } : d));
+    const total = Array.from(shareOutDays(starred, tasks, 10).values()).reduce((a, b) => a + b, 0);
+    expect(total).toBe(10);
+  });
+
+  it("never rounds a deliverable out of existence", () => {
+    // A deliverable allocated nothing is one that silently left the plan.
+    const share = shareOutDays(six, tasks, 6);
+    for (const d of six) expect(share.get(d.id)!).toBeGreaterThanOrEqual(1);
+  });
+
+  it("ignores deliverables whose work is finished", () => {
+    const done = tasks.map((t, i) => (i === 0 ? { ...t, done: true } : t));
+    expect(shareOutDays(six, done, 10).has("d0")).toBe(false);
+  });
+
+  it("says nothing about a window with no days in it", () => {
+    expect(shareOutDays(six, tasks, 0).size).toBe(0);
+  });
+});
+
+describe("the first plan", () => {
+  const three = [
+    deliverable({ id: "a", order: 0 }),
+    deliverable({ id: "b", order: 1 }),
+    deliverable({ id: "c", order: 2 }),
+  ];
+  const tasks = [
+    task({ id: "a1", deliverableId: "a", order: 0 }),
+    task({ id: "a2", deliverableId: "a", order: 1 }),
+    task({ id: "b1", deliverableId: "b", order: 0 }),
+    task({ id: "c1", deliverableId: "c", order: 0 }),
+  ];
+
+  it("places every unfinished task", () => {
+    const plan = firstPlan(three, tasks, START, END);
+    expect(plan.map((p) => p.id).sort()).toEqual(["a1", "a2", "b1", "c1"]);
+  });
+
+  it("keeps the deliverables in the order they were agreed", () => {
+    const plan = firstPlan(three, tasks, START, END);
+    const first = plan.find((p) => p.id === "a1")!;
+    const last = plan.find((p) => p.id === "c1")!;
+    expect(first.start.getTime()).toBeLessThan(last.start.getTime());
+  });
+
+  it("never places anything on a day nobody works", () => {
+    const plan = firstPlan(three, tasks, START, END);
+    for (const placement of plan) {
+      expect([1, 2, 3, 4, 5]).toContain(placement.start.getUTCDay());
+      expect([1, 2, 3, 4, 5]).toContain(placement.end.getUTCDay());
+    }
+  });
+
+  it("stays inside the window", () => {
+    const plan = firstPlan(three, tasks, START, END);
+    for (const placement of plan) {
+      expect(placement.end.getTime()).toBeLessThanOrEqual(new Date(`${END}T00:00:00Z`).getTime());
+    }
+  });
+
+  it("has nothing to draw without a window", () => {
+    expect(firstPlan(three, tasks, END, START)).toEqual([]);
+  });
+});
+
+describe("whether it fits at all", () => {
+  it("says nothing when it does", () => {
+    expect(daysShort([task({ estimateHours: 6 })], START, END, DEFAULT_SHAPE)).toBe(0);
+  });
+
+  it("counts the days it is short", () => {
+    // 90 hours at six a day is fifteen days, against ten in the window.
+    expect(daysShort([task({ estimateHours: 90 })], START, END, DEFAULT_SHAPE)).toBe(5);
+  });
+
+  it("believes a longer day", () => {
+    const long = { workingDays: [1, 2, 3, 4, 5], hoursPerDay: 12 };
+    expect(daysShort([task({ estimateHours: 90 })], START, END, long)).toBe(0);
+  });
+
+  it("does not count work already finished", () => {
+    expect(daysShort([task({ estimateHours: 90, done: true })], START, END)).toBe(0);
+  });
+});
+
+
+describe("a project starts planned, not blank", () => {
+  const detail = readFileSync("src/app/(app)/track/[projectId]/project-detail.tsx", "utf8");
+  const setup = readFileSync("src/components/track/plan-setup.tsx", "utf8");
+
+  it("asks for the shape before showing an empty grid", () => {
+    expect(detail).toContain("!project.plannedAt && allSteps.length > 0");
+    expect(detail).toContain("<PlanSetup");
+  });
+
+  it("asks once rather than on every visit", () => {
+    // plannedAt is the record that it has been answered.
+    expect(detail).toContain("project.plannedAt");
+  });
+
+  it("has a defensible default for all four", () => {
+    // Somebody who agrees with everything presses one button.
+    expect(setup).toContain('useState("6")');
+    expect(setup).toContain("useState<number[]>([1, 2, 3, 4, 5])");
+  });
+
+  it("drops the list view", () => {
+    // Three ways to read one thing was one too many.
+    expect(detail).not.toContain("t.track.viewList");
+    expect(detail).toContain('useState<"board" | "timeline">');
+  });
+});

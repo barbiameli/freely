@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Upload } from "lucide-react";
-import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { ProjectCard, ProjectCardGrid } from "@/components/project-card";
 import { Button } from "@/components/ui/button";
@@ -128,7 +127,6 @@ export function TrackDashboard({
 
   return (
     <>
-      <Topbar />
       <PageHeader
         title={t.track.everythingRunning}
         subtitle={

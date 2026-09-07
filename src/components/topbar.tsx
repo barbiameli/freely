@@ -46,9 +46,16 @@ export function Topbar() {
   const name = session?.user?.name;
   const email = session?.user?.email;
 
+  /*
+   * A cluster, not a bar.
+   *
+   * This used to be a full-width row rendered at the top of fourteen pages,
+   * so every screen in the app began with a band containing a bell and an
+   * avatar, directly above its own heading. It lives in the rail now, with
+   * the rest of the navigation, and the pages start with their content.
+   */
   return (
-    <div className="flex justify-end items-center w-full">
-      <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3">
       <span className="md:hidden">
         <LanguageSwitcher compact />
       </span>
@@ -113,6 +120,5 @@ export function Topbar() {
         )}
       </div>
       </div>
-    </div>
   );
 }

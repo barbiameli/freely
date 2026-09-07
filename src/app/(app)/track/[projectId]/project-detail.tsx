@@ -3,7 +3,6 @@
 import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarDays, ChevronDown, Trash2 } from "lucide-react";
-import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { TimePanel } from "@/components/track/time-panel";
 import { TimerButton } from "@/components/track/timer-button";
@@ -44,6 +43,7 @@ import type { BillingMode } from "@/lib/invoice-queue";
 import { milestoneProgress, type MilestoneView } from "@/lib/milestones";
 import { RecordHeader } from "@/components/ui/page-header";
 import { Board } from "@/components/track/board";
+import { PlanSetup } from "@/components/track/plan-setup";
 import { Timeline } from "@/components/track/timeline";
 
 interface Project {
@@ -58,6 +58,8 @@ interface Project {
   currency?: string | null;
   startDate: string | null;
   dueDate: string | null;
+  /** When the project shape was settled. Null means never. */
+  plannedAt?: string | null;
   deliverables: DeliverableView[];
 }
 
@@ -230,7 +232,7 @@ export function ProjectDetail({
    * afternoon, not a setting, and a remembered view is one more thing that has
    * silently changed when somebody comes back to a page.
    */
-  const [view, setView] = useState<"board" | "timeline" | "list">("board");
+  const [view, setView] = useState<"board" | "timeline">("board");
 
   /**
    * The one-time "what is this tracking for" question.
@@ -363,7 +365,6 @@ export function ProjectDetail({
           )}
         </Popover>
           <div className="ml-auto">
-            <Topbar />
           </div>
         </div>
 
@@ -510,13 +511,22 @@ export function ProjectDetail({
                 <Chip active={view === "timeline"} onClick={() => setView("timeline")}>
                   {t.track.viewTimeline}
                 </Chip>
-                <Chip active={view === "list"} onClick={() => setView("list")}>
-                  {t.track.viewList}
-                </Chip>
               </div>
             )}
           </div>
-          {view === "board" && allSteps.length > 0 ? (
+          {/* Nothing to look at until the shape is settled, so ask for it
+              rather than showing an empty grid and a pile of unplaced pills.
+              Once. See lib/project-plan. */}
+          {!project.plannedAt && allSteps.length > 0 ? (
+            <div className="mt-3">
+              <PlanSetup
+                projectId={project.id}
+                deliverables={project.deliverables.map((d) => ({ id: d.id, name: d.name }))}
+                startDate={project.startDate}
+                dueDate={project.dueDate}
+              />
+            </div>
+          ) : view === "board" && allSteps.length > 0 ? (
             <div className="mt-3">
               <Board
                 steps={allSteps}

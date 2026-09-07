@@ -215,6 +215,10 @@ export default async function ProjectPage({
         currency: project.currency,
         startDate: schedule.startDate?.toISOString() ?? null,
         dueDate: schedule.dueDate?.toISOString() ?? null,
+        // Whether the shape has ever been settled. Null means the setup panel
+        // has not been answered yet. See lib/project-plan.
+        plannedAt:
+          (project as unknown as { plannedAt?: Date | null }).plannedAt?.toISOString() ?? null,
         deliverables: deliverables.map((d) => ({
           id: d.id,
           name: d.name,

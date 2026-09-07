@@ -4,7 +4,6 @@ import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, Copy, Check as CheckIcon, ExternalLink, Globe } from "lucide-react";
-import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { Label, CardHeader } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -272,7 +271,6 @@ export function DiaryView({
       </Card>
 
       <div className="flex flex-col gap-5 md:gap-6 flex-1 min-w-0">
-        <Topbar />
 
         {/* Just the invoice in the action slot. "Send to diary" used to sit
             here, and it no longer exists: the client page keeps itself up to

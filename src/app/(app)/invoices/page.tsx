@@ -4,7 +4,6 @@ import { teamScopeWhere } from "@/lib/team-scope";
 import { invoiceDb } from "@/lib/invoice-db";
 import { invoiceQueue, type QueueProject } from "@/lib/invoice-queue";
 import { detectBillingMode } from "@/lib/billing-mode";
-import { Topbar } from "@/components/topbar";
 import { InvoicesView, type InvoiceRowView } from "./invoices-view";
 
 export default async function InvoicesPage() {
@@ -91,7 +90,6 @@ export default async function InvoicesPage() {
 
   return (
     <>
-      <Topbar />
       <InvoicesView
         invoices={invoiceRows}
         queue={queue}

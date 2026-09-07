@@ -4,9 +4,10 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
-import { stepDb } from "@/lib/track-db";
+import { deliverableDb, stepDb } from "@/lib/track-db";
 import { changesForMove, columnOf, reorder, type Column } from "@/lib/board";
 import { autoSchedule, fitPerDeliverable, overrunDays, whatToDoAbout } from "@/lib/timeline-plan";
+import { daysShort, firstPlan } from "@/lib/project-plan";
 import type { ActionResult } from "@/actions/briefs";
 
 /**
@@ -215,4 +216,98 @@ export async function autoScheduleAction(
       advice: whatToDoAbout(fits),
     },
   };
+}
+
+/**
+ * Settling the shape of a project, and drawing the first plan from it.
+ *
+ * One call rather than a save followed by a plan: the two are the same act,
+ * and a half-applied version leaves somebody looking at a board that does not
+ * match the dates above it.
+ */
+export async function planProjectAction(input: {
+  projectId: string;
+  startDay: string;
+  endDay: string;
+  hoursPerDay: number;
+  workingDays: number[];
+  /** Deliverable ids the freelancer starred. */
+  starred: string[];
+}): Promise<ActionResult<{ daysShort: number }>> {
+  const user = await requireFullUser();
+  const project = await prisma.project.findFirst({
+    where: { id: input.projectId, ...teamScopeWhere(user) },
+    include: { deliverables: { orderBy: { order: "asc" } } },
+  });
+  if (!project) return { ok: false, error: "Project not found." };
+
+  const start = new Date(`${input.startDay}T00:00:00.000Z`);
+  const end = new Date(`${input.endDay}T00:00:00.000Z`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return { ok: false, error: "Those dates didn't make sense." };
+  }
+  if (end < start) return { ok: false, error: "The end date is before the start." };
+  if (input.workingDays.length === 0) {
+    return { ok: false, error: "Pick at least one day of the week you work." };
+  }
+
+  const steps = await stepDb.findMany({
+    where: { deliverable: { projectId: project.id } },
+    orderBy: { order: "asc" },
+  });
+
+  const starred = new Set(input.starred);
+  const deliverables = project.deliverables.map((d, index) => ({
+    id: d.id,
+    order: index,
+    priority: starred.has(d.id) ? 2 : 1,
+  }));
+  const tasks = steps.map((step) => ({
+    id: step.id,
+    deliverableId: step.deliverableId,
+    estimateHours: step.estimateHours,
+    order: step.order,
+    done: step.done,
+  }));
+
+  const shape = {
+    workingDays: input.workingDays,
+    hoursPerDay: Math.max(0.5, input.hoursPerDay),
+  };
+  const plan = firstPlan(deliverables, tasks, start, end, shape);
+
+  try {
+    await prisma.$transaction([
+      prisma.project.update({
+        where: { id: project.id },
+        data: {
+          startDate: start,
+          dueDate: end,
+          ...({
+            hoursPerDay: shape.hoursPerDay,
+            workingDays: shape.workingDays,
+            plannedAt: new Date(),
+          } as unknown as Record<string, never>),
+        },
+      }),
+      ...deliverables.map((deliverable) =>
+        deliverableDb.update({
+          where: { id: deliverable.id },
+          data: { priority: deliverable.priority },
+        })
+      ),
+      ...plan.map((placement) =>
+        stepDb.update({
+          where: { id: placement.id },
+          data: { plannedStart: placement.start, plannedEnd: placement.end },
+        })
+      ),
+    ] as unknown as Parameters<typeof prisma.$transaction>[0]);
+  } catch (err) {
+    console.error("[planProjectAction] failed", err);
+    return { ok: false, error: "Couldn't save that. Try again." };
+  }
+
+  revalidatePath(`/track/${project.id}`);
+  return { ok: true, data: { daysShort: daysShort(tasks, start, end, shape) } };
 }

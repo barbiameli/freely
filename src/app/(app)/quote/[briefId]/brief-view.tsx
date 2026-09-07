@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, CheckCircle2, ChevronDown, Copy, ExternalLink, Eye, FileText, Link2, Plus, Sparkles, Trash2 } from "lucide-react";
-import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { TextField } from "@/components/ui/text-field";
@@ -681,7 +680,6 @@ export function BriefView({
 
   return (
     <>
-      <Topbar />
 
       {/* Said once, at the top, rather than by every control refusing.
           A quote that is agreed is not broken, and a page full of disabled

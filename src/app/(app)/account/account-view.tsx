@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { signOut } from "next-auth/react";
-import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { Label, CardHeader } from "@/components/ui/label";
 import { TextField } from "@/components/ui/text-field";
@@ -41,7 +40,6 @@ export function AccountView({
   const t = useT();
   return (
     <>
-      <Topbar />
       <PageHeader title={t.account.yourAccount} subtitle={t.account.basicInfoOnly} />
       {/* Five unrelated cards in one column read as a list of settings with no
           shape. Three bands instead: who you are, how you get paid and get
