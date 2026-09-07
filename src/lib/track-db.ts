@@ -20,6 +20,11 @@ export interface StepRow {
   done: boolean;
   order: number;
   estimateHours: number;
+  /** When it moved into Doing. Null while it is still To do. See lib/board. */
+  startedAt: Date | null;
+  /** Where it sits on the timeline, once somebody has placed it. */
+  plannedStart: Date | null;
+  plannedEnd: Date | null;
   createdAt: Date;
 }
 
@@ -79,7 +84,12 @@ interface Delegate<Row, CreateData, UpdateData> {
 }
 
 type StepCreate = { deliverableId: string; name: string; order?: number; estimateHours?: number };
-type StepUpdate = Partial<Pick<StepRow, "name" | "done" | "order" | "estimateHours">>;
+type StepUpdate = Partial<
+  Pick<
+    StepRow,
+    "name" | "done" | "order" | "estimateHours" | "startedAt" | "plannedStart" | "plannedEnd"
+  >
+> & { doneAt?: Date | null };
 type FlagCreate = {
   deliverableId: string;
   question: string;

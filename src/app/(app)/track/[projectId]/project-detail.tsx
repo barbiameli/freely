@@ -40,6 +40,7 @@ import { ActionError } from "@/components/ui/action-error";
 import type { BillingMode } from "@/lib/invoice-queue";
 import { milestoneProgress, type MilestoneView } from "@/lib/milestones";
 import { RecordHeader } from "@/components/ui/page-header";
+import { Board } from "@/components/track/board";
 
 interface Project {
   id: string;
@@ -218,6 +219,33 @@ export function ProjectDetail({
   const [rescheduling, setRescheduling] = useState(false);
   // Which deliverable is open. The questions worth raising about it now sit
   // inside it, so this no longer drives a panel somewhere else on the page.
+  /**
+   * Board or list.
+   *
+   * Not persisted on purpose: it is a way of looking at one project on one
+   * afternoon, not a setting, and a remembered view is one more thing that has
+   * silently changed when somebody comes back to a page.
+   */
+  const [view, setView] = useState<"board" | "list">("board");
+
+  /**
+   * Every task on the project, flattened out of its deliverable.
+   *
+   * The board is columns of tasks rather than a list of deliverables, so the
+   * nesting the quote gave us is carried by a tag on each card instead.
+   */
+  const allSteps = project.deliverables.flatMap((d) =>
+    d.steps.map((step) => ({
+      id: step.id,
+      name: step.name,
+      done: step.done,
+      startedAt: step.startedAt ?? null,
+      order: step.order ?? 0,
+      estimateHours: step.estimateHours,
+      deliverableId: d.id,
+    }))
+  );
+
   const [openId, setOpenId] = useState<string | null>(
     project.deliverables.find((d) => !d.done)?.id ?? project.deliverables[0]?.id ?? null
   );
@@ -405,8 +433,32 @@ export function ProjectDetail({
         <ComingUp deadlines={deadlines} onSelect={setOpenId} />
 
         <Card>
-          <Label>{t.track.deliverables}</Label>
-          {project.deliverables.length === 0 ? (
+          <div className="flex items-center gap-3 flex-wrap">
+            <Label>{t.track.deliverables}</Label>
+            {/* Two ways to read the same work. The board answers "what am I
+                doing now"; the list answers "what did we agree", which is the
+                shape of the quote rather than the shape of a day. The board
+                is the default because once a project is running, the day is
+                the question being asked. */}
+            {allSteps.length > 0 && (
+              <div className="ml-auto flex gap-1.5">
+                <Chip active={view === "board"} onClick={() => setView("board")}>
+                  {t.track.viewBoard}
+                </Chip>
+                <Chip active={view === "list"} onClick={() => setView("list")}>
+                  {t.track.viewList}
+                </Chip>
+              </div>
+            )}
+          </div>
+          {view === "board" && allSteps.length > 0 ? (
+            <div className="mt-3">
+              <Board
+                steps={allSteps}
+                deliverables={project.deliverables.map((d) => ({ id: d.id, name: d.name }))}
+              />
+            </div>
+          ) : project.deliverables.length === 0 ? (
             <div className="text-text-muted text-small mt-1">{t.track.noDeliverables}</div>
           ) : quotedMilestones.length > 0 ? (
             /* Grouped under the milestone they were quoted in, so the list on

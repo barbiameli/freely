@@ -725,6 +725,22 @@ model Step {
   // ten-minute task does not look like the same amount of work as a two-day
   // one. Zero means unestimated.
   estimateHours Float       @default(0)
+  /// When this moved into Doing, and null when it has not.
+  ///
+  /// The board has three columns and there are only two booleans' worth of
+  /// state here, so this is what tells To do from Doing. Deliberately not a
+  /// second flag alongside `done`: two fields that can both claim a task is
+  /// finished is how a card ends up in one column on one screen and another
+  /// column somewhere else. `done` remains the only answer to "is it
+  /// finished", and this only matters while it is false. See lib/board.
+  startedAt     DateTime?
+  /// Where this sits on the timeline, when it has been placed.
+  ///
+  /// Planned, not actual: startedAt records when work began, these two record
+  /// when it was meant to. Both null on a task nobody has scheduled, which is
+  /// every task until somebody drags it or asks for a schedule.
+  plannedStart  DateTime?
+  plannedEnd    DateTime?
   createdAt     DateTime    @default(now())
 
   @@index([deliverableId])

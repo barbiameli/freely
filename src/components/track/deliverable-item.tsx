@@ -25,6 +25,9 @@ export interface StepView {
   name: string;
   done: boolean;
   estimateHours: number;
+  /** When it moved into Doing, which is what puts it in the middle column. */
+  startedAt?: string | null;
+  order?: number;
 }
 
 export interface FlagView {

@@ -135,6 +135,10 @@ export default async function ProjectPage({
                 name: s.name,
                 done: s.done,
                 estimateHours: s.estimateHours,
+                // Which board column it sits in, and where it was placed on
+                // the timeline. See lib/board.
+                startedAt: s.startedAt?.toISOString() ?? null,
+                order: s.order,
               })),
               flags: (d.flags ?? []).map((f) => ({
                 id: f.id,
