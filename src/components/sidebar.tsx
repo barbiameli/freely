@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { FileText, FolderKanban, House, Receipt, Sparkles } from "lucide-react";
 import { FreelyLogo } from "@/components/freely-logo";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useT } from "@/lib/i18n/context";
@@ -10,15 +11,21 @@ const ITEMS = [
   // Home first, because signing in lands here now. The rail used to open on
   // the quote form, which assumes somebody came to write a new quote rather
   // than to find out where the last one got to.
-  { key: "home", glyph: "H", href: "/home" },
-  { key: "quote", glyph: "Q", href: "/quote" },
-  { key: "track", glyph: "T", href: "/track" },
-  { key: "invoices", glyph: "I", href: "/invoices" },
+  // Icons rather than initials. "H", "Q", "T", "I", "M" only work if you
+  // already know what they stand for, which is a thing you learn once and
+  // then never think about, and until you have learned it the rail is five
+  // letters. A house is a house in any language, which also matters here:
+  // the labels are translated and the initials were not, so the Spanish rail
+  // read "H Q T I M" above Inicio, Presupuesto, Seguimiento, Facturas.
+  { key: "home", icon: House, href: "/home" },
+  { key: "quote", icon: FileText, href: "/quote" },
+  { key: "track", icon: FolderKanban, href: "/track" },
+  { key: "invoices", icon: Receipt, href: "/invoices" },
   // Fifth and last. The rail is full at five, and anything after this belongs
   // inside one of these rather than beside them. The ground rules were briefly
   // a sixth item and are now a tab in here, which is where the rest of what
   // Freely knows about how you work already was.
-  { key: "memory", glyph: "M", href: "/memory" },
+  { key: "memory", icon: Sparkles, href: "/memory" },
 ] as const;
 
 /**
@@ -49,6 +56,7 @@ export function Sidebar() {
       <div className="flex flex-row w-full justify-around md:w-auto md:flex-col md:gap-[26px] md:items-center">
         {ITEMS.map((item) => {
           const active = pathname?.startsWith(item.href);
+          const Icon = item.icon;
           return (
             <Link
               key={item.key}
@@ -63,13 +71,12 @@ export function Sidebar() {
                   active ? "bg-violet-tint" : "border border-line"
                 }`}
               >
-                <span
-                  className={`font-body font-bold text-small ${
-                    active ? "text-violet" : "text-text-muted"
-                  }`}
-                >
-                  {item.glyph}
-                </span>
+                <Icon
+                  size={17}
+                  strokeWidth={active ? 2.25 : 1.75}
+                  className={active ? "text-violet" : "text-text-muted"}
+                  aria-hidden
+                />
               </div>
               <span
                 // Wraps rather than overflowing: Spanish nav labels run about

@@ -2,7 +2,7 @@
 
 import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, Trash2 } from "lucide-react";
+import { CalendarDays, ChevronDown, Trash2 } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { TimePanel } from "@/components/track/time-panel";
@@ -13,6 +13,7 @@ import { TextField } from "@/components/ui/text-field";
 import { Button } from "@/components/ui/button";
 import { relativeDay } from "@/lib/schedule";
 import { Chip } from "@/components/ui/chip";
+import { Popover } from "@/components/ui/popover";
 import { TimelineBar } from "@/components/track/timeline-bar";
 import { DeliverableItem, type DeliverableView } from "@/components/track/deliverable-item";
 import { DiaryPrompt, type DoneItem } from "@/components/track/diary-prompt";
@@ -286,33 +287,67 @@ export function ProjectDetail({
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-5 lg:gap-6 flex-1 min-h-0">
-      <Card className="w-full lg:w-[172px] lg:shrink-0 lg:overflow-y-auto px-3.5 py-4">
-        <Label>{t.track.allProjects}</Label>
-        <div className="flex flex-col gap-1 mt-1">
-          {projectList.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => router.push(`/track/${p.id}`)}
-              className={`flex items-center gap-2 text-left px-2.5 py-2 rounded-lg cursor-pointer border-none ${
-                p.id === project.id ? "bg-violet-tint" : "bg-transparent hover:bg-paper"
-              }`}
-            >
-              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_DOT[p.status]}`} />
-              <span
-                className={`text-small truncate ${
-                  p.id === project.id ? "font-bold text-violet" : "font-medium text-slate"
-                }`}
-              >
-                {p.title}
-              </span>
-            </button>
-          ))}
-        </div>
-      </Card>
-
+    /*
+     * One column, not two.
+     *
+     * A 172px card listing every other project sat down the left of this page
+     * for the whole of its life, permanently spending a sixth of the width on
+     * a question nobody asks while working: "which other projects exist". It
+     * also put a second vertical rail next to the app's own, so the board had
+     * two navigation columns to its left before it started.
+     *
+     * The switcher is now a button in the header carrying the current
+     * project's name, which is where somebody looks to find out where they
+     * are, and the list opens from it when they actually want to move.
+     */
+    <div className="flex flex-col gap-5 lg:gap-6 flex-1 min-h-0">
       <div className="flex flex-col gap-5 md:gap-6 flex-1 min-w-0">
         <Topbar />
+
+        {/* Where you are, and the way to somewhere else. */}
+        <Popover
+          label={t.track.allProjects}
+          trigger={({ open, toggle }) => (
+            <button
+              type="button"
+              onClick={toggle}
+              aria-expanded={open}
+              className="self-start inline-flex items-center gap-1.5 bg-none border-none cursor-pointer p-0 tap"
+            >
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_DOT[project.status]}`} />
+              <span className="font-body font-semibold text-small text-slate truncate max-w-[52vw]">
+                {project.title}
+              </span>
+              <ChevronDown size={13} className="text-text-muted shrink-0" />
+            </button>
+          )}
+        >
+          {({ close }) => (
+            <div className="flex flex-col gap-0.5 p-2 max-h-[60vh] overflow-y-auto">
+              {projectList.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => {
+                    close();
+                    router.push(`/track/${p.id}`);
+                  }}
+                  className={`flex items-center gap-2 text-left px-2.5 py-2 rounded-lg cursor-pointer border-none w-full ${
+                    p.id === project.id ? "bg-violet-tint" : "bg-transparent hover:bg-paper"
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_DOT[p.status]}`} />
+                  <span
+                    className={`text-small truncate ${
+                      p.id === project.id ? "font-bold text-violet" : "font-medium text-slate"
+                    }`}
+                  >
+                    {p.title}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </Popover>
 
         {/* Only the invoice in the action slot. "Send to diary" used to sit
             alongside it, which put a client-facing action in the middle of the
