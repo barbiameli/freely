@@ -586,7 +586,11 @@ model Invoice {
   clientId  String?
   clientRecord Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
   issuedAt  DateTime @default(now())
-  dueAt     DateTime
+  /// Optional. Freely fills it from the payment terms, and plenty of invoices
+  /// genuinely have no date on them: a retainer, one settled on the spot, one
+  /// where the terms live in a contract rather than on the document. Required,
+  /// it meant clearing the field broke saving.
+  dueAt     DateTime?
   /// A free-text reference the client quotes when paying.
   reference String   @default("")
 

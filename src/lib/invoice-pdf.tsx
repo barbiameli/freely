@@ -52,6 +52,7 @@ export interface InvoicePdfData {
   itemised?: boolean;
   number: number;
   issuedAt: string;
+  /** Empty when this invoice carries no due date. */
   dueAt: string;
   reference: string;
   clientName: string;
@@ -271,7 +272,9 @@ export async function renderInvoicePdf(invoice: InvoicePdfData): Promise<Buffer>
           <View style={styles.metaBlock}>
             <Text style={styles.metaNumber}>#{String(invoice.number).padStart(4, "0")}</Text>
             <Text style={styles.metaLine}>{w.issued} {formatDate(invoice.issuedAt, locale)}</Text>
-            <Text style={styles.metaLine}>{w.due} {formatDate(invoice.dueAt, locale)}</Text>
+            {invoice.dueAt ? (
+              <Text style={styles.metaLine}>{w.due} {formatDate(invoice.dueAt, locale)}</Text>
+            ) : null}
           </View>
         </View>
 
@@ -360,11 +363,17 @@ export async function renderInvoicePdf(invoice: InvoicePdfData): Promise<Buffer>
                 <Text style={styles.payText}>{invoice.reference}</Text>
               </>
             ) : null}
-            <View style={{ marginTop: S4 }}>
-              <View style={styles.dueBadge}>
-                <Text style={styles.dueBadgeText}>{w.due} {formatShortDate(invoice.dueAt, locale)}</Text>
+            {/* No badge without a date. It read "Due Invalid Date" otherwise,
+                in the corner of a document asking somebody for money. */}
+            {invoice.dueAt ? (
+              <View style={{ marginTop: S4 }}>
+                <View style={styles.dueBadge}>
+                  <Text style={styles.dueBadgeText}>
+                    {w.due} {formatShortDate(invoice.dueAt, locale)}
+                  </Text>
+                </View>
               </View>
-            </View>
+            ) : null}
           </View>
         </View>
 

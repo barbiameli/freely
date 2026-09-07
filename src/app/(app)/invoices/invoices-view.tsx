@@ -78,7 +78,8 @@ export function InvoicesView({
           {invoices.map((inv) => {
             // Not late during the day it is due, and not late a day early
             // for anybody west of UTC. See lib/schedule.
-            const overdue = !inv.paid && isPastDue(new Date(inv.dueAt));
+            // No date means nothing to be late for.
+            const overdue = !inv.paid && Boolean(inv.dueAt) && isPastDue(new Date(inv.dueAt));
             return (
               <Link key={inv.id} href={`/invoices/${inv.id}`} className="no-underline">
                 <Card className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 cursor-pointer">

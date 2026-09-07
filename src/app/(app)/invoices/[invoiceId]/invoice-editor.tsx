@@ -367,7 +367,17 @@ export function InvoiceEditor({
             <Field label={t.invoices.issued} type="date" value={form.issuedAt} onChange={(v) => set("issuedAt", v)} />
           </div>
           <div className="flex-1">
-            <Field label="Due" type="date" value={form.dueAt} onChange={(v) => set("dueAt", v)} />
+            {/* Clearable. It was a required column, so emptying the box
+                produced an Invalid Date and Prisma refused the save with a
+                message about types. Plenty of invoices have no date on them:
+                a retainer, one settled on the spot, one whose terms live in a
+                contract rather than on the document. */}
+            <Field
+              label={t.invoices.dueOptional}
+              type="date"
+              value={form.dueAt}
+              onChange={(v) => set("dueAt", v)}
+            />
           </div>
           <label className="block flex-1">
             <SubLabel className="mb-1">

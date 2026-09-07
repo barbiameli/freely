@@ -17,7 +17,7 @@ export default async function InvoicePage({ params }: { params: { invoiceId: str
         id: invoice.id,
         number: invoice.number,
         issuedAt: invoice.issuedAt.toISOString().slice(0, 10),
-        dueAt: invoice.dueAt.toISOString().slice(0, 10),
+        dueAt: invoice.dueAt ? invoice.dueAt.toISOString().slice(0, 10) : "",
         reference: invoice.reference,
         clientName: invoice.clientName,
         clientCompany: invoice.clientCompany,

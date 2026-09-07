@@ -390,7 +390,11 @@ export async function updateInvoiceAction(
     data.taxRate = patch.taxRate;
   }
   if (patch.issuedAt !== undefined) data.issuedAt = new Date(patch.issuedAt);
-  if (patch.dueAt !== undefined) data.dueAt = new Date(patch.dueAt);
+  // An empty box means no due date, rather than an Invalid Date that Prisma
+  // rejects with a message about the wrong type.
+  if (patch.dueAt !== undefined) {
+    data.dueAt = patch.dueAt.trim() ? new Date(patch.dueAt) : null;
+  }
   if (patch.lineItems !== undefined) data.lineItems = sanitizeLineItems(patch.lineItems);
 
   try {

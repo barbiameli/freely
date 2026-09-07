@@ -62,3 +62,37 @@ describe("the summary rows", () => {
     expect(page).toContain("t.invoices.deliverablesCompleted");
   });
 });
+
+/**
+ * An invoice can have no due date.
+ *
+ * dueAt was a required column, so clearing the box produced an Invalid Date
+ * and Prisma refused the save with a message about types. Plenty of invoices
+ * genuinely carry no date: a retainer, one settled on the spot, one whose
+ * terms live in a contract rather than on the document.
+ */
+describe("the due date is optional", () => {
+  const schema = readFileSync("prisma/schema.prisma", "utf8");
+  const actions = readFileSync("src/actions/invoices.ts", "utf8");
+  const pdf = readFileSync("src/lib/invoice-pdf.tsx", "utf8");
+  const list = readFileSync("src/app/(app)/invoices/invoices-view.tsx", "utf8");
+
+  it("is nullable in the schema", () => {
+    const invoice = schema.slice(schema.indexOf("issuedAt  DateTime @default(now())"));
+    expect(invoice.slice(0, 500)).toContain("dueAt     DateTime?");
+  });
+
+  it("treats an empty box as no date rather than an invalid one", () => {
+    expect(actions).toContain("data.dueAt = patch.dueAt.trim() ? new Date(patch.dueAt) : null;");
+  });
+
+  it("prints no due row and no badge without one", () => {
+    // It read "Due Invalid Date" in the corner of a document asking for money.
+    expect(pdf).toContain("{invoice.dueAt ? (");
+    expect(pdf).toContain("No badge without a date");
+  });
+
+  it("cannot be overdue without a date", () => {
+    expect(list).toContain("Boolean(inv.dueAt)");
+  });
+});

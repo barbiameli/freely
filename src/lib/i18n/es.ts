@@ -854,6 +854,7 @@ export const es: Dictionary = {
     extraLine: "Línea extra, opcional",
     shownAtFoot: "Aparece al pie de la factura",
     rememberOnDevice: "Recordarlos en este dispositivo, para no volver a escribirlos.",
+    dueOptional: "Vencimiento (opcional)",
     raiseInvoice: "Crear la factura",
     openInvoice: "Abrir la factura",
     deliverablesCompleted: "Entregables completados",

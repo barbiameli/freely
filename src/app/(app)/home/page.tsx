@@ -230,7 +230,7 @@ export default async function HomePage() {
       total,
       currency: invoice.currency ?? "USD",
       issuedAt: invoice.issuedAt.toISOString(),
-      dueAt: invoice.dueAt.toISOString(),
+      dueAt: invoice.dueAt ? invoice.dueAt.toISOString() : null,
       paidAt: invoice.paidAt?.toISOString() ?? null,
     };
   });
@@ -362,7 +362,9 @@ export default async function HomePage() {
         client: invoice.clientName,
         total,
         currency: invoice.currency,
-        overdueDays: Math.floor((now - invoice.dueAt.getTime()) / 86_400_000),
+        overdueDays: invoice.dueAt
+          ? Math.floor((now - invoice.dueAt.getTime()) / 86_400_000)
+          : 0,
       };
     }),
   };

@@ -55,7 +55,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     language: resolveQuoteLocale(user),
     number: invoice.number,
     issuedAt: invoice.issuedAt.toISOString(),
-    dueAt: invoice.dueAt.toISOString(),
+    dueAt: invoice.dueAt ? invoice.dueAt.toISOString() : "",
     reference: invoice.reference,
     clientName: invoice.clientName,
     clientCompany: invoice.clientCompany,

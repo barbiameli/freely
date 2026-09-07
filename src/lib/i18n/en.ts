@@ -859,6 +859,7 @@ export const en = {
     extraLine: "Extra line, optional",
     shownAtFoot: "Shown at the foot of the invoice",
     rememberOnDevice: "Remember these on this device, so I do not retype them next time.",
+    dueOptional: "Due (optional)",
     raiseInvoice: "Create the invoice",
     openInvoice: "Open the invoice",
     deliverablesCompleted: "Deliverables completed",

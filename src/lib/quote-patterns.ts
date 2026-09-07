@@ -50,7 +50,8 @@ export interface InvoiceFact {
   total: number;
   currency: string;
   issuedAt: string;
-  dueAt: string;
+  /** Null on an invoice with no due date, which is now allowed. */
+  dueAt: string | null;
   paidAt: string | null;
 }
 
@@ -223,7 +224,13 @@ export function patternsFor(
 
   // Invoices paid later than the terms they were sent under.
   const paid = invoices.filter((i) => i.paidAt);
-  const lateness = paid.map((i) => days(i.dueAt, i.paidAt!)).filter((d) => Number.isFinite(d));
+  // An invoice with no due date cannot be late, so it says nothing about how
+  // this client pays and is left out of the average rather than counted as
+  // on time, which would drag the picture towards better than it is.
+  const lateness = paid
+    .filter((i) => i.dueAt)
+    .map((i) => days(i.dueAt!, i.paidAt!))
+    .filter((d) => Number.isFinite(d));
   const typicalLateness = median(lateness);
   if (typicalLateness !== null && typicalLateness > 3 && paid.length >= 3) {
     found.push({
