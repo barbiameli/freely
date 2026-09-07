@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, FolderKanban, House, Receipt, Sparkles } from "lucide-react";
+import { FileText, FolderKanban, House, Receipt, Sparkles, Users } from "lucide-react";
 import { FreelyLogo } from "@/components/freely-logo";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Topbar } from "@/components/topbar";
@@ -22,6 +22,10 @@ const ITEMS = [
   { key: "quote", icon: FileText, href: "/quote" },
   { key: "track", icon: FolderKanban, href: "/track" },
   { key: "invoices", icon: Receipt, href: "/invoices" },
+  // Sixth. The rail was full at five and this is the exception: a client is
+  // the one thing quotes, projects and invoices all point at, so it belongs
+  // beside them rather than inside any one of them.
+  { key: "clients", icon: Users, href: "/clients" },
   // Fifth and last. The rail is full at five, and anything after this belongs
   // inside one of these rather than beside them. The ground rules were briefly
   // a sixth item and are now a tab in here, which is where the rest of what

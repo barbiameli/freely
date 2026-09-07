@@ -133,6 +133,7 @@ export const en = {
     track: "Track",
     diary: "Diary",
     invoices: "Invoices",
+    clients: "Clients",
     rules: "Rules",
     memory: "Memory",
     team: "Team",
@@ -544,6 +545,35 @@ export const en = {
 
   // Two letters each, for the day picker in the project setup. Short enough
   // that seven of them fit on a phone without wrapping.
+  clients: {
+    title: "Clients",
+    subtitle: "Everybody you have worked with, and what it was like.",
+    empty: "No clients yet. One appears the first time you name somebody on a quote.",
+    quotes: "Quotes",
+    projects: "Projects",
+    invoices: "Invoices",
+    won: "Won",
+    answersIn: "Answers in",
+    paysIn: "Pays late by",
+    overdue: "Overdue now",
+    days: "{n} days",
+    noneYet: "Nothing yet.",
+    noEmail: "No email on file",
+    paid: "Paid",
+    unpaid: "Unpaid",
+    readTitle: "What this means for the next one",
+    readNew: "Nothing to go on yet. The quote will be written as it would for a stranger, which is the safe way round.",
+    readReliable: "Pays on time. Worth quoting without the extra armour.",
+    readSlow: "Pays late. Ask for a deposit and keep the deemed-acceptance clause.",
+    readOverdue: "Something of theirs is overdue right now. Settle that before quoting more work.",
+    readDecisive: "Answers quickly. A quote to them can be short.",
+    readQuiet: "Slow to answer. Put a date on the quote and say what happens if it passes.",
+    readLosing: "Several quotes, none won. Worth asking what they are comparing against before writing another.",
+    quotesCount: "{n} quotes",
+    projectsCount: "{n} projects",
+    invoicesCount: "{n} invoices",
+  },
+
   weekdays: {
     sun: "Su",
     mon: "Mo",

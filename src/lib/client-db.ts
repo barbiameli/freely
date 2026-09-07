@@ -14,6 +14,9 @@ interface ClientRow {
   id: string;
   name: string;
   slug: string;
+  email: string;
+  notes: string;
+  createdAt: Date;
 }
 
 function table() {
@@ -28,6 +31,11 @@ function table() {
           where: { id: string };
           data: Record<string, unknown>;
         }): Promise<ClientRow>;
+        findMany(args: {
+          where: Record<string, unknown>;
+          orderBy?: Record<string, unknown>;
+        }): Promise<ClientRow[]>;
+        findFirst(args: { where: Record<string, unknown> }): Promise<ClientRow | null>;
       };
     }
   ).client;
@@ -173,4 +181,136 @@ export async function historyForClient(
     console.error("[clients] could not read history", err);
     return NO_HISTORY;
   }
+}
+
+/** A client with enough on it to draw a row in a list. */
+export interface ClientSummary {
+  id: string;
+  name: string;
+  email: string;
+  quotes: number;
+  projects: number;
+  invoices: number;
+  /** The most recent thing that happened, for sorting and for saying "since". */
+  lastAt: Date | null;
+}
+
+/**
+ * Everybody this studio has worked with, most recent first.
+ *
+ * Team-scoped like everything else: on a team account a client belongs to the
+ * studio rather than to whoever happened to write the first quote.
+ */
+export async function clientsForUser(user: {
+  id: string;
+  teamId: string | null;
+}): Promise<ClientSummary[]> {
+  try {
+    const rows = await table().findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+    });
+    if (rows.length === 0) return [];
+
+    const scope = teamScopeWhere(user);
+    const ids = rows.map((row) => row.id);
+    type Linked = { clientId: string | null; createdAt: Date };
+    type LinkedInvoice = { clientId: string | null; issuedAt: Date };
+    const [briefs, projects, invoices] = (await Promise.all([
+      prisma.brief.findMany({
+        where: { ...scope, clientId: { in: ids } } as unknown as { userId: string },
+      }),
+      prisma.project.findMany({
+        where: { ...scope, clientId: { in: ids } } as unknown as { userId: string },
+      }),
+      prisma.invoice.findMany({
+        where: { ...scope, clientId: { in: ids } } as unknown as { userId: string },
+      }),
+    ])) as unknown as [Linked[], Linked[], LinkedInvoice[]];
+
+    const count = (list: { clientId: string | null }[], id: string) =>
+      list.filter((row) => row.clientId === id).length;
+    const latest = (dates: (Date | null)[]) =>
+      dates.reduce<Date | null>(
+        (most, date) => (date && (!most || date > most) ? date : most),
+        null
+      );
+
+    return rows
+      .map((row) => ({
+        id: row.id,
+        name: row.name,
+        email: row.email,
+        quotes: count(briefs, row.id),
+        projects: count(projects, row.id),
+        invoices: count(invoices, row.id),
+        lastAt: latest([
+          ...briefs.filter((b) => b.clientId === row.id).map((b) => b.createdAt),
+          ...projects.filter((p) => p.clientId === row.id).map((p) => p.createdAt),
+          ...invoices.filter((i) => i.clientId === row.id).map((i) => i.issuedAt),
+        ]),
+      }))
+      // Most recently active first: a list of clients is read to find the one
+      // you are thinking about, and that is almost always a recent one.
+      .sort((a, b) => (b.lastAt?.getTime() ?? 0) - (a.lastAt?.getTime() ?? 0));
+  } catch (err) {
+    console.error("[clients] could not list", err);
+    return [];
+  }
+}
+
+/** One client, with everything of theirs, for their own page. */
+export async function clientDetail(
+  user: { id: string; teamId: string | null },
+  clientId: string
+) {
+  const client = await table().findFirst({ where: { id: clientId, userId: user.id } });
+  if (!client) return null;
+
+  const scope = teamScopeWhere(user);
+  const where = { ...scope, clientId: client.id } as unknown as { userId: string };
+  type QuoteRow = {
+    id: string;
+    title: string;
+    price: number;
+    currency: string | null;
+    createdAt: Date;
+    outcome: string;
+  };
+  type ProjectRow = {
+    id: string;
+    title: string;
+    status: string;
+    price: number;
+    currency: string | null;
+  };
+  type InvoiceRow = {
+    id: string;
+    number: number;
+    issuedAt: Date;
+    dueAt: Date | null;
+    paidAt: Date | null;
+    currency: string;
+    lineItems: unknown;
+  };
+  const [quotes, projects, invoices] = (await Promise.all([
+    prisma.brief.findMany({ where, orderBy: { createdAt: "desc" } }),
+    prisma.project.findMany({ where, orderBy: { createdAt: "desc" } }),
+    prisma.invoice.findMany({ where, orderBy: { issuedAt: "desc" } }),
+  ])) as unknown as [QuoteRow[], ProjectRow[], InvoiceRow[]];
+
+  return {
+    client: { id: client.id, name: client.name, email: client.email, notes: client.notes },
+    quotes,
+    projects,
+    invoices,
+    history: historyFrom(
+      quotes.map((q) => ({
+        outcome: q.outcome as string,
+        createdAt: q.createdAt,
+        acceptedAt: null,
+      })),
+      invoices.map((i) => ({ dueAt: i.dueAt, paidAt: i.paidAt }))
+    ),
+  };
 }

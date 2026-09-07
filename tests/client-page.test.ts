@@ -1,137 +1,87 @@
 import { describe, it, expect } from "vitest";
-import { recentlyDone, comingUp, hasDetail, progress, SHOWN } from "@/lib/client-page";
-import type { ClientDeliverable } from "@/lib/client-page";
+import { readFileSync } from "fs";
+import { readHistory } from "@/lib/client-read";
+import type { ClientHistory } from "@/lib/clients";
 
-const day = (n: number) => new Date(2026, 7, n);
-
-function deliverable(over: Partial<ClientDeliverable> & { id: string }): ClientDeliverable {
+function history(over: Partial<ClientHistory> = {}): ClientHistory {
   return {
-    name: over.id,
-    done: false,
-    doneAt: null,
-    dueAt: null,
-    order: 0,
-    steps: [],
+    quotes: 3,
+    won: 2,
+    lost: 1,
+    typicalAnswerDays: 5,
+    typicalPaymentDays: 0,
+    overdueInvoices: 0,
     ...over,
   };
 }
 
-function step(id: string, done: boolean, order: number) {
-  return { id, name: id, done, order };
-}
-
-describe("recentlyDone", () => {
-  it("prefers the steps inside a deliverable", () => {
-    // "Exported the type scale" tells a client more about momentum than
-    // "Design system" does.
-    const list = [
-      deliverable({
-        id: "design",
-        name: "Design system",
-        done: true,
-        doneAt: day(4),
-        steps: [step("Type scale", true, 0), step("Colour", true, 1)],
-      }),
-    ];
-    expect(recentlyDone(list).map((l) => l.text)).toEqual(["Colour", "Type scale"]);
-    expect(recentlyDone(list)[0].under).toBe("Design system");
+describe("what the history means", () => {
+  it("says nothing it cannot check on a client with no past", () => {
+    expect(readHistory(history({ quotes: 0 }))).toEqual(["new"]);
   });
 
-  it("falls back to the deliverable when it was never broken down", () => {
-    // A freelancer who never uses steps still gets a page that fills in.
-    const list = [deliverable({ id: "Logo", done: true, doneAt: day(4) })];
-    expect(recentlyDone(list).map((l) => l.text)).toEqual(["Logo"]);
+  it("leads with money, because that is what goes wrong expensively", () => {
+    const read = readHistory(history({ overdueInvoices: 1, typicalAnswerDays: 1 }));
+    expect(read[0]).toBe("overdue");
   });
 
-  it("puts the newest first", () => {
-    const list = [
-      deliverable({ id: "Old", done: true, doneAt: day(1) }),
-      deliverable({ id: "New", done: true, doneAt: day(9) }),
-    ];
-    expect(recentlyDone(list).map((l) => l.text)).toEqual(["New", "Old"]);
-  });
-
-  it("shows three and no more", () => {
-    // A client wants to know things are moving. A complete audit trail
-    // answers a different question nobody asked.
-    const list = Array.from({ length: 8 }, (_, i) =>
-      deliverable({ id: `D${i}`, done: true, doneAt: day(i + 1) })
+  it("prefers something overdue now to a pattern of paying late", () => {
+    // Both are true; only one needs doing today.
+    expect(readHistory(history({ overdueInvoices: 2, typicalPaymentDays: 9 }))).toContain(
+      "overdue"
     );
-    expect(recentlyDone(list)).toHaveLength(SHOWN);
+    expect(readHistory(history({ overdueInvoices: 2, typicalPaymentDays: 9 }))).not.toContain(
+      "slow"
+    );
   });
 
-  it("says nothing when nothing is finished", () => {
-    expect(recentlyDone([deliverable({ id: "Not started" })])).toEqual([]);
+  it("notices a client who pays on time", () => {
+    expect(readHistory(history({ typicalPaymentDays: -2 }))).toContain("reliable");
   });
 
-  it("ignores unfinished steps", () => {
-    const list = [
-      deliverable({
-        id: "Build",
-        done: false,
-        steps: [step("Setup", true, 0), step("Deploy", false, 1)],
-      }),
-    ];
-    expect(recentlyDone(list).map((l) => l.text)).toEqual(["Setup"]);
-  });
-});
-
-describe("comingUp", () => {
-  it("lists the unfinished steps of work already under way", () => {
-    const list = [
-      deliverable({
-        id: "Build",
-        steps: [step("Setup", true, 0), step("Deploy", false, 1)],
-      }),
-      deliverable({ id: "Handover" }),
-    ];
-    expect(comingUp(list).map((l) => l.text)).toEqual(["Deploy", "Handover"]);
+  it("notices several quotes and nothing won", () => {
+    expect(readHistory(history({ quotes: 4, won: 0 }))).toContain("losing");
   });
 
-  it("skips anything already finished", () => {
-    const list = [deliverable({ id: "Done", done: true }), deliverable({ id: "Next" })];
-    expect(comingUp(list).map((l) => l.text)).toEqual(["Next"]);
+  it("never says more than three things", () => {
+    // A wall nobody reads, and the fourth is always the weakest.
+    const busy = readHistory(
+      history({ quotes: 5, won: 0, overdueInvoices: 2, typicalAnswerDays: 20 })
+    );
+    expect(busy.length).toBeLessThanOrEqual(3);
   });
 
-  it("keeps the planned order rather than sorting by date", () => {
-    // Plenty of projects have no dates at all, so the sequence the work was
-    // planned in is the more reliable answer.
-    const list = [
-      deliverable({ id: "First", dueAt: day(20) }),
-      deliverable({ id: "Second", dueAt: day(2) }),
-    ];
-    expect(comingUp(list).map((l) => l.text)).toEqual(["First", "Second"]);
-  });
-
-  it("shows three and no more", () => {
-    const list = Array.from({ length: 9 }, (_, i) => deliverable({ id: `D${i}` }));
-    expect(comingUp(list)).toHaveLength(SHOWN);
-  });
-
-  it("has nothing to say on a finished project", () => {
-    expect(comingUp([deliverable({ id: "Done", done: true })])).toEqual([]);
+  it("says nothing about a figure it does not have", () => {
+    const unknown = readHistory(
+      history({ typicalAnswerDays: null, typicalPaymentDays: null })
+    );
+    expect(unknown).not.toContain("slow");
+    expect(unknown).not.toContain("quiet");
+    expect(unknown).not.toContain("decisive");
   });
 });
 
-describe("hasDetail", () => {
-  it("is true only when there is a list worth opening", () => {
-    expect(hasDetail(deliverable({ id: "a" }))).toBe(false);
-    expect(hasDetail(deliverable({ id: "a", steps: [step("s", false, 0)] }))).toBe(true);
-  });
-});
+describe("the client page", () => {
+  const page = readFileSync("src/app/(app)/clients/[clientId]/page.tsx", "utf8");
+  const list = readFileSync("src/app/(app)/clients/page.tsx", "utf8");
+  const sidebar = readFileSync("src/components/sidebar.tsx", "utf8");
 
-describe("progress", () => {
-  it("counts deliverables", () => {
-    const list = [
-      deliverable({ id: "a", done: true }),
-      deliverable({ id: "b" }),
-      deliverable({ id: "c" }),
-      deliverable({ id: "d" }),
-    ];
-    expect(progress(list)).toEqual({ done: 1, total: 4, percent: 25 });
+  it("puts the figures above the inference", () => {
+    // Somebody deciding whether to trust "ask for a deposit" needs to see the
+    // "pays 6 days late" it came from.
+    expect(page.indexOf("<StatRow")).toBeLessThan(page.indexOf("readHistory(history)"));
   });
 
-  it("survives an empty project", () => {
-    expect(progress([])).toEqual({ done: 0, total: 0, percent: 0 });
+  it("shows their quotes, projects and invoices", () => {
+    expect(page).toContain("/track/${project.id}");
+    expect(page).toContain("/quote/${quote.id}");
+    expect(page).toContain("/invoices/${invoice.id}");
+  });
+
+  it("has a way in", () => {
+    // The Client record existed for months with no page: the app knew how a
+    // client paid and the only way to find out was to write them a quote.
+    expect(sidebar).toContain('href: "/clients"');
+    expect(list).toContain("clientsForUser");
   });
 });
