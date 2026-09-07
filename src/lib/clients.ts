@@ -98,7 +98,14 @@ const DAY = 86_400_000;
 
 export function historyFrom(
   quotes: { outcome: string; createdAt: Date; acceptedAt: Date | null }[],
-  invoices: { dueAt: Date; paidAt: Date | null }[],
+  /**
+   * A due date is optional, so an invoice may have none.
+   *
+   * One with no date cannot be late and says nothing about how fast this
+   * client pays, so it is left out of both figures rather than counted as
+   * paid on time, which would make a slow payer look better than they are.
+   */
+  invoices: { dueAt: Date | null; paidAt: Date | null }[],
   now = Date.now()
 ): ClientHistory {
   const answerDays = quotes
@@ -107,8 +114,8 @@ export function historyFrom(
     .filter((d) => d >= 0);
 
   const paymentDays = invoices
-    .filter((i) => i.paidAt)
-    .map((i) => Math.round((i.paidAt!.getTime() - i.dueAt.getTime()) / DAY));
+    .filter((i) => i.paidAt && i.dueAt)
+    .map((i) => Math.round((i.paidAt!.getTime() - i.dueAt!.getTime()) / DAY));
 
   return {
     quotes: quotes.length,
@@ -116,7 +123,8 @@ export function historyFrom(
     lost: quotes.filter((q) => q.outcome === "LOST").length,
     typicalAnswerDays: median(answerDays),
     typicalPaymentDays: median(paymentDays),
-    overdueInvoices: invoices.filter((i) => !i.paidAt && i.dueAt.getTime() < now).length,
+    overdueInvoices: invoices.filter((i) => !i.paidAt && i.dueAt && i.dueAt.getTime() < now)
+      .length,
   };
 }
 

@@ -1,5 +1,6 @@
 "use server";
 
+import { taskLabel } from "@/lib/task-words";
 import { revalidatePath } from "next/cache";
 import { syncProject } from "@/lib/calendar-sync";
 import { prisma } from "@/lib/prisma";
@@ -202,7 +203,10 @@ export async function breakDownDeliverableAction(
   await flagDb.deleteMany({ where: { deliverableId, resolved: false } });
 
   const fresh = breakdown.steps
-    .map((s) => ({ ...s, name: clean(s.name) }))
+    // Cut to a card here rather than only in the prompt, so a model that
+    // writes a sentence anyway does not put one on the board. See
+    // lib/task-words.
+    .map((s) => ({ ...s, name: taskLabel(clean(s.name)) }))
     .filter((s) => !keptNames.has(s.name.trim().toLowerCase()));
 
   if (fresh.length) {

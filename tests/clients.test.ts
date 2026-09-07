@@ -170,3 +170,25 @@ describe("how the app uses it", () => {
     expect(invoices).not.toContain("dueAt.getDate() + 30");
   });
 });
+
+describe("an invoice with no due date", () => {
+  it("is not counted as overdue", () => {
+    // It cannot be late if nothing said when it was due.
+    const history = historyFrom([], [{ dueAt: null, paidAt: null }], NOW);
+    expect(history.overdueInvoices).toBe(0);
+  });
+
+  it("is left out of how fast this client pays", () => {
+    // Counting it as paid on time would make a slow payer look better than
+    // they are, which is the opposite of what this figure is for.
+    const history = historyFrom(
+      [],
+      [
+        { dueAt: null, paidAt: daysAgo(1) },
+        { dueAt: daysAgo(10), paidAt: daysAgo(4) },
+      ],
+      NOW
+    );
+    expect(history.typicalPaymentDays).toBe(6);
+  });
+});
