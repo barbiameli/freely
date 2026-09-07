@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { currencySymbol } from "@/lib/currencies";
 import { InvoiceActions } from "./invoice-actions";
+import { RaiseInvoice } from "./raise-invoice";
 import { serverDict } from "@/lib/i18n/server";
 
 export default async function InvoicePage({ params }: { params: { projectId: string } }) {
@@ -19,6 +20,14 @@ export default async function InvoicePage({ params }: { params: { projectId: str
     include: { deliverables: true },
   });
   if (!project) notFound();
+
+  // Whether this project already has an invoice, so the button opens it
+  // rather than raising a second one.
+  const existing = await prisma.invoice.findFirst({
+    where: { projectId: project.id, ...teamScopeWhere(user) },
+    orderBy: { createdAt: "desc" },
+    select: { id: true },
+  });
 
   const rate = project.hours > 0 ? project.price / project.hours : 0;
   const doneCount = project.deliverables.filter((d) => d.done).length;
@@ -46,14 +55,28 @@ export default async function InvoicePage({ params }: { params: { projectId: str
           </div>
         </div>
         <div className="flex flex-col gap-3 py-4 border-b border-line">
-          <Row label="Deliverables completed" value={`${doneCount} / ${project.deliverables.length}`} />
-          <Row label="Hours logged" value={`${project.hoursLogged} / ${project.hours}`} />
           <Row
-            label="Effective rate"
+            label={t.invoices.deliverablesCompleted}
+            value={`${doneCount} / ${project.deliverables.length}`}
+          />
+          <Row
+            label={t.invoices.hoursLogged}
+            value={`${project.hoursLogged} / ${project.hours}`}
+          />
+          <Row
+            label={t.invoices.effectiveRate}
             value={rate > 0 ? `${currencySymbol(project.currency)}${rate.toFixed(0)} / hr` : "-"}
           />
-          <Row label="Timeline" value={project.timeline || "-"} />
-          <Row label="Payment status" value={project.invoiceStatus} />
+          <Row label={t.invoices.paymentStatus} value={project.invoiceStatus} />
+          {/* Its own block rather than a row. A timeline is a paragraph, and
+              in a label-left value-right row it collapsed against its own
+              label and rendered as "TimelineAround 2 to 3 hours on the site". */}
+          {project.timeline && (
+            <div className="pt-1">
+              <div className="text-slate text-body">{t.publicQuote.timeline}</div>
+              <p className="text-ink text-body m-0 mt-1 text-pretty">{project.timeline}</p>
+            </div>
+          )}
         </div>
         <div className="flex justify-between items-center pt-4">
           <Label>{t.publicQuote.total}</Label>
@@ -62,7 +85,8 @@ export default async function InvoicePage({ params }: { params: { projectId: str
             {project.price.toLocaleString()}
           </span>
         </div>
-        <div className="pt-5">
+        <div className="pt-5 flex flex-col gap-3">
+          <RaiseInvoice projectId={project.id} existingInvoiceId={existing?.id ?? null} />
           <InvoiceActions
             projectId={project.id}
             invoiceStatus={project.invoiceStatus}
