@@ -453,9 +453,115 @@ summary:focus-visible {
   animation: pulse-once 1.15s ease-in-out 3;
 }
 
-/* Somebody who has asked not to see motion has asked about this too. */
+/*
+ * Somebody who has asked not to see motion has asked about all of it.
+ *
+ * One block rather than one per feature, so "what stops when motion is off"
+ * has a single answer and a new animation has an obvious place to be added.
+ */
 @media (prefers-reduced-motion: reduce) {
-  .animate-pulse-once {
+  .animate-pulse-once,
+  .rise,
+  .page-in {
     animation: none;
   }
+
+  .press,
+  .dragging {
+    transition: none;
+    transform: none;
+  }
+}
+
+/*
+ * Depth and arrival.
+ *
+ * The page was flat: paper behind, white cards on top, one plane. These give
+ * it two more, a wash far behind and a card that sits above the surface
+ * rather than being drawn onto it, and a way for things to arrive rather than
+ * appear.
+ */
+
+/* A card that reads as sitting on the page rather than printed on it. */
+.lift {
+  box-shadow:
+    0 1px 2px rgba(52, 52, 52, 0.04),
+    0 8px 24px -12px rgba(52, 52, 52, 0.1);
+}
+
+/*
+ * Arriving, staggered.
+ *
+ * Six cards appearing together is a page being dumped; forty milliseconds
+ * apart and it is a page being assembled. The delay is capped at six, because
+ * past that somebody is waiting for content they can already half see, and a
+ * stagger long enough to notice is a stagger too long.
+ */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise {
+  animation: rise-in 0.34s cubic-bezier(0.16, 0.84, 0.28, 1) both;
+}
+
+.rise-1 { animation-delay: 0.04s; }
+.rise-2 { animation-delay: 0.08s; }
+.rise-3 { animation-delay: 0.12s; }
+.rise-4 { animation-delay: 0.16s; }
+.rise-5 { animation-delay: 0.2s; }
+.rise-6 { animation-delay: 0.24s; }
+
+/*
+ * A page replacing another.
+ *
+ * Short enough that it never feels like waiting. Anything over about 200ms on
+ * a navigation is a delay somebody notices every single time.
+ */
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.page-in {
+  animation: page-in 0.18s ease-out both;
+}
+
+/*
+ * Controls that respond to being touched.
+ *
+ * Applied through a class rather than to every button, so a control that
+ * should not move (a drag handle, a row that is really a link) can opt out.
+ */
+.press {
+  transition:
+    transform 0.12s cubic-bezier(0.16, 0.84, 0.28, 1),
+    box-shadow 0.12s ease-out;
+}
+
+.press:hover {
+  transform: translateY(-1px);
+}
+
+.press:active {
+  transform: translateY(0);
+}
+
+/* A card being dragged, lifted off the board. */
+.dragging {
+  transform: rotate(1.5deg) scale(1.02);
+  box-shadow: 0 18px 40px -12px rgba(52, 52, 52, 0.28);
 }

@@ -17,6 +17,7 @@ export function Chip({
       type="button"
       onClick={onClick}
       className={clsx(
+        "press",
         "font-body font-medium text-xs px-3.5 py-2 rounded-full",
         onClick ? "cursor-pointer" : "cursor-default",
         active ? "bg-violet text-white border-none" : "bg-paper text-slate border border-line"

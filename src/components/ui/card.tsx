@@ -36,8 +36,16 @@ const toneClasses: Record<Tone, string> = {
 export function Card({
   className,
   tone = "plain",
+  /**
+   * Where this sits in the order things arrive.
+   *
+   * Six cards appearing at once is a page being dumped on somebody. Forty
+   * milliseconds apart and it is a page being assembled. Capped at six,
+   * because past that they are waiting for content already half visible.
+   */
+  rise,
   ...rest
-}: HTMLAttributes<HTMLDivElement> & { tone?: Tone }) {
+}: HTMLAttributes<HTMLDivElement> & { tone?: Tone; rise?: 1 | 2 | 3 | 4 | 5 | 6 }) {
   return (
     <div
       className={clsx(
@@ -45,6 +53,11 @@ export function Card({
         // a hint and a control ran together as one block of text, which is the
         // spacing equivalent of having no hierarchy at all.
         "rounded-card px-6 py-6",
+        // A plain card sits above the surface now rather than being printed
+        // on it. A quiet one deliberately does not: it belongs to the card it
+        // is inside, and something subordinate that floats reads as separate.
+        tone === "plain" && "lift",
+        rise && `rise rise-${rise}`,
         toneClasses[tone],
         className
       )}

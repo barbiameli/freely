@@ -72,6 +72,10 @@ export function Button({
       aria-busy={loading || undefined}
       className={clsx(
         "font-body font-bold inline-flex items-center justify-center gap-2 transition-[opacity,background-color,border-color,color]",
+        // Rises a pixel under the pointer and settles when pressed. Not on a
+        // button that is already working: a control moving while it waits
+        // reads as it having been pressed again.
+        !held && "press",
         sizeClasses[size],
         // A loading button stays at full strength. Fading it out says
         // "unavailable", and the spinner is already saying "in a moment".

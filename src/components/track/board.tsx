@@ -154,8 +154,8 @@ export function Board({
                       }
                       setDragging(null);
                     }}
-                    className={`bg-white rounded-xl border border-line p-2.5 cursor-grab active:cursor-grabbing ${
-                      dragging === card.id ? "opacity-50" : ""
+                    className={`bg-white rounded-xl border border-line p-2.5 cursor-grab active:cursor-grabbing transition-shadow ${
+                      dragging === card.id ? "dragging opacity-90" : "hover:shadow-panel"
                     }`}
                   >
                     <div className="flex items-start gap-2">

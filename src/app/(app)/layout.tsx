@@ -4,6 +4,8 @@ import { Sidebar } from "@/components/sidebar";
 import { Providers } from "@/components/providers";
 import { TimerBar } from "@/components/track/timer-bar";
 import { Topbar } from "@/components/topbar";
+import { Backdrop } from "@/components/backdrop";
+import { PageTransition } from "@/components/page-transition";
 import { runningAnywhereAction } from "@/actions/time";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -36,6 +38,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           between the two is enough: the cards lift, the gaps between them
           become real, and nothing needed a shadow to do it. */}
       <div className="flex flex-col md:flex-row min-h-screen bg-paper">
+        {/* Two soft washes and a grain, far behind everything. See
+            components/backdrop. */}
+        <Backdrop />
         <Sidebar />
         {/* 56px each side was a lot of nothing next to a nav rail that already
             separates the content from the edge, and the project tracker is the
@@ -55,7 +60,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <Topbar />
           </div>
           <TimerBar initial={timer.ok ? timer.data : null} />
-          {children}
+          <PageTransition>{children}</PageTransition>
         </div>
       </div>
     </Providers>
