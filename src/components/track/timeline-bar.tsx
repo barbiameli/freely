@@ -92,10 +92,10 @@ export function TimelineBar({
       {/* The count, loud, because it is the answer to the question somebody
           opened this card to ask. The dates were the largest thing here and they
           are the least interesting: they do not change. */}
-      <div className="flex items-end justify-between gap-3 mb-3">
+      <div className="flex items-end justify-between gap-3 mb-2">
         <div className="min-w-0">
           <div
-            className={`font-body font-bold text-title tabular-nums ${
+            className={`font-body font-bold text-lead tabular-nums ${
               allDone ? "text-success" : "text-ink"
             }`}
           >
@@ -126,8 +126,10 @@ export function TimelineBar({
         </div>
       </div>
 
-      {/* Taller, so the markers sit in it rather than on it. */}
-      <div className="relative h-2.5 rounded-full bg-line mt-6 mb-1">
+      {/* Tall enough for the markers to sit in it rather than on it, and no
+          taller: this shares a row with what is coming up now, and the two of
+          them together used to be deep enough to push the board off screen. */}
+      <div className="relative h-2 rounded-full bg-line mt-5 mb-1">
         <div
           className={`absolute inset-y-0 left-0 rounded-full transition-[width] duration-700 ease-marketing motion-reduce:transition-none ${
             allDone ? "bg-success" : "bg-violet"
@@ -153,12 +155,12 @@ export function TimelineBar({
               {m.done ? (
                 // Bigger than the others, with a tick in it, and it pops as it
                 // arrives. Finishing something should be the loudest event here.
-                <span className="flex items-center justify-center w-[18px] h-[18px] rounded-full bg-success border-2 border-white shadow-panel animate-pop motion-reduce:animate-none">
+                <span className="flex items-center justify-center w-[15px] h-[15px] rounded-full bg-success border-2 border-white shadow-panel animate-pop motion-reduce:animate-none">
                   <Check size={10} strokeWidth={3.5} className="text-white" />
                 </span>
               ) : (
                 <span
-                  className={`block w-3 h-3 rounded-full border-2 border-white ${
+                  className={`block w-2.5 h-2.5 rounded-full border-2 border-white ${
                     late ? "bg-overdue" : "bg-coral"
                   }`}
                 />

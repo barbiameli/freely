@@ -428,3 +428,34 @@ summary:focus-visible {
     animation: none;
   }
 }
+
+/*
+ * The tracker asking to be noticed, once.
+ *
+ * A stopwatch nobody starts is the failure mode for time tracking, and this is
+ * the one control on the project page that has to ask for attention. Three
+ * breaths and then it stops: anything that pulses forever becomes furniture,
+ * and it has nothing left to ask once the clock is running.
+ */
+@keyframes pulse-once {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(244, 91, 105, 0);
+  }
+  50% {
+    transform: scale(1.045);
+    box-shadow: 0 0 0 7px rgba(244, 91, 105, 0.18);
+  }
+}
+
+.animate-pulse-once {
+  animation: pulse-once 1.15s ease-in-out 3;
+}
+
+/* Somebody who has asked not to see motion has asked about this too. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse-once {
+    animation: none;
+  }
+}

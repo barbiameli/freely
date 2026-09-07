@@ -30,17 +30,26 @@ export function StatRow({ stats }: { stats: Stat[] }) {
   // fifth stranded alone on a second row. Two per row on a phone, because a
   // label like "Deliverables done" at a quarter of 390px is a truncation.
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-2.5">
+    /*
+     * Smaller than they were.
+     *
+     * These are a glance, not the subject of the page: five cards at 19px with
+     * 14px of padding took a band deep enough to push the board, which is what
+     * somebody came here for, off the bottom of the screen. The figures are
+     * still the largest thing in their own card, which is all the emphasis
+     * they need to be readable in passing.
+     */
+    <div className="grid grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-2">
       {stats.map((stat) => (
         <div
           key={stat.label}
-          className="bg-ink rounded-card px-4 py-3.5 min-w-0 flex flex-col justify-between gap-2"
+          className="bg-ink rounded-card px-3 py-2.5 min-w-0 flex flex-col justify-between gap-1"
         >
           <div className="font-label text-caption uppercase tracking-[0.09em] text-white/70">
             {stat.label}
           </div>
           <div
-            className={`font-body font-bold text-[19px] leading-tight truncate ${
+            className={`font-body font-bold text-[15px] leading-tight truncate ${
               stat.alert ? "text-coral" : stat.good ? "text-mint-solid" : "text-white"
             }`}
           >

@@ -6,6 +6,8 @@ import { CalendarDays, ChevronDown, Trash2 } from "lucide-react";
 import { Topbar } from "@/components/topbar";
 import { Card } from "@/components/ui/card";
 import { TimePanel } from "@/components/track/time-panel";
+import { TimerButton } from "@/components/track/timer-button";
+import { TimeSetUp } from "@/components/track/time-set-up";
 import type { TimeMode } from "@/lib/time-tracking";
 import type { WeekEntry } from "@/lib/time-week";
 import { Label } from "@/components/ui/label";
@@ -231,6 +233,14 @@ export function ProjectDetail({
   const [view, setView] = useState<"board" | "timeline" | "list">("board");
 
   /**
+   * The one-time "what is this tracking for" question.
+   *
+   * Lives here rather than inside the panel now, because the header button is
+   * the first place somebody presses play and it has to be able to ask.
+   */
+  const [settingUpTimer, setSettingUpTimer] = useState(false);
+
+  /**
    * Every task on the project, flattened out of its deliverable.
    *
    * The board is columns of tasks rather than a list of deliverables, so the
@@ -359,10 +369,22 @@ export function ProjectDetail({
           meta={project.client}
           below={tabs}
           action={
-            <Button data-guide="invoice" onClick={() => router.push(`/track/${project.id}/invoice`)}>
-              {t.track.generateInvoice}, {currencySymbol(project.currency)}
-              {project.price.toLocaleString()}
-            </Button>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              {/* The clock, where you actually are when you decide to start.
+                  It was a full-width card two bands down, which spent a
+                  whole row of the page on a control pressed twice a day and
+                  pushed the board below the fold. */}
+              <TimerButton
+                projectId={project.id}
+                running={time.running}
+                setUp={Boolean(time.mode && time.mode !== "OFF")}
+                onSetUp={() => setSettingUpTimer(true)}
+              />
+              <Button data-guide="invoice" onClick={() => router.push(`/track/${project.id}/invoice`)}>
+                {t.track.generateInvoice}, {currencySymbol(project.currency)}
+                {project.price.toLocaleString()}
+              </Button>
+            </div>
           }
         />
 
@@ -397,17 +419,10 @@ export function ProjectDetail({
         {/* Where the hours went, above the schedule: what a project has cost
             so far is a more immediate question than when the next thing is
             due, and it is the one nothing in the app could answer. */}
-        <TimePanel
-          projectId={project.id}
-          quotedHours={project.hours}
-          loggedSeconds={time.loggedSeconds}
-          entries={time.entries}
-          deliverables={project.deliverables.map((d) => ({ id: d.id, name: d.name }))}
-          running={time.running}
-          hasCalendar={time.hasCalendar}
-          mode={time.mode}
-        />
-
+        {/* Side by side. Both are glances: how long is left, and what lands
+            next. Stacked, they were two full-width bands between the numbers
+            and the board, and the board is what somebody came here for. */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4 items-start">
         {!scheduled ? (
           <SchedulePrompt projectId={project.id} />
         ) : (
@@ -460,13 +475,17 @@ export function ProjectDetail({
           total={project.deliverables.length}
         />
 
+        <ComingUp deadlines={deadlines} onSelect={setOpenId} />
+        </div>
+
         <ActionError error={actionError} />
 
-        {/* Above the work rather than beside it. In a 270px rail every
-            deliverable name was truncated to 34 characters and the questions
-            were a column three words wide, on a page with a thousand pixels
-            going spare. */}
-        <ComingUp deadlines={deadlines} onSelect={setOpenId} />
+        <TimeSetUp
+          projectId={project.id}
+          open={settingUpTimer}
+          onClose={() => setSettingUpTimer(false)}
+          current={time.mode}
+        />
 
         <Card>
           <div className="flex items-center gap-3 flex-wrap">
@@ -615,6 +634,20 @@ export function ProjectDetail({
             </Button>
           </div>
         </Card>
+
+        {/* The week, the log and the calendar import. Below the board on
+            purpose: this is the part you read rather than the part you press,
+            and it was pushing the board off the screen from two bands up. */}
+        <TimePanel
+          projectId={project.id}
+          quotedHours={project.hours}
+          loggedSeconds={time.loggedSeconds}
+          entries={time.entries}
+          deliverables={project.deliverables.map((d) => ({ id: d.id, name: d.name }))}
+          running={time.running}
+          hasCalendar={time.hasCalendar}
+          mode={time.mode}
+        />
 
         <Card>
           <button
