@@ -581,6 +581,8 @@ export const en = {
     timelinePlanIt: "Plan it for me",
     timelineFits: "It fits inside the dates.",
     timelineOverruns: "This runs {days} working days past the due date.",
+    timelineTrim: "Take something out, or move the date.",
+    timelineRoughen: "There is not enough time for what was described. Agree now that this lands as a proof of concept, rough enough to show the direction, and say which parts get that treatment.",
     timelineUnplaced: "Not placed yet:",
     timelineNeedsDates: "Give the project a start date and this fills in.",
     viewTimeline: "Timeline",

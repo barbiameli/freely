@@ -126,6 +126,19 @@ export function autoSchedule(
   start: Date | string,
   deliverableOrder: string[] = []
 ): Placement[] {
+  /*
+   * Deadlines deliberately do not change the placement.
+   *
+   * One freelancer working through a queue cannot be rescheduled by a date:
+   * the tasks take what they take and they happen in order, so a deliverable
+   * due on the 16th whose work needs until the 22nd still needs until the
+   * 22nd. Passing the deadlines in here and quietly compressing the bars
+   * would draw a plan that fits and is not true, which is the one thing this
+   * view exists to prevent.
+   *
+   * So the dates are checked against the plan rather than used to build it.
+   * See fitPerDeliverable and whatToDoAbout.
+   */
   const rank = new Map(deliverableOrder.map((id, i) => [id, i] as const));
   const queue = tasks
     .filter((task) => !task.done)
@@ -150,6 +163,81 @@ export function autoSchedule(
   }
 
   return out;
+}
+
+/** What a deliverable's own deadline says about the plan laid against it. */
+export interface DeliverableFit {
+  deliverableId: string;
+  /** Working days past its own due date. Zero when it fits. */
+  over: number;
+  /** Working days the tasks need. */
+  needs: number;
+  /** Working days there actually are. */
+  has: number;
+}
+
+/**
+ * Whether each deliverable's work fits before the date it was promised.
+ *
+ * Per deliverable rather than for the project as a whole, because a project
+ * that finishes on time with the first deliverable a week late is a project
+ * whose client has already been let down once. This is the number worth
+ * seeing before the work starts rather than during it.
+ */
+export function fitPerDeliverable(
+  tasks: PlannedTask[],
+  placements: Placement[],
+  start: Date | string,
+  deadlines: Map<string, Date | string>
+): DeliverableFit[] {
+  const placed = new Map(placements.map((p) => [p.id, p] as const));
+  const byDeliverable = new Map<string, PlannedTask[]>();
+  for (const task of tasks) {
+    if (task.done) continue;
+    const list = byDeliverable.get(task.deliverableId) ?? [];
+    list.push(task);
+    byDeliverable.set(task.deliverableId, list);
+  }
+
+  const out: DeliverableFit[] = [];
+  for (const [deliverableId, list] of Array.from(byDeliverable.entries())) {
+    const due = deadlines.get(deliverableId);
+    if (!due) continue;
+    const ends = list
+      .map((task) => placed.get(task.id)?.end)
+      .filter((value): value is Date => Boolean(value));
+    if (ends.length === 0) continue;
+    const last = ends.reduce((latest, end) => (end > latest ? end : latest), ends[0]);
+    const over = businessDaysBetween(due, last);
+    out.push({
+      deliverableId,
+      over: over > 0 ? over : 0,
+      needs: list.reduce((sum, task) => sum + daysNeeded(task.estimateHours), 0),
+      has: Math.max(0, businessDaysBetween(start, due)),
+    });
+  }
+  return out;
+}
+
+/**
+ * What to do about work that does not fit.
+ *
+ * Not "you are over by six days", which somebody can already see. The useful
+ * answer is what to change, and there are only three honest ones: move the
+ * date, cut the scope, or agree now that what lands is rougher than what was
+ * described. The last is the one freelancers reach for silently in week two,
+ * and saying it out loud in week one is the difference between a proof of
+ * concept and a disappointment.
+ */
+export function whatToDoAbout(fits: DeliverableFit[]): "fits" | "trim" | "roughen" {
+  const worst = fits.reduce((most, fit) => Math.max(most, fit.over), 0);
+  if (worst === 0) return "fits";
+  const needed = fits.reduce((sum, fit) => sum + fit.needs, 0);
+  const available = fits.reduce((sum, fit) => sum + fit.has, 0);
+  // A quarter over is a scope conversation. Half again over is not something
+  // trimming a task fixes, and pretending otherwise is how the fortnight
+  // disappears.
+  return available > 0 && needed > available * 1.25 ? "roughen" : "trim";
 }
 
 /** The same day when it is a weekday, the next Monday when it is not. */

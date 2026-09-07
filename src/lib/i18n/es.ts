@@ -578,6 +578,8 @@ export const es: Dictionary = {
     timelinePlanIt: "Planifícalo por mí",
     timelineFits: "Cabe dentro de las fechas.",
     timelineOverruns: "Esto se pasa {days} días hábiles de la fecha de entrega.",
+    timelineTrim: "Quita algo o mueve la fecha.",
+    timelineRoughen: "No hay tiempo para lo que se describió. Acuerda ahora que esto se entrega como prueba de concepto, lo bastante en bruto para enseñar la dirección, y di qué partes reciben ese trato.",
     timelineUnplaced: "Sin colocar todavía:",
     timelineNeedsDates: "Pon una fecha de inicio al proyecto y esto se rellena.",
     viewTimeline: "Cronograma",

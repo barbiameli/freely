@@ -6,7 +6,7 @@ import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import { stepDb } from "@/lib/track-db";
 import { changesForMove, columnOf, reorder, type Column } from "@/lib/board";
-import { autoSchedule, overrunDays } from "@/lib/timeline-plan";
+import { autoSchedule, fitPerDeliverable, overrunDays, whatToDoAbout } from "@/lib/timeline-plan";
 import type { ActionResult } from "@/actions/briefs";
 
 /**
@@ -154,7 +154,7 @@ export async function placeTaskAction(
  */
 export async function autoScheduleAction(
   projectId: string
-): Promise<ActionResult<{ overrunDays: number }>> {
+): Promise<ActionResult<{ overrunDays: number; advice: "fits" | "trim" | "roughen" }>> {
   const user = await requireFullUser();
   const project = await prisma.project.findFirst({
     where: { id: projectId, ...teamScopeWhere(user) },
@@ -170,20 +170,28 @@ export async function autoScheduleAction(
     orderBy: { order: "asc" },
   });
 
-  const plan = autoSchedule(
-    steps.map((step) => ({
-      id: step.id,
-      name: step.name,
-      deliverableId: step.deliverableId,
-      estimateHours: step.estimateHours,
-      order: step.order,
-      done: step.done,
-      plannedStart: null,
-      plannedEnd: null,
-    })),
-    start,
-    project.deliverables.map((d) => d.id)
-  );
+  const planned = steps.map((step) => ({
+    id: step.id,
+    name: step.name,
+    deliverableId: step.deliverableId,
+    estimateHours: step.estimateHours,
+    order: step.order,
+    done: step.done,
+    plannedStart: null,
+    plannedEnd: null,
+  }));
+
+  // The date each deliverable was promised for, where it has one. A project
+  // that lands on time with its first deliverable a week late has already let
+  // the client down once.
+  const deadlines = new Map<string, Date>();
+  for (const deliverable of project.deliverables) {
+    const due = (deliverable as unknown as { dueAt: Date | null }).dueAt;
+    if (due) deadlines.set(deliverable.id, due);
+  }
+
+  const plan = autoSchedule(planned, start, project.deliverables.map((d) => d.id));
+  const fits = fitPerDeliverable(planned, plan, start, deadlines);
 
   try {
     await prisma.$transaction(
@@ -204,6 +212,7 @@ export async function autoScheduleAction(
     ok: true,
     data: {
       overrunDays: overrunDays(plan, (project as unknown as { dueDate: Date | null }).dueDate),
+      advice: whatToDoAbout(fits),
     },
   };
 }

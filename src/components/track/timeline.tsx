@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { CalendarRange, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ActionError } from "@/components/ui/action-error";
@@ -48,6 +49,7 @@ export function Timeline({
   dueDate: string | null;
 }) {
   const t = useT();
+  const router = useRouter();
   const [dragging, setDragging] = useState<PlannedTask | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -93,7 +95,13 @@ export function Timeline({
     setError("");
     const result = await placeTaskAction(task.id, dayKey(day), dayKey(endDay));
     setBusy(false);
-    if (!result.ok) setError(result.error);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    // See the note in board.tsx: without this the dates were written and the
+    // chart carried on showing the task as unplaced.
+    router.refresh();
   }
 
   async function planAll() {
@@ -106,14 +114,27 @@ export function Timeline({
       setError(result.error);
       return;
     }
+    router.refresh();
+    // Not just "you are six days over", which is visible on the chart. What
+    // to change: move the date, cut the scope, or agree now that what lands
+    // is rougher than what was described.
     setNote(
-      result.data.overrunDays > 0
-        ? t.track.timelineOverruns.replace("{days}", String(result.data.overrunDays))
-        : t.track.timelineFits
+      result.data.advice === "fits"
+        ? t.track.timelineFits
+        : `${t.track.timelineOverruns.replace(
+            "{days}",
+            String(result.data.overrunDays)
+          )} ${result.data.advice === "roughen" ? t.track.timelineRoughen : t.track.timelineTrim}`
     );
   }
 
   const unplaced = tasks.filter((task) => !task.plannedStart || !task.plannedEnd);
+  const placed = tasks
+    .filter((task) => task.plannedStart && task.plannedEnd)
+    // Compared as numbers rather than with a less-than on two strings: the
+    // copy scanner reads a bare "<" in a .tsx file as the start of a tag and
+    // reports the comparator as untranslated text.
+    .sort((a, b) => Date.parse(a.plannedStart!) - Date.parse(b.plannedStart!));
 
   return (
     <div className="flex flex-col gap-3">
@@ -147,10 +168,14 @@ export function Timeline({
       )}
 
       <div className="overflow-x-auto">
-        <div style={{ minWidth: days.length * DAY_WIDTH + 160 }}>
-          {/* The dates across the top. */}
+        {/* Edge to edge. There was a 160px column of deliverable names down
+            the left, repeating what the bar's own colour already says and
+            costing the chart a sixth of its width, and rows sized by
+            deliverable left tall empty bands wherever a deliverable's tasks
+            had not been placed. One row per task, and the row is only as tall
+            as the bar. */}
+        <div style={{ minWidth: days.length * DAY_WIDTH }}>
           <div className="flex">
-            <div className="w-[160px] shrink-0" />
             {days.map((day) => (
               <div
                 key={day.toISOString()}
@@ -166,57 +191,63 @@ export function Timeline({
             ))}
           </div>
 
-          {deliverables.map((deliverable) => {
-            const rows = tasks.filter((task) => task.deliverableId === deliverable.id);
-            if (rows.length === 0) return null;
-            return (
-              <div key={deliverable.id} className="flex border-t border-line">
-                <div className="w-[160px] shrink-0 py-2.5 pr-3">
-                  <span className="font-body font-semibold text-caption text-ink text-pretty">
-                    {deliverable.name}
-                  </span>
-                </div>
-                <div className="relative flex-1">
-                  {/* The day cells, which are also the drop targets. */}
-                  <div className="absolute inset-0 flex" aria-hidden>
-                    {days.map((day) => (
-                      <div
-                        key={day.toISOString()}
-                        style={{ width: DAY_WIDTH }}
-                        className={`shrink-0 border-r border-line/60 ${
-                          day.getUTCDay() === 0 || day.getUTCDay() === 6 ? "bg-paper" : ""
-                        }`}
-                      />
-                    ))}
-                  </div>
+          <div className="relative">
+            {/* The grid, drawn once behind every row rather than per row. */}
+            <div className="absolute inset-0 flex" aria-hidden>
+              {days.map((day) => (
+                <div
+                  key={day.toISOString()}
+                  style={{ width: DAY_WIDTH }}
+                  className={`shrink-0 border-r border-line/60 ${
+                    day.getUTCDay() === 0 || day.getUTCDay() === 6 ? "bg-paper" : ""
+                  }`}
+                />
+              ))}
+            </div>
 
-                  <div className="relative flex flex-col gap-1 py-2">
-                    {rows.map((task) => {
-                      const bar = barFor(task, startDate);
-                      if (!bar) return <div key={task.id} className="h-[26px]" />;
-                      return (
-                        <div key={task.id} className="h-[26px] relative">
-                          <div
-                            draggable
-                            onDragStart={() => setDragging(task)}
-                            onDragEnd={() => setDragging(null)}
-                            style={{
-                              marginLeft: bar.offset * DAY_WIDTH,
-                              width: bar.days * DAY_WIDTH - 4,
-                            }}
-                            className={`h-[26px] rounded-lg border px-2 flex items-center cursor-grab active:cursor-grabbing ${
-                              tint.get(task.deliverableId) ?? TINTS[0]
-                            } ${task.done ? "opacity-60" : ""}`}
-                          >
-                            <span className="truncate text-caption font-semibold">{task.name}</span>
-                          </div>
-                        </div>
-                      );
-                    })}
+            <div className="relative flex flex-col gap-1 py-1">
+              {placed.map((task) => {
+                const bar = barFor(task, startDate)!;
+                return (
+                  <div key={task.id} className="h-[26px] relative flex">
+                    {/* The day cells double as drop targets, under the bar. */}
+                    <div className="absolute inset-0 flex">
+                      {days.map((day) => (
+                        <div
+                          key={day.toISOString()}
+                          style={{ width: DAY_WIDTH }}
+                          className="shrink-0"
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            if (dragging && !busy) void place(dragging, day);
+                            setDragging(null);
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <div
+                      draggable
+                      onDragStart={() => setDragging(task)}
+                      onDragEnd={() => setDragging(null)}
+                      style={{
+                        marginLeft: bar.offset * DAY_WIDTH,
+                        width: bar.days * DAY_WIDTH - 4,
+                      }}
+                      className={`relative h-[26px] rounded-lg border px-2 flex items-center cursor-grab active:cursor-grabbing ${
+                        tint.get(task.deliverableId) ?? TINTS[0]
+                      } ${task.done ? "opacity-60" : ""}`}
+                    >
+                      <span className="truncate text-caption font-semibold">{task.name}</span>
+                    </div>
                   </div>
+                );
+              })}
 
-                  {/* Sits above the cells so a drop anywhere in the row lands
-                      on the day under the pointer. */}
+              {/* A landing strip, so an unplaced task has somewhere to be
+                  dropped on a chart with nothing on it yet. */}
+              {placed.length === 0 && (
+                <div className="h-[26px] relative flex">
                   <div className="absolute inset-0 flex">
                     {days.map((day) => (
                       <div
@@ -233,9 +264,9 @@ export function Timeline({
                     ))}
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

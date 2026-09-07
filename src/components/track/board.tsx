@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { GripVertical } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 import { ActionError } from "@/components/ui/action-error";
@@ -58,6 +59,7 @@ export function Board({
   deliverables: { id: string; name: string }[];
 }) {
   const t = useT();
+  const router = useRouter();
   const [dragging, setDragging] = useState<string | null>(null);
   const [over, setOver] = useState<Column | null>(null);
   const [error, setError] = useState("");
@@ -79,7 +81,15 @@ export function Board({
     setError("");
     const result = await moveStepAction(stepId, target, index);
     setBusy(false);
-    if (!result.ok) setError(result.error);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    // revalidatePath marks the server cache stale; it does not re-render a
+    // client component that is already on screen. Without this the move was
+    // saved and the card sprang back, which reads as drag and drop not
+    // working at all rather than as a refresh problem.
+    router.refresh();
   }
 
   const progress = boardProgress(steps);

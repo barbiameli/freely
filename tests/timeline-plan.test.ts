@@ -7,7 +7,9 @@ import {
   daysBetween,
   dayKey,
   daysNeeded,
+  fitPerDeliverable,
   overrunDays,
+  whatToDoAbout,
   type PlannedTask,
 } from "@/lib/timeline-plan";
 
@@ -189,5 +191,78 @@ describe("the chart on the page", () => {
   it("says whether the plan fits after laying it out", () => {
     expect(action).toContain("overrunDays(plan,");
     expect(chart).toContain("t.track.timelineOverruns");
+  });
+});
+
+describe("whether each deliverable fits its own date", () => {
+  // Two tasks of a day each, on a deliverable due the day after the start.
+  const tasks = [
+    task({ id: "one", estimateHours: 6, order: 0 }),
+    task({ id: "two", estimateHours: 6, order: 1 }),
+  ];
+
+  it("measures per deliverable, not just for the project", () => {
+    // A project that lands on time with its first deliverable a week late has
+    // already let the client down once.
+    const plan = autoSchedule(tasks, MONDAY);
+    // Two days of work against a deadline on the first of them.
+    const fits = fitPerDeliverable(tasks, plan, MONDAY, new Map([["d1", MONDAY]]));
+    expect(fits).toHaveLength(1);
+    expect(fits[0].over).toBe(1);
+  });
+
+  it("says nothing about a deliverable with no date", () => {
+    const plan = autoSchedule(tasks, MONDAY);
+    expect(fitPerDeliverable(tasks, plan, MONDAY, new Map())).toEqual([]);
+  });
+
+  it("is quiet when the work fits", () => {
+    const plan = autoSchedule(tasks, MONDAY);
+    const fits = fitPerDeliverable(tasks, plan, MONDAY, new Map([["d1", "2026-09-30"]]));
+    expect(fits[0].over).toBe(0);
+  });
+});
+
+describe("what to do about work that does not fit", () => {
+  it("says nothing when it fits", () => {
+    expect(whatToDoAbout([{ deliverableId: "d1", over: 0, needs: 3, has: 10 }])).toBe("fits");
+  });
+
+  it("suggests trimming when it is close", () => {
+    expect(whatToDoAbout([{ deliverableId: "d1", over: 1, needs: 11, has: 10 }])).toBe("trim");
+  });
+
+  it("says it has to be rougher when it is not close", () => {
+    // Half again over is not something taking one task out fixes, and
+    // pretending otherwise is how the fortnight disappears.
+    expect(whatToDoAbout([{ deliverableId: "d1", over: 8, needs: 18, has: 10 }])).toBe("roughen");
+  });
+
+  it("does not divide by a deliverable with no room at all", () => {
+    expect(whatToDoAbout([{ deliverableId: "d1", over: 4, needs: 4, has: 0 }])).toBe("trim");
+  });
+});
+
+describe("the chart's shape", () => {
+  const chart = readFileSync("src/components/track/timeline.tsx", "utf8");
+  const board = readFileSync("src/components/track/board.tsx", "utf8");
+
+  it("spends no width on a column of names", () => {
+    // 160px repeating what the bar's own colour already said.
+    expect(chart).not.toContain('w-[160px]');
+  });
+
+  it("draws a row per task rather than per deliverable", () => {
+    // Rows sized by deliverable left tall empty bands wherever that
+    // deliverable's tasks had not been placed.
+    expect(chart).toContain("placed.map((task)");
+  });
+
+  it("refreshes after a change, in both views", () => {
+    // revalidatePath marks the server cache stale; it does not re-render a
+    // client component already on screen. Without this the move was saved and
+    // the card sprang back, which reads as drag and drop not working.
+    expect(board).toContain("router.refresh()");
+    expect(chart).toContain("router.refresh()");
   });
 });
