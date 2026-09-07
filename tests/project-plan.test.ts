@@ -5,6 +5,7 @@ import {
   daysShort,
   firstPlan,
   shareOutDays,
+  squeezed,
   workingDaysIn,
   type PlannableDeliverable,
   type PlannableTask,
@@ -172,5 +173,31 @@ describe("a project starts planned, not blank", () => {
     // Three ways to read one thing was one too many.
     expect(detail).not.toContain("t.track.viewList");
     expect(detail).toContain('useState<"board" | "timeline">');
+  });
+});
+
+describe("what got squeezed", () => {
+  const six = Array.from({ length: 3 }, (_, i) => deliverable({ id: `d${i}`, order: i }));
+  const tasks = six.map((d, i) => task({ id: `t${i}`, deliverableId: d.id, estimateHours: 30 }));
+
+  it("names the deliverables given less time than their work needs", () => {
+    // The plan always fits the window, so the useful sentence is which
+    // corners were cut to get there.
+    const allocation = shareOutDays(six, tasks, 6);
+    const tight = squeezed(six, tasks, allocation, 6);
+    expect(tight.length).toBeGreaterThan(0);
+    expect(tight[0].needs).toBeGreaterThan(tight[0].has);
+  });
+
+  it("says nothing when everything has room", () => {
+    const easy = six.map((d, i) => task({ id: `e${i}`, deliverableId: d.id, estimateHours: 3 }));
+    expect(squeezed(six, easy, shareOutDays(six, easy, 30), 6)).toEqual([]);
+  });
+
+  it("squeezes a starred deliverable last", () => {
+    // The entire point of the star: it says which corners may be cut.
+    const starred = six.map((d, i) => (i === 0 ? { ...d, priority: 2 } : d));
+    const allocation = shareOutDays(starred, tasks, 9);
+    expect(allocation.get("d0")!).toBeGreaterThanOrEqual(allocation.get("d1")!);
   });
 });

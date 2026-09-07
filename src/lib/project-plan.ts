@@ -223,3 +223,43 @@ export function daysShort(
   const needed = Math.ceil(hours / Math.max(shape.hoursPerDay, 0.5));
   return Math.max(0, needed - available);
 }
+
+export interface Squeeze {
+  deliverableId: string;
+  /** Working days it was given. */
+  has: number;
+  /** Working days its estimates ask for. */
+  needs: number;
+}
+
+/**
+ * Which deliverables were given less time than their work asks for.
+ *
+ * The plan always fits the window, because the window is the thing that was
+ * agreed and a chart running past it helps nobody. Fitting is therefore not
+ * the question: the question is what got squeezed to make it fit, and that is
+ * a decision somebody has to be told about rather than one made quietly on
+ * their behalf.
+ *
+ * Starred deliverables are squeezed last, which is the entire point of the
+ * star: it is a way of saying which corners may be cut.
+ */
+export function squeezed(
+  deliverables: PlannableDeliverable[],
+  tasks: PlannableTask[],
+  allocation: Map<string, number>,
+  hoursPerDay: number
+): Squeeze[] {
+  const out: Squeeze[] = [];
+  for (const deliverable of deliverables) {
+    const has = allocation.get(deliverable.id);
+    if (has === undefined) continue;
+    const hours = tasks
+      .filter((task) => task.deliverableId === deliverable.id && !task.done)
+      .reduce((sum, task) => sum + Math.max(task.estimateHours, 0), 0);
+    const needs = Math.max(1, Math.ceil(hours / Math.max(hoursPerDay, 0.5)));
+    if (needs > has) out.push({ deliverableId: deliverable.id, has, needs });
+  }
+  // Worst first: that is the one worth talking to the client about.
+  return out.sort((a, b) => b.needs - b.has - (a.needs - a.has));
+}

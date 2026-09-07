@@ -37,6 +37,17 @@ function sanitizeLineItems(items: InvoiceLineItem[]): InvoiceLineItem[] {
  * Creates an invoice, optionally seeded from a tracked project so the line
  * item, client and currency don't have to be retyped.
  */
+/**
+ * What a client quotes when they pay.
+ *
+ * Zero-padded, so INV-0003 sorts and reads as a document number rather than
+ * as a count. Editable afterwards: plenty of people have their own scheme,
+ * and one that fights theirs is worse than a blank box.
+ */
+function referenceFor(number: number): string {
+  return `INV-${String(number).padStart(4, "0")}`;
+}
+
 export async function createInvoiceAction(
   projectId?: string
 ): Promise<ActionResult<{ invoiceId: string }>> {
@@ -112,13 +123,17 @@ export async function createInvoiceAction(
     console.error("[invoices] could not resolve client", err);
   }
 
+  const number = await nextInvoiceNumber(user.id);
   const invoice = await invoiceDb.create({
     data: {
       userId: user.id,
-      number: await nextInvoiceNumber(user.id),
+      number,
       issuedAt,
       dueAt,
-      reference: "",
+      // The number the client quotes when they pay, which for almost everybody
+      // is the invoice number. It was blank, so either it went out with no
+      // reference or somebody typed the number they were already looking at.
+      reference: referenceFor(number),
       clientName: seed.clientName,
       // Joined to the client, so this invoice counts towards how they pay.
       ...(clientId ? { clientId } : {}),
@@ -230,13 +245,17 @@ export async function invoiceProjectAction(
     console.error("[invoices] could not resolve client", err);
   }
 
+  const number = await nextInvoiceNumber(user.id);
   const invoice = await invoiceDb.create({
     data: {
       userId: user.id,
-      number: await nextInvoiceNumber(user.id),
+      number,
       issuedAt,
       dueAt,
-      reference: project.title,
+      // The invoice number rather than the project title. A reference is what
+      // a client types into a bank transfer, and "Ergo Internal Tool - UX
+      // Proof of Concept Redesign" is not that.
+      reference: referenceFor(number),
       clientName: project.client,
       ...(projectClientId ? { clientId: projectClientId } : {}),
       clientCompany: "",

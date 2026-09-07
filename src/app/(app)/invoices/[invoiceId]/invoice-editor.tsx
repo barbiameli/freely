@@ -16,6 +16,7 @@ import { updateInvoiceAction, deleteInvoiceAction, type InvoicePatch } from "@/a
 import type { InvoiceLineItem } from "@/lib/invoice-pdf";
 import { useT, useLocale } from "@/lib/i18n/context";
 import { RecordHeader } from "@/components/ui/page-header";
+import { LivePreview } from "@/components/invoice/live-preview";
 
 interface EditorInvoice {
   id: string;
@@ -288,6 +289,18 @@ export function InvoiceEditor({
           </>
         }
       />
+
+      {/*
+        * The fields on the left, the document on the right.
+        *
+        * It was one column of cards ending in a Download button, so the only
+        * way to find out what an invoice looked like was to build the file and
+        * open it. An invoice is a document somebody sends asking for money and
+        * the layout is most of what it says, so it is worth seeing while it is
+        * being written rather than after.
+        */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-5 items-start">
+        <div className="flex flex-col gap-5 min-w-0">
 
       {/* Your own details are the same on every invoice you will ever send, so
           they sit behind a summary line rather than being five fields to scroll
@@ -691,6 +704,39 @@ export function InvoiceEditor({
           <Button icon={Download} loading={downloading} onClick={download}>
             {downloading ? "Building..." : "Download PDF"}
           </Button>
+        </div>
+      </div>
+        </div>
+
+        {/* Sticky, so it stays in view while the form scrolls past it. On a
+            phone it sits under the fields rather than above them: the thing
+            you came to do is fill them in. */}
+        <div className="lg:sticky lg:top-5 min-w-0">
+          <LivePreview
+            invoiceId={invoice.id}
+            draft={{
+              issuedAt: form.issuedAt ? `${form.issuedAt}T00:00:00.000Z` : undefined,
+              dueAt: form.dueAt ? `${form.dueAt}T00:00:00.000Z` : "",
+              reference: form.reference,
+              clientName: form.clientName,
+              clientCompany: form.clientCompany,
+              clientWebsite: form.clientWebsite,
+              clientEmail: form.clientEmail,
+              fromName: form.fromName,
+              fromTagline: form.fromTagline,
+              fromWebsite: form.fromWebsite,
+              fromEmail: form.fromEmail,
+              fromAddress: form.fromAddress,
+              lineItems: form.lineItems,
+              itemised: form.itemised,
+              currency: form.currency,
+              taxRate: form.taxRate,
+              notes: form.notes,
+              branding: form.branding,
+            }}
+            paymentBlock={paymentBlock}
+            paymentNote={paymentNote}
+          />
         </div>
       </div>
     </>

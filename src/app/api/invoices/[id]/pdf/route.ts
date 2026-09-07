@@ -32,7 +32,44 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const invoice = await invoiceDb.findFirst({ where: { id: params.id, userId: user.id } });
   if (!invoice) return new NextResponse("Not found", { status: 404 });
 
-  let body: { paymentBlock?: string; paymentNote?: string };
+  let body: {
+    paymentBlock?: string;
+    paymentNote?: string;
+    /**
+     * The invoice as it stands in the editor, unsaved.
+     *
+     * Sent so the live preview draws what is being typed rather than what was
+     * last saved. Optional: a plain download sends nothing and gets the
+     * stored row, which is the version that matters once it goes out.
+     *
+     * Deliberately routed through here rather than rendered in the browser.
+     * The alternative was a second copy of this mapping on the client, and
+     * two things describing one document is how a preview comes to disagree
+     * with the file a client receives.
+     */
+    draft?: Partial<{
+      issuedAt: string;
+      dueAt: string;
+      reference: string;
+      clientName: string;
+      clientCompany: string;
+      clientWebsite: string;
+      clientEmail: string;
+      fromName: string;
+      fromTagline: string;
+      fromWebsite: string;
+      fromEmail: string;
+      fromAddress: string;
+      lineItems: unknown;
+      itemised: boolean;
+      currency: string;
+      taxRate: number;
+      notes: string;
+      branding: string;
+    }>;
+    /** A preview is allowed to have no payment details yet. */
+    preview?: boolean;
+  };
   try {
     body = await req.json();
   } catch {
@@ -40,37 +77,47 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   }
 
   const paymentBlock = sanitizeText(body.paymentBlock || "").trim();
-  if (!paymentBlock) {
+  // A download without payment details is a document nobody can pay. A
+  // preview without them is somebody halfway through filling the form.
+  if (!paymentBlock && !body.preview) {
     return NextResponse.json(
       { error: "Add your payment details before downloading, they aren't stored anywhere." },
       { status: 400 }
     );
   }
 
-  const resolved = resolveBrand(invoice.branding, user);
+  // The draft where there is one, the stored row otherwise.
+  const draft = body.draft ?? {};
+  const field = <K extends keyof typeof invoice>(key: K, override: unknown) =>
+    override === undefined ? invoice[key] : (override as (typeof invoice)[K]);
+
+  const resolved = resolveBrand(
+    typeof draft.branding === "string" ? draft.branding : invoice.branding,
+    user
+  );
 
   const pdf = await renderInvoicePdf({
     // The client's language, not the freelancer's interface. An invoice is
     // read by whoever pays it.
     language: resolveQuoteLocale(user),
     number: invoice.number,
-    issuedAt: invoice.issuedAt.toISOString(),
-    dueAt: invoice.dueAt ? invoice.dueAt.toISOString() : "",
-    reference: invoice.reference,
-    clientName: invoice.clientName,
-    clientCompany: invoice.clientCompany,
-    clientWebsite: invoice.clientWebsite,
-    clientEmail: invoice.clientEmail,
-    fromName: invoice.fromName,
-    fromTagline: invoice.fromTagline,
-    fromWebsite: invoice.fromWebsite,
-    fromEmail: invoice.fromEmail,
-    fromAddress: invoice.fromAddress,
-    lineItems: invoice.lineItems,
-    itemised: invoice.itemised,
-    currency: invoice.currency,
-    taxRate: invoice.taxRate,
-    notes: invoice.notes,
+    issuedAt: draft.issuedAt || invoice.issuedAt.toISOString(),
+    dueAt: draft.dueAt ?? (invoice.dueAt ? invoice.dueAt.toISOString() : ""),
+    reference: field("reference", draft.reference),
+    clientName: field("clientName", draft.clientName),
+    clientCompany: field("clientCompany", draft.clientCompany),
+    clientWebsite: field("clientWebsite", draft.clientWebsite),
+    clientEmail: field("clientEmail", draft.clientEmail),
+    fromName: field("fromName", draft.fromName),
+    fromTagline: field("fromTagline", draft.fromTagline),
+    fromWebsite: field("fromWebsite", draft.fromWebsite),
+    fromEmail: field("fromEmail", draft.fromEmail),
+    fromAddress: field("fromAddress", draft.fromAddress),
+    lineItems: (draft.lineItems ?? invoice.lineItems) as typeof invoice.lineItems,
+    itemised: field("itemised", draft.itemised),
+    currency: field("currency", draft.currency),
+    taxRate: field("taxRate", draft.taxRate),
+    notes: field("notes", draft.notes),
     payment: {
       block: paymentBlock,
       note: sanitizeText(body.paymentNote || "").trim(),

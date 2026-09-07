@@ -136,8 +136,15 @@ describe("the board on the page", () => {
   it("writes the whole column in one transaction", () => {
     // A move that ticks one task off and reorders four others, half applied,
     // is a board that disagrees with itself.
-    expect(action).toContain("prisma.$transaction");
-    expect(action).toContain("ordered.map");
+    expect(action).toContain("prisma.$transaction(async (tx)");
+  });
+
+  it("does not hand Prisma an array it will not run", () => {
+    // The array form of $transaction requires every element to be a
+    // PrismaPromise. These come through a cast wrapper, so the batch was
+    // handed over as something Prisma refused, and the write that appeared
+    // to succeed had done nothing.
+    expect(action).not.toContain("as unknown as Parameters<typeof prisma.$transaction>[0]");
   });
 
   it("checks the task belongs to the person moving it", () => {

@@ -74,7 +74,8 @@ describe("the summary rows", () => {
 describe("the due date is optional", () => {
   const schema = readFileSync("prisma/schema.prisma", "utf8");
   const actions = readFileSync("src/actions/invoices.ts", "utf8");
-  const pdf = readFileSync("src/lib/invoice-pdf.tsx", "utf8");
+  // The document itself, which is where the markup lives since the split.
+  const pdf = readFileSync("src/lib/invoice-document.tsx", "utf8");
   const list = readFileSync("src/app/(app)/invoices/invoices-view.tsx", "utf8");
 
   it("is nullable in the schema", () => {

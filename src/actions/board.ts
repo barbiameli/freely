@@ -4,10 +4,9 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
-import { deliverableDb, stepDb } from "@/lib/track-db";
+import { stepDb } from "@/lib/track-db";
 import { changesForMove, columnOf, reorder, type Column } from "@/lib/board";
-import { autoSchedule, fitPerDeliverable, overrunDays, whatToDoAbout } from "@/lib/timeline-plan";
-import { daysShort, firstPlan } from "@/lib/project-plan";
+import { daysShort, firstPlan, shareOutDays, squeezed, workingDaysIn } from "@/lib/project-plan";
 import type { ActionResult } from "@/actions/briefs";
 
 /**
@@ -90,14 +89,19 @@ export async function moveStepAction(
   const ordered = reorder(settled, stepId, index);
 
   try {
-    await prisma.$transaction([
-      ...ordered.map((id, position) =>
-        stepDb.update({
+    // Interactive, not an array. The array form requires every element to be
+    // a PrismaPromise and these come through a cast wrapper, so the whole
+    // batch was handed over as something it would not run.
+    await prisma.$transaction(async (tx) => {
+      const step = (tx as unknown as { step: { update(args: unknown): Promise<unknown> } }).step;
+      for (let position = 0; position < ordered.length; position += 1) {
+        const id = ordered[position];
+        await step.update({
           where: { id },
           data: id === stepId ? { ...changes, order: position } : { order: position },
-        })
-      ),
-    ] as unknown as Parameters<typeof prisma.$transaction>[0]);
+        });
+      }
+    });
   } catch (err) {
     console.error("[moveStepAction] failed", err);
     return { ok: false, error: "Couldn't move that one. Try again." };
@@ -155,7 +159,7 @@ export async function placeTaskAction(
  */
 export async function autoScheduleAction(
   projectId: string
-): Promise<ActionResult<{ overrunDays: number; advice: "fits" | "trim" | "roughen" }>> {
+): Promise<ActionResult<{ squeezed: { name: string; has: number; needs: number }[] }>> {
   const user = await requireFullUser();
   const project = await prisma.project.findFirst({
     where: { id: projectId, ...teamScopeWhere(user) },
@@ -163,46 +167,74 @@ export async function autoScheduleAction(
   });
   if (!project) return { ok: false, error: "Project not found." };
 
-  const start = (project as unknown as { startDate: Date | null }).startDate;
-  if (!start) return { ok: false, error: "Give the project a start date first." };
+  const row = project as unknown as {
+    startDate: Date | null;
+    dueDate: Date | null;
+    hoursPerDay?: number | null;
+    workingDays?: number[] | null;
+  };
+  if (!row.startDate) return { ok: false, error: "Give the project a start date first." };
+  if (!row.dueDate) return { ok: false, error: "Give the project an end date first." };
 
   const steps = await stepDb.findMany({
     where: { deliverable: { projectId: project.id } },
     orderBy: { order: "asc" },
   });
 
-  const planned = steps.map((step) => ({
+  const shape = {
+    hoursPerDay: row.hoursPerDay && row.hoursPerDay > 0 ? row.hoursPerDay : 6,
+    workingDays: row.workingDays?.length ? row.workingDays : [1, 2, 3, 4, 5],
+  };
+  const deliverables = project.deliverables.map((d, index) => ({
+    id: d.id,
+    order: index,
+    priority: (d as unknown as { priority?: number }).priority ?? 1,
+  }));
+  const tasks = steps.map((step) => ({
     id: step.id,
-    name: step.name,
     deliverableId: step.deliverableId,
     estimateHours: step.estimateHours,
     order: step.order,
     done: step.done,
-    plannedStart: null,
-    plannedEnd: null,
   }));
 
-  // The date each deliverable was promised for, where it has one. A project
-  // that lands on time with its first deliverable a week late has already let
-  // the client down once.
-  const deadlines = new Map<string, Date>();
-  for (const deliverable of project.deliverables) {
-    const due = (deliverable as unknown as { dueAt: Date | null }).dueAt;
-    if (due) deadlines.set(deliverable.id, due);
-  }
-
-  const plan = autoSchedule(planned, start, project.deliverables.map((d) => d.id));
-  const fits = fitPerDeliverable(planned, plan, start, deadlines);
+  /*
+   * Fit it into the window rather than reporting that it does not.
+   *
+   * This used to lay the tasks end to end from the start date and then say
+   * "this runs 21 working days past the due date", which is true and useless:
+   * the date was agreed with a client, so running past it is not a plan, it
+   * is a description of a problem. Sometimes the work simply has to happen
+   * inside the time there is.
+   *
+   * So the days available are shared out by estimate and priority, everything
+   * lands inside the window, and what got squeezed is named. That is where
+   * the star earns its keep: it decides which corners get cut.
+   */
+  const plan = firstPlan(deliverables, tasks, row.startDate, row.dueDate, shape);
+  const allocation = shareOutDays(
+    deliverables,
+    tasks,
+    workingDaysIn(row.startDate, row.dueDate, shape.workingDays).length
+  );
+  const tight = squeezed(deliverables, tasks, allocation, shape.hoursPerDay);
+  const names = new Map(project.deliverables.map((d) => [d.id, d.name] as const));
 
   try {
-    await prisma.$transaction(
-      plan.map((placement) =>
-        stepDb.update({
+    // An interactive transaction rather than an array of promises. The array
+    // form needs every element to be a PrismaPromise, and these come through
+    // a cast wrapper, so thirty updates were being handed over as something
+    // it would not run.
+    await prisma.$transaction(async (tx) => {
+      for (const placement of plan) {
+        await (tx as unknown as {
+          step: { update(args: unknown): Promise<unknown> };
+        }).step.update({
           where: { id: placement.id },
           data: { plannedStart: placement.start, plannedEnd: placement.end },
-        })
-      ) as unknown as Parameters<typeof prisma.$transaction>[0]
-    );
+        });
+      }
+    });
   } catch (err) {
     console.error("[autoScheduleAction] failed", err);
     return { ok: false, error: "Couldn't lay that out. Try again." };
@@ -212,8 +244,11 @@ export async function autoScheduleAction(
   return {
     ok: true,
     data: {
-      overrunDays: overrunDays(plan, (project as unknown as { dueDate: Date | null }).dueDate),
-      advice: whatToDoAbout(fits),
+      squeezed: tight.map((entry) => ({
+        name: names.get(entry.deliverableId) ?? "",
+        has: entry.has,
+        needs: entry.needs,
+      })),
     },
   };
 }
@@ -277,32 +312,35 @@ export async function planProjectAction(input: {
   const plan = firstPlan(deliverables, tasks, start, end, shape);
 
   try {
-    await prisma.$transaction([
-      prisma.project.update({
+    await prisma.$transaction(async (tx) => {
+      const client = tx as unknown as {
+        project: { update(args: unknown): Promise<unknown> };
+        deliverable: { update(args: unknown): Promise<unknown> };
+        step: { update(args: unknown): Promise<unknown> };
+      };
+      await client.project.update({
         where: { id: project.id },
         data: {
           startDate: start,
           dueDate: end,
-          ...({
-            hoursPerDay: shape.hoursPerDay,
-            workingDays: shape.workingDays,
-            plannedAt: new Date(),
-          } as unknown as Record<string, never>),
+          hoursPerDay: shape.hoursPerDay,
+          workingDays: shape.workingDays,
+          plannedAt: new Date(),
         },
-      }),
-      ...deliverables.map((deliverable) =>
-        deliverableDb.update({
+      });
+      for (const deliverable of deliverables) {
+        await client.deliverable.update({
           where: { id: deliverable.id },
           data: { priority: deliverable.priority },
-        })
-      ),
-      ...plan.map((placement) =>
-        stepDb.update({
+        });
+      }
+      for (const placement of plan) {
+        await client.step.update({
           where: { id: placement.id },
           data: { plannedStart: placement.start, plannedEnd: placement.end },
-        })
-      ),
-    ] as unknown as Parameters<typeof prisma.$transaction>[0]);
+        });
+      }
+    });
   } catch (err) {
     console.error("[planProjectAction] failed", err);
     return { ok: false, error: "Couldn't save that. Try again." };

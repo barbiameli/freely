@@ -188,9 +188,20 @@ describe("the chart on the page", () => {
     expect(action).toContain("end < start ? [end, start] : [start, end]");
   });
 
-  it("says whether the plan fits after laying it out", () => {
-    expect(action).toContain("overrunDays(plan,");
-    expect(chart).toContain("t.track.timelineOverruns");
+  it("makes it fit and says what got squeezed", () => {
+    // Laying the tasks end to end and reporting "21 working days past the due
+    // date" is true and useless: the date was agreed with a client, so
+    // running past it is not a plan, it is a description of a problem.
+    expect(action).toContain("firstPlan(deliverables, tasks, row.startDate, row.dueDate, shape)");
+    expect(action).toContain("squeezed(deliverables, tasks, allocation");
+    expect(chart).toContain("t.track.timelineSqueezed");
+  });
+
+  it("folds the unplaced list away", () => {
+    // Thirty pills above a two-week grid is a list with a chart underneath
+    // it, which is the wrong way round.
+    expect(chart).toContain("<details");
+    expect(chart).toContain("t.track.timelineUnplacedCount");
   });
 });
 

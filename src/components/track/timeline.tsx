@@ -115,16 +115,20 @@ export function Timeline({
       return;
     }
     router.refresh();
-    // Not just "you are six days over", which is visible on the chart. What
-    // to change: move the date, cut the scope, or agree now that what lands
-    // is rougher than what was described.
+    // What got squeezed, not whether it fits. It always fits now: the window
+    // was agreed with a client, so the useful sentence is which corners were
+    // cut to get there.
+    const tight = result.data.squeezed;
     setNote(
-      result.data.advice === "fits"
+      tight.length === 0
         ? t.track.timelineFits
-        : `${t.track.timelineOverruns.replace(
-            "{days}",
-            String(result.data.overrunDays)
-          )} ${result.data.advice === "roughen" ? t.track.timelineRoughen : t.track.timelineTrim}`
+        : t.track.timelineSqueezed
+            .replace("{name}", tight[0].name)
+            .replace("{has}", String(tight[0].has))
+            .replace("{needs}", String(tight[0].needs)) +
+            (tight.length > 1
+              ? ` ${t.track.timelineSqueezedMore.replace("{count}", String(tight.length - 1))}`
+              : "")
     );
   }
 
@@ -148,9 +152,14 @@ export function Timeline({
 
       {/* Anything not yet on the chart, so a task cannot be quietly left out
           of the plan by being invisible. Drag one onto a day to place it. */}
+      {/* Folded away. Thirty pills above a two-week grid is a list with a
+          chart underneath it, which is the wrong way round. */}
       {unplaced.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 items-center">
-          <span className="text-caption text-text-muted">{t.track.timelineUnplaced}</span>
+        <details className="group">
+          <summary className="text-caption text-text-muted cursor-pointer tap list-none">
+            {t.track.timelineUnplacedCount.replace("{count}", String(unplaced.length))}
+          </summary>
+          <div className="flex flex-wrap gap-1.5 items-center mt-2">
           {unplaced.map((task) => (
             <span
               key={task.id}
@@ -164,7 +173,8 @@ export function Timeline({
               {task.name}
             </span>
           ))}
-        </div>
+          </div>
+        </details>
       )}
 
       <div className="overflow-x-auto">
