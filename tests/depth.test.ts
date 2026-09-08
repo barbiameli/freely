@@ -65,10 +65,23 @@ describe("motion", () => {
     expect(css).toContain("animation: page-in 0.18s ease-out both;");
   });
 
+  /*
+   * One rule for all of it.
+   *
+   * Each animation used to name itself in its own reduced-motion block, which
+   * meant anything added later was covered only if somebody remembered. The
+   * rebrand replaced that with a blanket rule, which is safe here because
+   * every animated element rests in its finished state: switching the
+   * animations off leaves the interface complete rather than half-drawn.
+   */
   it("turns everything off for somebody who asked for less", () => {
     const guard = css.slice(css.lastIndexOf("prefers-reduced-motion: reduce"));
+    expect(guard).toContain("animation: none !important");
+    expect(guard).toContain("transition-duration: 1ms !important");
+    // The blanket selector, so a new animation is covered without being named.
+    expect(guard).toContain("*::before");
     for (const name of [".rise", ".page-in", ".press", ".dragging"]) {
-      expect(guard).toContain(name);
+      expect(css).toContain(name);
     }
   });
 });

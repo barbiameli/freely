@@ -4,7 +4,65 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #343434;
+  --foreground: #1a1626;
+
+  /* Surface */
+  --bg: #f2f0f7;
+  --surface: #ffffff;
+  --surface-sunk: #f2f0f7;
+
+  /* Ink */
+  --ink: #1a1626;
+  --body: #4a4360;
+  --muted: #6a6280;
+  --hair: rgba(26, 22, 38, 0.12);
+
+  /* Accent. Three and no more: primary, completion, movement. */
+  --a1: #ff2d8a;
+  --a1-deep: #e31e77;
+  --a2: #c7f53c;
+  --a3: #2a43d9;
+
+  /* State */
+  --danger: #d92d20;
+  --danger-bg: #fef3f2;
+  --warn: #b54708;
+
+  /* Radius */
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 22px;
+  --r-pill: 999px;
+
+  /* Elevation */
+  --sh-hair: inset 0 0 0 1.5px var(--hair);
+  --sh-card: 0 12px 34px rgba(26, 22, 38, 0.07);
+  --sh-float: 0 18px 44px rgba(26, 22, 38, 0.1);
+
+  /* Motion */
+  --ease-spring: cubic-bezier(0.2, 1.6, 0.4, 1);
+  --ease-draw: cubic-bezier(0.3, 1.15, 0.35, 1);
+  --ease-move: cubic-bezier(0.6, 0, 0.3, 1);
+  --ease-quick: cubic-bezier(0.4, 0, 0.2, 1);
+  --t-instant: 120ms;
+  --t-quick: 220ms;
+  --t-base: 400ms;
+  --t-draw: 900ms;
+  --t-hero: 2100ms;
+}
+
+/*
+ * The display face is set at 800 with the tracking pulled in hard. Bricolage
+ * at default tracking reads as a stock grotesque; the tightness is the whole
+ * point of choosing it.
+ */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display), ui-sans-serif, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.035em;
 }
 
 body {
@@ -22,7 +80,7 @@ body {
 input:focus,
 textarea:focus,
 select:focus {
-  outline: 2px solid rgba(99, 32, 238, 0.2);
+  outline: 2px solid rgba(255, 45, 138, 0.24);
   outline-offset: 0;
 }
 
@@ -564,4 +622,199 @@ summary:focus-visible {
 .dragging {
   transform: rotate(1.5deg) scale(1.02);
   box-shadow: 0 18px 40px -12px rgba(52, 52, 52, 0.28);
+}
+
+
+/* ---------------------------------------------------------------------------
+   The line, and the icons that borrow its behaviour.
+
+   Every animated part rests in its finished state and the keyframe runs from
+   the hidden value back to rest. An element that is invisible until you hover
+   it is a bug rather than a reveal, and it is the easiest thing here to get
+   wrong: turning the animations off has to leave the interface correct.
+   --------------------------------------------------------------------------- */
+
+.line-stroke {
+  stroke-dasharray: 1;
+}
+.line-stroke.is-drawing {
+  animation: draw var(--t-draw) var(--ease-draw);
+}
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.line-node {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.line-node.is-landing {
+  animation: land 640ms var(--ease-spring) backwards;
+}
+@keyframes land {
+  from {
+    transform: translateY(-28px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.ico-dash {
+  stroke-dasharray: 1;
+}
+.ico-bar {
+  transform-box: fill-box;
+  transform-origin: left center;
+}
+.ico-dot,
+.ico-lift,
+.ico-nudge {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.ico-trigger:hover .ico-dash,
+.ico-trigger.is-playing .ico-dash {
+  animation: ico-draw 320ms var(--ease-draw);
+}
+.ico-trigger:hover .ico-bar,
+.ico-trigger.is-playing .ico-bar {
+  animation: ico-bar 340ms var(--ease-spring);
+}
+.ico-trigger:hover .ico-dot,
+.ico-trigger.is-playing .ico-dot {
+  animation: ico-pop 280ms var(--ease-spring) backwards;
+}
+/* backwards fill is required on the delayed dots. Without it they sit at full
+   size through the delay and then snap to nothing before playing. */
+.ico-trigger:hover .ico-dot.d1,
+.ico-trigger.is-playing .ico-dot.d1 {
+  animation-delay: 180ms;
+}
+.ico-trigger:hover .ico-dot.d2,
+.ico-trigger.is-playing .ico-dot.d2 {
+  animation-delay: 270ms;
+}
+.ico-trigger:hover .ico-lift,
+.ico-trigger.is-playing .ico-lift {
+  animation: ico-lift 440ms var(--ease-spring);
+}
+.ico-trigger:hover .ico-nudge,
+.ico-trigger.is-playing .ico-nudge {
+  animation: ico-nudge 460ms var(--ease-spring);
+}
+
+@keyframes ico-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes ico-bar {
+  from {
+    transform: scaleX(0.12);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes ico-pop {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes ico-lift {
+  0% {
+    transform: translateY(0);
+  }
+  45% {
+    transform: translateY(-2.6px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes ico-nudge {
+  0% {
+    transform: translate(0, 0);
+  }
+  45% {
+    transform: translate(1.7px, -3.2px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+/* Waiting looks like the product rather than a borrowed spinner. The only
+   thing in the whole system permitted to loop. */
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  width: 130px;
+}
+.loading i {
+  height: 9px;
+  border-radius: 5px;
+  background: var(--a1);
+  transform-origin: left center;
+  animation: loadbar 1.15s var(--ease-move) infinite;
+}
+.loading i:nth-child(2) {
+  animation-delay: 0.14s;
+}
+.loading i:nth-child(3) {
+  animation-delay: 0.28s;
+}
+@keyframes loadbar {
+  0% {
+    transform: scaleX(0.18);
+    opacity: 0.25;
+  }
+  50% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(0.18);
+    opacity: 0.25;
+  }
+}
+
+/*
+ * One reduced-motion rule for everything above, and for the six that were
+ * already scattered through this file.
+ *
+ * Because every animated element rests in its finished state, switching the
+ * animations off leaves the interface correct rather than half-drawn: the
+ * strokes are already complete, the nodes already landed.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition-duration: 1ms !important;
+  }
+  .line-stroke,
+  .ico-dash {
+    stroke-dashoffset: 0;
+  }
+  html {
+    scroll-behavior: auto;
+  }
 }

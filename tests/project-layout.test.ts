@@ -53,7 +53,10 @@ describe("the timer asks once", () => {
   it("respects somebody who asked for less motion", () => {
     expect(css).toContain("prefers-reduced-motion: reduce");
     const guard = css.slice(css.lastIndexOf("prefers-reduced-motion: reduce"));
-    expect(guard).toContain(".animate-pulse-once");
+    // Covered by the blanket rule rather than by being named, so the pulse
+    // cannot fall out of the guard the next time this file is edited.
+    expect(guard).toContain("animation: none !important");
+    expect(css).toContain(".animate-pulse-once");
   });
 
   it("asks what the tracking is for before starting a clock", () => {

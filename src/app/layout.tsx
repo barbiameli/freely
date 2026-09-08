@@ -1,28 +1,35 @@
 import { HostedAnalytics } from "@/components/hosted-analytics";
 import type { Metadata, Viewport } from "next";
-import { Instrument_Serif, Raleway } from "next/font/google";
+import { Bricolage_Grotesque, Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { LocaleProvider } from "@/lib/i18n/context";
 import { currentLocale } from "@/lib/i18n/server";
 
-const fontDisplay = Instrument_Serif({
+const fontDisplay = Bricolage_Grotesque({
   subsets: ["latin"],
-  weight: "400",
-  style: ["italic", "normal"],
+  weight: ["800"],
   variable: "--font-display",
+  display: "swap",
 });
-const fontBody = Raleway({
+const fontBody = Inter({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600"],
   variable: "--font-body",
+  display: "swap",
 });
-// "Neutra Text Light Alt" is a commercial font, not available via Google
-// Fonts — there's no file to load here, so this variable just sets the
-// font-family *name* with a clean sans-serif fallback stack. If a licensed
-// Neutra Text Light Alt font file (.otf/.ttf/.woff2) is added under
-// src/fonts/, wire it up with next/font/local using this same variable name
-// and real rendering will kick in everywhere --font-label is used.
-const fontLabelFamily = `"Neutra Text Light Alt", "Neutra Text", ui-sans-serif, -apple-system, sans-serif`;
+/**
+ * Figures, dates, references and status pills.
+ *
+ * This variable used to name a licensed face with no file behind it, so it
+ * rendered as the fallback sans everywhere it was used and the distinction it
+ * was meant to draw did not exist.
+ */
+const fontMono = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Freely",
@@ -63,8 +70,10 @@ export default async function RootLayout({
   const locale = await currentLocale();
 
   return (
-    <html lang={locale} style={{ "--font-label": fontLabelFamily } as React.CSSProperties}>
-      <body className={`${fontDisplay.variable} ${fontBody.variable} antialiased font-body text-ink`}>
+    <html lang={locale}>
+      <body
+        className={`${fontDisplay.variable} ${fontBody.variable} ${fontMono.variable} antialiased font-body text-ink`}
+      >
         <LocaleProvider locale={locale}>{children}</LocaleProvider>
         {/* Nothing unless a key is set. See the component: this is the only
             thing here that tells a third party anything. */}

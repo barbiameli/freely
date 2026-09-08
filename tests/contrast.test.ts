@@ -138,8 +138,18 @@ describe("the dark hero block", () => {
     expect(Number(overInk(0.6).toFixed(2))).toBeGreaterThanOrEqual(4.5);
   });
 
-  it("white at 50 percent is not, which is why nothing uses it", () => {
-    expect(Number(overInk(0.5).toFixed(2))).toBeLessThan(4.5);
+  /*
+   * The floor moved when the ink did.
+   *
+   * On the old #343434, white at 50 percent composited to 4.42 and failed,
+   * which is why the block below checks that nothing uses it. The rebrand's
+   * ink is #1A1626, a good deal darker, so 50 percent now clears 4.5 and 40
+   * is the first step that does not. The rule the app follows is unchanged:
+   * nothing goes below the level that passes.
+   */
+  it("white at 40 percent is not, and is the floor nothing goes under", () => {
+    expect(Number(overInk(0.5).toFixed(2))).toBeGreaterThanOrEqual(4.5);
+    expect(Number(overInk(0.4).toFixed(2))).toBeLessThan(4.5);
   });
 });
 

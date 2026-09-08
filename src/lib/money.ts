@@ -71,18 +71,25 @@ export function formatAmount(
 /**
  * A price, symbol and all.
  *
- * The symbol stays in front even in Spanish, where the convention is to put it
- * after. That is a deliberate limit: the numbers being in the wrong format is
- * a mistake a reader notices, and a symbol on the wrong side is a convention
- * they will read past. Moving it would also reflow the invoice's totals
- * column, which is a layout change rather than a correctness one.
+ * The euro goes after the number, with a non-breaking space, which is the
+ * convention in both Spain and Ireland and the one every client reading a
+ * euro invoice expects. The dollar and the pound stay in front, because
+ * "650 $" is as wrong to a US or UK reader as "€ 4.150" is to a Spanish one.
+ *
+ * This was deliberately not done for a long time on the grounds that a symbol
+ * on the wrong side is a convention a reader skims past. On a document
+ * somebody is being asked to pay, that is not good enough.
  */
 export function formatMoney(
   amount: number,
   currency?: string | null,
   language?: Locale | null
 ): string {
-  return `${currencySymbol(currency)}${formatAmount(amount, currency, language)}`;
+  const amountText = formatAmount(amount, currency, language);
+  const symbol = currencySymbol(currency);
+  // A non-breaking space, so a total never wraps between the number and the
+  // symbol at the end of a line in a PDF.
+  return symbol === "\u20ac" ? `${amountText}\u00a0${symbol}` : `${symbol}${amountText}`;
 }
 
 /**

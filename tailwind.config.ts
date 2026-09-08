@@ -11,34 +11,79 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
-        coral: "#F45B69",
-        // Coral is 3.88:1 on the ink hero block, which is fine for a large
-        // heading and not for an 11px label. Lightened just enough to clear
-        // 4.5 there. Only for coral text on a dark background.
-        "coral-light": "#F6737F",
-        violet: "#6320EE",
-        "violet-tint": "rgba(99,32,238,0.07)",
-        ink: "#343434",
-        slate: "#565656",
-        line: "#E8EAEF",
-        paper: "#F8F9FA",
-        mint: "#F1F7EE",
-        "mint-solid": "#E1F9EB",
-        success: "#065F46",
-        // Darkened from #8A8990, which was 3.46:1 on white and used at 11px
-        // for most of the secondary text in the app. That is below the 4.5:1
-        // WCAG AA needs for normal text, and it was the single most-used
-        // colour failing it. This clears 4.5 on white, paper and mint, and
-        // is close enough to the old value that nothing looks different.
-        "text-muted": "#737279",
-        // The middle light. Dark enough to clear 4.5:1 on white and on paper,
-        // since it is used at 11px next to the other two.
-        amber: "#9A5B00",
-        "amber-tint": "rgba(154,91,0,0.08)",
-        "success-tint": "rgba(6,95,70,0.08)",
-        "coral-tint": "rgba(244,91,105,0.08)",
+
+        /*
+         * The rebrand, mapped onto the names already in the code.
+         *
+         * Every screen names a role rather than a hex: `violet` is the primary
+         * action, `coral` is a heading, `paper` is the page. Repointing those
+         * names moves the whole app at once and keeps the roles intact, which
+         * a find-and-replace to `hot` and `bg` would not: it would touch four
+         * hundred class names and get some of them wrong.
+         *
+         * The new names are here too, for anything written from now on.
+         */
+
+        /*
+         * Primary action, in the deeper of the two pinks.
+         *
+         * The brand pink #FF2D8A is 3.5:1 against white, which means white
+         * text on a pink button fails AA and pink text below 20px fails it
+         * too. The spec says pink with white "passes at all sizes"; measured,
+         * it does not. This tone is 5.2:1 both ways, so one value covers the
+         * button fill, its label, and the small links that were already
+         * written as text-violet in a hundred places.
+         *
+         * The brand pink keeps everything it is actually seen in: headings,
+         * the line, the meaningful stroke in an icon. All of those are large.
+         */
+        violet: "#D1156C",
+        "violet-tint": "rgba(209,21,108,0.08)",
+        hot: { DEFAULT: "#FF2D8A", deep: "#E31E77" },
+
+        // Headings, which the palette allows in the primary at display sizes
+        // and 800 weight. The app's h1s are 28px and up.
+        coral: "#FF2D8A",
+        // 3.5:1 on white is fine for a 32px heading and not for an 11px label.
+        // Lightened for the one eyebrow that sits on the dark hero block.
+        "coral-light": "#FF7AB4",
+        "coral-tint": "rgba(255,45,138,0.08)",
+
+        // --a3. Movement and secondary data. Explicitly not buttons.
+        inkblue: "#2A43D9",
+
+        // --a2. Completion only, and never carrying text: a dot, a stroke, or
+        // a fill behind dark ink.
+        lime: "#C7F53C",
+
+        // Text and structure.
+        ink: "#1A1626",
+        slate: "#4A4360",
+        "text-muted": "#6A6280",
+        body: "#4A4360",
+        muted: "#6A6280",
+
+        // Surface.
+        line: "rgba(26,22,38,0.12)",
+        hair: "rgba(26,22,38,0.12)",
+        paper: "#F2F0F7",
+        bg: "#F2F0F7",
+        surface: "#FFFFFF",
+        "surface-sunk": "#F2F0F7",
+
+        // Completion, as text and as a wash. The dark green carries the words,
+        // since lime on white fails contrast at any size.
+        success: "#3F6212",
+        "success-tint": "rgba(199,245,60,0.30)",
+        mint: "#F4FBE2",
+        "mint-solid": "#E8F8BC",
+
+        // State. The spec's #D92D20 is 4.28:1 on the new page ground, just
+        // under AA, and overdue text is the last thing to make hard to read.
         overdue: "#C4302E",
         "overdue-tint": "rgba(196,48,46,0.08)",
+        amber: "#B54708",
+        "amber-tint": "rgba(181,71,8,0.08)",
       },
       // A named scale, so a new component picks a role rather than inventing
       // another pixel value. The app had twenty distinct sizes including
@@ -60,15 +105,22 @@ const config: Config = {
         title: ["18px", { lineHeight: "1.35" }],
       },
       fontFamily: {
-        display: ["var(--font-display)", "Georgia", "serif"],
+        display: ["var(--font-display)", "ui-sans-serif", "sans-serif"],
         body: ["var(--font-body)", "-apple-system", "sans-serif"],
-        label: ["var(--font-label)", "ui-sans-serif", "sans-serif"],
+        // Figures, dates and references. Was a licensed face with no file
+        // behind it, so it never rendered as anything but the fallback.
+        label: ["var(--font-mono)", "ui-monospace", "monospace"],
       },
       borderRadius: {
-        card: "16px",
+        sm: "10px",
+        md: "16px",
+        lg: "22px",
+        card: "22px",
       },
       boxShadow: {
-        panel: "0px 20px 40px 0px rgba(0,0,0,0.05)",
+        card: "0 12px 34px rgba(26,22,38,.07)",
+        float: "0 18px 44px rgba(26,22,38,.10)",
+        panel: "0 12px 34px rgba(26,22,38,.07)",
         // For a preview lifting under the cursor on the marketing page. Deeper
         // and slightly warmer than the resting shadow, which is what makes it
         // read as rising rather than as growing a bigger shadow.
@@ -80,6 +132,10 @@ const config: Config = {
         dialog: "0px 24px 64px -12px rgba(20,20,20,0.35)",
       },
       transitionTimingFunction: {
+        spring: "cubic-bezier(.2,1.6,.4,1)",
+        draw: "cubic-bezier(.3,1.15,.35,1)",
+        move: "cubic-bezier(.6,0,.3,1)",
+        quick: "cubic-bezier(.4,0,.2,1)",
         // One easing across the whole marketing page. Decelerating hard at the
         // end is what separates something arriving from something sliding: a
         // linear or symmetric ease reads as mechanical at these durations.

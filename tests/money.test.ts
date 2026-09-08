@@ -48,8 +48,15 @@ describe("currencies without a minor unit", () => {
 });
 
 describe("formatMoney", () => {
-  it("puts the symbol in front of the number", () => {
-    expect(formatMoney(4500, "EUR", "en")).toBe("€4,500.00");
+  it("puts the euro after the number, and the others in front", () => {
+    // Non-breaking, so a total never wraps between the two halves.
+    expect(formatMoney(4500, "EUR", "en")).toBe("4,500.00\u00a0€");
+    // Spanish leaves four-figure numbers ungrouped, which is the convention
+    // and not a missing separator.
+    expect(formatMoney(4500, "EUR", "es")).toBe("4500,00\u00a0€");
+    expect(formatMoney(14500, "EUR", "es")).toBe("14.500,00\u00a0€");
+    expect(formatMoney(4500, "USD", "en")).toBe("$4,500.00");
+    expect(formatMoney(4500, "GBP", "en")).toBe("£4,500.00");
   });
 
   // It used to ask for no fraction digits at all, so a price of 1234.5
