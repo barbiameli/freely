@@ -146,6 +146,60 @@ export function shareOutDays(
   return out;
 }
 
+/** Where one task sits inside its deliverable's run of days. */
+export interface TaskSpan {
+  id: string;
+  /** Index into the deliverable's slice of days. */
+  from: number;
+  to: number;
+}
+
+/**
+ * How the days of one deliverable are divided between its tasks.
+ *
+ * By estimate, not by counting. Cutting the slice into equal pieces gave a
+ * six-hour task and a one-hour task identical bars, so the chart said nothing
+ * about where the work actually was: everything looked like a day, and a
+ * fortnight of thirty-one identical pills is a list drawn on a calendar.
+ *
+ * Every task keeps at least one day, and where the estimates ask for more
+ * days than the deliverable was given, the tasks are scaled down together and
+ * end up sharing days. Sharing is the honest answer: it is what actually
+ * happens on a Tuesday, and the alternative is a bar chart that has quietly
+ * moved the end date.
+ */
+export function spreadTasks(
+  tasks: PlannableTask[],
+  slotCount: number,
+  hoursPerDay: number
+): TaskSpan[] {
+  if (tasks.length === 0 || slotCount <= 0) return [];
+
+  const perDay = Math.max(hoursPerDay, 0.5);
+  const wanted = tasks.map((task) => Math.max(1, Math.ceil(task.estimateHours / perDay)));
+  const total = wanted.reduce((sum, days) => sum + days, 0);
+
+  // Scaled to fit when the estimates ask for more than there is, and left
+  // alone when they fit: a deliverable given more days than its work needs
+  // should not have its bars stretched to fill the space, because that is a
+  // claim about how long the work takes.
+  const scale = total > slotCount ? slotCount / total : 1;
+
+  const out: TaskSpan[] = [];
+  let cursor = 0;
+  for (let i = 0; i < tasks.length; i += 1) {
+    const span = Math.max(1, Math.round(wanted[i] * scale));
+    const from = Math.min(cursor, slotCount - 1);
+    const to = Math.min(from + span - 1, slotCount - 1);
+    out.push({ id: tasks[i].id, from, to });
+    cursor = to + 1;
+    // Out of room: everything left shares the last day rather than falling
+    // off the end of the deliverable and into the next one's time.
+    if (cursor >= slotCount) cursor = slotCount - 1;
+  }
+  return out;
+}
+
 export interface FirstPlacement {
   id: string;
   start: Date;
@@ -191,12 +245,12 @@ export function firstPlan(
       .sort((a, b) => a.order - b.order);
     if (live.length === 0) continue;
 
-    // Spread the tasks across this deliverable's days. More tasks than days
-    // means some share a day, which is honest: it is what actually happens.
-    for (let i = 0; i < live.length; i += 1) {
-      const from = Math.floor((i * slice.length) / live.length);
-      const to = Math.max(from, Math.floor(((i + 1) * slice.length) / live.length) - 1);
-      out.push({ id: live[i].id, start: slice[from], end: slice[Math.min(to, slice.length - 1)] });
+    for (const span of spreadTasks(live, slice.length, shape.hoursPerDay)) {
+      out.push({
+        id: span.id,
+        start: slice[span.from],
+        end: slice[Math.min(span.to, slice.length - 1)],
+      });
     }
   }
 

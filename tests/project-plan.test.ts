@@ -5,6 +5,7 @@ import {
   daysShort,
   firstPlan,
   shareOutDays,
+  spreadTasks,
   squeezed,
   workingDaysIn,
   type PlannableDeliverable,
@@ -203,5 +204,83 @@ describe("what got squeezed", () => {
     const starred = six.map((d, i) => (i === 0 ? { ...d, priority: 2 } : d));
     const allocation = shareOutDays(starred, tasks, 9);
     expect(allocation.get("d0")!).toBeGreaterThanOrEqual(allocation.get("d1")!);
+  });
+});
+
+describe("how long each task's bar is", () => {
+  it("gives a longer task a longer bar", () => {
+    // Cutting the days into equal pieces gave a six-hour task and a one-hour
+    // task identical bars, so the chart said nothing about where the work
+    // was: a fortnight of thirty-one identical pills is a list drawn on a
+    // calendar.
+    const spans = spreadTasks(
+      [
+        task({ id: "big", estimateHours: 18 }),
+        task({ id: "small", estimateHours: 2 }),
+      ],
+      6,
+      6
+    );
+    const big = spans.find((s) => s.id === "big")!;
+    const small = spans.find((s) => s.id === "small")!;
+    expect(big.to - big.from).toBeGreaterThan(small.to - small.from);
+  });
+
+  it("never gives a task less than a day", () => {
+    const spans = spreadTasks(
+      [task({ id: "a", estimateHours: 0.25 }), task({ id: "b", estimateHours: 0.25 })],
+      4,
+      6
+    );
+    for (const span of spans) expect(span.to).toBeGreaterThanOrEqual(span.from);
+  });
+
+  it("runs them one after another rather than on top of each other", () => {
+    const spans = spreadTasks(
+      [
+        task({ id: "a", estimateHours: 6 }),
+        task({ id: "b", estimateHours: 6 }),
+        task({ id: "c", estimateHours: 6 }),
+      ],
+      6,
+      6
+    );
+    expect(spans[1].from).toBeGreaterThan(spans[0].to);
+    expect(spans[2].from).toBeGreaterThan(spans[1].to);
+  });
+
+  it("does not stretch bars to fill days the work does not need", () => {
+    // A deliverable given more days than its work needs should not have its
+    // bars inflated: that is a claim about how long the work takes.
+    const spans = spreadTasks([task({ id: "a", estimateHours: 6 })], 10, 6);
+    expect(spans[0].to - spans[0].from).toBe(0);
+  });
+
+  it("scales everything down together when there is not enough room", () => {
+    const spans = spreadTasks(
+      [
+        task({ id: "a", estimateHours: 30 }),
+        task({ id: "b", estimateHours: 30 }),
+      ],
+      4,
+      6
+    );
+    for (const span of spans) expect(span.to).toBeLessThan(4);
+  });
+
+  it("keeps everything inside the deliverable's own days", () => {
+    // Otherwise a deliverable overruns into the next one's time and the whole
+    // plan slides without saying so.
+    const many = Array.from({ length: 8 }, (_, i) =>
+      task({ id: `t${i}`, estimateHours: 12, order: i })
+    );
+    for (const span of spreadTasks(many, 3, 6)) {
+      expect(span.from).toBeLessThan(3);
+      expect(span.to).toBeLessThan(3);
+    }
+  });
+
+  it("has nothing to place in no days", () => {
+    expect(spreadTasks([task()], 0, 6)).toEqual([]);
   });
 });
