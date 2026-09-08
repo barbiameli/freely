@@ -278,14 +278,15 @@ describe("what a drag looks like", () => {
     // follows it, and the only way to find out whether anything happened is
     // to let go.
     expect(board).toContain("const carried =");
-    expect(board).toContain("fixed z-50 pointer-events-none");
+    expect(board).toContain("fixed left-0 top-0 z-50 pointer-events-none");
   });
 
-  it("picks the card up where it was grabbed", () => {
-    // Without the offset the card jumps so its corner is under the cursor,
-    // which reads as being snatched rather than picked up.
-    expect(board).toContain("dx: e.clientX - box.left");
-    expect(board).toContain("left: carry.x - carry.dx");
+  it("is positioned from the pointer and nothing else", () => {
+    // Carrying it from the exact point it was grabbed is nicer and kept
+    // landing somewhere other than under the cursor. The pointer position is
+    // the one number that cannot be stale.
+    expect(board).toContain("translate3d(");
+    expect(board).not.toContain("carry.dx");
   });
 
   it("keeps the card's width while it travels", () => {

@@ -26,6 +26,15 @@ import { barFor, dayColumns, dayKey, packLanes, type PlannedTask } from "@/lib/t
  * rather than in a drag nobody can do precisely.
  */
 
+/** The deliverable's own bar: solid, so the parent row reads as a header. */
+const SOLID = [
+  "bg-violet text-white",
+  "bg-coral text-white",
+  "bg-success text-white",
+  "bg-amber text-white",
+  "bg-ink text-white",
+];
+
 const TINTS = [
   "bg-violet/15 border-violet/40 text-violet",
   "bg-coral/15 border-coral/40 text-coral",
@@ -75,6 +84,7 @@ export function Timeline({
   const days = dayColumns(startDate, end);
 
   const tint = new Map(deliverables.map((d, i) => [d.id, TINTS[i % TINTS.length]] as const));
+  const solid = new Map(deliverables.map((d, i) => [d.id, SOLID[i % SOLID.length]] as const));
 
   async function place(task: PlannedTask, day: Date) {
     const span =
@@ -133,24 +143,66 @@ export function Timeline({
 
   const unplaced = tasks.filter((task) => !task.plannedStart || !task.plannedEnd);
   const byId = new Map(tasks.map((task) => [task.id, task] as const));
-  const placed = tasks
-    .filter((task) => task.plannedStart && task.plannedEnd)
-    // Compared as numbers rather than with a less-than on two strings: the
-    // copy scanner reads a bare "<" in a .tsx file as the start of a tag and
-    // reports the comparator as untranslated text.
-    .sort((a, b) => Date.parse(a.plannedStart!) - Date.parse(b.plannedStart!));
+  const placed = tasks.filter((task) => task.plannedStart && task.plannedEnd);
 
   /*
-   * Bars sharing rows where they do not overlap.
+   * A row for each deliverable, and its tasks beneath it.
    *
-   * A row per task drew a thirty-row staircase across a fortnight, mostly
-   * empty, and the eye had to travel a screen and a half to read two weeks.
-   * The vertical axis carries no meaning of its own here, so a row per bar
-   * spends the one dimension that was free. See lib/timeline-plan.
+   * The chart was one flat set of lanes, so a fortnight read as thirty
+   * unrelated pills and the grouping the client actually agreed to was
+   * carried only by a tag colour. It also left every bar one day wide,
+   * because at this granularity every individual task is under a day, so the
+   * chart said nothing at all about duration.
+   *
+   * The deliverable's own bar runs from the first of its tasks to the last,
+   * so that row is the one that answers how long a piece of work takes. Its
+   * tasks sit underneath it, packed into as few lanes as they need.
+   *
+   * flatMap with an empty array rather than map and a filtering type
+   * predicate: the copy scanner reads the angle bracket in a predicate as the
+   * start of a JSX tag and reports the type as untranslated text.
    */
-  const lanes = packLanes(
-    placed.map((task) => barFor(task, startDate)!).filter(Boolean)
-  );
+  const rows = deliverables.flatMap((deliverable) => {
+    const bars = placed
+      .filter((task) => task.deliverableId === deliverable.id)
+      .flatMap((task) => {
+        const bar = barFor(task, startDate);
+        return bar ? [bar] : [];
+      });
+    if (bars.length === 0) return [];
+    const from = Math.min(...bars.map((bar) => bar.offset));
+    const to = Math.max(...bars.map((bar) => bar.offset + bar.days));
+    return [
+      {
+        deliverable,
+        span: { offset: from, days: Math.max(1, to - from) },
+        lanes: packLanes(bars),
+      },
+    ];
+  });
+
+  const columns = `repeat(${days.length}, minmax(56px, 1fr))`;
+
+  /** One day cell, which is also where a task can be dropped. */
+  function DayCell({ day, tall }: { day: Date; tall?: boolean }) {
+    const weekend = day.getUTCDay() === 0 || day.getUTCDay() === 6;
+    return (
+      <div
+        className={`${tall ? "min-h-[32px]" : "min-h-[30px]"} border-r border-line/60 ${
+          weekend ? "bg-paper" : ""
+        }`}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          if (dragging && !busy) void place(dragging, day);
+          setDragging(null);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -162,8 +214,6 @@ export function Timeline({
         <ActionError error={error} />
       </div>
 
-      {/* Anything not yet on the chart, so a task cannot be quietly left out
-          of the plan by being invisible. Drag one onto a day to place it. */}
       {/* Folded away. Thirty pills above a two-week grid is a list with a
           chart underneath it, which is the wrong way round. */}
       {unplaced.length > 0 && (
@@ -172,46 +222,29 @@ export function Timeline({
             {t.track.timelineUnplacedCount.replace("{count}", String(unplaced.length))}
           </summary>
           <div className="flex flex-wrap gap-1.5 items-center mt-2">
-          {unplaced.map((task) => (
-            <span
-              key={task.id}
-              draggable
-              onDragStart={(e) => {
-                // See board.tsx: without this the drag is cancelled before a
-                // drop can happen.
-                e.dataTransfer.setData("text/plain", task.id);
-                e.dataTransfer.effectAllowed = "move";
-                setDragging(task);
-              }}
-              onDragEnd={() => setDragging(null)}
-              className={`inline-block rounded-full border px-2.5 py-1 text-caption font-semibold cursor-grab ${
-                tint.get(task.deliverableId) ?? TINTS[0]
-              }`}
-            >
-              {task.name}
-            </span>
-          ))}
+            {unplaced.map((task) => (
+              <span
+                key={task.id}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData("text/plain", task.id);
+                  e.dataTransfer.effectAllowed = "move";
+                  setDragging(task);
+                }}
+                onDragEnd={() => setDragging(null)}
+                className={`inline-block rounded-full border px-2.5 py-1 text-caption font-semibold cursor-grab ${
+                  tint.get(task.deliverableId) ?? TINTS[0]
+                }`}
+              >
+                {task.name}
+              </span>
+            ))}
           </div>
         </details>
       )}
 
-      {/*
-        * A grid, so the days expand to fill whatever width there is.
-        *
-        * They were fixed at 44px with the bars positioned by margin, which
-        * meant a two-week project drew a narrow strip down the left of a wide
-        * screen and every label truncated to two characters. Days are grid
-        * columns now with a minimum rather than a fixed size, so twelve of
-        * them across a laptop are a hundred pixels each and the names fit.
-        */}
       <div className="overflow-x-auto">
-        <div
-          className="grid"
-          style={{
-            gridTemplateColumns: `repeat(${days.length}, minmax(56px, 1fr))`,
-            minWidth: days.length * 56,
-          }}
-        >
+        <div className="grid" style={{ gridTemplateColumns: columns, minWidth: days.length * 56 }}>
           {days.map((day) => (
             <div
               key={`head-${day.toISOString()}`}
@@ -225,82 +258,87 @@ export function Timeline({
             </div>
           ))}
 
-          {/* The grid behind the bars, one cell per day per lane. Drawn as
-              real cells rather than an absolute overlay so the drop targets
-              line up with the columns by construction. */}
-          {lanes.map((lane, laneIndex) => (
-            <div
-              key={`lane-${laneIndex}`}
-              className="col-span-full grid border-t border-line"
-              style={{ gridTemplateColumns: `repeat(${days.length}, minmax(56px, 1fr))` }}
-            >
-              {days.map((day, dayIndex) => (
-                <div
-                  key={`cell-${laneIndex}-${dayIndex}`}
-                  style={{ gridColumn: dayIndex + 1, gridRow: 1 }}
-                  className={`min-h-[34px] border-r border-line/60 ${
-                    day.getUTCDay() === 0 || day.getUTCDay() === 6 ? "bg-paper" : ""
-                  }`}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = "move";
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    if (dragging && !busy) void place(dragging, day);
-                    setDragging(null);
-                  }}
-                />
-              ))}
-
-              {lane.map((bar) => {
-                const task = byId.get(bar.id);
-                if (!task) return null;
-                return (
+          {rows.map((row) => (
+            <div key={row.deliverable.id} className="col-span-full">
+              {/* The deliverable, spanning its whole run. */}
+              <div className="grid border-t border-line" style={{ gridTemplateColumns: columns }}>
+                {days.map((day, dayIndex) => (
                   <div
-                    key={bar.id}
-                    draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData("text/plain", task.id);
-                      e.dataTransfer.effectAllowed = "move";
-                      setDragging(task);
-                    }}
-                    onDragEnd={() => setDragging(null)}
-                    style={{
-                      gridColumn: `${bar.offset + 1} / span ${bar.days}`,
-                      gridRow: 1,
-                    }}
-                    className={`m-1 h-[26px] rounded-lg border px-2 flex items-center cursor-grab active:cursor-grabbing ${
-                      tint.get(task.deliverableId) ?? TINTS[0]
-                    } ${task.done ? "opacity-60" : ""}`}
+                    key={`bg-${row.deliverable.id}-${dayIndex}`}
+                    style={{ gridColumn: dayIndex + 1, gridRow: 1 }}
                   >
-                    <span className="truncate text-caption font-semibold">{task.name}</span>
+                    <DayCell day={day} tall />
                   </div>
-                );
-              })}
+                ))}
+                <div
+                  style={{
+                    gridColumn: `${row.span.offset + 1} / span ${row.span.days}`,
+                    gridRow: 1,
+                  }}
+                  className={`m-1 h-[24px] rounded-md px-2 flex items-center font-body font-bold text-caption ${
+                    solid.get(row.deliverable.id) ?? SOLID[0]
+                  }`}
+                >
+                  <span className="truncate">{row.deliverable.name}</span>
+                </div>
+              </div>
+
+              {/* Its tasks, set in from the parent bar. */}
+              {row.lanes.map((lane, laneIndex) => (
+                <div
+                  key={`${row.deliverable.id}-lane-${laneIndex}`}
+                  className="grid"
+                  style={{ gridTemplateColumns: columns }}
+                >
+                  {days.map((day, dayIndex) => (
+                    <div
+                      key={`cell-${row.deliverable.id}-${laneIndex}-${dayIndex}`}
+                      style={{ gridColumn: dayIndex + 1, gridRow: 1 }}
+                    >
+                      <DayCell day={day} />
+                    </div>
+                  ))}
+
+                  {lane.map((bar) => {
+                    const task = byId.get(bar.id);
+                    if (!task) return null;
+                    return (
+                      <div
+                        key={bar.id}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData("text/plain", task.id);
+                          e.dataTransfer.effectAllowed = "move";
+                          setDragging(task);
+                        }}
+                        onDragEnd={() => setDragging(null)}
+                        style={{
+                          gridColumn: `${bar.offset + 1} / span ${bar.days}`,
+                          gridRow: 1,
+                        }}
+                        className={`ml-3 mr-1 my-[3px] h-[22px] rounded-lg border px-2 flex items-center cursor-grab active:cursor-grabbing ${
+                          tint.get(task.deliverableId) ?? TINTS[0]
+                        } ${task.done ? "opacity-60" : ""}`}
+                      >
+                        <span className="truncate text-caption">{task.name}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           ))}
 
           {/* Somewhere to drop the first one, when nothing is placed yet. */}
-          {lanes.length === 0 && (
+          {rows.length === 0 && (
             <div
               className="col-span-full grid border-t border-line"
-              style={{ gridTemplateColumns: `repeat(${days.length}, minmax(56px, 1fr))` }}
+              style={{ gridTemplateColumns: columns }}
             >
               {days.map((day, dayIndex) => (
-                <div
-                  key={`empty-${dayIndex}`}
-                  className="min-h-[34px] border-r border-line/60"
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = "move";
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    if (dragging && !busy) void place(dragging, day);
-                    setDragging(null);
-                  }}
-                />
+                <div key={`empty-${dayIndex}`}>
+                  <DayCell day={day} />
+                </div>
               ))}
             </div>
           )}

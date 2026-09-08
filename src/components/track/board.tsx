@@ -119,18 +119,13 @@ export function Board({
    * follows it, and the only way to find out whether anything happened is to
    * let go. So a copy of the card is drawn at the cursor while it travels.
    *
-   * The grab offset is kept as well as the position, or the card jumps so its
-   * top left corner sits under the cursor the moment the drag starts, which
-   * reads as it being snatched rather than picked up. The width is kept for
-   * the same reason: a card that shrinks on lift is a different card.
+   * Only the pointer position and the card's width are kept. An earlier
+   * version also stored where within the card it had been grabbed, so it
+   * could be carried from that exact point, and that offset was what kept
+   * putting it somewhere other than under the cursor. The width stays
+   * because a card that shrinks on lift is a different card.
    */
-  const [carry, setCarry] = useState<{
-    x: number;
-    y: number;
-    dx: number;
-    dy: number;
-    width: number;
-  } | null>(null);
+  const [carry, setCarry] = useState<{ x: number; y: number; width: number } | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   /** The card being renamed, and the text so far. */
@@ -324,13 +319,7 @@ export function Board({
                       const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
                       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
                       setDragging(card.id);
-                      setCarry({
-                        x: e.clientX,
-                        y: e.clientY,
-                        dx: e.clientX - box.left,
-                        dy: e.clientY - box.top,
-                        width: box.width,
-                      });
+                      setCarry({ x: e.clientX, y: e.clientY, width: box.width });
                     }}
                     onPointerMove={(e) => {
                       if (dragging !== card.id) return;
@@ -581,10 +570,22 @@ export function Board({
         carry &&
         createPortal(
           <div
-            className="fixed z-50 pointer-events-none rounded-xl border border-line bg-white p-2.5 dragging"
+            className="fixed left-0 top-0 z-50 pointer-events-none rounded-xl border border-line bg-white p-2.5 dragging"
             style={{
-              left: carry.x - carry.dx,
-              top: carry.y - carry.dy,
+              /*
+               * Just below and right of the cursor, positioned from the
+               * pointer alone.
+               *
+               * Carrying it from the exact point it was grabbed is the nicer
+               * behaviour and it kept landing somewhere other than under the
+               * cursor. Rather than keep guessing which measurement was
+               * stale, this uses the one number that cannot be: where the
+               * pointer is now.
+               *
+               * translate rather than left and top, so moving it runs on the
+               * compositor instead of laying out the page on every move.
+               */
+              transform: `translate3d(${carry.x + 14}px, ${carry.y + 14}px, 0)`,
               width: carry.width,
             }}
           >
