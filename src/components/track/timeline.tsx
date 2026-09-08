@@ -36,7 +36,7 @@ const SOLID = [
 ];
 
 const TINTS = [
-  "bg-violet/15 border-violet/40 text-violet",
+  "bg-violet/15 border-violet/40 text-link",
   "bg-coral/15 border-coral/40 text-coral",
   "bg-success/15 border-success/40 text-success",
   "bg-amber/15 border-amber/40 text-amber",

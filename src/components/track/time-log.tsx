@@ -82,7 +82,7 @@ export function TimeLog({
               onClick={() => void again(entry)}
               aria-label={t.track.timeContinue}
               title={t.track.timeContinue}
-              className="ml-auto p-1 rounded text-text-muted hover:text-violet border-none bg-none cursor-pointer tap disabled:opacity-50"
+              className="ml-auto p-1 rounded text-text-muted hover:text-link border-none bg-none cursor-pointer tap disabled:opacity-50"
             >
               <Play size={13} />
             </button>
@@ -124,7 +124,7 @@ export function TimeLog({
                   }}
                   className={`text-caption rounded-full px-2.5 py-1 border cursor-pointer tap ${
                     entry.deliverableId === deliverable.id
-                      ? "bg-violet-tint border-violet text-violet font-semibold"
+                      ? "bg-violet-tint border-violet text-link font-semibold"
                       : "bg-white border-line text-slate"
                   }`}
                 >

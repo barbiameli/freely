@@ -368,7 +368,7 @@ export function ProjectDetail({
                   <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_DOT[p.status]}`} />
                   <span
                     className={`text-small truncate ${
-                      p.id === project.id ? "font-bold text-violet" : "font-medium text-slate"
+                      p.id === project.id ? "font-bold text-link" : "font-medium text-slate"
                     }`}
                   >
                     {p.title}
@@ -482,7 +482,7 @@ export function ProjectDetail({
                 <button
                   type="button"
                   onClick={() => setRescheduling((r) => !r)}
-                  className="text-caption font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
+                  className="text-caption font-semibold text-link bg-none border-none cursor-pointer p-0 tap"
                 >
                   {rescheduling ? t.common.cancel : t.track.reschedule}
                 </button>
@@ -628,7 +628,7 @@ export function ProjectDetail({
                         the reason the next milestone cannot start yet. Worth
                         having in front of you when chasing. */}
                     {ms.gate && (
-                      <div className="text-caption text-violet mb-1.5">
+                      <div className="text-caption text-link mb-1.5">
                         {t.quote.milestoneEndsWith}: {ms.gate}
                       </div>
                     )}
@@ -709,7 +709,7 @@ export function ProjectDetail({
             className="flex items-baseline justify-between w-full bg-none border-none cursor-pointer p-0"
           >
             <Label>{t.track.projectDetails}</Label>
-            <span className="text-meta font-semibold text-violet">
+            <span className="text-meta font-semibold text-link">
               {showDetails ? t.track.hide : t.common.edit}
             </span>
           </button>

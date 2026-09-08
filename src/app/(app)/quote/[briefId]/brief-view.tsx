@@ -187,7 +187,7 @@ function Section({
         <button
           type="button"
           onClick={() => onRemove(false)}
-          className="font-body font-semibold text-caption text-violet hover:underline bg-none border-none p-0 cursor-pointer tap-row"
+          className="font-body font-semibold text-caption text-link hover:underline bg-none border-none p-0 cursor-pointer tap-row"
         >
           {words.restore}
         </button>
@@ -1042,7 +1042,7 @@ export function BriefView({
                           and a schedule that does not say so gets blamed on
                           the freelancer when it slips. */}
                       {ms.gate && (
-                        <div className="text-caption text-violet mt-1 font-semibold">
+                        <div className="text-caption text-link mt-1 font-semibold">
                           {t.quote.milestoneEndsWith}: {ms.gate}
                         </div>
                       )}
@@ -1446,7 +1446,7 @@ export function BriefView({
                           .querySelector(`[data-section="${refined[0]}"]`)
                           ?.scrollIntoView({ behavior: "smooth", block: "center" });
                       }}
-                      className="font-semibold text-violet bg-none border-none p-0 cursor-pointer tap"
+                      className="font-semibold text-link bg-none border-none p-0 cursor-pointer tap"
                     >
                       {t.brief.refineShowMe}
                     </button>

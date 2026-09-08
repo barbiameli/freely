@@ -319,7 +319,7 @@ export function InvoiceEditor({
               {[form.fromName, form.fromEmail].filter(Boolean).join(" · ") || t.invoices.addYourDetails}
             </span>
           </span>
-          <span className="text-caption font-semibold text-violet shrink-0">
+          <span className="text-caption font-semibold text-link shrink-0">
             {showFrom ? t.common.close : t.common.edit}
           </span>
         </button>
@@ -530,7 +530,7 @@ export function InvoiceEditor({
                           )
                         )
                       }
-                      className="text-caption text-violet font-bold bg-none border-none cursor-pointer p-0 tap mt-1"
+                      className="text-caption text-link font-bold bg-none border-none cursor-pointer p-0 tap mt-1"
                     >
                       = {symbol}
                       {((item.rate || 0) * (item.hours || 0)).toLocaleString()}
@@ -560,7 +560,7 @@ export function InvoiceEditor({
                 { title: "", description: "", rate: null, hours: null, amount: 0 },
               ])
             }
-            className="flex items-center gap-1.5 font-body font-bold text-small text-violet bg-none border-none cursor-pointer p-0 tap self-start"
+            className="flex items-center gap-1.5 font-body font-bold text-small text-link bg-none border-none cursor-pointer p-0 tap self-start"
           >
             <Plus size={13} /> {t.invoices.addALine}
           </button>

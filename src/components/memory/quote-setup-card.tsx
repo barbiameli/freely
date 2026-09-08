@@ -230,7 +230,7 @@ function Section({
         type="button"
         onClick={() => onToggle(isOpen ? null : id)}
         aria-expanded={isOpen}
-        className="w-full flex items-center justify-between gap-3 text-left bg-none border-none cursor-pointer px-0 py-4 hover:text-violet transition-colors"
+        className="w-full flex items-center justify-between gap-3 text-left bg-none border-none cursor-pointer px-0 py-4 hover:text-link transition-colors"
       >
         {/* Weighted as a heading once it is open, the same way the wizard's
             rows are, so the two places these controls appear read alike. */}

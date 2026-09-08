@@ -45,7 +45,7 @@ export function DefinitionLine({
           setRestoring(false);
         }}
         disabled={restoring}
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet bg-none border-none cursor-pointer p-0 mt-2 tap"
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-link bg-none border-none cursor-pointer p-0 mt-2 tap"
       >
         <Plus size={12} />
         {t.brief.definitionRestore}

@@ -94,7 +94,7 @@ export function RegisterToggle({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <SubLabel className="mb-0">{t.diary.registerLabel}</SubLabel>
         {pending ? (
-          <span className="flex items-center gap-1.5 text-caption text-violet">
+          <span className="flex items-center gap-1.5 text-caption text-link">
             <Loader2 size={11} className="animate-spin-slow" />
             {t.diary.registerWorking}
           </span>
@@ -160,7 +160,7 @@ export function RegisterToggle({
                       setDraft(line.clientName || line.name);
                       setEditing(line.id);
                     }}
-                    className="shrink-0 text-text-muted hover:text-violet bg-none border-none cursor-pointer p-0 tap mt-[2px]"
+                    className="shrink-0 text-text-muted hover:text-link bg-none border-none cursor-pointer p-0 tap mt-[2px]"
                   >
                     <Pencil size={11} />
                   </button>
@@ -177,7 +177,7 @@ export function RegisterToggle({
                 href={`/p/${publicSlug}`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-caption font-semibold text-violet no-underline tap"
+                className="text-caption font-semibold text-link no-underline tap"
               >
                 {t.diary.registerSeePage}
               </a>

@@ -832,7 +832,7 @@ export function QuoteWizard({
           disabled={brandBusy !== null}
           className="flex-1 flex flex-col gap-1 cursor-pointer bg-white border border-dashed border-line rounded-lg px-3 py-2.5"
         >
-          <span className="flex items-center gap-1.5 font-body font-bold text-small text-violet">
+          <span className="flex items-center gap-1.5 font-body font-bold text-small text-link">
             <FileText size={12} />
             {brandBusy === "guide" ? t.quote.reading : t.memory.brandGuidelines}
           </span>
@@ -845,7 +845,7 @@ export function QuoteWizard({
           disabled={brandBusy !== null}
           className="flex-1 flex flex-col gap-1 cursor-pointer bg-white border border-dashed border-line rounded-lg px-3 py-2.5"
         >
-          <span className="flex items-center gap-1.5 font-body font-bold text-small text-violet">
+          <span className="flex items-center gap-1.5 font-body font-bold text-small text-link">
             <ImagePlus size={12} />
             {brandBusy === "logo" ? t.quote.uploading : t.quote.logo}
           </span>
@@ -864,7 +864,7 @@ export function QuoteWizard({
     <button
       type="button"
       onClick={() => setShowBrandUpload(true)}
-      className="text-caption font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
+      className="text-caption font-semibold text-link bg-none border-none cursor-pointer p-0 tap"
     >
       {t.quote.addYourBranding}
     </button>
@@ -1000,7 +1000,7 @@ export function QuoteWizard({
                     <span className="min-w-0">
                       <span
                         className={`block font-body font-semibold text-body ${
-                          selected ? "text-violet" : "text-ink"
+                          selected ? "text-link" : "text-ink"
                         }`}
                       >
                         {title}
@@ -1039,7 +1039,7 @@ export function QuoteWizard({
                         ? `Loaded: ${fileName}`
                         : t.quote.dragFileHere}
                     </span>
-                    <span className="font-body font-bold text-small text-violet">{t.quote.chooseFile}</span>
+                    <span className="font-body font-bold text-small text-link">{t.quote.chooseFile}</span>
                   </DropZone>
                 )}
               </div>
@@ -1160,7 +1160,7 @@ export function QuoteWizard({
               className="flex items-center gap-1.5 cursor-pointer -m-1 p-1 mb-2"
             >
               <ImagePlus size={13} className="text-violet" />
-              <span className="font-body font-bold text-small text-violet">
+              <span className="font-body font-bold text-small text-link">
                 {imageUploading ? "Reading image..." : "Drag an image, or click to add one"}
               </span>
             </DropZone>
@@ -1239,7 +1239,7 @@ export function QuoteWizard({
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              <div className="flex items-center gap-2 text-violet text-small font-body font-semibold">
+              <div className="flex items-center gap-2 text-link text-small font-body font-semibold">
                 <Sparkles size={14} className="animate-spin-slow" />
                 {statusMessage}
               </div>
@@ -1258,7 +1258,7 @@ export function QuoteWizard({
                 <button
                   type="button"
                   onClick={() => void handleGenerate()}
-                  className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
+                  className="text-meta font-semibold text-link bg-none border-none cursor-pointer p-0 tap"
                 >
                   {t.common.tryAgain}
                 </button>

@@ -148,7 +148,7 @@ export function TimePanel({
             aria-expanded={open}
             aria-label={t.track.timeTitle}
             className={`shrink-0 border-none bg-none cursor-pointer p-0 tap ${
-              running ? "text-white/70" : "text-violet/60"
+              running ? "text-white/70" : "text-link/60"
             }`}
           >
             {open ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
@@ -157,7 +157,7 @@ export function TimePanel({
           <div className="min-w-0 flex-1">
             <div
               className={`font-body font-bold text-caption uppercase tracking-[0.08em] ${
-                running ? "text-white/70" : "text-violet/70"
+                running ? "text-white/70" : "text-link/70"
               }`}
             >
               {t.track.timeTitle}
@@ -346,7 +346,7 @@ export function TimePanel({
               ) : (
                 <Link
                   href="/memory?tab=you#connectors"
-                  className="inline-flex items-center gap-1.5 text-meta font-semibold text-violet no-underline tap"
+                  className="inline-flex items-center gap-1.5 text-meta font-semibold text-link no-underline tap"
                 >
                   <CalendarDays size={14} />
                   {t.track.timeConnectCalendar}
@@ -370,7 +370,7 @@ export function TimePanel({
               <button
                 type="button"
                 onClick={() => setSetUp(true)}
-                className="shrink-0 text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
+                className="shrink-0 text-meta font-semibold text-link bg-none border-none cursor-pointer p-0 tap"
               >
                 {t.track.timeEditUse}
               </button>

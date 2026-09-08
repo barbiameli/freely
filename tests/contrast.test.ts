@@ -69,18 +69,29 @@ const NORMAL_TEXT: [string, string][] = [
   // app, at the smallest size in the type scale.
   ["text-muted", WHITE],
   ["text-muted", "paper"],
-  ["violet", WHITE],
-  ["violet", "paper"],
+  // The pink is not in this list. It is 3.5:1 on white, which is the whole
+  // reason small interactive text moved to `link` and a filled button carries
+  // ink: the brand runs on one accent, so the two uses it cannot serve went
+  // elsewhere rather than the colour being diluted into two.
+  ["link", WHITE],
+  ["link", "paper"],
   ["success", WHITE],
   ["success", "mint-solid"],
   ["overdue", WHITE],
   ["overdue", "paper"],
 ];
 
-/** Coral is a display colour. Headings and marks, never body text. */
+/**
+ * The pink is a display colour: headings, marks and strokes, never body text.
+ *
+ * `coral` and `violet` are the same value now. Both are checked, because both
+ * names are in use across the app and a future edit could move one of them.
+ */
 const LARGE_TEXT: [string, string][] = [
   ["coral", WHITE],
   ["coral", "paper"],
+  ["violet", WHITE],
+  ["violet", "paper"],
 ];
 
 describe("normal text meets AA", () => {
@@ -101,15 +112,28 @@ describe("display colours meet the large-text threshold", () => {
   }
 });
 
-describe("white on a filled control", () => {
+describe("a filled control's label", () => {
   // A filled button's label is normal text however bold it is, so 3:1 is not
-  // enough. Coral is not in this list on purpose: white on coral is 3.21 and
-  // coral is never a button fill.
-  for (const fill of ["violet", "overdue", "ink"]) {
+  // enough.
+  for (const fill of ["overdue", "ink"]) {
     it(`white on ${fill}`, () => {
       expect(Number(contrast(WHITE, colour(fill)).toFixed(2)), fill).toBeGreaterThanOrEqual(4.5);
     });
   }
+
+  // The primary. White on this pink is 3.5 and fails; ink on it is 5.1 and
+  // is also the bolder of the two, so the button carries ink.
+  it("ink on the pink, not white", () => {
+    expect(Number(contrast(colour("ink"), colour("violet")).toFixed(2))).toBeGreaterThanOrEqual(4.5);
+    expect(Number(contrast(WHITE, colour("violet")).toFixed(2))).toBeLessThan(4.5);
+  });
+
+  // Lime never carries a word on white, and on ink it is the clearest thing
+  // in the palette. That asymmetry is the whole rule for it.
+  it("ink on lime, and lime on nothing pale", () => {
+    expect(Number(contrast(colour("ink"), colour("lime")).toFixed(2))).toBeGreaterThanOrEqual(4.5);
+    expect(Number(contrast(colour("lime"), WHITE).toFixed(2))).toBeLessThan(3);
+  });
 });
 
 describe("the dark hero block", () => {

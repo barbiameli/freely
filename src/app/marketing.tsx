@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ShieldCheck, Sparkles } from "lucide-react";
 import { FreelyLogo } from "@/components/freely-logo";
+import { WaitlistForm } from "@/components/waitlist-form";
 import { LocaleProvider } from "@/lib/i18n/context";
 import { MarketingHeader } from "./marketing-header";
 import { Reveal, Rise } from "./reveal";
@@ -88,7 +89,8 @@ function Hero({ t }: { t: Dictionary }) {
       <HeroGlow />
 
       <Rise>
-        <h1 className="font-display italic text-[32px] sm:text-[44px] leading-[1.15] sm:leading-[1.1] text-ink m-0">
+        {/* One word in the accent, and that is the budget for the page. */}
+        <h1 className="font-display text-[38px] sm:text-[60px] leading-[0.98] text-ink m-0 max-w-[17ch] mx-auto text-balance">
           {t.marketing.heroTitle} <span className="text-coral">{t.marketing.heroTitleAccent}</span>
         </h1>
       </Rise>
@@ -111,21 +113,12 @@ function Hero({ t }: { t: Dictionary }) {
         </div>
       </Rise>
 
-      <Rise delay={240}>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 mt-8">
-          <Link
-            href="/signup"
-            className="font-body font-bold text-sm text-white bg-violet px-6 py-3.5 rounded-lg text-center transition-[transform,box-shadow] duration-300 ease-marketing hover:-translate-y-0.5 hover:shadow-lift active:translate-y-0 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-          >
-            {t.marketing.getStarted}
-          </Link>
-          <Link
-            href="/signin"
-            className="font-body font-bold text-sm text-violet bg-white border border-violet px-6 py-3.5 rounded-lg text-center transition-[transform,background-color] duration-300 ease-marketing hover:-translate-y-0.5 hover:bg-violet-tint active:translate-y-0 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-          >
-            {t.marketing.logIn}
-          </Link>
-        </div>
+      {/* The list, rather than a pair of buttons to an account nobody can
+          make yet. The beta is closed, so Sign up led to a door that opens
+          for a handful of people and a form is the honest version of it. */}
+      <Rise delay={240} className="mt-8">
+        <WaitlistForm />
+        <p className="text-muted text-meta mt-3 mb-0">{t.marketing.freeToStart}</p>
       </Rise>
     </section>
   );
@@ -206,25 +199,27 @@ function Capabilities({ t }: { t: Dictionary }) {
 
 function ClosingCTA({ t }: { t: Dictionary }) {
   return (
-    <section className="max-w-2xl mx-auto text-center px-5 sm:px-6 py-12 sm:py-16">
+    <section className="max-w-5xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
       <Reveal>
-        <h2 className="font-display italic text-3xl text-ink m-0">{t.marketing.tryIt}</h2>
+        {/* The dark block, which is the one place lime can carry anything:
+            on ink it is 14:1, and on white it is unreadable at any size. */}
+        <div className="rounded-lg bg-ink px-6 sm:px-10 py-10 sm:py-14 text-center">
+          <h2 className="font-display text-[28px] sm:text-[42px] leading-[1.04] text-white m-0 max-w-[15ch] mx-auto text-balance">
+            {t.marketing.betaTitle}
+          </h2>
+          <p className="text-white/70 text-lead mt-4 mb-8 max-w-md mx-auto">
+            {t.marketing.betaBody}
+          </p>
 
-        {/* The AI, in one line, here rather than in a section of its own: this is
-            where someone decides to hand their client documents to it. */}
-        <p className="flex items-start justify-center gap-2 text-slate text-small mt-4 max-w-sm mx-auto text-left sm:text-center">
-          <Sparkles size={14} className="text-violet shrink-0 mt-0.5" />
-          <span>{t.marketing.aiNote}</span>
-        </p>
+          <WaitlistForm onDark />
 
-        <Link
-          href="/signup"
-          className="inline-block font-body font-bold text-sm text-white bg-violet px-6 py-3.5 rounded-lg mt-6 transition-[transform,box-shadow] duration-300 ease-marketing hover:-translate-y-0.5 hover:shadow-lift active:translate-y-0 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-        >
-          {t.marketing.getStarted}
-        </Link>
-        <div className="flex items-center justify-center gap-2 text-text-muted text-meta mt-4">
-          <ShieldCheck size={14} /> {t.marketing.freeToStart}
+          <p className="flex items-start justify-center gap-2 text-white/60 text-small mt-7 max-w-sm mx-auto text-left sm:text-center mb-0">
+            <Sparkles size={14} className="text-lime shrink-0 mt-0.5" />
+            <span>{t.marketing.aiNote}</span>
+          </p>
+          <div className="flex items-center justify-center gap-2 text-white/60 text-meta mt-4">
+            <ShieldCheck size={14} /> {t.marketing.freeToStart}
+          </div>
         </div>
       </Reveal>
     </section>
@@ -235,7 +230,7 @@ function Footer({ t }: { t: Dictionary }) {
   return (
     <footer className="max-w-5xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-5 sm:px-6 py-8 border-t border-line">
       <div className="flex items-center gap-2 text-text-muted text-xs">
-        <FreelyLogo size="sm" />
+        <FreelyLogo size="sm" withLine={false} />
         <span>{fill(t.marketing.copyright, { year: new Date().getFullYear() })}</span>
       </div>
       <div className="flex items-center gap-4">
@@ -244,12 +239,6 @@ function Footer({ t }: { t: Dictionary }) {
           className="font-body font-semibold text-xs text-slate transition-colors duration-200 hover:text-ink"
         >
           {t.marketing.logIn}
-        </Link>
-        <Link
-          href="/signup"
-          className="font-body font-semibold text-xs text-violet transition-colors duration-200 hover:text-coral"
-        >
-          {t.marketing.signUp}
         </Link>
       </div>
     </footer>

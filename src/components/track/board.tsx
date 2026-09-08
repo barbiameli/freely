@@ -53,7 +53,7 @@ const DOT: Record<Column, string> = {
 
 /** A stable tint per deliverable, so the tag colour means something. */
 const TAGS = [
-  "bg-violet/10 text-violet",
+  "bg-violet/10 text-link",
   "bg-coral/10 text-coral",
   "bg-success/10 text-success",
   "bg-amber/10 text-amber",
@@ -610,7 +610,7 @@ export function Board({
                             type="button"
                             disabled={busy}
                             onClick={() => void addTask()}
-                            className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 tap disabled:opacity-60"
+                            className="text-meta font-semibold text-link bg-none border-none cursor-pointer p-0 tap disabled:opacity-60"
                           >
                             {t.common.add}
                           </button>

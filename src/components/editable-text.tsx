@@ -138,7 +138,7 @@ export function EditableBlock({
         type="button"
         onClick={() => setEditing(true)}
         className={`flex items-center gap-1 text-meta font-bold bg-none border-none cursor-pointer p-0 tap mt-2 ${
-          tone === "dark" ? "text-white/70 hover:text-white" : "text-violet"
+          tone === "dark" ? "text-white/70 hover:text-white" : "text-link"
         }`}
       >
         <Pencil size={11} /> {t.common.edit}
@@ -214,7 +214,7 @@ export function EditableSection({
           type="button"
           onClick={open}
           className={`flex items-center gap-1 text-meta font-bold bg-none border-none cursor-pointer p-0 tap mt-3 ${
-            tone === "dark" ? "text-white/75 hover:text-white" : "text-violet"
+            tone === "dark" ? "text-white/75 hover:text-white" : "text-link"
           }`}
         >
           <Pencil size={11} /> {editLabel}

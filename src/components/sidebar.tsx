@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, FolderKanban, House, Receipt, Sparkles, Users } from "lucide-react";
+import { House, Receipt } from "lucide-react";
+import {
+  IconClient,
+  IconMemory,
+  IconQuote,
+  IconTrack,
+} from "@/components/icons";
 import { FreelyLogo } from "@/components/freely-logo";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useT } from "@/lib/i18n/context";
@@ -17,19 +23,23 @@ const ITEMS = [
   // letters. A house is a house in any language, which also matters here:
   // the labels are translated and the initials were not, so the Spanish rail
   // read "H Q T I M" above Inicio, Presupuesto, Seguimiento, Facturas.
+  //
+  // The four that have a drawn icon use it. They are the product's own set:
+  // an ink structure with the one meaningful stroke in the accent, rather
+  // than a generic glyph that happens to be nearby in meaning.
   { key: "home", icon: House, href: "/home" },
-  { key: "quote", icon: FileText, href: "/quote" },
-  { key: "track", icon: FolderKanban, href: "/track" },
+  { key: "quote", icon: IconQuote, href: "/quote" },
+  { key: "track", icon: IconTrack, href: "/track" },
   { key: "invoices", icon: Receipt, href: "/invoices" },
   // Sixth. The rail was full at five and this is the exception: a client is
   // the one thing quotes, projects and invoices all point at, so it belongs
   // beside them rather than inside any one of them.
-  { key: "clients", icon: Users, href: "/clients" },
+  { key: "clients", icon: IconClient, href: "/clients" },
   // Fifth and last. The rail is full at five, and anything after this belongs
   // inside one of these rather than beside them. The ground rules were briefly
   // a sixth item and are now a tab in here, which is where the rest of what
   // Freely knows about how you work already was.
-  { key: "memory", icon: Sparkles, href: "/memory" },
+  { key: "memory", icon: IconMemory, href: "/memory" },
 ] as const;
 
 /**
@@ -68,7 +78,7 @@ export function Sidebar() {
               aria-current={active ? "page" : undefined}
               // Roomy tap target on mobile: the whole cell is tappable rather
               // than just the 34px glyph.
-              className="group flex flex-col items-center gap-1 md:gap-1.5 flex-1 md:flex-none py-2.5 md:py-0"
+              className="group ico-trigger flex flex-col items-center gap-1 md:gap-1.5 flex-1 md:flex-none py-2.5 md:py-0"
             >
               {/* No box. A rounded outline around every icon drew five
                   containers down the rail and made the icons the small thing
@@ -84,7 +94,7 @@ export function Sidebar() {
                   size={22}
                   strokeWidth={active ? 2 : 1.6}
                   className={`transition-transform duration-150 ease-marketing motion-reduce:transition-none group-hover:scale-110 ${
-                    active ? "text-violet" : "text-text-muted group-hover:text-ink"
+                    active ? "text-ink" : "text-text-muted group-hover:text-ink"
                   }`}
                   aria-hidden
                 />
@@ -94,7 +104,7 @@ export function Sidebar() {
                 // half as long again as the English, and five of them share
                 // the width of a phone.
                 className={`font-body text-caption text-center leading-tight max-w-full ${
-                  active ? "font-bold text-violet" : "font-medium text-text-muted"
+                  active ? "font-bold text-ink" : "font-medium text-text-muted"
                 }`}
               >
                 {t.nav[item.key]}

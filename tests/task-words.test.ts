@@ -97,7 +97,9 @@ describe("the rail uses icons", () => {
   });
 
   it("gives every destination an icon", () => {
-    for (const icon of ["House", "FileText", "FolderKanban", "Receipt", "Sparkles"]) {
+    // The product's own drawn set where one exists, and a stock glyph where
+    // it does not yet.
+    for (const icon of ["House", "IconQuote", "IconTrack", "Receipt", "IconMemory", "IconClient"]) {
       expect(sidebar).toContain(icon);
     }
   });

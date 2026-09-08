@@ -90,7 +90,7 @@ export function RulesView({ settings }: { settings: RuleSettings }) {
               value={values[spec.key] ?? spec.fallback}
               onChange={(e) => saveValue(spec, e.target.value)}
               aria-label={valueLabel(spec.key, t)}
-              className="w-[58px] mx-1 bg-paper rounded-lg border-none px-2 py-1 text-sm font-semibold text-violet text-center outline-none focus:ring-1 focus:ring-violet"
+              className="w-[58px] mx-1 bg-paper rounded-lg border-none px-2 py-1 text-sm font-semibold text-link text-center outline-none focus:ring-1 focus:ring-violet"
             />
           );
         })}

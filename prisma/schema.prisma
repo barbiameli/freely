@@ -1197,3 +1197,26 @@ model RateLimitHit {
   count     Int      @default(1)
   createdAt DateTime @default(now())
 }
+
+/// Somebody who wants in while the beta is closed.
+///
+/// An address and the language they were reading, and nothing else. There is
+/// no account behind this and no reason to hold more than the one thing the
+/// row exists to do, which is to let one person be told when there is room.
+///
+/// `email` is unique so a second submission is an update rather than a
+/// duplicate: people press a button twice, and a list with the same address on
+/// it four times is a list somebody has to clean before they can use it.
+model Waitlist {
+  id    String @id @default(cuid())
+  email String @unique
+  /// Which language the page was in when they joined, so the first email
+  /// arrives in the one they were reading.
+  locale String @default("en")
+  /// Set when they are let in, so the list can be worked through in order
+  /// without keeping a second one somewhere else.
+  invitedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

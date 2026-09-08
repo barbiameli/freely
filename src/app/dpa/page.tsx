@@ -83,7 +83,7 @@ export default async function DpaPage() {
                     href={sub.terms}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-caption font-semibold text-violet"
+                    className="text-caption font-semibold text-link"
                   >
                     Their terms
                   </a>
@@ -102,7 +102,7 @@ export default async function DpaPage() {
           <p className="text-body leading-relaxed text-slate mt-0 mb-0">
             Data protection questions, requests from your own clients, and requests for a
             countersigned copy all go to{" "}
-            <a href={`mailto:${PRIVACY_CONTACT}`} className="text-violet font-semibold">
+            <a href={`mailto:${PRIVACY_CONTACT}`} className="text-link font-semibold">
               {PRIVACY_CONTACT}
             </a>
             .

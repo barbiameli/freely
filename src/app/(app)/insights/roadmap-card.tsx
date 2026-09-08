@@ -96,7 +96,7 @@ function Row({ item, showState }: { item: RoadmapItem; showState: boolean }) {
         {showState && (
           <span
             className={`text-caption shrink-0 ${
-              item.state === "next" ? "text-violet font-semibold" : "text-text-muted"
+              item.state === "next" ? "text-link font-semibold" : "text-text-muted"
             }`}
           >
             {item.state === "next" ? "Next" : "Later"}

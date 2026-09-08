@@ -163,7 +163,7 @@ export function TrackDashboard({
                         if (file) handleUploadFile(file);
                       }}
                     />
-                    <span className="font-body font-bold text-small text-violet">
+                    <span className="font-body font-bold text-small text-link">
                       {uploadReading
                         ? t.track.readingFile
                         : working

@@ -128,7 +128,7 @@ export function DiaryView({
                 setTimeout(() => setCopied(false), 1500);
               }}
               data-guide="share"
-              className="flex items-center gap-1.5 text-caption font-semibold text-violet bg-none border-none cursor-pointer p-0 tap shrink-0"
+              className="flex items-center gap-1.5 text-caption font-semibold text-link bg-none border-none cursor-pointer p-0 tap shrink-0"
             >
               {copied ? <CheckIcon size={13} /> : <Copy size={13} />}
               {copied ? t.diary.linkCopied : t.diary.copyLink}
@@ -136,7 +136,7 @@ export function DiaryView({
             <Link
               href={`/p/${project.publicSlug}`}
               target="_blank"
-              className="flex items-center gap-1.5 text-caption font-semibold text-violet no-underline shrink-0"
+              className="flex items-center gap-1.5 text-caption font-semibold text-link no-underline shrink-0"
             >
               <ExternalLink size={13} />
               {t.diary.openPage}
@@ -236,7 +236,7 @@ export function DiaryView({
           )}
           <Link
             href={`/track/${project.id}`}
-            className="inline-block text-caption font-semibold text-violet no-underline mt-3"
+            className="inline-block text-caption font-semibold text-link no-underline mt-3"
           >
             {fill(t.diary.openInTracker, { name: t.nav.track })}
           </Link>
@@ -260,7 +260,7 @@ export function DiaryView({
             >
               <span
                 className={`text-small truncate ${
-                  p.id === project.id ? "font-bold text-violet" : "font-medium text-slate"
+                  p.id === project.id ? "font-bold text-link" : "font-medium text-slate"
                 }`}
               >
                 {p.title}
@@ -378,7 +378,7 @@ function EntryRow({
                   setDraft(entry.body);
                   setEditing(true);
                 }}
-                className="flex items-center gap-1 text-caption text-slate hover:text-violet bg-none border-none cursor-pointer p-0 tap"
+                className="flex items-center gap-1 text-caption text-slate hover:text-link bg-none border-none cursor-pointer p-0 tap"
               >
                 <Pencil size={11} /> {t.common.edit}
               </button>

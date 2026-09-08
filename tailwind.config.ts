@@ -25,22 +25,26 @@ const config: Config = {
          */
 
         /*
-         * Primary action, in the deeper of the two pinks.
+         * One pink, everywhere, and the two rules that make it work.
          *
-         * The brand pink #FF2D8A is 3.5:1 against white, which means white
-         * text on a pink button fails AA and pink text below 20px fails it
-         * too. The spec says pink with white "passes at all sizes"; measured,
-         * it does not. This tone is 5.2:1 both ways, so one value covers the
-         * button fill, its label, and the small links that were already
-         * written as text-violet in a hundred places.
+         * #FF2D8A is 3.5:1 against white. That is fine behind large text and
+         * fine as a fill; it is not enough for white text on a button, and it
+         * is not enough for a 13px link. A second, deeper pink solved that and
+         * cost the brand its single accent, which is a bad trade.
          *
-         * The brand pink keeps everything it is actually seen in: headings,
-         * the line, the meaningful stroke in an icon. All of those are large.
+         * So the pink stays exactly one value and the two failing uses move
+         * instead. A filled button carries ink rather than white, at 5.1:1,
+         * which is also the bolder look. And a small text link takes `link`
+         * below, which is the palette's own third accent rather than another
+         * pink.
          */
-        violet: "#D1156C",
-        // Hover only. 6.5:1 against white, so the label survives the darkening.
-        "violet-deep": "#B80B5C",
-        "violet-tint": "rgba(209,21,108,0.08)",
+        violet: "#FF2D8A",
+        // Hover only, on a fill that carries ink.
+        "violet-deep": "#E31E77",
+        "violet-tint": "rgba(255,45,138,0.08)",
+        // --a3. Movement and secondary data, and the small interactive text
+        // that pink cannot carry. 7.2:1 on white.
+        link: "#2A43D9",
         hot: { DEFAULT: "#FF2D8A", deep: "#E31E77" },
 
         // Headings, which the palette allows in the primary at display sizes
@@ -73,12 +77,18 @@ const config: Config = {
         surface: "#FFFFFF",
         "surface-sunk": "#F2F0F7",
 
-        // Completion, as text and as a wash. The dark green carries the words,
-        // since lime on white fails contrast at any size.
+        /*
+         * Completion.
+         *
+         * Lime is the signal and it never carries a word: 1.5:1 on white,
+         * which is invisible as text and perfectly legible as a fill behind
+         * ink or as a dot on a line. So `success` is the dark green that the
+         * words are set in, and the limes are what sits behind them.
+         */
         success: "#3F6212",
-        "success-tint": "rgba(199,245,60,0.30)",
-        mint: "#F4FBE2",
-        "mint-solid": "#E8F8BC",
+        "success-tint": "rgba(199,245,60,0.35)",
+        mint: "#F1FBD9",
+        "mint-solid": "#C7F53C",
 
         // State. The spec's #D92D20 is 4.28:1 on the new page ground, just
         // under AA, and overdue text is the last thing to make hard to read.

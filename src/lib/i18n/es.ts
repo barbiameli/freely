@@ -1423,6 +1423,17 @@ export const es: Dictionary = {
     invoiceBody: "Las horas y las cifras ya estan aqui. Tus condiciones y tus datos de pago van dentro.",
   },
 
+  wait: {
+    label: "Tu correo",
+    placeholder: "tu@ejemplo.com",
+    join: "Apúntate a la lista",
+    sending: "Enviando",
+    done: "Ya estás en la lista. Te escribo cuando haya sitio.",
+    badEmail: "Ese correo no parece correcto. Revísalo y vuelve a probar.",
+    tooMany: "Son muchos intentos en un minuto. Espera un momento y prueba otra vez.",
+    failed: "No se ha guardado. Prueba otra vez en un momento.",
+  },
+
   marketing: {
     home: "Inicio",
     logIn: "Entrar",
@@ -1450,7 +1461,10 @@ export const es: Dictionary = {
 
     aiNote: "La IA escribe el primer borrador. Tú lo editas, y no le llega nada al cliente hasta que tú lo digas.",
 
-    freeToStart: "Gratis para empezar, sin tarjeta.",
+    betaTitle: "Veinte personas, no veinte mil",
+    betaBody:
+      "Freely está en beta cerrada con un grupo pequeño de freelancers, así se construye alrededor de lo que os pasa de verdad. Deja tu correo y te aviso cuando haya sitio.",
+    freeToStart: "Gratis mientras está en beta.",
     tryIt: "Pruébalo en tu próximo presupuesto.",
     copyright: "© {year} Freely.",
   },

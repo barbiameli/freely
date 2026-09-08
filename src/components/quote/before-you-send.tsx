@@ -249,7 +249,7 @@ export function BeforeYouSend({
                     <button
                       type="button"
                       onClick={() => wave(rule.key)}
-                      className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
+                      className="text-meta font-semibold text-link bg-none border-none cursor-pointer p-0 tap"
                     >
                       {t.rules.flagIgnore}
                     </button>

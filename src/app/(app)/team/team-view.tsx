@@ -82,7 +82,7 @@ export function TeamView({
               <button
                 type="button"
                 onClick={() => navigator.clipboard.writeText(newInviteUrl)}
-                className="text-violet"
+                className="text-link"
                 title={t.team.copyLink}
               >
                 <Copy size={14} />
@@ -137,7 +137,7 @@ export function TeamView({
                 <div className="flex items-center gap-3 shrink-0">
                   <button
                     onClick={() => navigator.clipboard.writeText(inv.url)}
-                    className="text-violet hover:text-ink transition-colors bg-none border-none cursor-pointer p-0 tap"
+                    className="text-link hover:text-ink transition-colors bg-none border-none cursor-pointer p-0 tap"
                     aria-label={t.team.copyLink}
                     title={t.team.copyLink}
                   >

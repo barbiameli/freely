@@ -93,14 +93,14 @@ export function ProductPreview({ t }: { t: Dictionary }) {
             <div className="flex flex-col items-center gap-0.5">
               <div
                 className={`w-7 h-7 rounded-lg flex items-center justify-center font-body font-bold text-caption ${
-                  i === 0 ? "bg-violet-tint text-violet" : "border border-line text-text-muted"
+                  i === 0 ? "bg-violet-tint text-link" : "border border-line text-text-muted"
                 }`}
               >
                 {letter}
               </div>
               <span
                 className={`text-[8px] leading-none ${
-                  i === 0 ? "text-violet font-semibold" : "text-text-muted"
+                  i === 0 ? "text-link font-semibold" : "text-text-muted"
                 }`}
               >
                 {navLabels[i]}
@@ -141,7 +141,7 @@ export function ProductPreview({ t }: { t: Dictionary }) {
                     </span>
                     <span
                       className={`text-[9px] font-semibold ${
-                        quote.tracked ? "text-text-muted" : "text-violet"
+                        quote.tracked ? "text-text-muted" : "text-link"
                       }`}
                     >
                       {quote.tracked ? t.quote.tracked : t.quote.sendToTrack}
@@ -201,7 +201,7 @@ export function QuotePreview({ t }: { t: Dictionary }) {
           </div>
           <StaggerItem index={4} start={inView} step={110}>
             <div className="flex items-center gap-2 mt-3.5">
-              <span className="text-[9px] font-bold uppercase tracking-wide text-violet bg-violet-tint rounded-full px-2 py-1">
+              <span className="text-[9px] font-bold uppercase tracking-wide text-link bg-violet-tint rounded-full px-2 py-1">
                 {t.quote.sectionSow}
               </span>
               <span className="text-[9px] font-bold uppercase tracking-wide text-slate bg-paper border border-line rounded-full px-2 py-1">
@@ -360,7 +360,7 @@ export function InvoicePreview({ t }: { t: Dictionary }) {
               <div className="font-display italic text-xl text-ink">{INVOICE_NUMBER}</div>
               <div className="text-[9px] text-text-muted mt-0.5">{CLIENTS.northwind}</div>
             </div>
-            <span className="text-[9px] font-bold uppercase tracking-wide text-violet bg-violet-tint rounded-full px-2 py-1">
+            <span className="text-[9px] font-bold uppercase tracking-wide text-link bg-violet-tint rounded-full px-2 py-1">
               {t.quote.published}
             </span>
           </div>

@@ -268,7 +268,7 @@ export function SetupRows({
                   </span>
                 )}
                 {isChanged && (
-                  <span className="text-caption font-semibold text-violet bg-violet-tint rounded-md px-1.5 py-0.5">
+                  <span className="text-caption font-semibold text-link bg-violet-tint rounded-md px-1.5 py-0.5">
                     {t.quote.setupJustThis}
                   </span>
                 )}
@@ -283,7 +283,7 @@ export function SetupRows({
                   className={
                     decided.includes(row)
                       ? "font-body font-semibold text-small text-ink text-right"
-                      : "font-body font-semibold text-small text-violet text-right"
+                      : "font-body font-semibold text-small text-link text-right"
                   }
                 >
                   {decided.includes(row)
@@ -324,7 +324,7 @@ export function SetupRows({
                   <button
                     type="button"
                     onClick={() => onKeep(row)}
-                    className="text-caption font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
+                    className="text-caption font-semibold text-link bg-none border-none cursor-pointer p-0 tap"
                   >
                     {t.quote.setupMakeUsual}
                   </button>
@@ -538,7 +538,7 @@ export function RateBody({
           <button
             type="button"
             onClick={() => setRateHelpOpen(true)}
-            className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
+            className="text-meta font-semibold text-link bg-none border-none cursor-pointer p-0 tap"
           >
             {t.quote.notSureWhatToCharge}
           </button>
@@ -607,7 +607,7 @@ export function RateBody({
             setRateHelpOpen(!rateHelpOpen);
             if (!rateHelpOpen) setDraft((d) => ({ ...d, hourlyRate: 0 }));
           }}
-          className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
+          className="text-meta font-semibold text-link bg-none border-none cursor-pointer p-0 tap"
         >
           {rateHelpOpen ? t.quote.iKnowMyRate : t.quote.notSureWhatToCharge}
         </button>

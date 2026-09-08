@@ -1,68 +1,63 @@
 /**
- * The wordmark.
+ * The wordmark, from the brand files.
  *
- * This used to be an <img> pointing at public/brand/logo.svg: the italic
- * "Freely" and a coral swash, exported as one combined path from the old brand
- * file. Because it was flattened artwork rather than type, it was the one
- * thing in the app that could not follow a change of typeface or palette, and
- * after the rebrand it sat in the sidebar in the old serif and the old coral
- * while everything around it had moved.
+ * Briefly this was drawn here in the display face with a curve under it,
+ * because the old artwork was a flattened export in the previous serif and
+ * could not follow the rebrand. The real mark exists now, so it is used: the
+ * letterforms are drawn rather than set, and the line is the brand's own
+ * rather than my approximation of it.
  *
- * So it is drawn here instead: real text in the display face, and the line
- * under it as a stroke that takes its colour from the palette. Selectable,
- * searchable, and correct at any size without a second export.
- *
- * The line is decorative. The word is the accessible name, so the SVG is
- * hidden from assistive technology rather than labelled twice.
+ * Three tones, because the mark appears on three grounds and each has its own
+ * file. `dark` is the white lockup for the ink panel, and `mono` inherits the
+ * surrounding text colour for anywhere the mark has to be one flat value.
  */
 
 const SIZES = {
-  sm: 21,
-  md: 25,
-  lg: 34,
+  sm: 92,
+  md: 124,
+  lg: 168,
 } as const;
 
-export function FreelyLogo({ size = "md" }: { size?: keyof typeof SIZES }) {
-  const fontSize = SIZES[size];
+/** The mark's own proportions, so nothing is ever stretched to fit a box. */
+const LOCKUP = 1319 / 2702;
+const WORDMARK = 905 / 2592;
+
+export function FreelyLogo({
+  size = "md",
+  tone = "light",
+  /**
+   * With the line, which is the full lockup.
+   *
+   * Off for the places where the mark sits inside something the line would
+   * run into, like a dense footer row.
+   */
+  withLine = true,
+}: {
+  size?: keyof typeof SIZES;
+  tone?: "light" | "dark" | "mono";
+  withLine?: boolean;
+}) {
+  const width = SIZES[size];
+  const ratio = withLine ? LOCKUP : WORDMARK;
+
+  const file = withLine
+    ? tone === "dark"
+      ? "/brand/freely-logo-on-dark.svg"
+      : tone === "mono"
+        ? "/brand/freely-logo-mono.svg"
+        : "/brand/freely-logo.svg"
+    : tone === "mono"
+      ? "/brand/freely-wordmark-mono.svg"
+      : "/brand/freely-wordmark.svg";
 
   return (
-    <span className="inline-flex flex-col items-start select-none">
-      <span
-        className="font-display leading-none text-ink lowercase"
-        style={{
-          fontSize,
-          fontWeight: 800,
-          // Tighter than the headings, which are at -0.035em. The wordmark is
-          // one word read as a shape, so it closes up further than a line of
-          // display text would.
-          letterSpacing: "-0.05em",
-        }}
-      >
-        freely
-      </span>
-      {/*
-        Full width of the word, whatever the word measures once the font has
-        loaded. non-scaling-stroke keeps the line at its real weight while the
-        SVG stretches, which a plain stroke-width would not: scaled to fit a
-        72px word it would come out thinner than scaled to fit a 98px one.
-      */}
-      <svg
-        aria-hidden="true"
-        focusable="false"
-        viewBox="0 0 100 6"
-        preserveAspectRatio="none"
-        className="w-full"
-        style={{ height: Math.round(fontSize * 0.32), marginTop: 2 }}
-      >
-        <path
-          d="M1,4.4 C22,4.4 30,1.6 50,1.6 C70,1.6 78,4.4 99,4.4"
-          fill="none"
-          stroke="var(--a1)"
-          strokeWidth={3.4}
-          strokeLinecap="round"
-          vectorEffect="non-scaling-stroke"
-        />
-      </svg>
-    </span>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={file}
+      alt="Freely"
+      width={width}
+      height={Math.round(width * ratio)}
+      style={{ width, height: "auto" }}
+    />
   );
 }

@@ -78,7 +78,7 @@ export default async function InvoicePage({ params }: { params: { projectId: str
         </div>
         <div className="flex justify-between items-center pt-4">
           <Label>{t.publicQuote.total}</Label>
-          <span className="font-body font-bold text-2xl text-violet">
+          <span className="font-body font-bold text-2xl text-link">
             {currencySymbol(project.currency)}
             {project.price.toLocaleString()}
           </span>

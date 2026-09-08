@@ -55,7 +55,7 @@ export function InvoiceActions({
             : t.invoices.sendForPayment}
       </Button>
       {checkoutUrl && (
-        <a href={checkoutUrl} target="_blank" rel="noreferrer" className="text-xs text-violet font-semibold">
+        <a href={checkoutUrl} target="_blank" rel="noreferrer" className="text-xs text-link font-semibold">
           {t.invoices.openPaymentLink}
         </a>
       )}

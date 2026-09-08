@@ -385,7 +385,7 @@ export function DeliverableItem({
                 <button
                   type="button"
                   onClick={openEditor}
-                  className="flex items-center gap-1.5 text-caption font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
+                  className="flex items-center gap-1.5 text-caption font-semibold text-link bg-none border-none cursor-pointer p-0 tap"
                 >
                   <Pencil size={11} /> {t.track.editSteps}
                 </button>

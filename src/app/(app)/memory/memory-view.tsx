@@ -600,7 +600,7 @@ function ReferencesCard({
             disabled={uploading === "file"}
             className="flex flex-col gap-2 cursor-pointer mb-3 -m-1 p-1"
           >
-            <span className="font-body font-bold text-small text-violet">
+            <span className="font-body font-bold text-small text-link">
               {uploading === "file" ? "Reading..." : "+ Upload or drag a file"}
             </span>
           </DropZone>
@@ -625,7 +625,7 @@ function ReferencesCard({
             disabled={uploading === "image"}
             className="flex flex-col gap-2 cursor-pointer mb-3 -m-1 p-1"
           >
-            <span className="font-body font-bold text-small text-violet">
+            <span className="font-body font-bold text-small text-link">
               {uploading === "image" ? "Uploading..." : "+ Upload or drag an image"}
             </span>
           </DropZone>
@@ -674,7 +674,7 @@ function ReferencesCard({
             <button
               type="submit"
               disabled={!canAddLink}
-              className="font-body font-bold text-small text-violet text-left disabled:opacity-40 disabled:cursor-default"
+              className="font-body font-bold text-small text-link text-left disabled:opacity-40 disabled:cursor-default"
             >
               {uploading === "link" ? "Saving..." : "Save link"}
             </button>
@@ -682,7 +682,7 @@ function ReferencesCard({
           <div className="flex flex-col gap-2">
             {linkItems.map((l) => (
               <div key={l.id} className="flex justify-between items-center bg-paper rounded-lg px-3 py-2">
-                <a href={l.url} target="_blank" rel="noreferrer" className="text-small text-violet truncate">
+                <a href={l.url} target="_blank" rel="noreferrer" className="text-small text-link truncate">
                   {l.name}
                 </a>
                 <button onClick={() => handleDelete(l.id, "link")} className="text-text-muted hover:text-overdue flex-shrink-0">
@@ -836,7 +836,7 @@ function BrandingCard({
           className="flex items-center gap-1.5 cursor-pointer mb-1 -m-1 p-1"
         >
           <Upload size={12} className="text-violet" />
-          <span className="font-body font-bold text-small text-violet">
+          <span className="font-body font-bold text-small text-link">
             {guideUploading ? "Reading & analyzing..." : "Upload or drag brand guidelines"}
           </span>
         </DropZone>
@@ -874,7 +874,7 @@ function BrandingCard({
             className="flex items-center gap-1.5 cursor-pointer -m-1 p-1"
           >
             <Upload size={12} className="text-violet" />
-            <span className="font-body font-bold text-small text-violet">{t.memory.uploadLogo}</span>
+            <span className="font-body font-bold text-small text-link">{t.memory.uploadLogo}</span>
           </DropZone>
           <div className="text-caption text-text-muted mt-1 max-w-[160px]">
             {t.memory.logoRequirements}

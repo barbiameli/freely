@@ -76,7 +76,7 @@ export function FlagsPanel({ deliverable }: { deliverable: DeliverableView | nul
                 type="button"
                 disabled={pending}
                 onClick={() => run(() => resolveFlagAction(flag.id, true))}
-                className="text-caption font-semibold text-violet bg-none border-none cursor-pointer p-0 tap mt-1.5 disabled:opacity-50"
+                className="text-caption font-semibold text-link bg-none border-none cursor-pointer p-0 tap mt-1.5 disabled:opacity-50"
               >
                 {t.track.answered}
               </button>
@@ -100,7 +100,7 @@ export function FlagsPanel({ deliverable }: { deliverable: DeliverableView | nul
                   type="button"
                   disabled={pending}
                   onClick={() => run(() => resolveFlagAction(flag.id, false))}
-                  className="text-caption text-violet bg-none border-none cursor-pointer p-0 tap shrink-0"
+                  className="text-caption text-link bg-none border-none cursor-pointer p-0 tap shrink-0"
                 >
                   {t.track.reopen}
                 </button>

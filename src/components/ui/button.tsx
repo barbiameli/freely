@@ -44,8 +44,10 @@ const variantClasses: Record<Variant, string> = {
   // Darkening rather than fading. An opacity hover on a filled button lets
   // the page ground through and lightens the label with it, which is the one
   // part that has to stay legible.
-  primary: "bg-violet text-white border-none hover:bg-violet-deep",
-  outline: "bg-white text-violet border border-violet hover:bg-violet-tint",
+  // Ink on pink, at 5.1:1. White on this pink is 3.5:1 and fails, and the
+  // pink is not moving: it is the one accent the whole brand runs on.
+  primary: "bg-violet text-ink border-none hover:bg-violet-deep",
+  outline: "bg-white text-link border border-violet hover:bg-violet-tint",
   ghost: "bg-transparent text-slate border border-line hover:text-ink hover:border-slate",
   // Filled rather than outlined. An outlined destructive button reads as the
   // quieter option next to a filled Cancel, which is backwards.

@@ -87,7 +87,7 @@ export function DisclosureRow({
           <span
             className={clsx(
               "font-body font-semibold text-small text-right truncate",
-              answered ? "text-ink" : "text-violet"
+              answered ? "text-ink" : "text-link"
             )}
           >
             {value}

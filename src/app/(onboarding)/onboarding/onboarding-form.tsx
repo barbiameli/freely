@@ -605,7 +605,7 @@ function ReferencesStep({
             disabled={uploading === "file"}
             className="flex flex-col gap-2 cursor-pointer mb-2.5 -m-1 p-1"
           >
-            <span className="flex items-center gap-1.5 font-body font-bold text-small text-violet">
+            <span className="flex items-center gap-1.5 font-body font-bold text-small text-link">
               <Upload size={12} />
               {uploading === "file" ? "Reading..." : "Drag a file, or click to upload"}
             </span>
@@ -652,7 +652,7 @@ function ReferencesStep({
             <button
               type="submit"
               disabled={!canAddLink}
-              className="font-body font-bold text-small text-violet text-left disabled:opacity-40 disabled:cursor-default bg-none border-none cursor-pointer p-0 tap"
+              className="font-body font-bold text-small text-link text-left disabled:opacity-40 disabled:cursor-default bg-none border-none cursor-pointer p-0 tap"
             >
               {uploading === "link" ? t.common.saving : t.onboarding.saveLink}
             </button>
@@ -660,7 +660,7 @@ function ReferencesStep({
           <div className="flex flex-col gap-1.5">
             {links.map((l) => (
               <div key={l.id} className="flex justify-between items-center bg-white rounded-lg px-2.5 py-1.5">
-                <span className="text-meta text-violet truncate">{l.name}</span>
+                <span className="text-meta text-link truncate">{l.name}</span>
                 <button
                   type="button"
                   onClick={() => handleDelete(l.id, "link")}
@@ -825,7 +825,7 @@ function BrandingStep({
             disabled={guideUploading}
             className="flex flex-col gap-2 cursor-pointer mb-2.5 -m-1 p-1"
           >
-            <span className="flex items-center gap-1.5 font-body font-bold text-small text-violet">
+            <span className="flex items-center gap-1.5 font-body font-bold text-small text-link">
               <Upload size={12} />
               {guideUploading ? "Reading & analyzing..." : "Drag a file, or click to upload"}
             </span>
@@ -862,7 +862,7 @@ function BrandingStep({
               accept="image/png"
               className="flex flex-col gap-2 cursor-pointer mb-2.5 -m-1 p-1"
             >
-              <span className="flex items-center gap-1.5 font-body font-bold text-small text-violet">
+              <span className="flex items-center gap-1.5 font-body font-bold text-small text-link">
                 <Upload size={12} />
                 {t.onboarding.dragLogo}
               </span>

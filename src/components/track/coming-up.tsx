@@ -92,7 +92,7 @@ export function ComingUp({
             >
               {formatDay(d.dueAt, locale)}
             </span>
-            <span className="font-body font-semibold text-small text-ink leading-snug min-w-0 flex-1 group-hover:text-violet">
+            <span className="font-body font-semibold text-small text-ink leading-snug min-w-0 flex-1 group-hover:text-link">
               {d.name}
             </span>
             <span

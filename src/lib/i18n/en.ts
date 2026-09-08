@@ -1435,6 +1435,17 @@ export const en = {
     invoiceBody: "The hours and figures are already here. Your terms and payment details go on it.",
   },
 
+  wait: {
+    label: "Your email address",
+    placeholder: "you@example.com",
+    join: "Join the waitlist",
+    sending: "Sending",
+    done: "You're on the list. You'll hear from me when there's room.",
+    badEmail: "That address doesn't look right. Check it and try again.",
+    tooMany: "That's a lot of tries in one minute. Wait a moment and go again.",
+    failed: "That didn't save. Try again in a moment.",
+  },
+
   marketing: {
     home: "Home",
     logIn: "Log in",
@@ -1462,7 +1473,10 @@ export const en = {
 
     aiNote: "AI writes the first draft. You edit it, and nothing reaches a client until you say so.",
 
-    freeToStart: "Free to start, no card required.",
+    betaTitle: "Twenty people, not twenty thousand",
+    betaBody:
+      "Freely is in a closed beta with a small group of freelancers, so it gets built around what they actually run into. Leave your email and you'll hear when there is room.",
+    freeToStart: "Free while it is in beta.",
     tryIt: "Try it on your next quote.",
     copyright: "© {year} Freely.",
   },
