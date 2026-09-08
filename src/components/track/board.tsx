@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, GripVertical, Play, Plus, Square, Trash2, X } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
@@ -57,6 +57,28 @@ const TAGS = [
   "bg-ink/10 text-ink",
 ];
 
+/**
+ * Which column a point is inside, if any.
+ *
+ * Out here rather than inline in the JSX for two reasons: it is the whole of
+ * the drop logic and deserves a name, and the copy scanner reads a bare
+ * greater-than inside a .tsx file as the start of a tag and reports the
+ * comparison as untranslated text.
+ */
+function columnAt(
+  boxes: Partial<Record<Column, HTMLElement | null>>,
+  x: number,
+  y: number
+): Column | null {
+  for (const column of COLUMNS) {
+    const box = boxes[column]?.getBoundingClientRect();
+    if (!box) continue;
+    const inside = x - box.left >= 0 && box.right - x >= 0 && y - box.top >= 0 && box.bottom - y >= 0;
+    if (inside) return column;
+  }
+  return null;
+}
+
 export function Board({
   steps,
   deliverables,
@@ -77,6 +99,19 @@ export function Board({
   const router = useRouter();
   const [dragging, setDragging] = useState<string | null>(null);
   const [over, setOver] = useState<Column | null>(null);
+  /**
+   * Where each column is on screen, so a pointer can be turned into a column.
+   *
+   * Native drag and drop is not used here at all any more. It failed three
+   * times for three unrelated reasons, it does not fire on touch, and the
+   * whole apparatus exists to drag files between applications rather than to
+   * move a card two inches. Pointer events are the same three handlers, work
+   * identically with a mouse, a trackpad and a finger, and nothing about them
+   * is up to the browser's interpretation.
+   */
+  const columnRefs = useRef<Partial<Record<Column, HTMLElement | null>>>({});
+  /** Where the pointer is, for drawing the card under it. */
+  const [pointer, setPointer] = useState<{ x: number; y: number } | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   /** The card being renamed, and the text so far. */
@@ -215,17 +250,8 @@ export function Board({
           return (
             <section
               key={column}
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = "move";
-                setOver(column);
-              }}
-              onDragLeave={() => setOver((c) => (c === column ? null : c))}
-              onDrop={(e) => {
-                e.preventDefault();
-                setOver(null);
-                if (dragging) void move(dragging, column, cards.length);
-                setDragging(null);
+              ref={(node) => {
+                columnRefs.current[column] = node;
               }}
               className={`rounded-2xl border p-3 min-h-[120px] transition-colors ${TINT[column]} ${
                 over === column ? "border-violet" : "border-line"
@@ -242,40 +268,47 @@ export function Board({
               </div>
 
               <ul className="list-none p-0 m-0 flex flex-col gap-2">
-                {cards.map((card, index) => (
+                {cards.map((card) => (
                   <li
                     key={card.id}
-                    draggable={!busy}
-                    onDragStart={(e) => {
-                      // Required. Without something on the dataTransfer the
-                      // browser cancels the drag straight after dragstart, so
-                      // no dragover and no drop ever fire and the card simply
-                      // does not move. Firefox refuses outright; Chrome is
-                      // inconsistent. The payload is unused, the act of
-                      // setting it is the point.
-                      e.dataTransfer.setData("text/plain", card.id);
-                      e.dataTransfer.effectAllowed = "move";
+                    onPointerDown={(e) => {
+                      // Only a primary press, and never from a control inside
+                      // the card: pressing the play button or the name should
+                      // do what it says rather than start a drag.
+                      if (busy || e.button !== 0) return;
+                      if ((e.target as HTMLElement).closest("button,input,select")) return;
+                      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
                       setDragging(card.id);
+                      setPointer({ x: e.clientX, y: e.clientY });
                     }}
-                    onDragEnd={() => setDragging(null)}
-                    // On the card itself as well as the column. A drop is only
-                    // allowed where a dragover handler called preventDefault,
-                    // and relying on that bubbling up from the card to the
-                    // column is the kind of thing browsers disagree about.
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.dataTransfer.dropEffect = "move";
+                    onPointerMove={(e) => {
+                      if (dragging !== card.id) return;
+                      setPointer({ x: e.clientX, y: e.clientY });
+                      setOver(columnAt(columnRefs.current, e.clientX, e.clientY));
                     }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setOver(null);
-                      if (dragging && dragging !== card.id) {
-                        void move(dragging, column, index);
-                      }
+                    onPointerUp={() => {
+                      if (dragging !== card.id) return;
+                      const target = over;
                       setDragging(null);
+                      setPointer(null);
+                      setOver(null);
+                      // A press that never left the card is a press, not a
+                      // drag, so it should not move anything.
+                      if (target && target !== column) {
+                        void move(card.id, target, columnSteps(steps, target).length);
+                      }
                     }}
-                    className={`bg-white rounded-xl border border-line p-2.5 cursor-grab active:cursor-grabbing transition-shadow ${
+                    onPointerCancel={() => {
+                      setDragging(null);
+                      setPointer(null);
+                      setOver(null);
+                    }}
+                    style={
+                      dragging === card.id && pointer
+                        ? { touchAction: "none" }
+                        : { touchAction: "manipulation" }
+                    }
+                    className={`bg-white rounded-xl border border-line p-2.5 cursor-grab active:cursor-grabbing transition-shadow select-none ${
                       dragging === card.id ? "dragging opacity-90" : "hover:shadow-panel"
                     }`}
                   >
@@ -400,33 +433,6 @@ export function Board({
                           )}
                         </div>
 
-                        {/*
-                          * Moving a card without dragging it, everywhere.
-                          *
-                          * This was mobile-only, on the grounds that touch
-                          * does not fire HTML5 drag events and a mouse does.
-                          * That was the wrong call: native drag and drop is
-                          * genuinely fragile, it failed three times in a row
-                          * here for three different reasons, and a board whose
-                          * only way to move a card is the fragile one is a
-                          * board that does not work.
-                          *
-                          * So this is the reliable path and dragging is the
-                          * nice one. Both do the same thing.
-                          */}
-                        <div className="flex gap-2 mt-2">
-                          {COLUMNS.filter((c) => c !== column).map((c) => (
-                            <button
-                              key={c}
-                              type="button"
-                              disabled={busy}
-                              onClick={() => void move(card.id, c, 0)}
-                              className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 tap disabled:opacity-60"
-                            >
-                              {t.track.boardMoveTo.replace("{column}", columnLabel(c))}
-                            </button>
-                          ))}
-                        </div>
                       </div>
                     </div>
                   </li>

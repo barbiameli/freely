@@ -43,14 +43,22 @@ export function columnOf(step: Pick<BoardStep, "done" | "startedAt">): Column {
  * not claim a start time; that loses "when did I first pick this up", and the
  * alternative is a card sitting in To do insisting it started on Tuesday.
  */
-export function changesFor(target: Column, now = new Date()): {
-  done: boolean;
-  startedAt: Date | null;
-  doneAt: Date | null;
-} {
-  if (target === "DONE") return { done: true, startedAt: null, doneAt: now };
-  if (target === "DOING") return { done: false, startedAt: now, doneAt: null };
-  return { done: false, startedAt: null, doneAt: null };
+export function changesFor(
+  target: Column,
+  now = new Date()
+): { done: boolean; startedAt: Date | null } {
+  /*
+   * No doneAt here.
+   *
+   * It used to return one, and moveStepAction wrote the whole object onto the
+   * Step. Step has no doneAt column: Deliverable does, and I wrote the field
+   * that belongs to the other model. Prisma rejected every single move with an
+   * unknown argument, which is why nothing on the board could be dragged and
+   * why the buttons that did the same thing failed identically.
+   */
+  if (target === "DONE") return { done: true, startedAt: null };
+  if (target === "DOING") return { done: false, startedAt: now };
+  return { done: false, startedAt: null };
 }
 
 /**
@@ -64,7 +72,7 @@ export function changesForMove(
   to: Column,
   existingStartedAt: Date | null,
   now = new Date()
-): { done: boolean; startedAt: Date | null; doneAt: Date | null } {
+): { done: boolean; startedAt: Date | null } {
   const next = changesFor(to, now);
   if (from === "DOING" && to === "DOING" && existingStartedAt) {
     return { ...next, startedAt: existingStartedAt };

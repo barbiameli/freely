@@ -41,7 +41,9 @@ describe("which column a task is in", () => {
 
 describe("what moving a card changes", () => {
   it("ticks it off on the way into Done", () => {
-    expect(changesFor("DONE", NOW)).toEqual({ done: true, startedAt: null, doneAt: NOW });
+    // No doneAt: Step has no such column, Deliverable does, and writing the
+    // other model's field made Prisma reject every move on the board.
+    expect(changesFor("DONE", NOW)).toEqual({ done: true, startedAt: null });
   });
 
   it("unticks it on the way out", () => {
@@ -121,12 +123,19 @@ describe("the board on the page", () => {
   const board = readFileSync("src/components/track/board.tsx", "utf8");
   const action = readFileSync("src/actions/board.ts", "utf8");
 
-  it("can be used without a drag, on any screen", () => {
-    // Touch does not fire HTML5 drag events, and native drag and drop turned
-    // out to be fragile with a mouse too. The reliable path is the default
-    // now and dragging is the nice one.
-    expect(board).toContain("t.track.boardMoveTo");
-    expect(board).not.toContain("md:hidden");
+  it("does not use the browser's drag and drop at all", () => {
+    // It failed three times for three unrelated reasons, it never fires on
+    // touch, and the whole apparatus exists to drag files between
+    // applications rather than to move a card two inches.
+    expect(board).not.toContain("dataTransfer");
+    expect(board).not.toContain("onDragStart");
+    expect(board).toContain("onPointerDown");
+    expect(board).toContain("setPointerCapture");
+  });
+
+  it("does not start a drag from a control inside the card", () => {
+    // Pressing the play button or the name should do what it says.
+    expect(board).toContain('closest("button,input,select")');
   });
 
   it("stacks rather than scrolling sideways on a phone", () => {
@@ -159,18 +168,11 @@ describe("a drag that actually starts", () => {
   const chart = readFileSync("src/components/track/timeline.tsx", "utf8");
   const action = readFileSync("src/actions/board.ts", "utf8");
 
-  it("puts something on the dataTransfer", () => {
-    // Without it the browser cancels the drag straight after dragstart, so
-    // no dragover and no drop ever fire and the card simply does not move.
-    // Firefox refuses outright; Chrome is inconsistent. The payload is
-    // unused, the act of setting it is the point.
-    expect(board).toContain('e.dataTransfer.setData("text/plain"');
+  it("still sets the dataTransfer where the browser's drag is used", () => {
+    // The timeline still uses it. Without something on the dataTransfer the
+    // browser cancels the drag straight after dragstart, so no drop ever
+    // fires. The payload is unused; the act of setting it is the point.
     expect(chart).toContain('e.dataTransfer.setData("text/plain"');
-  });
-
-  it("says the drop is a move", () => {
-    expect(board).toContain('e.dataTransfer.effectAllowed = "move"');
-    expect(board).toContain('e.dataTransfer.dropEffect = "move"');
   });
 
   it("does not reach through a relation to find the tasks", () => {

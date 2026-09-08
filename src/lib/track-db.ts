@@ -91,7 +91,7 @@ type StepUpdate = Partial<
     StepRow,
     "name" | "done" | "order" | "estimateHours" | "startedAt" | "plannedStart" | "plannedEnd"
   >
-> & { doneAt?: Date | null };
+>;
 type FlagCreate = {
   deliverableId: string;
   question: string;

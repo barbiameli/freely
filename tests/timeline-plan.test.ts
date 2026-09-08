@@ -341,21 +341,3 @@ describe("the chart uses the width it has", () => {
   });
 });
 
-describe("moving a card without dragging it", () => {
-  const board = readFileSync("src/components/track/board.tsx", "utf8");
-
-  it("is available on every screen, not just a phone", () => {
-    // Native drag and drop is genuinely fragile: it failed three times here
-    // for three different reasons. A board whose only way to move a card is
-    // the fragile one is a board that does not work.
-    expect(board).toContain("t.track.boardMoveTo");
-    expect(board).not.toContain('className="flex gap-2 mt-2 md:hidden"');
-  });
-
-  it("makes the card its own drop target", () => {
-    // Relying on preventDefault bubbling from the card to the column is the
-    // kind of thing browsers disagree about.
-    const card = board.slice(board.indexOf("{cards.map((card, index)"));
-    expect(card.slice(0, 1600)).toContain("onDragOver");
-  });
-});
