@@ -322,6 +322,16 @@ describe("what a drag looks like", () => {
 describe("the clock on a card", () => {
   const source = readFileSync("src/components/track/board.tsx", "utf8");
 
+  it("sits on the right, big enough to aim at", () => {
+    // It was a 22px dot between the grip and the name.
+    expect(source).not.toContain('w-[22px] h-[22px]');
+    expect(source).toContain("w-9 h-9 rounded-full");
+    // After the text column, so the name and its tags wrap beside it.
+    expect(source.indexOf("min-w-0 flex-1 break-words")).toBeLessThan(
+      source.indexOf("aria-label={runningStepId === card.id")
+    );
+  });
+
   it("is drawn whatever the project's tracker is set to", () => {
     expect(source).not.toContain("{canTrack && !card.done && (");
     expect(source).toContain("{!card.done && (");

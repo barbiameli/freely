@@ -477,7 +477,7 @@ export function ProjectDetail({
                 <button
                   type="button"
                   onClick={() => setRescheduling((r) => !r)}
-                  className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
+                  className="text-caption font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
                 >
                   {rescheduling ? t.common.cancel : t.track.reschedule}
                 </button>

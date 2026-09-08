@@ -122,17 +122,17 @@ export function TimelineBar({
             </div>
           )}
         </div>
-        <div className="flex items-baseline gap-4 shrink-0">
-          <div className="text-caption text-text-muted tabular-nums text-right">
+        <div className="shrink-0 text-right">
+          <div className="text-caption text-text-muted tabular-nums">
             <div>{formatDay(startDate, locale)}</div>
             <div className={past ? "text-overdue font-semibold" : ""}>
               {formatDay(dueDate, locale)} · {relativeDay(dueDate, now, locale)}
             </div>
           </div>
-          {/* Reschedule, on the same line as the count rather than on a row of
-              its own above it. One button had a full line to itself, which was
-              most of why this card stood taller than the one beside it. */}
-          {action}
+          {/* Under the dates and small, in the corner it already occupies.
+              It used to have a full row of its own above the card, which was
+              most of why this stood taller than what is coming up beside it. */}
+          {action && <div className="mt-1">{action}</div>}
         </div>
       </div>
 

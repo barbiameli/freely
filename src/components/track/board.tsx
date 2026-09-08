@@ -351,7 +351,9 @@ export function Board({
 
       {/* Three columns on anything wide enough, stacked below. A board that
           scrolls sideways on a phone hides two thirds of itself. */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
+      {/* Stretch, so the three columns are one block rather than three
+          stubs of whatever height their contents happened to be. */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-stretch">
         {COLUMNS.map((column) => {
           const cards = columnSteps(local, column);
           return (
@@ -434,30 +436,7 @@ export function Board({
                         className="text-text-muted shrink-0 mt-0.5"
                         aria-hidden
                       />
-                      {/* Against the card rather than the project, so the
-                          hours can answer which task ate the afternoon. On
-                          every card except a finished one: a clock on work
-                          that is done is an invitation to a mistake. */}
-                      {!card.done && (
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => void toggleTimer(card)}
-                          aria-label={runningStepId === card.id ? t.track.stop : t.track.timeStart}
-                          className={`shrink-0 w-[22px] h-[22px] rounded-full flex items-center justify-center border-none cursor-pointer press disabled:opacity-60 ${
-                            runningStepId === card.id
-                              ? "bg-ink text-white"
-                              : "bg-coral-tint text-coral"
-                          }`}
-                        >
-                          {runningStepId === card.id ? (
-                            <Square size={9} fill="currentColor" />
-                          ) : (
-                            <Play size={9} fill="currentColor" />
-                          )}
-                        </button>
-                      )}
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 flex-1 break-words">
                         {editing?.id === card.id ? (
                           /* In place, because a modal to rename four words is
                              a bigger interruption than the thing it edits. */
@@ -548,8 +527,36 @@ export function Board({
                             </span>
                           )}
                         </div>
-
                       </div>
+
+                      {/* Against the card rather than the project, so the
+                          hours can answer which task ate the afternoon. On
+                          every card except a finished one: a clock on work
+                          that is done is an invitation to a mistake.
+
+                          On the right and big enough to be the thing you aim
+                          at. It was a 22px dot wedged between the grip and the
+                          name, which is a hard target on a phone and reads as
+                          a decoration rather than the one action a card has. */}
+                      {!card.done && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void toggleTimer(card)}
+                          aria-label={runningStepId === card.id ? t.track.stop : t.track.timeStart}
+                          className={`shrink-0 self-center w-9 h-9 rounded-full flex items-center justify-center border-none cursor-pointer press disabled:opacity-60 ${
+                            runningStepId === card.id
+                              ? "bg-ink text-white"
+                              : "bg-coral text-white"
+                          }`}
+                        >
+                          {runningStepId === card.id ? (
+                            <Square size={13} fill="currentColor" />
+                          ) : (
+                            <Play size={13} fill="currentColor" className="ml-[1px]" />
+                          )}
+                        </button>
+                      )}
                     </div>
                   </li>
                 ))}
