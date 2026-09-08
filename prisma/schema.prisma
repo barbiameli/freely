@@ -1048,6 +1048,10 @@ model TimeEntry {
   /// Which piece of the work, where it is known.
   deliverableId String?
   deliverable   Deliverable? @relation(fields: [deliverableId], references: [id], onDelete: SetNull)
+  /// Which task, where the clock was started from a card rather than from the
+  /// project as a whole. A column rather than a note, because "how long did
+  /// that actually take" is worth being able to ask of the data.
+  stepId String?
 
   startedAt DateTime
   /// Null while a timer is still running. One running entry per account.

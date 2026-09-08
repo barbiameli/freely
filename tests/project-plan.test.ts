@@ -154,13 +154,17 @@ describe("a project starts planned, not blank", () => {
   const setup = readFileSync("src/components/track/plan-setup.tsx", "utf8");
 
   it("asks for the shape before showing an empty grid", () => {
-    expect(detail).toContain("!project.plannedAt && allSteps.length > 0");
+    expect(detail).toContain("(!project.plannedAt || replanning) && allSteps.length > 0");
     expect(detail).toContain("<PlanSetup");
   });
 
-  it("asks once rather than on every visit", () => {
-    // plannedAt is the record that it has been answered.
+  it("asks once, then stays reachable", () => {
+    // plannedAt records that it has been answered. It used to hide the panel
+    // forever, which is wrong for the things it holds: a client moves a date,
+    // a deliverable turns out to be twice the work, somebody drops to three
+    // days a week.
     expect(detail).toContain("project.plannedAt");
+    expect(detail).toContain("setReplanning(true)");
   });
 
   it("has a defensible default for all four", () => {

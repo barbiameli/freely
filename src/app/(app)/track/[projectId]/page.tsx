@@ -183,6 +183,9 @@ export default async function ProjectPage({
         running: runningEntry
           ? {
               startedAt: runningEntry.startedAt.toISOString(),
+              // Which card is running, so the board can show a stop on it
+              // rather than a play.
+              stepId: (runningEntry as unknown as { stepId?: string | null }).stepId ?? null,
               // What they said they were doing when they started it, which is
               // the only moment anybody reliably knows.
               note: runningEntry.note,

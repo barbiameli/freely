@@ -29,11 +29,15 @@ export function PlanSetup({
   deliverables,
   startDate,
   dueDate,
+  onClose,
 }: {
   projectId: string;
   deliverables: { id: string; name: string }[];
   startDate: string | null;
   dueDate: string | null;
+  /** Present only when this is a re-plan, which is the only time it can be
+   * closed without answering. */
+  onClose?: () => void;
 }) {
   const t = useT();
   const router = useRouter();
@@ -69,12 +73,24 @@ export function PlanSetup({
       setError(result.error);
       return;
     }
+    onClose?.();
     router.refresh();
   }
 
   return (
     <Card>
-      <Label>{t.track.planSetupTitle}</Label>
+      <div className="flex items-baseline justify-between gap-3">
+        <Label>{t.track.planSetupTitle}</Label>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-meta font-semibold text-slate bg-none border-none cursor-pointer p-0 tap"
+          >
+            {t.common.cancel}
+          </button>
+        )}
+      </div>
       <p className="text-caption text-slate mt-1 mb-4 max-w-prose text-pretty">
         {t.track.planSetupHint}
       </p>

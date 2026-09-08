@@ -125,7 +125,14 @@ export async function runningEntryAction(): Promise<
  */
 export async function startTimerAction(
   projectId: string,
-  note = ""
+  note = "",
+  /**
+   * The task this clock is against, where it was started from a card.
+   *
+   * Optional: the header button starts the project's clock with nothing
+   * named, which is the ordinary case and stays that way.
+   */
+  step?: { id: string; deliverableId: string }
 ): Promise<ActionResult<{ id: string }>> {
   try {
     const user = await requireFullUser();
@@ -146,6 +153,9 @@ export async function startTimerAction(
         userId: user.id,
         projectId: project.id,
         clientId: (project as unknown as { clientId?: string | null }).clientId ?? null,
+        ...(step
+          ? ({ stepId: step.id, deliverableId: step.deliverableId } as Record<string, string>)
+          : {}),
         startedAt: new Date(),
         note: note.slice(0, 200),
         source: "TIMER",

@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import { stepDb } from "@/lib/track-db";
+import { taskLabel } from "@/lib/task-words";
+import { sanitizeText } from "@/lib/sanitize-text";
 import { changesForMove, columnOf, reorder, type Column } from "@/lib/board";
 import { daysShort, firstPlan, shareOutDays, squeezed, workingDaysIn } from "@/lib/project-plan";
 import type { ActionResult } from "@/actions/briefs";
@@ -393,4 +395,100 @@ export async function planProjectAction(input: {
 
   revalidatePath(`/track/${project.id}`);
   return { ok: true, data: { daysShort: daysShort(tasks, start, end, shape) } };
+}
+
+/**
+ * Writing on the board.
+ *
+ * It could be dragged and timed and not typed into, which makes it a viewer.
+ * The task list arrives generated, so the first version is never quite right,
+ * and the only repair was replaceStepsAction rewriting every step on a
+ * deliverable: changing one word meant regenerating the lot.
+ */
+export async function addTaskAction(
+  deliverableId: string,
+  name: string
+): Promise<ActionResult<{ id: string }>> {
+  const user = await requireFullUser();
+  const deliverable = await prisma.deliverable.findFirst({
+    where: { id: deliverableId },
+    select: { id: true, projectId: true },
+  });
+  if (!deliverable) return { ok: false, error: "That deliverable no longer exists." };
+  const project = await prisma.project.findFirst({
+    where: { id: deliverable.projectId, ...teamScopeWhere(user) },
+    select: { id: true },
+  });
+  if (!project) return { ok: false, error: "That deliverable no longer exists." };
+
+  // Cut to a card on the way in, same as a generated one. A task somebody
+  // types is not exempt from being readable on a board.
+  const label = taskLabel(sanitizeText(name));
+  if (!label) return { ok: false, error: "Give the task a name." };
+
+  try {
+    const created = await stepDb.create({
+      data: {
+        deliverableId,
+        name: label,
+        // Last in its column. Somebody adding a task is adding the next
+        // thing, not the most urgent thing.
+        order: 9999,
+      },
+    });
+    revalidatePath(`/track/${project.id}`);
+    return { ok: true, data: { id: created.id } };
+  } catch (err) {
+    console.error("[addTaskAction] failed", err);
+    return { ok: false, error: "Couldn't add that. Try again." };
+  }
+}
+
+/** Renaming one, or changing what it is estimated at. */
+export async function editTaskAction(
+  stepId: string,
+  patch: { name?: string; estimateHours?: number }
+): Promise<ActionResult<undefined>> {
+  const user = await requireFullUser();
+  const project = await projectForStep(stepId, user);
+  if (!project) return { ok: false, error: "That task no longer exists." };
+
+  const data: { name?: string; estimateHours?: number } = {};
+  if (patch.name !== undefined) {
+    const label = taskLabel(sanitizeText(patch.name));
+    if (!label) return { ok: false, error: "Give the task a name." };
+    data.name = label;
+  }
+  if (patch.estimateHours !== undefined) {
+    if (Number.isNaN(patch.estimateHours) || patch.estimateHours < 0) {
+      return { ok: false, error: "Hours needs to be a number, and not a negative one." };
+    }
+    data.estimateHours = patch.estimateHours;
+  }
+  if (Object.keys(data).length === 0) return { ok: true, data: undefined };
+
+  try {
+    await stepDb.update({ where: { id: stepId }, data });
+  } catch (err) {
+    console.error("[editTaskAction] failed", err);
+    return { ok: false, error: "Couldn't save that. Try again." };
+  }
+  revalidatePath(`/track/${project.id}`);
+  return { ok: true, data: undefined };
+}
+
+/** Taking one off the board for good. */
+export async function deleteTaskAction(stepId: string): Promise<ActionResult<undefined>> {
+  const user = await requireFullUser();
+  const project = await projectForStep(stepId, user);
+  if (!project) return { ok: false, error: "That task no longer exists." };
+
+  try {
+    await stepDb.delete({ where: { id: stepId } });
+  } catch (err) {
+    console.error("[deleteTaskAction] failed", err);
+    return { ok: false, error: "Couldn't delete that. Try again." };
+  }
+  revalidatePath(`/track/${project.id}`);
+  return { ok: true, data: undefined };
 }

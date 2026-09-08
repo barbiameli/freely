@@ -31,6 +31,11 @@ describe("the working view is given its data", () => {
     });
   }
 
+  it("passes which card the clock is on", () => {
+    // Without it the board shows a play on the card that is already running.
+    expect(detailBranch).toContain("stepId:");
+  });
+
   it("passes whether the project has been planned", () => {
     // Without it the setup panel asks again on every visit, or never.
     expect(detailBranch).toContain("plannedAt:");

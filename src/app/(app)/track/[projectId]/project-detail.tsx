@@ -196,7 +196,7 @@ export function ProjectDetail({
     loggedSeconds: number;
     /** Everything logged on this project, for the week view and the log. */
     entries: WeekEntry[];
-    running: { startedAt: string; note?: string } | null;
+    running: { startedAt: string; note?: string; stepId?: string | null } | null;
     hasCalendar: boolean;
   };
   /**
@@ -241,6 +241,19 @@ export function ProjectDetail({
    * the first place somebody presses play and it has to be able to ask.
    */
   const [settingUpTimer, setSettingUpTimer] = useState(false);
+
+  /**
+   * Whether the plan panel is open.
+   *
+   * Open by default until a project has been planned, and reachable forever
+   * after. It used to be a one-time gate on plannedAt, so once a project was
+   * planned there was no way to change the dates, the hours, the working days
+   * or the stars. Those are exactly the things that change: a client moves a
+   * date, a deliverable turns out to be twice the work, somebody drops to
+   * three days a week. The star was worst affected, since you only learn
+   * which deliverable deserved the time by starting.
+   */
+  const [replanning, setReplanning] = useState(false);
 
   /**
    * Every task on the project, flattened out of its deliverable.
@@ -511,19 +524,29 @@ export function ProjectDetail({
                 <Chip active={view === "timeline"} onClick={() => setView("timeline")}>
                   {t.track.viewTimeline}
                 </Chip>
+                {project.plannedAt && !replanning && (
+                  <button
+                    type="button"
+                    onClick={() => setReplanning(true)}
+                    className="text-meta font-semibold text-slate bg-none border-none cursor-pointer px-1 tap"
+                  >
+                    {t.track.replan}
+                  </button>
+                )}
               </div>
             )}
           </div>
           {/* Nothing to look at until the shape is settled, so ask for it
               rather than showing an empty grid and a pile of unplaced pills.
-              Once. See lib/project-plan. */}
-          {!project.plannedAt && allSteps.length > 0 ? (
+              After that it stays reachable. See lib/project-plan. */}
+          {(!project.plannedAt || replanning) && allSteps.length > 0 ? (
             <div className="mt-3">
               <PlanSetup
                 projectId={project.id}
                 deliverables={project.deliverables.map((d) => ({ id: d.id, name: d.name }))}
                 startDate={project.startDate}
                 dueDate={project.dueDate}
+                onClose={project.plannedAt ? () => setReplanning(false) : undefined}
               />
             </div>
           ) : view === "board" && allSteps.length > 0 ? (
@@ -531,6 +554,9 @@ export function ProjectDetail({
               <Board
                 steps={allSteps}
                 deliverables={project.deliverables.map((d) => ({ id: d.id, name: d.name }))}
+                projectId={project.id}
+                runningStepId={time.running?.stepId ?? null}
+                canTrack={Boolean(time.mode && time.mode !== "OFF")}
               />
             </div>
           ) : view === "timeline" && allSteps.length > 0 ? (
