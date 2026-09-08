@@ -116,7 +116,9 @@ describe("the pages outside the app shell read every string from the dictionary"
   // else can open does not need translating.
   "src/app/(app)/insights/reading-card.tsx",
 ];
-  const exemptText = ["Freely"];
+  // The name, which is the same in both languages. The wordmark sets it
+  // lowercase, so both cases are here.
+  const exemptText = ["Freely", "freely"];
 
   const files = areas
     .flatMap((area) =>

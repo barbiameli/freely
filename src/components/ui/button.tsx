@@ -41,17 +41,23 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<Variant, string> = {
-  primary: "bg-violet text-white border-none hover:opacity-90",
+  // Darkening rather than fading. An opacity hover on a filled button lets
+  // the page ground through and lightens the label with it, which is the one
+  // part that has to stay legible.
+  primary: "bg-violet text-white border-none hover:bg-violet-deep",
   outline: "bg-white text-violet border border-violet hover:bg-violet-tint",
   ghost: "bg-transparent text-slate border border-line hover:text-ink hover:border-slate",
   // Filled rather than outlined. An outlined destructive button reads as the
   // quieter option next to a filled Cancel, which is backwards.
-  danger: "bg-overdue text-white border-none hover:opacity-90",
+  danger: "bg-overdue text-white border-none hover:bg-[#A3211F]",
 };
 
 const sizeClasses: Record<Size, string> = {
-  md: "text-sm px-5 py-3 rounded-lg",
-  sm: "text-meta px-3.5 py-2 rounded-lg",
+  // Pill, both sizes. Every button in the system is fully rounded now, which
+  // is what separates them at a glance from the fields and cards that share
+  // the smaller radii.
+  md: "text-sm px-5 py-3 rounded-full",
+  sm: "text-meta px-3.5 py-2 rounded-full",
 };
 
 export function Button({
@@ -72,9 +78,8 @@ export function Button({
       aria-busy={loading || undefined}
       className={clsx(
         "font-body font-bold inline-flex items-center justify-center gap-2 transition-[opacity,background-color,border-color,color]",
-        // Rises a pixel under the pointer and settles when pressed. Not on a
-        // button that is already working: a control moving while it waits
-        // reads as it having been pressed again.
+        // Takes the press. Not on a button that is already working: a control
+        // moving while it waits reads as it having been pressed again.
         !held && "press",
         sizeClasses[size],
         // A loading button stays at full strength. Fading it out says

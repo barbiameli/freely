@@ -84,6 +84,16 @@ select:focus {
   outline-offset: 0;
 }
 
+/*
+ * One focus ring, on everything that takes focus, and never removed without a
+ * replacement. Offset so it reads as a ring around the control rather than a
+ * border on it, which matters most on the pill buttons.
+ */
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
 /* iOS Safari zooms the whole page in when you focus a field whose text is
    smaller than 16px, and doesn't zoom back out afterwards. The interface uses
    13px inputs throughout, so on a phone every tap into a field would shunt the
@@ -604,18 +614,21 @@ summary:focus-visible {
  * Applied through a class rather than to every button, so a control that
  * should not move (a drag handle, a row that is really a link) can opt out.
  */
+/*
+ * A control taking a press.
+ *
+ * It used to rise a pixel under the pointer. A button that moves as you reach
+ * for it is a smaller target than the one you aimed at, and the lift is
+ * exactly the reflex the brand rules single out: cards rise, buttons do not.
+ * So the hover is a colour change, which each variant owns, and this is the
+ * press itself.
+ */
 .press {
-  transition:
-    transform 0.12s cubic-bezier(0.16, 0.84, 0.28, 1),
-    box-shadow 0.12s ease-out;
-}
-
-.press:hover {
-  transform: translateY(-1px);
+  transition: transform var(--t-instant) var(--ease-spring);
 }
 
 .press:active {
-  transform: translateY(0);
+  transform: scale(0.94);
 }
 
 /* A card being dragged, lifted off the board. */

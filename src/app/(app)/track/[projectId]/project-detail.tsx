@@ -36,6 +36,7 @@ import {
   type HealthProject,
 } from "@/lib/project-health";
 import { currencySymbol } from "@/lib/currencies";
+import { formatMoney } from "@/lib/money";
 import { useAction } from "@/lib/use-action";
 import { useT, useLocale } from "@/lib/i18n/context";
 import { ActionError } from "@/components/ui/action-error";
@@ -401,9 +402,13 @@ export function ProjectDetail({
                 setUp={Boolean(time.mode && time.mode !== "OFF")}
                 onSetUp={() => setSettingUpTimer(true)}
               />
+              {/* The primary, and the only filled button on the row. Through
+                  formatMoney rather than pasting a symbol in front of a
+                  toLocaleString, which is how this one total kept printing
+                  €650 while every other figure in the app had moved the euro
+                  to the back. */}
               <Button data-guide="invoice" onClick={() => router.push(`/track/${project.id}/invoice`)}>
-                {t.track.generateInvoice}, {currencySymbol(project.currency)}
-                {project.price.toLocaleString()}
+                {t.track.generateInvoice}, {formatMoney(project.price, project.currency, locale)}
               </Button>
             </div>
           }

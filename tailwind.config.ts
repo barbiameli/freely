@@ -38,6 +38,8 @@ const config: Config = {
          * the line, the meaningful stroke in an icon. All of those are large.
          */
         violet: "#D1156C",
+        // Hover only. 6.5:1 against white, so the label survives the darkening.
+        "violet-deep": "#B80B5C",
         "violet-tint": "rgba(209,21,108,0.08)",
         hot: { DEFAULT: "#FF2D8A", deep: "#E31E77" },
 

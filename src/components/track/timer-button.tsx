@@ -83,11 +83,21 @@ export function TimerButton({
       onClick={() => void toggle()}
       disabled={working}
       aria-label={running ? t.track.stop : t.track.timeStart}
-      className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 border-none cursor-pointer font-body font-bold text-small tap disabled:opacity-60 ${
+      /*
+       * Secondary while it is idle.
+       *
+       * Two filled buttons sat side by side in the project header, Start and
+       * Generate invoice, and they read as a pair of equals with no way to
+       * tell which one the page was for. Money is the primary here, so this
+       * one steps back to an outline and takes the fill only once it is
+       * running, when a clock counting up is the thing on the page that most
+       * needs to be noticed.
+       */
+      className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 cursor-pointer font-body font-bold text-small tap disabled:opacity-60 ${
         running
-          ? "bg-ink text-white"
+          ? "bg-ink text-white border-none"
           : // Breathes once on arrival, and only while nothing is running.
-            "bg-coral text-white animate-pulse-once"
+            "bg-white text-violet border border-violet hover:bg-violet-tint animate-pulse-once"
       }`}
     >
       {running ? <Square size={13} fill="currentColor" /> : <Play size={13} fill="currentColor" />}
