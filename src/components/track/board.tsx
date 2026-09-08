@@ -16,6 +16,7 @@ import {
 import {
   COLUMNS,
   boardProgress,
+  columnOf,
   columnSteps,
   type BoardStep,
   type Column,
@@ -110,8 +111,25 @@ export function Board({
    * is up to the browser's interpretation.
    */
   const columnRefs = useRef<Partial<Record<Column, HTMLElement | null>>>({});
-  /** Where the pointer is, for drawing the card under it. */
-  const [pointer, setPointer] = useState<{ x: number; y: number } | null>(null);
+  /**
+   * The card being carried, drawn under the pointer.
+   *
+   * A drag with no visible card is a guess: the pointer moves, nothing
+   * follows it, and the only way to find out whether anything happened is to
+   * let go. So a copy of the card is drawn at the cursor while it travels.
+   *
+   * The grab offset is kept as well as the position, or the card jumps so its
+   * top left corner sits under the cursor the moment the drag starts, which
+   * reads as it being snatched rather than picked up. The width is kept for
+   * the same reason: a card that shrinks on lift is a different card.
+   */
+  const [carry, setCarry] = useState<{
+    x: number;
+    y: number;
+    dx: number;
+    dy: number;
+    width: number;
+  } | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   /** The card being renamed, and the text so far. */
@@ -229,6 +247,7 @@ export function Board({
     router.refresh();
   }
 
+  const carried = dragging ? steps.find((step) => step.id === dragging) ?? null : null;
   const progress = boardProgress(steps);
 
   return (
@@ -254,7 +273,12 @@ export function Board({
                 columnRefs.current[column] = node;
               }}
               className={`rounded-2xl border p-3 min-h-[120px] transition-colors ${TINT[column]} ${
-                over === column ? "border-violet" : "border-line"
+                over === column && dragging
+                  ? // Ringed rather than merely bordered: a one pixel colour
+                    // change on a card-sized target is not an answer to
+                    // "will it land here".
+                    "border-violet ring-2 ring-violet/25"
+                  : "border-line"
               }`}
             >
               <div className="flex items-center gap-2 mb-2.5">
@@ -277,20 +301,29 @@ export function Board({
                       // do what it says rather than start a drag.
                       if (busy || e.button !== 0) return;
                       if ((e.target as HTMLElement).closest("button,input,select")) return;
+                      const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
                       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
                       setDragging(card.id);
-                      setPointer({ x: e.clientX, y: e.clientY });
+                      setCarry({
+                        x: e.clientX,
+                        y: e.clientY,
+                        dx: e.clientX - box.left,
+                        dy: e.clientY - box.top,
+                        width: box.width,
+                      });
                     }}
                     onPointerMove={(e) => {
                       if (dragging !== card.id) return;
-                      setPointer({ x: e.clientX, y: e.clientY });
+                      setCarry((current) =>
+                        current ? { ...current, x: e.clientX, y: e.clientY } : current
+                      );
                       setOver(columnAt(columnRefs.current, e.clientX, e.clientY));
                     }}
                     onPointerUp={() => {
                       if (dragging !== card.id) return;
                       const target = over;
                       setDragging(null);
-                      setPointer(null);
+                      setCarry(null);
                       setOver(null);
                       // A press that never left the card is a press, not a
                       // drag, so it should not move anything.
@@ -300,16 +333,17 @@ export function Board({
                     }}
                     onPointerCancel={() => {
                       setDragging(null);
-                      setPointer(null);
+                      setCarry(null);
                       setOver(null);
                     }}
-                    style={
-                      dragging === card.id && pointer
-                        ? { touchAction: "none" }
-                        : { touchAction: "manipulation" }
-                    }
-                    className={`bg-white rounded-xl border border-line p-2.5 cursor-grab active:cursor-grabbing transition-shadow select-none ${
-                      dragging === card.id ? "dragging opacity-90" : "hover:shadow-panel"
+                    style={{ touchAction: dragging === card.id ? "none" : "manipulation" }}
+                    className={`rounded-xl border p-2.5 cursor-grab active:cursor-grabbing transition-shadow select-none ${
+                      dragging === card.id
+                        ? // The space it came from, kept open and empty so the
+                          // column does not collapse under the card and shift
+                          // everything else while it is being moved.
+                          "border-dashed border-line bg-paper opacity-60"
+                        : "bg-white border-line hover:shadow-panel"
                     }`}
                   >
                     <div className="flex items-start gap-2">
@@ -438,7 +472,16 @@ export function Board({
                   </li>
                 ))}
 
-                {cards.length === 0 && (
+                {/* Where it will land. Drawn at the end because that is
+                    where a dropped card goes. */}
+                {over === column && carried && columnOf(carried) !== column && (
+                  <li
+                    aria-hidden
+                    className="h-[52px] rounded-xl border border-dashed border-violet/50 bg-violet-tint"
+                  />
+                )}
+
+                {cards.length === 0 && !dragging && (
                   <li className="text-caption text-text-muted py-2">{t.track.boardEmpty}</li>
                 )}
 
@@ -510,6 +553,30 @@ export function Board({
           );
         })}
       </div>
+
+      {/* The card in transit. Fixed to the viewport and out of the way of
+          hit testing, so it cannot become the thing the pointer is over. */}
+      {carried && carry && (
+        <div
+          className="fixed z-50 pointer-events-none rounded-xl border border-line bg-white p-2.5 dragging"
+          style={{
+            left: carry.x - carry.dx,
+            top: carry.y - carry.dy,
+            width: carry.width,
+          }}
+        >
+          <div className="font-body font-semibold text-small text-ink text-pretty">
+            {carried.name}
+          </div>
+          <span
+            className={`inline-block rounded-full px-2 py-0.5 mt-1.5 text-caption font-semibold ${
+              tagClass.get(carried.deliverableId) ?? TAGS[0]
+            }`}
+          >
+            {names.get(carried.deliverableId) ?? ""}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

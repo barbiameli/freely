@@ -259,3 +259,42 @@ describe("a plan that can change", () => {
     expect(detail).toContain("t.track.replan");
   });
 });
+
+describe("what a drag looks like", () => {
+  const board = readFileSync("src/components/track/board.tsx", "utf8");
+
+  it("draws the card under the pointer", () => {
+    // A drag with no visible card is a guess: the pointer moves, nothing
+    // follows it, and the only way to find out whether anything happened is
+    // to let go.
+    expect(board).toContain("carried && carry");
+    expect(board).toContain("fixed z-50 pointer-events-none");
+  });
+
+  it("picks the card up where it was grabbed", () => {
+    // Without the offset the card jumps so its corner is under the cursor,
+    // which reads as being snatched rather than picked up.
+    expect(board).toContain("dx: e.clientX - box.left");
+    expect(board).toContain("left: carry.x - carry.dx");
+  });
+
+  it("keeps the card's width while it travels", () => {
+    // A card that shrinks on lift is a different card.
+    expect(board).toContain("width: box.width");
+  });
+
+  it("keeps the space it came from open", () => {
+    // Otherwise the column collapses under the card and everything else
+    // shifts while it is being moved.
+    expect(board).toContain("border-dashed border-line bg-paper");
+  });
+
+  it("shows where it will land", () => {
+    expect(board).toContain("border-dashed border-violet/50");
+    expect(board).toContain("ring-2 ring-violet/25");
+  });
+
+  it("cannot make the carried card the drop target", () => {
+    expect(board).toContain("pointer-events-none");
+  });
+});
