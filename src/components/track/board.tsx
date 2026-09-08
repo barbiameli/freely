@@ -258,6 +258,14 @@ export function Board({
                       setDragging(card.id);
                     }}
                     onDragEnd={() => setDragging(null)}
+                    // On the card itself as well as the column. A drop is only
+                    // allowed where a dragover handler called preventDefault,
+                    // and relying on that bubbling up from the card to the
+                    // column is the kind of thing browsers disagree about.
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                    }}
                     onDrop={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -392,10 +400,21 @@ export function Board({
                           )}
                         </div>
 
-                        {/* The same move, without a drag. Touch does not fire
-                            HTML5 drag events, so without this the board is
-                            unusable on a phone. */}
-                        <div className="flex gap-2 mt-2 md:hidden">
+                        {/*
+                          * Moving a card without dragging it, everywhere.
+                          *
+                          * This was mobile-only, on the grounds that touch
+                          * does not fire HTML5 drag events and a mouse does.
+                          * That was the wrong call: native drag and drop is
+                          * genuinely fragile, it failed three times in a row
+                          * here for three different reasons, and a board whose
+                          * only way to move a card is the fragile one is a
+                          * board that does not work.
+                          *
+                          * So this is the reliable path and dragging is the
+                          * nice one. Both do the same thing.
+                          */}
+                        <div className="flex gap-2 mt-2">
                           {COLUMNS.filter((c) => c !== column).map((c) => (
                             <button
                               key={c}

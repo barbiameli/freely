@@ -121,11 +121,12 @@ describe("the board on the page", () => {
   const board = readFileSync("src/components/track/board.tsx", "utf8");
   const action = readFileSync("src/actions/board.ts", "utf8");
 
-  it("can be used without a drag", () => {
-    // Touch does not fire HTML5 drag events, so a drag-only board is
-    // unusable on a phone, which is where half of this app gets opened.
+  it("can be used without a drag, on any screen", () => {
+    // Touch does not fire HTML5 drag events, and native drag and drop turned
+    // out to be fragile with a mouse too. The reliable path is the default
+    // now and dragging is the nice one.
     expect(board).toContain("t.track.boardMoveTo");
-    expect(board).toContain("md:hidden");
+    expect(board).not.toContain("md:hidden");
   });
 
   it("stacks rather than scrolling sideways on a phone", () => {

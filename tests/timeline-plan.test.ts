@@ -9,6 +9,7 @@ import {
   daysNeeded,
   fitPerDeliverable,
   overrunDays,
+  packLanes,
   whatToDoAbout,
   type PlannedTask,
 } from "@/lib/timeline-plan";
@@ -275,5 +276,86 @@ describe("the chart's shape", () => {
     // the card sprang back, which reads as drag and drop not working.
     expect(board).toContain("router.refresh()");
     expect(chart).toContain("router.refresh()");
+  });
+});
+
+describe("bars sharing rows", () => {
+  it("puts two bars that do not overlap on one row", () => {
+    // A row per task drew a thirty-row staircase across a fortnight, mostly
+    // empty. The vertical axis carries no meaning of its own here, so a row
+    // per bar spends the one dimension that was free.
+    const lanes = packLanes([
+      { id: "a", offset: 0, days: 2 },
+      { id: "b", offset: 3, days: 2 },
+    ]);
+    expect(lanes).toHaveLength(1);
+    expect(lanes[0].map((b) => b.id)).toEqual(["a", "b"]);
+  });
+
+  it("gives overlapping bars their own rows", () => {
+    const lanes = packLanes([
+      { id: "a", offset: 0, days: 4 },
+      { id: "b", offset: 1, days: 2 },
+    ]);
+    expect(lanes).toHaveLength(2);
+  });
+
+  it("lets a bar start the day the last one ended", () => {
+    // A bar of two days at offset 0 occupies 0 and 1, so offset 2 is free.
+    expect(packLanes([
+      { id: "a", offset: 0, days: 2 },
+      { id: "b", offset: 2, days: 1 },
+    ])).toHaveLength(1);
+  });
+
+  it("lays the same plan out the same way twice", () => {
+    // A bar jumping rows because another one moved is the chart losing its
+    // place under somebody.
+    const bars = [
+      { id: "c", offset: 4, days: 1 },
+      { id: "a", offset: 0, days: 2 },
+      { id: "b", offset: 1, days: 3 },
+    ];
+    const first = packLanes(bars).map((lane) => lane.map((b) => b.id));
+    const again = packLanes(bars.slice().reverse()).map((lane) => lane.map((b) => b.id));
+    expect(first).toEqual(again);
+  });
+
+  it("has nothing to pack when nothing is placed", () => {
+    expect(packLanes([])).toEqual([]);
+  });
+});
+
+describe("the chart uses the width it has", () => {
+  const chart = readFileSync("src/components/track/timeline.tsx", "utf8");
+
+  it("lets the days stretch rather than fixing them at 44px", () => {
+    // Twelve fixed columns drew a narrow strip down the left of a wide screen
+    // and truncated every label to two characters.
+    expect(chart).not.toContain("const DAY_WIDTH");
+    expect(chart).toContain("minmax(56px, 1fr)");
+  });
+
+  it("packs the bars into lanes", () => {
+    expect(chart).toContain("packLanes(");
+  });
+});
+
+describe("moving a card without dragging it", () => {
+  const board = readFileSync("src/components/track/board.tsx", "utf8");
+
+  it("is available on every screen, not just a phone", () => {
+    // Native drag and drop is genuinely fragile: it failed three times here
+    // for three different reasons. A board whose only way to move a card is
+    // the fragile one is a board that does not work.
+    expect(board).toContain("t.track.boardMoveTo");
+    expect(board).not.toContain('className="flex gap-2 mt-2 md:hidden"');
+  });
+
+  it("makes the card its own drop target", () => {
+    // Relying on preventDefault bubbling from the card to the column is the
+    // kind of thing browsers disagree about.
+    const card = board.slice(board.indexOf("{cards.map((card, index)"));
+    expect(card.slice(0, 1600)).toContain("onDragOver");
   });
 });

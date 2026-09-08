@@ -264,3 +264,37 @@ export function overrunDays(placements: Placement[], due: Date | string | null):
   const over = businessDaysBetween(due, last);
   return over > 0 ? over : 0;
 }
+
+/**
+ * Bars packed into as few rows as possible.
+ *
+ * A row per task is honest and unreadable: thirty tasks across a fortnight
+ * drew a thirty-row staircase, mostly empty, where the eye had to travel a
+ * screen and a half to see two weeks of work.
+ *
+ * Greedy first-fit by start date. Two tasks that do not overlap share a row,
+ * which is what a Gantt chart is actually for: the vertical axis carries no
+ * meaning of its own, so spending a row on each bar wastes the only dimension
+ * that was free.
+ *
+ * Sorted by start first, so the packing is stable: the same plan lays out the
+ * same way twice, and a bar does not jump rows because another one moved.
+ */
+export function packLanes(bars: Bar[]): Bar[][] {
+  const sorted = bars.slice().sort((a, b) => a.offset - b.offset || a.days - b.days);
+  const lanes: Bar[][] = [];
+  const ends: number[] = [];
+
+  for (const bar of sorted) {
+    let lane = ends.findIndex((end) => end <= bar.offset);
+    if (lane === -1) {
+      lane = lanes.length;
+      lanes.push([]);
+      ends.push(0);
+    }
+    lanes[lane].push(bar);
+    ends[lane] = bar.offset + bar.days;
+  }
+
+  return lanes;
+}

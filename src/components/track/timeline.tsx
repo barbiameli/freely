@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ActionError } from "@/components/ui/action-error";
 import { useT } from "@/lib/i18n/context";
 import { autoScheduleAction, placeTaskAction } from "@/actions/board";
-import { barFor, dayColumns, dayKey, type PlannedTask } from "@/lib/timeline-plan";
+import { barFor, dayColumns, dayKey, packLanes, type PlannedTask } from "@/lib/timeline-plan";
 
 /**
  * When each task happens, laid against the project's own dates.
@@ -25,7 +25,6 @@ import { barFor, dayColumns, dayKey, type PlannedTask } from "@/lib/timeline-pla
  * something takes is a change to the estimate, and that belongs on the task
  * rather than in a drag nobody can do precisely.
  */
-const DAY_WIDTH = 44;
 
 const TINTS = [
   "bg-violet/15 border-violet/40 text-violet",
@@ -133,12 +132,25 @@ export function Timeline({
   }
 
   const unplaced = tasks.filter((task) => !task.plannedStart || !task.plannedEnd);
+  const byId = new Map(tasks.map((task) => [task.id, task] as const));
   const placed = tasks
     .filter((task) => task.plannedStart && task.plannedEnd)
     // Compared as numbers rather than with a less-than on two strings: the
     // copy scanner reads a bare "<" in a .tsx file as the start of a tag and
     // reports the comparator as untranslated text.
     .sort((a, b) => Date.parse(a.plannedStart!) - Date.parse(b.plannedStart!));
+
+  /*
+   * Bars sharing rows where they do not overlap.
+   *
+   * A row per task drew a thirty-row staircase across a fortnight, mostly
+   * empty, and the eye had to travel a screen and a half to read two weeks.
+   * The vertical axis carries no meaning of its own here, so a row per bar
+   * spends the one dimension that was free. See lib/timeline-plan.
+   */
+  const lanes = packLanes(
+    placed.map((task) => barFor(task, startDate)!).filter(Boolean)
+  );
 
   return (
     <div className="flex flex-col gap-3">
@@ -183,113 +195,115 @@ export function Timeline({
         </details>
       )}
 
+      {/*
+        * A grid, so the days expand to fill whatever width there is.
+        *
+        * They were fixed at 44px with the bars positioned by margin, which
+        * meant a two-week project drew a narrow strip down the left of a wide
+        * screen and every label truncated to two characters. Days are grid
+        * columns now with a minimum rather than a fixed size, so twelve of
+        * them across a laptop are a hundred pixels each and the names fit.
+        */}
       <div className="overflow-x-auto">
-        {/* Edge to edge. There was a 160px column of deliverable names down
-            the left, repeating what the bar's own colour already says and
-            costing the chart a sixth of its width, and rows sized by
-            deliverable left tall empty bands wherever a deliverable's tasks
-            had not been placed. One row per task, and the row is only as tall
-            as the bar. */}
-        <div style={{ minWidth: days.length * DAY_WIDTH }}>
-          <div className="flex">
-            {days.map((day) => (
-              <div
-                key={day.toISOString()}
-                style={{ width: DAY_WIDTH }}
-                className={`shrink-0 text-center text-caption py-1 ${
-                  day.getUTCDay() === 0 || day.getUTCDay() === 6
-                    ? "text-text-muted bg-paper"
-                    : "text-slate"
-                }`}
-              >
-                {day.getUTCDate()}
-              </div>
-            ))}
-          </div>
+        <div
+          className="grid"
+          style={{
+            gridTemplateColumns: `repeat(${days.length}, minmax(56px, 1fr))`,
+            minWidth: days.length * 56,
+          }}
+        >
+          {days.map((day) => (
+            <div
+              key={`head-${day.toISOString()}`}
+              className={`text-center text-caption py-1 ${
+                day.getUTCDay() === 0 || day.getUTCDay() === 6
+                  ? "text-text-muted bg-paper"
+                  : "text-slate"
+              }`}
+            >
+              {day.getUTCDate()}
+            </div>
+          ))}
 
-          <div className="relative">
-            {/* The grid, drawn once behind every row rather than per row. */}
-            <div className="absolute inset-0 flex" aria-hidden>
-              {days.map((day) => (
+          {/* The grid behind the bars, one cell per day per lane. Drawn as
+              real cells rather than an absolute overlay so the drop targets
+              line up with the columns by construction. */}
+          {lanes.map((lane, laneIndex) => (
+            <div
+              key={`lane-${laneIndex}`}
+              className="col-span-full grid border-t border-line"
+              style={{ gridTemplateColumns: `repeat(${days.length}, minmax(56px, 1fr))` }}
+            >
+              {days.map((day, dayIndex) => (
                 <div
-                  key={day.toISOString()}
-                  style={{ width: DAY_WIDTH }}
-                  className={`shrink-0 border-r border-line/60 ${
+                  key={`cell-${laneIndex}-${dayIndex}`}
+                  style={{ gridColumn: dayIndex + 1, gridRow: 1 }}
+                  className={`min-h-[34px] border-r border-line/60 ${
                     day.getUTCDay() === 0 || day.getUTCDay() === 6 ? "bg-paper" : ""
                   }`}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (dragging && !busy) void place(dragging, day);
+                    setDragging(null);
+                  }}
                 />
               ))}
-            </div>
 
-            <div className="relative flex flex-col gap-1 py-1">
-              {placed.map((task) => {
-                const bar = barFor(task, startDate)!;
+              {lane.map((bar) => {
+                const task = byId.get(bar.id);
+                if (!task) return null;
                 return (
-                  <div key={task.id} className="h-[26px] relative flex">
-                    {/* The day cells double as drop targets, under the bar. */}
-                    <div className="absolute inset-0 flex">
-                      {days.map((day) => (
-                        <div
-                          key={day.toISOString()}
-                          style={{ width: DAY_WIDTH }}
-                          className="shrink-0"
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            e.dataTransfer.dropEffect = "move";
-                          }}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            if (dragging && !busy) void place(dragging, day);
-                            setDragging(null);
-                          }}
-                        />
-                      ))}
-                    </div>
-                    <div
-                      draggable
-                      onDragStart={(e) => {
-                        e.dataTransfer.setData("text/plain", task.id);
-                        e.dataTransfer.effectAllowed = "move";
-                        setDragging(task);
-                      }}
-                      onDragEnd={() => setDragging(null)}
-                      style={{
-                        marginLeft: bar.offset * DAY_WIDTH,
-                        width: bar.days * DAY_WIDTH - 4,
-                      }}
-                      className={`relative h-[26px] rounded-lg border px-2 flex items-center cursor-grab active:cursor-grabbing ${
-                        tint.get(task.deliverableId) ?? TINTS[0]
-                      } ${task.done ? "opacity-60" : ""}`}
-                    >
-                      <span className="truncate text-caption font-semibold">{task.name}</span>
-                    </div>
+                  <div
+                    key={bar.id}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData("text/plain", task.id);
+                      e.dataTransfer.effectAllowed = "move";
+                      setDragging(task);
+                    }}
+                    onDragEnd={() => setDragging(null)}
+                    style={{
+                      gridColumn: `${bar.offset + 1} / span ${bar.days}`,
+                      gridRow: 1,
+                    }}
+                    className={`m-1 h-[26px] rounded-lg border px-2 flex items-center cursor-grab active:cursor-grabbing ${
+                      tint.get(task.deliverableId) ?? TINTS[0]
+                    } ${task.done ? "opacity-60" : ""}`}
+                  >
+                    <span className="truncate text-caption font-semibold">{task.name}</span>
                   </div>
                 );
               })}
-
-              {/* A landing strip, so an unplaced task has somewhere to be
-                  dropped on a chart with nothing on it yet. */}
-              {placed.length === 0 && (
-                <div className="h-[26px] relative flex">
-                  <div className="absolute inset-0 flex">
-                    {days.map((day) => (
-                      <div
-                        key={day.toISOString()}
-                        style={{ width: DAY_WIDTH }}
-                        className="shrink-0"
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          if (dragging && !busy) void place(dragging, day);
-                          setDragging(null);
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
-          </div>
+          ))}
+
+          {/* Somewhere to drop the first one, when nothing is placed yet. */}
+          {lanes.length === 0 && (
+            <div
+              className="col-span-full grid border-t border-line"
+              style={{ gridTemplateColumns: `repeat(${days.length}, minmax(56px, 1fr))` }}
+            >
+              {days.map((day, dayIndex) => (
+                <div
+                  key={`empty-${dayIndex}`}
+                  className="min-h-[34px] border-r border-line/60"
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (dragging && !busy) void place(dragging, day);
+                    setDragging(null);
+                  }}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
