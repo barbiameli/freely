@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { FileText, FolderKanban, House, Receipt, Sparkles, Users } from "lucide-react";
 import { FreelyLogo } from "@/components/freely-logo";
 import { LanguageSwitcher } from "@/components/language-switcher";
-import { Topbar } from "@/components/topbar";
 import { useT } from "@/lib/i18n/context";
 
 const ITEMS = [
@@ -107,10 +106,13 @@ export function Sidebar() {
 
       {/* Desktop only: on mobile the rail is a bottom bar with no room, so the
           switcher rides in the top bar there instead. */}
-      {/* Account and notifications live with the navigation rather than in a
-          band across the top of every page. */}
-      <div className="hidden md:flex md:flex-col md:items-center md:gap-4 md:mt-auto">
-        <Topbar />
+      {/* Just the language here. Account and notifications went into the rail
+          to reclaim a row from every page, and they were harder to find for
+          it: the top right is where everybody looks for their own account,
+          and a rail is where they look for navigation. They live in the shell
+          now, on the same row as the page's own heading, which costs no
+          height and puts them back where they are expected. */}
+      <div className="hidden md:block md:mt-auto">
         <LanguageSwitcher compact />
       </div>
     </nav>

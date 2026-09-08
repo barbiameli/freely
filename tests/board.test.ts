@@ -263,11 +263,21 @@ describe("a plan that can change", () => {
 describe("what a drag looks like", () => {
   const board = readFileSync("src/components/track/board.tsx", "utf8");
 
+  it("draws it on the body rather than inside the board", () => {
+    // position: fixed resolves against the nearest transformed ancestor, not
+    // the viewport, and this app has several: the page transition animates a
+    // transform, cards lift, controls translate on hover. The card was drawn
+    // at the pointer's viewport coordinates inside whichever ancestor was
+    // transformed, which put it most of a page away from the cursor.
+    expect(board).toContain("createPortal(");
+    expect(board).toContain("document.body");
+  });
+
   it("draws the card under the pointer", () => {
     // A drag with no visible card is a guess: the pointer moves, nothing
     // follows it, and the only way to find out whether anything happened is
     // to let go.
-    expect(board).toContain("carried && carry");
+    expect(board).toContain("const carried =");
     expect(board).toContain("fixed z-50 pointer-events-none");
   });
 

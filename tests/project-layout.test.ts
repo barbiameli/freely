@@ -95,20 +95,27 @@ describe("the page starts where the rail starts", () => {
   });
 
   it("does not spend a row on a bell and an avatar", () => {
-    // It was rendered at the top of fourteen pages, so every screen in the
-    // app began with a band containing a bell and an avatar directly above
-    // its own heading. It lives in the rail now, with the rest of the
-    // navigation.
+    // It was rendered at the top of fourteen pages, so every screen began
+    // with a band containing a bell and an avatar directly above its own
+    // heading. One copy, in the shell.
     expect(detail).not.toContain("<Topbar />");
-    const sidebar = readFileSync("src/components/sidebar.tsx", "utf8");
-    expect(sidebar).toContain("<Topbar />");
+    const shell = readFileSync("src/app/(app)/layout.tsx", "utf8");
+    expect(shell).toContain("<Topbar />");
   });
 
-  it("keeps them reachable on a phone", () => {
-    // The rail is a bottom bar there with five destinations and no room for
-    // two more, so they sit top right instead.
+  it("keeps them top right, where people look for their own account", () => {
+    // They spent a spell in the rail, which reclaimed the row and made them
+    // harder to find: a rail is where you look for navigation.
     const shell = readFileSync("src/app/(app)/layout.tsx", "utf8");
-    expect(shell).toContain("flex md:hidden justify-end");
-    expect(shell).toContain("<Topbar />");
+    expect(shell).toContain("flex justify-end");
+    const sidebar = readFileSync("src/components/sidebar.tsx", "utf8");
+    expect(sidebar).not.toContain("<Topbar />");
+  });
+
+  it("does not cost a row to do it", () => {
+    // A negative margin so it overlaps the page's own first row rather than
+    // pushing everything down, which is what it did before.
+    const shell = readFileSync("src/app/(app)/layout.tsx", "utf8");
+    expect(shell).toContain("-mb-9");
   });
 });

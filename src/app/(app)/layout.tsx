@@ -52,12 +52,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             band was the difference between seeing the board and scrolling
             for it. */}
         <div className="flex-1 min-w-0 px-5 py-6 pb-24 md:px-8 md:pt-7 md:pb-12 xl:px-12 flex flex-col gap-5 md:gap-6">
-          {/* On a phone the rail is a bottom bar with five destinations in
-              it and no room for two more, so the account controls sit at the
-              top right there. On desktop they are in the rail and this is
-              not rendered at all. */}
-          <div className="flex md:hidden justify-end">
-            <Topbar />
+          {/* Top right, on every size. It sits in the shell rather than in
+              each page, so it is one row for the whole app rather than a
+              band repeated fourteen times, and it floats above the page's
+              own first row rather than pushing it down. */}
+          <div className="flex justify-end -mb-9 md:-mb-11 pointer-events-none">
+            <div className="pointer-events-auto">
+              <Topbar />
+            </div>
           </div>
           <TimerBar initial={timer.ok ? timer.data : null} />
           <PageTransition>{children}</PageTransition>

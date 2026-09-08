@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Check, GripVertical, Play, Plus, Square, Trash2, X } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
@@ -248,6 +249,25 @@ export function Board({
   }
 
   const carried = dragging ? steps.find((step) => step.id === dragging) ?? null : null;
+
+  /*
+   * The carried card is rendered onto the body, not into the board.
+   *
+   * `position: fixed` is resolved against the nearest ancestor with a
+   * transform, filter or perspective rather than against the viewport, and
+   * this app now has several: the page transition animates a transform, cards
+   * lift, controls translate on hover. So a card positioned at the pointer's
+   * viewport coordinates was drawn at those coordinates inside whichever
+   * ancestor happened to be transformed, which put it most of a page away
+   * from the cursor.
+   *
+   * A portal to the body has no such ancestor by construction. It is also the
+   * ordinary answer for anything that has to sit above the whole page, and I
+   * should have reached for it before reasoning about which ancestor was at
+   * fault.
+   */
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const progress = boardProgress(steps);
 
   return (
@@ -554,29 +574,33 @@ export function Board({
         })}
       </div>
 
-      {/* The card in transit. Fixed to the viewport and out of the way of
-          hit testing, so it cannot become the thing the pointer is over. */}
-      {carried && carry && (
-        <div
-          className="fixed z-50 pointer-events-none rounded-xl border border-line bg-white p-2.5 dragging"
-          style={{
-            left: carry.x - carry.dx,
-            top: carry.y - carry.dy,
-            width: carry.width,
-          }}
-        >
-          <div className="font-body font-semibold text-small text-ink text-pretty">
-            {carried.name}
-          </div>
-          <span
-            className={`inline-block rounded-full px-2 py-0.5 mt-1.5 text-caption font-semibold ${
-              tagClass.get(carried.deliverableId) ?? TAGS[0]
-            }`}
+      {/* The card in transit, on the body. Out of the way of hit testing, so
+          it cannot become the thing the pointer is over. */}
+      {mounted &&
+        carried &&
+        carry &&
+        createPortal(
+          <div
+            className="fixed z-50 pointer-events-none rounded-xl border border-line bg-white p-2.5 dragging"
+            style={{
+              left: carry.x - carry.dx,
+              top: carry.y - carry.dy,
+              width: carry.width,
+            }}
           >
-            {names.get(carried.deliverableId) ?? ""}
-          </span>
-        </div>
-      )}
+            <div className="font-body font-semibold text-small text-ink text-pretty">
+              {carried.name}
+            </div>
+            <span
+              className={`inline-block rounded-full px-2 py-0.5 mt-1.5 text-caption font-semibold ${
+                tagClass.get(carried.deliverableId) ?? TAGS[0]
+              }`}
+            >
+              {names.get(carried.deliverableId) ?? ""}
+            </span>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
