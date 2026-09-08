@@ -16,6 +16,9 @@
   --body: #4a4360;
   --muted: #6a6280;
   --hair: rgba(26, 22, 38, 0.12);
+  /* The quieter of the two. See the note in tailwind.config.ts: a rule
+     between list rows is not an edge and should not weigh like one. */
+  --line: rgba(26, 22, 38, 0.08);
 
   /* Accent. Three and no more: primary, completion, movement. */
   --a1: #ff2d8a;

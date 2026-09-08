@@ -69,8 +69,20 @@ const config: Config = {
         body: "#4A4360",
         muted: "#6A6280",
 
-        // Surface.
-        line: "rgba(26,22,38,0.12)",
+        /*
+         * Surface.
+         *
+         * Two weights, not one. The spec gives a single --hair at 12%, which
+         * is right for something that has to read as an edge: a field, a
+         * ghost button, the rule under a nav. Used as the divider between
+         * rows of a list it is far too strong, because there are twenty of
+         * them stacked and the eye adds them up. The old #E8EAEF was about 8%
+         * and nobody ever noticed it, which is the job.
+         *
+         * `line` is the quiet one and is what the 186 existing borders use.
+         * `hair` is the spec's value, for anything that has to be seen.
+         */
+        line: "rgba(26,22,38,0.08)",
         hair: "rgba(26,22,38,0.12)",
         paper: "#F2F0F7",
         bg: "#F2F0F7",
