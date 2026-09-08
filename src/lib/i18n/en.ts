@@ -153,6 +153,8 @@ export const en = {
     addYourBrandingHint: "A logo, a brand guide, or both. Saved to Memory and applied here.",
     fileTypes: "PDF, DOCX, TXT, MD, PNG or JPG.",
     style: "Style",
+    allTitle: "Your quotes",
+    allSubtitle: "Everything you have sent or drafted, newest first.",
     titleStep1: "What are we quoting?",
     subtitleStep1: "Everything the quote gets built from. Only the brief and your rate are needed.",
     titleStep2: "How should we package it?",

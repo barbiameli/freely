@@ -881,11 +881,18 @@ export function QuoteWizard({
     <>
       {tab === "all" && (
         <>
-          {/* Above the tabs, because this is news and a question, and both are
-              worth reading before the list they are about. */}
+          {/* Above the header, because this is news and a question, and both
+              are worth reading before the list they are about. */}
           <SignedBanner signed={signed} />
           <LandedPrompt quotes={landedQuotes} />
-          <QuoteTabs value={tab} onChange={setTab} count={recentBriefs.length} />
+          {/* This tab had no title at all, so switching to it made the page
+              name disappear and left the tabs floating at the top of the
+              screen with nothing above them. */}
+          <PageHeader
+            title={t.quote.allTitle}
+            subtitle={t.quote.allSubtitle}
+            below={<QuoteTabs value={tab} onChange={setTab} count={recentBriefs.length} />}
+          />
           <QuoteList briefs={recentBriefs} onStartNew={() => setTab("new")} />
         </>
       )}
@@ -897,8 +904,11 @@ export function QuoteWizard({
           all straight back, unchanged. */}
       {tab === "new" && plan && (
         <>
-          <QuoteTabs value={tab} onChange={setTab} count={recentBriefs.length} />
-          <PageHeader title={t.quote.planTitle} subtitle={t.quote.planSubtitle} />
+          <PageHeader
+            title={t.quote.planTitle}
+            subtitle={t.quote.planSubtitle}
+            below={<QuoteTabs value={tab} onChange={setTab} count={recentBriefs.length} />}
+          />
           <PlanReview
             plan={plan}
             sectionName={sectionName}
@@ -930,8 +940,11 @@ export function QuoteWizard({
           {generateHint && <CoachMark step="generate" />}
           <SignedBanner signed={signed} />
           <LandedPrompt quotes={landedQuotes} />
-          <QuoteTabs value={tab} onChange={setTab} count={recentBriefs.length} />
-          <PageHeader title={t.quote.titleStep1} subtitle={t.quote.subtitleStep1} />
+          <PageHeader
+            title={t.quote.titleStep1}
+            subtitle={t.quote.subtitleStep1}
+            below={<QuoteTabs value={tab} onChange={setTab} count={recentBriefs.length} />}
+          />
           {/* One bordered container: the two choices sit side by side as a
               toggle at the top, and the input for whichever is selected
               expands underneath, inside the same box.

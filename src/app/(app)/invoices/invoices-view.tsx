@@ -62,11 +62,11 @@ export function InvoicesView({
         title={t.invoices.title}
         subtitle={t.invoices.pageSubtitle}
         action={<NewInvoiceButton projects={projects} />}
+        // The shared strip, in the header rather than after it. This page had
+        // its own copy of the markup, which is how the same control came to
+        // look slightly different on three pages.
+        below={<Tabs items={tabs} value={tab} onChange={setTab} label={t.nav.invoices} />}
       />
-
-      {/* The shared strip. This page had its own copy of the markup, which is
-          how the same control came to look slightly different on three pages. */}
-      <Tabs items={tabs} value={tab} onChange={setTab} label={t.nav.invoices} />
 
       {tab === "queue" ? (
         <InvoiceQueueList rows={queue} />

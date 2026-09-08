@@ -162,6 +162,8 @@ export const es: Dictionary = {
     addYourBrandingHint: "Un logo, un manual de marca, o los dos. Se guardan en Memoria y se aplican aquí.",
     fileTypes: "PDF, DOCX, TXT, MD, PNG o JPG.",
     style: "Estilo",
+    allTitle: "Tus presupuestos",
+    allSubtitle: "Todo lo que has enviado o dejado a medias, lo más reciente arriba.",
     titleStep1: "¿Qué vamos a presupuestar?",
     subtitleStep1: "De aquí sale el presupuesto. Solo hacen falta el proyecto y tu tarifa.",
     titleStep2: "¿Cómo se lo enviamos?",

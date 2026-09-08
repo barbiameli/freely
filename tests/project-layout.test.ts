@@ -112,10 +112,62 @@ describe("the page starts where the rail starts", () => {
     expect(sidebar).not.toContain("<Topbar />");
   });
 
-  it("does not cost a row to do it", () => {
-    // A negative margin so it overlaps the page's own first row rather than
-    // pushing everything down, which is what it did before.
+  it("does not sit under the page's own content", () => {
+    // A negative margin pulled it up over the page to buy back the row it
+    // costs, which works until a page starts with something full width and
+    // then the content covers the bell. A control you cannot click is worse
+    // than one that costs forty pixels.
     const shell = readFileSync("src/app/(app)/layout.tsx", "utf8");
-    expect(shell).toContain("-mb-9");
+    expect(shell).not.toContain("-mb-9");
+    expect(shell).toContain("sticky top-0 z-30");
+  });
+});
+
+/**
+ * One order for the top of every page.
+ *
+ * The pieces were all there and each page arranged them differently: Quote put
+ * its tabs above the title, Invoices put them after the header at the column's
+ * own gap, Memory put them after it and then pulled the hint back up with a
+ * negative margin, and the Quote list tab had no title at all. Four pages, four
+ * answers, which reads as four products.
+ *
+ * Title, then the line under it, then the tabs, then the content. The tab strip
+ * belongs to the header, so it goes in the header's `below` slot.
+ */
+describe("the top of a page", () => {
+  const views = [
+    "src/app/(app)/quote/quote-wizard.tsx",
+    "src/app/(app)/invoices/invoices-view.tsx",
+    "src/app/(app)/memory/memory-view.tsx",
+  ];
+
+  it("puts every tab strip inside the header", () => {
+    for (const view of views) {
+      const lines = readFileSync(view, "utf8").split("\n");
+      // A tab strip is in the right place when the text just before it opens
+      // the header's `below` slot. Anything else is a strip rendered as a
+      // sibling of the header, above or below it.
+      const stray = lines.filter((line, index) => {
+        if (!/^\s*<(Quote)?Tabs[\s/>]/.test(line)) return false;
+        const previous = (lines[index - 1] ?? "").trim();
+        return !previous.endsWith("below={") && !previous.endsWith("<>");
+      });
+      expect({ view, stray }).toEqual({ view, stray: [] });
+    }
+  });
+
+  it("gives the quote list a title of its own", () => {
+    const wizard = readFileSync("src/app/(app)/quote/quote-wizard.tsx", "utf8");
+    expect(wizard).toContain("t.quote.allTitle");
+  });
+
+  it("does not undo the column gap with a negative margin", () => {
+    for (const view of views) {
+      expect({ view, pull: readFileSync(view, "utf8").includes('className="text-small text-slate -mt-3"') }).toEqual({
+        view,
+        pull: false,
+      });
+    }
   });
 });

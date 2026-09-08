@@ -22,11 +22,26 @@ import type { ReactNode } from "react";
 export function PageHeader({
   title,
   subtitle,
+  below,
   action,
 }: {
   title: ReactNode;
   /** One line. If it needs two, it belongs in the page rather than up here. */
   subtitle?: ReactNode;
+  /**
+   * The tab strip, and anything else that names which slice of the page you
+   * are looking at.
+   *
+   * RecordHeader had this and PageHeader did not, so a record page put its
+   * tabs inside the header and a list page put them after it, at the column's
+   * own gap. Quote went further and put them above the title, which meant the
+   * page announced its sections before it said what page it was. Three pages,
+   * three answers to the same question.
+   *
+   * One answer: title, then the line under it, then the tabs, then whatever
+   * the chosen tab holds.
+   */
+  below?: ReactNode;
   action?: ReactNode;
 }) {
   return (
@@ -38,6 +53,7 @@ export function PageHeader({
         {subtitle && (
           <p className="text-slate text-small mt-2 mb-0 max-w-prose text-pretty">{subtitle}</p>
         )}
+        {below && <div className="mt-4">{below}</div>}
       </div>
       {action && <div className="flex flex-wrap gap-2.5 shrink-0">{action}</div>}
     </div>

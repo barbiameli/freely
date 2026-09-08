@@ -202,14 +202,21 @@ export function MemoryView({
             <span className="font-semibold text-slate">{industryLabel(industry)}</span>.
           </>
         }
+        below={
+          <>
+            <Tabs
+              items={TABS.map((item) => ({ id: item.id, label: t.memory[item.labelKey] }))}
+              value={tab}
+              onChange={select}
+              label={t.nav.memory}
+            />
+            {/* The line about the chosen tab, next to the tab that chose it.
+                It used to sit outside the header and pull itself back up with
+                a negative margin to undo the column gap. */}
+            <p className="text-small text-slate mt-2.5 mb-0">{t.memory[HINTS[tab]]}</p>
+          </>
+        }
       />
-      <Tabs
-        items={TABS.map((tab) => ({ id: tab.id, label: t.memory[tab.labelKey] }))}
-        value={tab}
-        onChange={select}
-        label={t.nav.memory}
-      />
-      <p className="text-small text-slate -mt-3">{t.memory[HINTS[tab]]}</p>
 
       <div className="flex flex-col gap-5">
         {/* Who you are. The persona is read off everything else here, and the

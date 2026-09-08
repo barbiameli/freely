@@ -52,14 +52,21 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             band was the difference between seeing the board and scrolling
             for it. */}
         <div className="flex-1 min-w-0 px-5 py-6 pb-24 md:px-8 md:pt-7 md:pb-12 xl:px-12 flex flex-col gap-5 md:gap-6">
-          {/* Top right, on every size. It sits in the shell rather than in
-              each page, so it is one row for the whole app rather than a
-              band repeated fourteen times, and it floats above the page's
-              own first row rather than pushing it down. */}
-          <div className="flex justify-end -mb-9 md:-mb-11 pointer-events-none">
-            <div className="pointer-events-auto">
-              <Topbar />
-            </div>
+          {/*
+            * Top right, in the flow.
+            *
+            * It was pulled up over the page with a negative margin, to buy
+            * back the row it costs. That works until a page starts with
+            * something full width, and then the content sits on top of the
+            * bell: the row was still there, it was just invisible and
+            * unreachable. A control you cannot click is worse than one that
+            * costs forty pixels.
+            *
+            * Sticky rather than static, so it stays reachable down a long
+            * page, which is most of the value it was meant to buy anyway.
+            */}
+          <div className="sticky top-0 z-30 flex justify-end -mx-5 px-5 md:-mx-8 md:px-8 xl:-mx-12 xl:px-12 bg-paper/80 backdrop-blur-sm py-1">
+            <Topbar />
           </div>
           <TimerBar initial={timer.ok ? timer.data : null} />
           <PageTransition>{children}</PageTransition>

@@ -17,6 +17,7 @@ import {
 import {
   COLUMNS,
   boardProgress,
+  changesFor,
   columnOf,
   columnSteps,
   type BoardStep,
@@ -128,6 +129,36 @@ export function Board({
   const [carry, setCarry] = useState<{ x: number; y: number; width: number } | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
+  /**
+   * The cards as they are on screen right now.
+   *
+   * A move used to wait for the action and then for a server re-render before
+   * the card went anywhere, so dragging a card meant watching it sit still
+   * for the better part of a second and then jump. The work was done; the
+   * feedback was queued behind a network round trip and a full page render.
+   *
+   * So the move is applied here first and sent afterwards. If the server
+   * refuses, the board goes back to what the server last said and the error
+   * is shown, which is the only honest way to be optimistic: the optimism has
+   * to be undone when it turns out to be wrong.
+   */
+  const [local, setLocal] = useState(steps);
+
+  /*
+   * Re-sync when the server sends something genuinely different.
+   *
+   * Keyed on the content rather than the array, because `steps` is a new
+   * array on every render of the parent and depending on it directly would
+   * overwrite the optimistic move a frame after making it.
+   */
+  const signature = steps
+    .map((step) => `${step.id}:${step.done}:${step.startedAt}:${step.order}`)
+    .join("|");
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- the signature is
+  // the point: depending on `steps` itself would fire on every parent render
+  // and undo the optimistic move.
+  useEffect(() => setLocal(steps), [signature]);
   /** The card being renamed, and the text so far. */
   const [editing, setEditing] = useState<{ id: string; name: string; hours: string } | null>(null);
   /** Which deliverable a new task is being written against. */
@@ -145,18 +176,37 @@ export function Board({
   }
 
   async function move(stepId: string, target: Column, index: number) {
-    setBusy(true);
     setError("");
+
+    // On screen first. The same change the server is about to make, worked
+    // out from the same function, so the optimistic version and the real one
+    // cannot disagree about what a move means.
+    const changes = changesFor(target);
+    setLocal((current) =>
+      current.map((step) =>
+        step.id === stepId
+          ? {
+              ...step,
+              done: changes.done,
+              startedAt: changes.startedAt ? changes.startedAt.toISOString() : null,
+              // Last in the column it is arriving in, which is where a
+              // dropped card goes.
+              order: 9999,
+            }
+          : step
+      )
+    );
+
     const result = await moveStepAction(stepId, target, index);
-    setBusy(false);
     if (!result.ok) {
+      setLocal(steps);
       setError(result.error);
       return;
     }
     // revalidatePath marks the server cache stale; it does not re-render a
-    // client component that is already on screen. Without this the move was
-    // saved and the card sprang back, which reads as drag and drop not
-    // working at all rather than as a refresh problem.
+    // client component already on screen. This reconciles the optimistic
+    // version with what actually got written, and by now the card has been
+    // in its new column for a while.
     router.refresh();
   }
 
@@ -243,7 +293,7 @@ export function Board({
     router.refresh();
   }
 
-  const carried = dragging ? steps.find((step) => step.id === dragging) ?? null : null;
+  const carried = dragging ? local.find((step) => step.id === dragging) ?? null : null;
 
   /*
    * The carried card is rendered onto the body, not into the board.
@@ -263,7 +313,7 @@ export function Board({
    */
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-  const progress = boardProgress(steps);
+  const progress = boardProgress(local);
 
   return (
     <div className="flex flex-col gap-3">
@@ -280,7 +330,7 @@ export function Board({
           scrolls sideways on a phone hides two thirds of itself. */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
         {COLUMNS.map((column) => {
-          const cards = columnSteps(steps, column);
+          const cards = columnSteps(local, column);
           return (
             <section
               key={column}
@@ -337,7 +387,7 @@ export function Board({
                       // A press that never left the card is a press, not a
                       // drag, so it should not move anything.
                       if (target && target !== column) {
-                        void move(card.id, target, columnSteps(steps, target).length);
+                        void move(card.id, target, columnSteps(local, target).length);
                       }
                     }}
                     onPointerCancel={() => {
