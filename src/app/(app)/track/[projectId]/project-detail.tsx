@@ -443,25 +443,21 @@ export function ProjectDetail({
         {/* Side by side. Both are glances: how long is left, and what lands
             next. Stacked, they were two full-width bands between the numbers
             and the board, and the board is what somebody came here for. */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4 items-start">
+        {/* Stretch rather than start: the two cards sat at their own natural
+            heights, so the schedule stood a good deal taller than what is
+            coming up and the row read as one card with something tacked on
+            beside it. */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4 items-stretch">
         {!scheduled ? (
           <SchedulePrompt projectId={project.id} />
         ) : (
-          <Card>
+          <Card className="h-full flex flex-col justify-center">
             {/* No "Timeline" heading and no date range up here. A line with dots
                 on it is self-evidently a timeline, and the bar already states
                 both dates at its right-hand end, so the header was a label and a
                 duplicate above the thing they described. Reschedule is the only
-                part that had to stay. */}
-            <div className="flex items-baseline justify-end mb-1">
-              <button
-                type="button"
-                onClick={() => setRescheduling((r) => !r)}
-                className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
-              >
-                {rescheduling ? t.common.cancel : t.track.reschedule}
-              </button>
-            </div>
+                part that had to stay, and it now sits on the count's line
+                inside the bar rather than on a row of its own. */}
             {rescheduling && (
               <div className="mb-4">
                 <ScheduleControls
@@ -477,6 +473,15 @@ export function ProjectDetail({
             <TimelineBar
               startDate={health.startDate as Date}
               dueDate={health.dueDate as Date}
+              action={
+                <button
+                  type="button"
+                  onClick={() => setRescheduling((r) => !r)}
+                  className="text-meta font-semibold text-violet bg-none border-none cursor-pointer p-0 tap"
+                >
+                  {rescheduling ? t.common.cancel : t.track.reschedule}
+                </button>
+              }
               markers={project.deliverables
                 .filter((d) => d.dueAt)
                 .map((d) => ({

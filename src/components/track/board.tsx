@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Check, GripVertical, Play, Plus, Square, Trash2, X } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 import { ActionError } from "@/components/ui/action-error";
-import { startTimerAction, stopTimerAction } from "@/actions/time";
+import { setProjectTimeModeAction, startTimerAction, stopTimerAction } from "@/actions/time";
 import { announceTimerChange } from "@/components/track/timer-bar";
 import {
   addTaskAction,
@@ -219,9 +219,32 @@ export function Board({
    * clock at a time, so starting here stops whatever was running.
    */
   async function toggleTimer(card: BoardStep) {
-    if (!canTrack) return;
     setBusy(true);
     setError("");
+
+    /*
+     * Pressing play is the answer.
+     *
+     * The button was hidden on any project whose tracker had not been switched
+     * on, which is most of them, and startTimerAction refused for the same
+     * reason. So a board full of tasks had no way to record time against any
+     * of them until you found a setting on another part of the page and turned
+     * it on. Pressing play on a task says clearly enough that you want the
+     * hours recorded, so this turns the project on and starts the clock.
+     *
+     * RECORD, the mildest of the modes: it keeps the hours and does nothing
+     * else with them. Learning from them or billing from them are separate
+     * decisions and stay where they were.
+     */
+    if (!canTrack) {
+      const setup = await setProjectTimeModeAction({ projectId, mode: "RECORD" });
+      if (!setup.ok) {
+        setError(setup.error);
+        setBusy(false);
+        return;
+      }
+    }
+
     if (runningStepId === card.id) {
       const result = await stopTimerAction();
       if (result.ok) announceTimerChange(null);
@@ -412,10 +435,10 @@ export function Board({
                         aria-hidden
                       />
                       {/* Against the card rather than the project, so the
-                          hours can answer which task ate the afternoon. Only
-                          on work still to do: a clock on a finished task is
-                          an invitation to a mistake. */}
-                      {canTrack && !card.done && (
+                          hours can answer which task ate the afternoon. On
+                          every card except a finished one: a clock on work
+                          that is done is an invitation to a mistake. */}
+                      {!card.done && (
                         <button
                           type="button"
                           disabled={busy}

@@ -240,11 +240,12 @@ describe("the clock on a card", () => {
   });
 
   it("does not offer a clock on finished work", () => {
-    expect(board).toContain("canTrack && !card.done");
+    expect(board).toContain("{!card.done && (");
   });
 
-  it("stays hidden until the tracker has been set up", () => {
-    expect(board).toContain("if (!canTrack) return;");
+  it("switches the tracker on rather than refusing", () => {
+    expect(board).not.toContain("if (!canTrack) return;");
+    expect(board).toContain('setProjectTimeModeAction({ projectId, mode: "RECORD" })');
   });
 });
 
@@ -307,5 +308,27 @@ describe("what a drag looks like", () => {
 
   it("cannot make the carried card the drop target", () => {
     expect(board).toContain("pointer-events-none");
+  });
+});
+
+/**
+ * A play button on every task.
+ *
+ * It was drawn only when the project's tracker had already been switched on,
+ * and startTimerAction refused for the same reason, so a board full of tasks
+ * offered no way to record time against any of them until you found a setting
+ * elsewhere on the page. Pressing play says what it wants clearly enough.
+ */
+describe("the clock on a card", () => {
+  const source = readFileSync("src/components/track/board.tsx", "utf8");
+
+  it("is drawn whatever the project's tracker is set to", () => {
+    expect(source).not.toContain("{canTrack && !card.done && (");
+    expect(source).toContain("{!card.done && (");
+  });
+
+  it("switches the project on rather than doing nothing", () => {
+    expect(source).not.toContain("if (!canTrack) return;");
+    expect(source).toContain('setProjectTimeModeAction({ projectId, mode: "RECORD" })');
   });
 });

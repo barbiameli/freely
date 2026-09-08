@@ -51,7 +51,7 @@ export function ComingUp({
 
   return (
     <aside
-      className={`rounded-card border px-4 py-3.5 transition-all duration-500 ease-out ${
+      className={`rounded-card border px-4 py-3.5 h-full transition-all duration-500 ease-out ${
         shown ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"
       } ${urgent ? "bg-coral-tint border-coral/40" : "bg-paper border-line"}`}
     >

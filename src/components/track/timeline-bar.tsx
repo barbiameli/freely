@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Check } from "lucide-react";
 import { formatDay, relativeDay, daysBetween, isPastDue } from "@/lib/schedule";
 import { cheerFor } from "@/lib/cheer";
@@ -47,11 +48,14 @@ export function TimelineBar({
   startDate,
   dueDate,
   markers,
+  action,
   now = new Date(),
 }: {
   startDate: Date;
   dueDate: Date;
   markers: TimelineMarker[];
+  /** Reschedule, on the header line rather than on a row above the card. */
+  action?: ReactNode;
   now?: Date;
 }) {
   const t = useT();
@@ -118,18 +122,24 @@ export function TimelineBar({
             </div>
           )}
         </div>
-        <div className="text-caption text-text-muted tabular-nums text-right shrink-0">
-          <div>{formatDay(startDate, locale)}</div>
-          <div className={past ? "text-overdue font-semibold" : ""}>
-            {formatDay(dueDate, locale)} · {relativeDay(dueDate, now, locale)}
+        <div className="flex items-baseline gap-4 shrink-0">
+          <div className="text-caption text-text-muted tabular-nums text-right">
+            <div>{formatDay(startDate, locale)}</div>
+            <div className={past ? "text-overdue font-semibold" : ""}>
+              {formatDay(dueDate, locale)} · {relativeDay(dueDate, now, locale)}
+            </div>
           </div>
+          {/* Reschedule, on the same line as the count rather than on a row of
+              its own above it. One button had a full line to itself, which was
+              most of why this card stood taller than the one beside it. */}
+          {action}
         </div>
       </div>
 
       {/* Tall enough for the markers to sit in it rather than on it, and no
           taller: this shares a row with what is coming up now, and the two of
           them together used to be deep enough to push the board off screen. */}
-      <div className="relative h-2 rounded-full bg-line mt-5 mb-1">
+      <div className="relative h-2 rounded-full bg-line mt-4 mb-1">
         <div
           className={`absolute inset-y-0 left-0 rounded-full transition-[width] duration-700 ease-marketing motion-reduce:transition-none ${
             allDone ? "bg-success" : "bg-violet"
@@ -172,7 +182,7 @@ export function TimelineBar({
 
       {/* Only the states actually on the line. A legend explaining a colour
           that is not there is three words of housekeeping. */}
-      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-4 text-caption text-text-muted">
+      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-caption text-text-muted">
         {done.length < markers.length && (
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-coral" /> {t.track.due}

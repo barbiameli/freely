@@ -171,3 +171,29 @@ describe("the top of a page", () => {
     }
   });
 });
+
+/**
+ * The schedule and what is coming up, at one height.
+ *
+ * They sat side by side at their own natural heights, and the schedule was the
+ * taller of the two by a wide margin: it gave Reschedule a full line of its own
+ * above everything else. So the row read as one card with something small
+ * tacked on beside it.
+ */
+describe("the row above the board", () => {
+  const detail = readFileSync("src/app/(app)/track/[projectId]/project-detail.tsx", "utf8");
+
+  it("stretches both cards to the row", () => {
+    expect(detail).toContain("items-stretch");
+    expect(detail).not.toContain("lg:grid-cols-[1.5fr_1fr] gap-4 items-start");
+    expect(readFileSync("src/components/track/coming-up.tsx", "utf8")).toContain("py-3.5 h-full");
+  });
+
+  it("puts reschedule on the count's line", () => {
+    const bar = readFileSync("src/components/track/timeline-bar.tsx", "utf8");
+    expect(bar).toContain("action?: ReactNode;");
+    expect(detail).toContain("action={");
+    // The row that held nothing but that one button.
+    expect(detail).not.toContain('<div className="flex items-baseline justify-end mb-1">');
+  });
+});
