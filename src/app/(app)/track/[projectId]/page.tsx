@@ -240,6 +240,25 @@ export default async function ProjectPage({
             name: s.name,
             done: s.done,
             estimateHours: s.estimateHours,
+            /*
+             * The four fields the board and the timeline are made of.
+             *
+             * They were added to the DiaryView branch above and not to this
+             * one, which is the branch that actually renders them. So every
+             * card arrived with no startedAt and sat in To do whatever the
+             * database said, and every task arrived with no plannedStart and
+             * showed as unplaced however many times the planner ran.
+             *
+             * Both features were writing correctly the whole time. Nothing
+             * that was written ever reached the screen.
+             */
+            order: s.order,
+            startedAt:
+              (s as unknown as { startedAt?: Date | null }).startedAt?.toISOString() ?? null,
+            plannedStart:
+              (s as unknown as { plannedStart?: Date | null }).plannedStart?.toISOString() ?? null,
+            plannedEnd:
+              (s as unknown as { plannedEnd?: Date | null }).plannedEnd?.toISOString() ?? null,
           })),
           flags: (d.flags ?? []).map((f) => ({
             id: f.id,
