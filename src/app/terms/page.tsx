@@ -42,7 +42,7 @@ export default async function TermsPage() {
         <Link href="/" aria-label={t.marketing.home}>
           <FreelyLogo size="sm" />
         </Link>
-        <Link href="/quote" className="text-small font-semibold text-violet">
+        <Link href="/quote" className="text-small font-semibold text-link">
           {s.backToFreely}
         </Link>
       </header>
@@ -120,7 +120,7 @@ export default async function TermsPage() {
         <Section title={s.dpaTitle}>
           <p>{s.dpaBody}</p>
           <p className="m-0">
-            <Link href="/dpa" className="text-violet font-semibold">
+            <Link href="/dpa" className="text-link font-semibold">
               {s.dpaLink}
             </Link>
           </p>

@@ -265,7 +265,7 @@ export function InvoiceEditor({
         meta={
           <>
             {form.paid ? "Marked as paid." : "Not paid yet."}{" "}
-            <Link href="/invoices" className="text-violet font-semibold">
+            <Link href="/invoices" className="text-link font-semibold">
               {t.invoices.allInvoices}
             </Link>
           </>

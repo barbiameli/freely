@@ -41,13 +41,26 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<Variant, string> = {
-  // Darkening rather than fading. An opacity hover on a filled button lets
-  // the page ground through and lightens the label with it, which is the one
-  // part that has to stay legible.
-  // Ink on pink, at 5.1:1. White on this pink is 3.5:1 and fails, and the
-  // pink is not moving: it is the one accent the whole brand runs on.
+  /*
+   * Two weights, told apart by shape rather than by shade.
+   *
+   * The secondary used to be the primary's own colour drawn as an outline:
+   * same pink, same pill, less of it. Two buttons side by side then read as
+   * one button and its echo, which is what made the project header look like
+   * it had two equal actions on it.
+   *
+   * An ink border says something different instead of something quieter, so
+   * the pair separates at a glance and neither of them is timid. Hovering the
+   * secondary fills it with ink, which is a real state change rather than a
+   * tint.
+   *
+   * Ink on pink is 5.1:1. White on it is 3.5:1 and fails, and the pink is not
+   * moving: it is the one accent the whole brand runs on.
+   */
   primary: "bg-violet text-ink border-none hover:bg-violet-deep",
-  outline: "bg-white text-link border border-violet hover:bg-violet-tint",
+  outline: "bg-white text-ink border-[1.5px] border-ink hover:bg-ink hover:text-white",
+  // The third weight, for a row of small actions inside a card, where even an
+  // ink border would be four boxes competing with the content.
   ghost: "bg-transparent text-slate border border-line hover:text-ink hover:border-slate",
   // Filled rather than outlined. An outlined destructive button reads as the
   // quieter option next to a filled Cancel, which is backwards.

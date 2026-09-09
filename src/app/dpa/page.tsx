@@ -32,7 +32,7 @@ export default async function DpaPage() {
         <Link href="/" aria-label={t.marketing.home}>
           <FreelyLogo size="sm" />
         </Link>
-        <Link href="/terms" className="text-small font-semibold text-violet">
+        <Link href="/terms" className="text-small font-semibold text-link">
           Terms and data
         </Link>
       </header>

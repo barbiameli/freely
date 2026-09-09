@@ -52,7 +52,7 @@ export default function ForgotPasswordPage() {
           <>
             <p className="text-slate text-sm mt-4 mb-1">{t.auth.resetSentTitle}</p>
             <p className="text-text-muted text-xs mb-5">{t.auth.resetSentBody}</p>
-            <Link href="/signin" className="text-violet text-xs font-semibold no-underline">
+            <Link href="/signin" className="text-link text-xs font-semibold no-underline">
               {t.auth.backToSignIn}
             </Link>
           </>
@@ -77,7 +77,7 @@ export default function ForgotPasswordPage() {
               </Button>
             </form>
             <p className="text-xs text-text-muted mt-5">
-              <Link href="/signin" className="text-violet font-semibold">
+              <Link href="/signin" className="text-link font-semibold">
                 {t.auth.backToSignIn}
               </Link>
             </p>

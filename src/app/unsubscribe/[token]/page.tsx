@@ -43,7 +43,7 @@ export default function UnsubscribePage({ params }: { params: { token: string } 
         {done && (
           <>
             <p className="text-text-muted text-xs mb-5">{t.auth.unsubscribedBody}</p>
-            <Link href="/" className="text-violet text-xs font-semibold no-underline">
+            <Link href="/" className="text-link text-xs font-semibold no-underline">
               {t.auth.backToFreely}
             </Link>
           </>

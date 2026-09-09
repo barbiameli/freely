@@ -108,7 +108,7 @@ export function SignUpForm() {
           is there for anybody who wants the detail before they press it. */}
       <p className="text-caption text-text-muted -mt-1 mb-0 text-pretty">
         {t.auth.dataNote}{" "}
-        <Link href="/terms" target="_blank" className="text-violet font-semibold">
+        <Link href="/terms" target="_blank" className="text-link font-semibold">
           {t.auth.dataNoteLink}
         </Link>
       </p>

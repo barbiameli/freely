@@ -414,7 +414,7 @@ export function HomeView({ data, name }: { data: HomeData; name: string }) {
                 <h2 className="font-body font-bold text-body text-ink m-0">
                   {t.home.worthChanging}
                 </h2>
-                <Link href="/memory?tab=rules" className="text-meta font-semibold text-violet no-underline tap">
+                <Link href="/memory?tab=rules" className="text-meta font-semibold text-link no-underline tap">
                   {t.home.yourRules}
                 </Link>
               </div>
@@ -560,7 +560,7 @@ function Section({
     <div className="flex flex-col gap-3">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="font-body font-bold text-body text-ink m-0">{title}</h2>
-        <Link href={href} className="text-meta font-semibold text-violet no-underline tap">
+        <Link href={href} className="text-meta font-semibold text-link no-underline tap">
           {more}
         </Link>
       </div>

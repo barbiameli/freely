@@ -44,7 +44,7 @@ export default function AppError({
         >
           <RefreshCw size={13} /> {t.common.tryAgain}
         </button>
-        <Link href="/quote" className="text-small font-semibold text-violet">
+        <Link href="/quote" className="text-small font-semibold text-link">
           {t.errors.goToQuote}
         </Link>
       </div>

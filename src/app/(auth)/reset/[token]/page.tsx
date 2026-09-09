@@ -86,7 +86,7 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
           <>
             <p className="text-slate text-sm mt-4 mb-1">{t.auth.linkDeadTitle}</p>
             <p className="text-text-muted text-xs mb-5">{t.auth.linkDeadBody}</p>
-            <Link href="/forgot" className="text-violet text-xs font-semibold no-underline">
+            <Link href="/forgot" className="text-link text-xs font-semibold no-underline">
               {t.auth.sendResetLink}
             </Link>
           </>

@@ -194,3 +194,49 @@ describe("the borders that carry meaning", () => {
     expect(Number(contrast(colour("violet"), WHITE).toFixed(2))).toBeGreaterThanOrEqual(3);
   });
 });
+
+/**
+ * The pink never carries small text.
+ *
+ * It is 3.5:1 on white, which is fine behind large type and fine as a fill,
+ * and not enough for a 13px link. An SVG stroke is not text and has no size
+ * threshold to clear, so an icon keeps the accent; anything that spells a
+ * word takes `link`.
+ *
+ * This is the rule that kept getting broken by hand, twice in one afternoon,
+ * because `text-violet` reads like a colour rather than like a decision.
+ */
+describe("pink is not a text colour", () => {
+  it("appears only on things that take a size prop", () => {
+    const offenders: string[] = [];
+    for (const file of allSource("src")) {
+      const lines = readFileSync(file, "utf8").split("\n");
+      lines.forEach((line, i) => {
+        if (!line.includes("text-violet") || line.includes("text-violet-tint")) return;
+        // An icon names its size within a line or two of its class list.
+        const near = lines.slice(Math.max(0, i - 3), i + 3).join("\n");
+        if (!near.includes("size={")) offenders.push(`${file}:${i + 1}`);
+      });
+    }
+    expect(offenders).toEqual([]);
+  });
+});
+
+/**
+ * The two button weights are different shapes, not two strengths of pink.
+ *
+ * The secondary was the primary's own colour drawn as an outline, so a row
+ * with both on it read as one button and its echo.
+ */
+describe("the button pair", () => {
+  const button = readFileSync("src/components/ui/button.tsx", "utf8");
+
+  it("does not draw the secondary in the primary's colour", () => {
+    expect(button).not.toContain("border border-violet");
+    expect(button).toContain("border-[1.5px] border-ink");
+  });
+
+  it("fills on hover rather than tinting", () => {
+    expect(button).toContain("hover:bg-ink hover:text-white");
+  });
+});

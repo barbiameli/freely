@@ -97,7 +97,7 @@ export function TimerButton({
         running
           ? "bg-ink text-white border-none"
           : // Breathes once on arrival, and only while nothing is running.
-            "bg-white text-link border border-violet hover:bg-violet-tint animate-pulse-once"
+            "bg-white text-ink border-[1.5px] border-ink hover:bg-ink hover:text-white animate-pulse-once"
       }`}
     >
       {running ? <Square size={13} fill="currentColor" /> : <Play size={13} fill="currentColor" />}
