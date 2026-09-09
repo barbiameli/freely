@@ -5,6 +5,7 @@ import { recentlyDone, comingUp, type ClientDeliverable } from "@/lib/client-pag
 import { ClientDeliverableRow } from "./client-sections";
 import { statusLabel } from "@/lib/project-status";
 import { formatLongDay } from "@/lib/schedule";
+import { formatMoney } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +59,61 @@ export default async function PublicProjectPage({ params }: { params: { slug: st
   const plainLanguage = Boolean(
     (project as unknown as { plainLanguage?: boolean }).plainLanguage
   );
+
+  /*
+   * The rest of what a client needs, read through a cast because these
+   * columns and relations are newer than the generated client here.
+   *
+   * Only published quotes are listed. A draft is a number you have not
+   * decided on yet, and this page is the one place it must not appear.
+   */
+  const owner = project.user as unknown as {
+    bookingUrl?: string | null;
+    clientNotes?: string | null;
+  };
+  /*
+   * Fetched separately rather than through an include, because the relation
+   * is newer than the generated client here and a named include will not
+   * compile. Nullable throughout: a project written before clients existed
+   * has the name as a string and nothing to hang a library off, and those
+   * pages get no documents section rather than an empty one.
+   */
+  const clientId = (project as unknown as { clientId?: string | null }).clientId ?? null;
+  const db = prisma as unknown as {
+    clientDocument: {
+      findMany(args: {
+        where: { clientId: string };
+        orderBy: { createdAt: "asc" };
+      }): Promise<{ id: string; name: string; size: number; note: string }[]>;
+    };
+    brief: {
+      findMany(args: {
+        where: Record<string, unknown>;
+        orderBy: { createdAt: "desc" };
+      }): Promise<
+        {
+          id: string;
+          title: string;
+          price: number;
+          currency: string;
+          publicSlug: string | null;
+          createdAt: Date;
+        }[]
+      >;
+    };
+  };
+
+  const documents = clientId
+    ? await db.clientDocument.findMany({ where: { clientId }, orderBy: { createdAt: "asc" } })
+    : [];
+  // Published only. A draft is a number that has not been decided on yet, and
+  // this page is the one place it must never appear.
+  const otherQuotes = clientId
+    ? await db.brief.findMany({
+        where: { clientId, published: true },
+        orderBy: { createdAt: "desc" },
+      })
+    : [];
   // The tracker's own rows, in the shape lib/client-page works in. The client
   // wording where the project is set to plain language, falling back to the
   // real name so a line that was never rewritten still appears.
@@ -267,6 +323,112 @@ export default async function PublicProjectPage({ params }: { params: { slug: st
               )}
             </section>
           </div>
+
+          {/*
+            Everything that is true for the whole engagement rather than for
+            this week: how you work, what they have been sent, and a way to
+            reach you. Under the progress rather than above it, because the
+            question somebody opens this page to ask is how the work is going.
+          */}
+          {(owner.clientNotes || documents.length > 0 || otherQuotes.length > 0 || owner.bookingUrl) && (
+            <div className="border-t border-line px-6 sm:px-8 py-7 flex flex-col gap-7">
+              {owner.clientNotes && (
+                <section>
+                  <h2 className="font-body font-bold text-caption uppercase tracking-wide text-text-muted m-0 mb-2">
+                    {t.clientPage.howIWork}
+                  </h2>
+                  {/* Their words, and the line breaks they typed. */}
+                  <p className="text-small text-slate leading-relaxed whitespace-pre-line m-0">
+                    {owner.clientNotes}
+                  </p>
+                </section>
+              )}
+
+              {documents.length > 0 && (
+                <section>
+                  <h2 className="font-body font-bold text-caption uppercase tracking-wide text-text-muted m-0 mb-2">
+                    {t.clientPage.documents}
+                  </h2>
+                  <ul className="list-none p-0 m-0">
+                    {documents.map((doc) => (
+                      <li key={doc.id} className="border-b border-line last:border-b-0">
+                        <a
+                          href={`/p/${params.slug}/doc/${doc.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-baseline justify-between gap-3 py-2.5 no-underline"
+                        >
+                          <span className="min-w-0">
+                            <span className="block font-body font-semibold text-small text-ink truncate">
+                              {doc.name}
+                            </span>
+                            {doc.note && (
+                              <span className="block text-caption text-text-muted truncate">
+                                {doc.note}
+                              </span>
+                            )}
+                          </span>
+                          <span className="font-label text-caption text-text-muted tabular-nums shrink-0">
+                            {doc.size >= 1024 * 1024
+                              ? `${(doc.size / 1024 / 1024).toFixed(1)} MB`
+                              : `${Math.max(1, Math.round(doc.size / 1024))} KB`}
+                          </span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {otherQuotes.length > 0 && (
+                <section>
+                  <h2 className="font-body font-bold text-caption uppercase tracking-wide text-text-muted m-0 mb-2">
+                    {t.clientPage.quotes}
+                  </h2>
+                  <ul className="list-none p-0 m-0">
+                    {otherQuotes.map((quote) => (
+                      <li key={quote.id} className="border-b border-line last:border-b-0">
+                        <a
+                          href={`/q/${quote.publicSlug}`}
+                          className="flex items-baseline justify-between gap-3 py-2.5 no-underline"
+                        >
+                          <span className="min-w-0">
+                            <span className="block font-body font-semibold text-small text-ink truncate">
+                              {quote.title}
+                            </span>
+                            <span className="block text-caption text-text-muted">
+                              {t.clientPage.quoteSent}{" "}
+                              {formatLongDay(new Date(quote.createdAt), quoteLanguage)}
+                            </span>
+                          </span>
+                          <span className="font-label text-small text-ink tabular-nums shrink-0">
+                            {formatMoney(quote.price, quote.currency, quoteLanguage as "en" | "es")}
+                          </span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {owner.bookingUrl && (
+                <section>
+                  <a
+                    href={owner.bookingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block font-body font-bold text-sm rounded-full px-6 py-3 no-underline"
+                    style={{ backgroundColor: primary, color: "#1A1626" }}
+                  >
+                    {t.clientPage.bookACall}
+                  </a>
+                  <p className="text-caption text-text-muted mt-2 mb-0">
+                    {t.clientPage.bookHint}
+                  </p>
+                </section>
+              )}
+            </div>
+          )}
         </div>
 
         {studio && (

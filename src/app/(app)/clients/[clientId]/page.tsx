@@ -9,6 +9,8 @@ import { StatRow } from "@/components/track/stat-row";
 import { serverDict } from "@/lib/i18n/server";
 import { currencySymbol } from "@/lib/currencies";
 import { readHistory } from "@/lib/client-read";
+import { documentsForClient } from "@/actions/documents";
+import { DocumentsPanel } from "@/components/clients/documents-panel";
 
 /**
  * One client, and what working with them has actually been like.
@@ -26,6 +28,10 @@ export default async function ClientPage({ params }: { params: { clientId: strin
 
   const { client, quotes, projects, invoices, history } = detail;
   const won = quotes.filter((q) => q.outcome === "WON").length;
+
+  // What they can see on the page you send them, edited from the same screen
+  // as everything else you know about them.
+  const documents = await documentsForClient(client.id);
 
   return (
     <>
@@ -158,6 +164,17 @@ export default async function ClientPage({ params }: { params: { clientId: strin
           )}
         </Card>
       </div>
+      <DocumentsPanel
+        clientId={client.id}
+        documents={documents.map((doc) => ({
+          id: doc.id,
+          name: doc.name,
+          contentType: doc.contentType,
+          size: doc.size,
+          note: doc.note,
+        }))}
+      />
+
     </>
   );
 }

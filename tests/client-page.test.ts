@@ -85,3 +85,72 @@ describe("the client page", () => {
     expect(list).toContain("clientsForUser");
   });
 });
+
+/**
+ * The page a client actually lands on.
+ *
+ * It showed progress and nothing else, so everything a client needed beyond
+ * "how is it going" lived in an email thread somebody had to search: the
+ * files, the rules, the previous quotes, and how to get twenty minutes of
+ * your time.
+ */
+describe("what a client can reach", () => {
+  const page = readFileSync("src/app/p/[slug]/page.tsx", "utf8");
+  const actions = readFileSync("src/actions/documents.ts", "utf8");
+
+  it("never lists an unpublished quote", () => {
+    // A draft is a number that has not been decided on yet.
+    expect(page).toContain("published: true");
+  });
+
+  it("shows nothing rather than an empty section", () => {
+    expect(page).toContain("documents.length > 0");
+    expect(page).toContain("otherQuotes.length > 0");
+  });
+
+  it("keeps the store private", () => {
+    // A public blob has a URL that resolves forever and cannot be revoked.
+    expect(actions).toContain('access: "private"');
+    expect(actions).not.toContain('access: "public"');
+    // Two clients called Acme would otherwise collide on brand-guide.pdf.
+    expect(actions).toContain("addRandomSuffix: true");
+  });
+
+  it("lets the bytes out only through a route that checked", () => {
+    const clientRoute = readFileSync("src/app/p/[slug]/doc/[docId]/route.ts", "utf8");
+    const ownerRoute = readFileSync("src/app/api/documents/[docId]/route.ts", "utf8");
+
+    // The slug alone would let one client read another's files by swapping
+    // the id, so the document has to belong to that project's client.
+    expect(clientRoute).toContain("id: params.docId, clientId");
+    expect(clientRoute).toContain("!project.published");
+    // The owner's route is a session and team scope, and works whether or not
+    // anything is published.
+    expect(ownerRoute).toContain("requireFullUser");
+    expect(ownerRoute).toContain("teamScopeWhere(user)");
+    // Both answer the same way for missing and forbidden. A different answer
+    // is a way of finding out that an id is real.
+    expect(ownerRoute).not.toContain("status: 403");
+  });
+
+  it("does not let a shared cache hold a document", () => {
+    const stream = readFileSync("src/lib/document-stream.ts", "utf8");
+    expect(stream).toContain("private, max-age=60");
+  });
+
+  it("allows a list of types rather than blocking a list", () => {
+    expect(actions).toContain("ALLOWED.includes(file.type)");
+    // An uploaded page that runs script on the blob origin.
+    expect(actions).not.toContain('"text/html"');
+    expect(actions).not.toContain('"image/svg+xml"');
+  });
+
+  it("deletes the file before it forgets about it", () => {
+    const remove = actions.slice(actions.indexOf("deleteDocumentAction"));
+    expect(remove.indexOf("del(row.pathname)")).toBeLessThan(remove.indexOf("table().delete"));
+  });
+
+  it("caps what can be uploaded", () => {
+    expect(actions).toContain("10 * 1024 * 1024");
+  });
+});

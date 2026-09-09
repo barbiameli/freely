@@ -216,3 +216,41 @@ export async function disconnectStripeAction(): Promise<ActionResult<undefined>>
   revalidatePath("/account");
   return { ok: true, data: undefined };
 }
+
+/**
+ * The two things a client page says in your voice.
+ *
+ * A booking link and the rules of engagement. Both live on the account rather
+ * than on a project, because they are the same calendar and the same rules on
+ * every job, and keeping them per project would mean retyping how many rounds
+ * of revisions you do every time you land one.
+ */
+export async function setClientPageAction(input: {
+  bookingUrl: string;
+  clientNotes: string;
+}): Promise<ActionResult<undefined>> {
+  const user = await requireFullUser();
+
+  const url = input.bookingUrl.trim();
+  /*
+   * https only, and only if there is anything at all.
+   *
+   * This URL becomes a button on a page you send to a client, so an http link
+   * is a mixed-content warning on their screen with your name at the top of
+   * it, and something that is not a URL at all is a button that goes nowhere.
+   */
+  if (url && !/^https:\/\/[^\s]+\.[^\s]+/.test(url)) {
+    return { ok: false, error: "That needs to be a full https:// link." };
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      bookingUrl: url || null,
+      clientNotes: input.clientNotes.trim().slice(0, 4000) || null,
+    } as unknown as Parameters<typeof prisma.user.update>[0]["data"],
+  });
+
+  revalidatePath("/account");
+  return { ok: true, data: undefined };
+}

@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Trash2, Save, KeyRound } from "lucide-react";
 import { updateAccountAction, changePasswordAction, deleteAccountAction } from "@/actions/account";
 import { setMarketingOptInAction, setNudgeEmailsAction } from "@/actions/marketing";
+import { setClientPageAction } from "@/actions/account";
+import { ActionError } from "@/components/ui/action-error";
 import { Confirm } from "@/components/ui/confirm";
 import { PaymentsCard } from "@/components/account/payments-card";
 import type { ConnectState } from "@/lib/stripe-connect";
@@ -24,6 +26,8 @@ export function AccountView({
   marketingOptIn,
   stripeState,
   justReturnedFromStripe,
+  bookingUrl,
+  clientNotes,
 }: {
   name: string | null;
   studioName: string | null;
@@ -35,6 +39,9 @@ export function AccountView({
   marketingOptIn: boolean;
   /** Where they are with linking their own Stripe account. */
   stripeState: ConnectState;
+  /** The two things every client page says in their voice. */
+  bookingUrl: string | null;
+  clientNotes: string | null;
   justReturnedFromStripe: boolean;
 }) {
   const t = useT();
@@ -52,6 +59,7 @@ export function AccountView({
         <SectionHeading title={t.account.groupRunning} hint={t.account.groupRunningHint} />
         <PaymentsCard state={stripeState} justReturned={justReturnedFromStripe} />
         <EmailSettingsCard nudgeEmails={nudgeEmails} marketingOptIn={marketingOptIn} />
+        <ClientPageCard bookingUrl={bookingUrl} clientNotes={clientNotes} />
 
         <SectionHeading title={t.account.groupEnding} hint={t.account.groupEndingHint} />
         <DangerZoneCard />
@@ -321,6 +329,77 @@ function EmailSettingsCard({
         </label>
       </div>
       <p className="text-caption text-text-muted mt-3 mb-0">{t.account.alwaysSent}</p>
+    </Card>
+  );
+}
+
+/**
+ * What every client page says in your voice.
+ *
+ * Here rather than on each project, because it is the same calendar and the
+ * same rules on every job, and per project would mean retyping how many rounds
+ * of revisions you do each time you land one.
+ */
+function ClientPageCard({
+  bookingUrl,
+  clientNotes,
+}: {
+  bookingUrl: string | null;
+  clientNotes: string | null;
+}) {
+  const t = useT();
+  const [url, setUrl] = useState(bookingUrl ?? "");
+  const [notes, setNotes] = useState(clientNotes ?? "");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+
+  async function save() {
+    setSaving(true);
+    setError("");
+    setSaved(false);
+    const result = await setClientPageAction({ bookingUrl: url, clientNotes: notes });
+    setSaving(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    setSaved(true);
+  }
+
+  return (
+    <Card>
+      <CardHeader
+        title={<>{t.account.clientPageTitle}</>}
+        hint={<>{t.account.clientPageHint}</>}
+      />
+      <div className="flex flex-col gap-3.5 mt-4">
+        <div>
+          <div className="text-caption text-text-muted mb-1">{t.account.bookingUrl}</div>
+          <TextField
+            value={url}
+            onChange={setUrl}
+            placeholder="https://calendly.com/you/30min"
+          />
+        </div>
+        <div>
+          <div className="text-caption text-text-muted mb-1">{t.account.clientNotes}</div>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={6}
+            aria-label={t.account.clientNotes}
+            className="w-full bg-white border border-line rounded-sm px-3 py-2.5 text-small text-ink outline-none focus:border-violet resize-y"
+          />
+        </div>
+        <div className="flex items-center gap-3">
+          <Button size="sm" onClick={() => void save()} loading={saving}>
+            {t.common.save}
+          </Button>
+          {saved && <span className="text-caption text-success">{t.account.savedLabel}</span>}
+        </div>
+        <ActionError error={error} />
+      </div>
     </Card>
   );
 }

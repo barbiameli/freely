@@ -986,6 +986,13 @@ export const es: Dictionary = {
   },
 
   account: {
+    clientPageTitle: "Lo que ven los clientes",
+    clientPageHint:
+      "Aparece en cada página de proyecto que mandas. Es igual en todas, así que se escribe una vez.",
+    bookingUrl: "Dónde reservan una llamada",
+    clientNotes: "Cómo trabajas",
+    savedLabel: "Guardado",
+
     groupYou: "Tu",
     groupYouHint: "Lo que aparece en tus presupuestos y como entras.",
     groupRunning: "Cobrar y enterarte de las cosas",
@@ -1432,6 +1439,30 @@ export const es: Dictionary = {
     badEmail: "Ese correo no parece correcto. Revísalo y vuelve a probar.",
     tooMany: "Son muchos intentos en un minuto. Espera un momento y prueba otra vez.",
     failed: "No se ha guardado. Prueba otra vez en un momento.",
+  },
+
+  docs: {
+    title: "Documentos",
+    hint: "Todo lo que necesita este cliente, en la página que le mandas.",
+    empty: "Aquí no hay nada todavía.",
+    add: "Añadir archivo",
+    uploading: "Subiendo",
+    nameLabel: "Nombre del archivo",
+    noteLabel: "Para qué es",
+    notePlaceholder: "Para qué es",
+    privacy:
+      "Solo tú, y quien reciba una página de proyecto mientras esté publicada. Aquí nada tiene enlace público.",
+    rename: "Renombrar",
+  },
+
+  clientPage: {
+    howIWork: "Cómo trabajo",
+    bookACall: "Reservar una llamada",
+    bookHint: "¿Algo que comentar? Coge un hueco.",
+    documents: "Documentos",
+    quotes: "Presupuestos",
+    quoteSent: "Enviado",
+    openQuote: "Abrir",
   },
 
   marketing: {

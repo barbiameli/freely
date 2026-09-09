@@ -86,6 +86,15 @@ model User {
 
   // Branding applied to the public client site, public quote pages, and PDF
   // export. All optional — falls back to Freely's default look.
+  /// Where a client books time with you, shown on every client page as a
+  /// button. One link rather than one per project: it is the same calendar.
+  bookingUrl         String?
+  /// How you work, in your words, shown to the client at the top of the page
+  /// they land on. The rules that save a fortnight of back and forth: how many
+  /// rounds of revisions, how long feedback takes, what happens to the
+  /// timeline when it does not arrive.
+  clientNotes        String?  @db.Text
+
   brandPrimaryColor  String?
   brandAccentColor   String?
   brandLogoDataUrl   String?  @db.Text
@@ -1119,10 +1128,11 @@ model Client {
   email String @default("")
   notes String @default("") @db.Text
 
-  briefs   Brief[]
-  projects Project[]
-  invoices Invoice[]
+  briefs    Brief[]
+  projects  Project[]
+  invoices  Invoice[]
   timeEntries TimeEntry[]
+  documents ClientDocument[]
 
   createdAt DateTime @default(now())
 
@@ -1219,4 +1229,38 @@ model Waitlist {
   createdAt DateTime @default(now())
 
   @@index([createdAt])
+}
+
+/// A file on the client's page.
+///
+/// Hung off the client rather than off one project, because a brand guide and
+/// a set of logins are the same brand guide and the same logins on the second
+/// job as on the first, and a client who has to remember which project page
+/// had the file is being asked to do the filing.
+///
+/// The bytes live in a private blob store and this row is the pointer.
+/// Deleting the row deletes the blob too, so nothing is left behind that
+/// somebody has been told is gone.
+model ClientDocument {
+  id       String @id @default(cuid())
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  /// What it is called on the page. Starts as the filename and can be renamed
+  /// to something a person would say out loud.
+  name String
+  /// Where the blob is, in the store. Not a URL and not reachable from the
+  /// internet: the store is private, so the bytes only come out through a
+  /// route that has checked who is asking. See actions/documents.
+  pathname String @db.Text
+  /// For the icon and the "3.2 MB" beside the name.
+  contentType String @default("")
+  size        Int    @default(0)
+  /// A line about what it is for, when the name is not enough.
+  note String @default("") @db.Text
+
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([clientId, order])
 }

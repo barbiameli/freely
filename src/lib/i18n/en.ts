@@ -993,6 +993,13 @@ export const en = {
   },
 
   account: {
+    clientPageTitle: "What clients see",
+    clientPageHint:
+      "Shown on every project page you send. The same on all of them, so it is written once.",
+    bookingUrl: "Where they book a call",
+    clientNotes: "How you work",
+    savedLabel: "Saved",
+
     groupYou: "You",
     groupYouHint: "What goes on your quotes and how you sign in.",
     groupRunning: "Getting paid, and being told things",
@@ -1444,6 +1451,30 @@ export const en = {
     badEmail: "That address doesn't look right. Check it and try again.",
     tooMany: "That's a lot of tries in one minute. Wait a moment and go again.",
     failed: "That didn't save. Try again in a moment.",
+  },
+
+  docs: {
+    title: "Documents",
+    hint: "Everything this client needs, on the page you send them.",
+    empty: "Nothing here yet.",
+    add: "Add a file",
+    uploading: "Uploading",
+    nameLabel: "File name",
+    noteLabel: "What it is for",
+    notePlaceholder: "What it is for",
+    privacy:
+      "Only you, and anyone you send a project page to while it is published. Nothing here has a public link.",
+    rename: "Rename",
+  },
+
+  clientPage: {
+    howIWork: "How I work",
+    bookACall: "Book a call",
+    bookHint: "Something to talk through? Grab a time.",
+    documents: "Documents",
+    quotes: "Quotes",
+    quoteSent: "Sent",
+    openQuote: "Open",
   },
 
   marketing: {

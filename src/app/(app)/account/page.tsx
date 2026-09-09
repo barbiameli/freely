@@ -26,6 +26,9 @@ export default async function AccountPage({
         (user as unknown as { marketingOptIn?: boolean }).marketingOptIn
       )}
       stripeState={connectState(connect)}
+      // Cast for the same reason: newer than the generated client here.
+      bookingUrl={(user as unknown as { bookingUrl?: string | null }).bookingUrl ?? null}
+      clientNotes={(user as unknown as { clientNotes?: string | null }).clientNotes ?? null}
       // Stripe sends people back here with this on the URL. Both values mean
       // the same thing to us: they have been away, so ask Stripe again.
       justReturnedFromStripe={
