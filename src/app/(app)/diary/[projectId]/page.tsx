@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 /**
- * The diary is a tab on the project now, not a section of its own.
+ * The updates live on the client now, not on the project.
  *
  * Kept as a redirect rather than deleted, because these links are in people's
  * history, in emails Freely has already sent, and in whatever anybody
@@ -9,5 +9,5 @@ import { redirect } from "next/navigation";
  * redirect that will be here for as long as it costs nothing.
  */
 export default function DiaryProjectPage({ params }: { params: { projectId: string } }) {
-  redirect(`/track/${params.projectId}?view=client`);
+  redirect(`/track/${params.projectId}`);
 }

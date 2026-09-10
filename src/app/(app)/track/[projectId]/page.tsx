@@ -7,9 +7,8 @@ import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import { deliverableDb, milestoneDb, projectSchedule } from "@/lib/track-db";
 import { detectBillingMode } from "@/lib/billing-mode";
-import { DiaryView } from "@/app/(app)/diary/[projectId]/diary-view";
 import { ProjectDetail } from "./project-detail";
-import { ProjectTabs } from "./project-tabs";
+import { ClientLink } from "./client-link";
 
 // Breaking a deliverable down is a real model call, so give the route the
 // same headroom the quote page has.
@@ -29,10 +28,8 @@ interface TimeRow {
 
 export default async function ProjectPage({
   params,
-  searchParams,
 }: {
   params: { projectId: string };
-  searchParams?: { view?: string };
 }) {
   const user = await requireFullUser();
   const scope = teamScopeWhere(user);
@@ -102,64 +99,9 @@ export default async function ProjectPage({
     instructions: settings?.instructions,
   });
 
-  const clientView = searchParams?.view === "client";
-
   return (
     <>
-      {clientView ? (
-        <DiaryView
-          tabs={<ProjectTabs projectId={project.id} published={project.published} />}
-          allProjects={allProjects}
-          project={{
-            id: project.id,
-            title: project.title,
-            client: project.client,
-            status: project.status,
-            published: project.published,
-            publicSlug: project.publicSlug,
-            plainLanguage: Boolean(
-              (project as unknown as { plainLanguage?: boolean }).plainLanguage
-            ),
-            deliverables: deliverables.map((d) => ({
-              id: d.id,
-              name: d.name,
-              done: d.done,
-              dueAt: d.dueAt?.toISOString() ?? null,
-              summary: d.summary,
-              brokenDown: Boolean(d.brokenDownAt),
-              invoicedAt: d.invoicedAt?.toISOString() ?? null,
-              clientName:
-                (d as unknown as { clientName?: string | null }).clientName ?? null,
-              steps: (d.steps ?? []).map((s) => ({
-                id: s.id,
-                name: s.name,
-                done: s.done,
-                estimateHours: s.estimateHours,
-                // Which board column it sits in, and where it was placed on
-                // the timeline. See lib/board.
-                startedAt: s.startedAt?.toISOString() ?? null,
-                order: s.order,
-                plannedStart: s.plannedStart?.toISOString() ?? null,
-                plannedEnd: s.plannedEnd?.toISOString() ?? null,
-              })),
-              flags: (d.flags ?? []).map((f) => ({
-                id: f.id,
-                question: f.question,
-                reason: f.reason,
-                kind: f.kind as "BLOCKER" | "ASSUMPTION" | "WORTH_ASKING",
-                resolved: f.resolved,
-              })),
-            })),
-            diaryEntries: project.diaryEntries.map((e) => ({
-              id: e.id,
-              date: e.date.toISOString(),
-              title: e.title,
-              body: e.body,
-            })),
-          }}
-        />
-      ) : (
-    <ProjectDetail
+      <ProjectDetail
       // What tracking is for on this engagement, the hours already on it, and
       // whether a timer is running. Read here so the panel is a plain
       // component rather than one that fetches.
@@ -193,7 +135,13 @@ export default async function ProjectPage({
           : null,
         hasCalendar: calendarConnected,
       }}
-      tabs={<ProjectTabs projectId={project.id} published={project.published} />}
+      clientLink={
+        <ClientLink
+          projectId={project.id}
+          published={project.published}
+          publicSlug={project.publicSlug}
+        />
+      }
       // A project with milestones bills per milestone by definition, so that
       // wins over reading the payment terms. Detection is the fallback for
       // everything quoted before milestones existed.
@@ -246,7 +194,7 @@ export default async function ProjectPage({
             /*
              * The four fields the board and the timeline are made of.
              *
-             * They were added to the DiaryView branch above and not to this
+             * They were added to the client-view branch, since removed, and not to this
              * one, which is the branch that actually renders them. So every
              * card arrived with no startedAt and sat in To do whatever the
              * database said, and every task arrived with no plannedStart and
@@ -272,9 +220,8 @@ export default async function ProjectPage({
           })),
         })),
       }}
-      projectList={allProjects}
-    />
-      )}
+        projectList={allProjects}
+      />
       <GuideMount screen="/track/project" />
     </>
   );

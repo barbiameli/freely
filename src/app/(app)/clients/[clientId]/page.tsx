@@ -12,6 +12,8 @@ import { readHistory } from "@/lib/client-read";
 import { documentsForClient } from "@/actions/documents";
 import { DocumentsPanel } from "@/components/clients/documents-panel";
 import { PortalPanel } from "@/components/clients/portal-panel";
+import { UpdatesPanel } from "@/components/clients/updates-panel";
+import { prisma } from "@/lib/prisma";
 
 /**
  * One client, and what working with them has actually been like.
@@ -34,13 +36,19 @@ export default async function ClientPage({ params }: { params: { clientId: strin
   // as everything else you know about them.
   const documents = await documentsForClient(client.id);
 
-  // The portal columns are newer than the generated client here, so they come
-  // off the row through a cast rather than a select.
-  const portal = client as unknown as {
-    publicSlug: string;
-    published: boolean;
-    welcomePack: string | null;
-  };
+  /*
+   * The updates, per project, newest project first.
+   *
+   * Fetched here rather than in clientDetail because it is the only screen
+   * that wants them, and a client with a long history would otherwise carry
+   * every entry ever written into every read of this record.
+   */
+  const entries = await prisma.diaryEntry.findMany({
+    where: { projectId: { in: projects.map((p) => p.id) } },
+    orderBy: { createdAt: "desc" },
+  });
+
+
 
   return (
     <>
@@ -52,9 +60,9 @@ export default async function ClientPage({ params }: { params: { clientId: strin
       <PortalPanel
         clientId={client.id}
         clientName={client.name}
-        publicSlug={portal.publicSlug}
-        published={portal.published}
-        welcomePack={portal.welcomePack}
+        publicSlug={client.publicSlug}
+        published={client.published}
+        welcomePack={client.welcomePack}
         fallbackPack={
           (user as unknown as { clientNotes?: string | null }).clientNotes ?? null
         }
@@ -187,6 +195,23 @@ export default async function ClientPage({ params }: { params: { clientId: strin
           )}
         </Card>
       </div>
+      <UpdatesPanel
+        projects={projects.map((project) => ({
+          id: project.id,
+          title: project.title,
+          published: Boolean(
+            (project as unknown as { published?: boolean }).published
+          ),
+          entries: entries
+            .filter((entry) => entry.projectId === project.id)
+            .map((entry) => ({
+              id: entry.id,
+              body: entry.body,
+              createdAt: entry.createdAt.toISOString(),
+            })),
+        }))}
+      />
+
       <DocumentsPanel
         clientId={client.id}
         documents={documents.map((doc) => ({

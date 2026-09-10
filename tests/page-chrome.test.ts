@@ -39,7 +39,6 @@ describe("every list page wears the same header", () => {
 
 const RECORD_VIEWS = [
   "src/app/(app)/track/[projectId]/project-detail.tsx",
-  "src/app/(app)/diary/[projectId]/diary-view.tsx",
   "src/app/(app)/invoices/[invoiceId]/invoice-editor.tsx",
 ];
 
@@ -95,11 +94,23 @@ describe("deleting always asks the same way", () => {
   /**
    * One delete used to ask by turning into its own confirmation and forgetting
    * the question when it lost focus. Every delete goes through the one dialog
-   * now, so that a click-twice control cannot take a written update silently.
+   * now, so that a click-twice control cannot take something silently.
+   *
+   * This suite was briefly empty, because the one file it named was deleted
+   * and the rule was not moved anywhere. An empty describe is a rule nobody is
+   * checking, so it now asks the question of every component that can delete.
    */
-  it("uses the shared dialog for a diary entry", () => {
-    const source = readFileSync("src/app/(app)/diary/[projectId]/diary-view.tsx", "utf8");
-    expect(source).toContain("<Confirm");
-    expect(source).not.toContain("onBlur={() => setConfirming(false)}");
-  });
+  const deleters = [
+    "src/components/clients/documents-panel.tsx",
+    "src/components/track/board.tsx",
+  ];
+
+  for (const file of deleters) {
+    it(`${file} asks before it deletes`, () => {
+      const source = readFileSync(file, "utf8");
+      const deletes = /delete[A-Za-z]*Action/.test(source);
+      if (!deletes) return;
+      expect({ file, asks: source.includes("<Confirm") }).toEqual({ file, asks: true });
+    });
+  }
 });

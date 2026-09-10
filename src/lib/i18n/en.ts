@@ -587,6 +587,9 @@ export const en = {
   },
 
   track: {
+    deleteTaskTitle: "Delete this task?",
+    deleteTaskHint: "Any hours recorded against it go with it.",
+    deleteTaskConfirm: "Delete task",
     timeContinue: "Do this again",
     whatAreYouDoing: "What are you working on?",
     stop: "Stop",
@@ -1465,7 +1468,17 @@ export const en = {
     privacy:
       "Only you, and anyone you send a project page to while it is published. Nothing here has a public link.",
     noEmoji: "No emoji",
+    deleteTitle: "Delete this file?",
+    deleteHint: "It goes from your client's page and from storage. There is no copy.",
+    deleteConfirm: "Delete file",
     rename: "Rename",
+  },
+
+  updates: {
+    hint: "What you tell them, per project. They read these on their page.",
+    count: "{n} so far",
+    notShared: "Not shared yet",
+    openProject: "Open the project",
   },
 
   portal: {

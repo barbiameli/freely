@@ -582,6 +582,9 @@ export const es: Dictionary = {
   },
 
   track: {
+    deleteTaskTitle: "¿Borrar esta tarea?",
+    deleteTaskHint: "Las horas registradas en ella se van también.",
+    deleteTaskConfirm: "Borrar tarea",
     timeContinue: "Hacerlo otra vez",
     whatAreYouDoing: "¿En qué estás trabajando?",
     stop: "Parar",
@@ -1453,7 +1456,17 @@ export const es: Dictionary = {
     privacy:
       "Solo tú, y quien reciba una página de proyecto mientras esté publicada. Aquí nada tiene enlace público.",
     noEmoji: "Sin emoji",
+    deleteTitle: "¿Borrar este archivo?",
+    deleteHint: "Desaparece de la página de tu cliente y del almacenamiento. No queda copia.",
+    deleteConfirm: "Borrar archivo",
     rename: "Renombrar",
+  },
+
+  updates: {
+    hint: "Lo que les cuentas, por proyecto. Lo leen en su página.",
+    count: "{n} hasta ahora",
+    notShared: "Aún sin compartir",
+    openProject: "Abrir el proyecto",
   },
 
   portal: {

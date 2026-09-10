@@ -185,7 +185,7 @@ export function ProjectDetail({
   billing,
   milestones: quotedMilestones = [],
   /** The Your work / What the client sees strip, placed in the title row. */
-  tabs,
+  clientLink,
   time,
 }: {
   project: Project;
@@ -208,7 +208,13 @@ export function ProjectDetail({
    * agreed to, so the tracker shows it rather than offering to rearrange it.
    */
   milestones?: MilestoneView[];
-  tabs?: ReactNode;
+  /**
+   * Whether the client can see this project, and where.
+   *
+   * Was a two-tab strip whose second tab was a whole second page. That page's
+   * contents moved to the client, so what is left is a switch and an address.
+   */
+  clientLink?: ReactNode;
 }) {
   const router = useRouter();
   const t = useT();
@@ -389,7 +395,7 @@ export function ProjectDetail({
         <RecordHeader
           title={project.title}
           meta={project.client}
-          below={tabs}
+          below={clientLink}
           action={
             <div className="flex items-center gap-2.5 flex-wrap">
               {/* The clock, where you actually are when you decide to start.

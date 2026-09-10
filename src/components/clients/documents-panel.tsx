@@ -10,6 +10,7 @@ import {
 } from "@/actions/documents";
 import { DOCUMENT_EMOJI } from "@/lib/document-emoji";
 import { ActionError } from "@/components/ui/action-error";
+import { Confirm } from "@/components/ui/confirm";
 import { Card } from "@/components/ui/card";
 import { SectionHeading } from "@/components/ui/page-header";
 import { useT } from "@/lib/i18n/context";
@@ -54,6 +55,15 @@ export function DocumentsPanel({
     note: string;
     emoji: string;
   } | null>(null);
+  /*
+   * Asked before, not after.
+   *
+   * Deleting a document deletes the blob as well as the row, so there is
+   * nothing to undo and nothing in a bin. This shipped as a bare trash icon
+   * next to a rename pencil, which is one slipped click away from a brand
+   * guide the client can no longer open.
+   */
+  const [confirming, setConfirming] = useState<ClientDocument | null>(null);
 
   async function upload(file: File) {
     setBusy(true);
@@ -215,7 +225,7 @@ export function DocumentsPanel({
                     <button
                       type="button"
                       disabled={busy}
-                      onClick={() => void remove(doc.id)}
+                      onClick={() => setConfirming(doc)}
                       aria-label={t.common.delete}
                       className="text-text-muted hover:text-overdue bg-none border-none cursor-pointer p-1 tap shrink-0"
                     >
@@ -257,6 +267,26 @@ export function DocumentsPanel({
 
         <ActionError error={error} />
       </Card>
+
+      <Confirm
+        open={confirming !== null}
+        onClose={() => setConfirming(null)}
+        onConfirm={() => {
+          const doc = confirming;
+          setConfirming(null);
+          if (doc) void remove(doc.id);
+        }}
+        title={t.docs.deleteTitle}
+        hint={t.docs.deleteHint}
+        confirmLabel={t.docs.deleteConfirm}
+        working={busy}
+      >
+        {confirming && (
+          <p className="font-body font-semibold text-small text-ink m-0">
+            {confirming.emoji} {confirming.name}
+          </p>
+        )}
+      </Confirm>
     </>
   );
 }

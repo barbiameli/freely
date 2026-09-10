@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Check, GripVertical, Play, Plus, Square, Trash2, X } from "lucide-react";
 import { useT } from "@/lib/i18n/context";
 import { ActionError } from "@/components/ui/action-error";
+import { Confirm } from "@/components/ui/confirm";
 import { setProjectTimeModeAction, startTimerAction, stopTimerAction } from "@/actions/time";
 import { announceTimerChange } from "@/components/track/timer-bar";
 import {
@@ -167,6 +168,14 @@ export function Board({
   useEffect(() => setLocal(steps), [signature]);
   /** The card being renamed, and the text so far. */
   const [editing, setEditing] = useState<{ id: string; name: string; hours: string } | null>(null);
+  /*
+   * The task waiting to be deleted, if any.
+   *
+   * A task carries its logged hours with it, so deleting one is not the same
+   * as retyping four words: the afternoon recorded against it goes too. It is
+   * the last delete in the app that was not asking.
+   */
+  const [confirming, setConfirming] = useState<BoardStep | null>(null);
   /** Which deliverable a new task is being written against. */
   const [adding, setAdding] = useState<{ deliverableId: string; name: string } | null>(null);
 
@@ -494,7 +503,7 @@ export function Board({
                               <button
                                 type="button"
                                 disabled={busy}
-                                onClick={() => void removeTask(card.id)}
+                                onClick={() => setConfirming(card)}
                                 aria-label={t.common.delete}
                                 className="text-text-muted hover:text-overdue bg-none border-none cursor-pointer p-1 tap"
                               >
@@ -688,6 +697,24 @@ export function Board({
           </div>,
           document.body
         )}
+
+      <Confirm
+        open={confirming !== null}
+        onClose={() => setConfirming(null)}
+        onConfirm={() => {
+          const card = confirming;
+          setConfirming(null);
+          if (card) void removeTask(card.id);
+        }}
+        title={t.track.deleteTaskTitle}
+        hint={t.track.deleteTaskHint}
+        confirmLabel={t.track.deleteTaskConfirm}
+        working={busy}
+      >
+        {confirming && (
+          <p className="font-body font-semibold text-small text-ink m-0">{confirming.name}</p>
+        )}
+      </Confirm>
     </div>
   );
 }

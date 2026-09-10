@@ -300,7 +300,23 @@ export async function clientDetail(
   ])) as unknown as [QuoteRow[], ProjectRow[], InvoiceRow[]];
 
   return {
-    client: { id: client.id, name: client.name, email: client.email, notes: client.notes },
+    /*
+     * The portal columns come through too.
+     *
+     * This used to rebuild a fresh four-field object, so anything read off it
+     * elsewhere by a cast was silently undefined: the client page asked for
+     * publicSlug and got nothing, which made the copy button offer a link to
+     * /c/undefined. A cast can only lie about a shape that is there.
+     */
+    client: {
+      id: client.id,
+      name: client.name,
+      email: client.email,
+      notes: client.notes,
+      publicSlug: (client as unknown as { publicSlug?: string }).publicSlug ?? "",
+      published: Boolean((client as unknown as { published?: boolean }).published),
+      welcomePack: (client as unknown as { welcomePack?: string | null }).welcomePack ?? null,
+    },
     quotes,
     projects,
     invoices,
