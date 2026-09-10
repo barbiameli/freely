@@ -320,6 +320,19 @@ export async function clientDetail(
       onboarding: cleanAnswers((client as unknown as { onboarding?: unknown }).onboarding),
       showInvoices:
         (client as unknown as { showInvoices?: boolean }).showInvoices !== false,
+      // Opt in, so absent means off rather than on.
+      showTime: Boolean((client as unknown as { showTime?: boolean }).showTime),
+      timeDetail:
+        (client as unknown as { timeDetail?: string }).timeDetail ?? "entries",
+      // On unless somebody has said otherwise, so an account that predates
+      // these columns keeps showing what it was showing.
+      showProjects:
+        (client as unknown as { showProjects?: boolean }).showProjects !== false,
+      showQuotes: (client as unknown as { showQuotes?: boolean }).showQuotes !== false,
+      showDocuments:
+        (client as unknown as { showDocuments?: boolean }).showDocuments !== false,
+      showUpdates:
+        (client as unknown as { showUpdates?: boolean }).showUpdates !== false,
     },
     quotes,
     projects,

@@ -24,6 +24,15 @@ export interface BlockSpec {
   why: string;
   /** On for a new client, because most people want it. */
   onByDefault: boolean;
+  /**
+   * Sentences that go straight in when pressed.
+   *
+   * Not a template to fill in and not a suggestion to read and retype: the
+   * whole cost of writing a welcome pack is starting, and a sentence already
+   * in the box has been started. They append rather than replace, so pressing
+   * three builds a paragraph.
+   */
+  pills: string[];
 }
 
 export const BLOCKS: BlockSpec[] = [
@@ -34,6 +43,11 @@ export const BLOCKS: BlockSpec[] = [
       "Glad we are working together. Here is everything you need in one place, and it stays here for the whole project.",
     why: "Sets the tone. One short paragraph is plenty.",
     onByDefault: true,
+    pills: [
+      "Glad we are working together.",
+      "Everything you need is on this page, and it stays here for the whole project.",
+      "Anything you cannot find, just ask.",
+    ],
   },
   {
     kind: "contract",
@@ -42,6 +56,12 @@ export const BLOCKS: BlockSpec[] = [
       "Before we start there is a contract to sign. It is short. Nothing begins until it is back.",
     why: "The step that quietly holds up week one more than any other.",
     onByDefault: true,
+    pills: [
+      "There is a contract to sign before we start.",
+      "It is short, and nothing begins until it is back.",
+      "The deposit is due with it.",
+      "You will find it in the documents below.",
+    ],
   },
   {
     kind: "rules",
@@ -50,6 +70,13 @@ export const BLOCKS: BlockSpec[] = [
       "Two rounds of changes per stage. Feedback within two working days keeps us on the date; longer and the date moves with it.",
     why: "The one that stops the argument in week six.",
     onByDefault: true,
+    pills: [
+      "Two rounds of changes are included at each stage.",
+      "Feedback within two working days keeps us on the date.",
+      "If feedback takes longer, the date moves with it.",
+      "Anything outside the scope we agreed gets quoted separately.",
+      "One person signing things off keeps this quick.",
+    ],
   },
   {
     kind: "calendar",
@@ -58,6 +85,12 @@ export const BLOCKS: BlockSpec[] = [
       "A short call at the start of each stage, and otherwise whenever you need one. Book a time that suits you rather than waiting for me to offer.",
     why: "Say how often, and who books.",
     onByDefault: false,
+    pills: [
+      "A short call at the start of each stage.",
+      "Book a time that suits you rather than waiting for me to offer.",
+      "Half an hour is usually plenty.",
+      "I will send notes after each one.",
+    ],
   },
   {
     kind: "comms",
@@ -66,6 +99,12 @@ export const BLOCKS: BlockSpec[] = [
       "Email is best and I reply within a working day. Anything urgent, call. I am not on Slack for this one.",
     why: "One place, so nothing lands somewhere you do not look.",
     onByDefault: false,
+    pills: [
+      "Email is best and I reply within a working day.",
+      "Anything urgent, call.",
+      "I am offline at weekends.",
+      "Please keep everything in one thread so nothing gets lost.",
+    ],
   },
 ];
 

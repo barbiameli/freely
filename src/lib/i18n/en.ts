@@ -709,6 +709,7 @@ export const en = {
     overdueCount: "Overdue",
     totalValue: "Total value",
     doneCount: "Deliverables done",
+    preview: "Preview it",
     done: "Done",
     pace: "Pace",
     nextUp: "Next up",
@@ -1500,8 +1501,47 @@ export const en = {
     invoicesOn: "They can see their invoices",
     invoicesOff: "Invoices are hidden from them",
     invoicesHint: "Off for the engagements where money goes through somebody else.",
+    timeOn: "They can see the hours",
+    timeOff: "Hours are hidden from them",
+    timeHint: "Useful on hourly work as the backing for an invoice.",
+    timeWarning: "Every time note you write is now something this client can read.",
+    showTime: "Show them the hours",
+    hideTime: "Hide the hours from them",
     showInvoices: "Show them invoices",
     hideInvoices: "Hide invoices from them",
+  },
+
+  sections: {
+    show: "Show this",
+    hide: "Hide this",
+  },
+
+  sectionNames: {
+    updates: "Updates",
+    updatesHint: "What you tell them as the work goes along.",
+    documents: "Documents",
+    documentsHint: "Terms, contracts, brand files. Everything in one place.",
+    projects: "Projects",
+    projectsHint: "Each one with how far along it is.",
+    quotes: "Quotes",
+    quotesHint: "Everything you have sent them, with the figure.",
+    invoices: "Invoices",
+    invoicesHint: "What they owe and what is paid. Off when money goes through somebody else.",
+    time: "Time",
+    timeHint: "The hours on their work. Useful on hourly, awkward on fixed price.",
+    timeWarning: "Every time note you write is something this client can read.",
+    timeEntries: "Every entry, with the note",
+    timeTotals: "Totals only",
+  },
+
+  setup: {
+    preview: "Preview it",
+    title: "Set up their page",
+    hint: "Pick what they get told. Everything saves as you go, so you can close this and come back.",
+    done: "Done",
+    filesTitle: "Upload the documents while you are here",
+    filesHint:
+      "Terms, a contract, a glossary, brand files. They appear on their page under Documents, and it saves you attaching them to an email six times.",
   },
 
   portal: {
@@ -1519,6 +1559,7 @@ export const en = {
     packEmpty: "Nothing here yet, so the page opens straight into the projects.",
     previewWelcome: "See their welcome",
     previewDashboard: "Or straight to the dashboard",
+    editWhatTheySee: "Edit what they see",
     turnOff: "Switch it off",
   },
 
@@ -1581,6 +1622,9 @@ export const en = {
 
   clientPage: {
     previewing: "You are previewing your client's page. They see this after signing in.",
+    time: "Time",
+    noTime: "Nothing logged yet.",
+    workedOn: "Worked on the project",
     howWeWork: "How we work",
     overview: "Overview",
     invoices: "Invoices",

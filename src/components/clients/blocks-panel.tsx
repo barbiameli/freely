@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown, Eye, EyeOff } from "lucide-react";
-import { removeBlockAction, setBlockAction, setShowInvoicesAction } from "@/actions/portal";
+import { Check, ChevronDown, Plus } from "lucide-react";
+import { removeBlockAction, setBlockAction } from "@/actions/portal";
 import { BLOCKS } from "@/lib/onboarding-blocks";
 import { ActionError } from "@/components/ui/action-error";
 import { Button } from "@/components/ui/button";
@@ -33,11 +33,12 @@ export interface SavedBlock {
 export function BlocksPanel({
   clientId,
   saved,
-  showInvoices,
+  bare,
 }: {
   clientId: string;
   saved: SavedBlock[];
-  showInvoices: boolean;
+  /** Inside a dialog, which brings its own heading and card. */
+  bare?: boolean;
 }) {
   const t = useT();
   const router = useRouter();
@@ -47,6 +48,13 @@ export function BlocksPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  /*
+   * Saved as you go rather than per block.
+   *
+   * Inside a modal there is nowhere sensible to put five Save buttons, and a
+   * single one at the bottom means somebody who closes the dialog after
+   * writing three paragraphs loses all three.
+   */
   async function include(kind: string, on: boolean) {
     setBusy(true);
     setError("");
@@ -78,10 +86,8 @@ export function BlocksPanel({
     router.refresh();
   }
 
-  return (
+  const rows = (
     <>
-      <SectionHeading title={t.blocks.title} hint={t.blocks.hint} />
-      <Card className="flex flex-col">
         {BLOCKS.map((spec) => {
           const block = byKind.get(spec.kind);
           const on = Boolean(block);
@@ -142,6 +148,45 @@ export function BlocksPanel({
                     aria-label={t.blocks.heading}
                     className="w-full bg-white border border-line rounded-sm px-3 py-2 text-small font-semibold text-ink outline-none focus:border-violet"
                   />
+                  {/* Pressed, they land in the box. Appended rather than
+                      swapped in, so three presses make a paragraph, and the
+                      whole cost of writing one of these is starting. */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {spec.pills.map((pill) => {
+                      const already = draft.body.includes(pill);
+                      return (
+                        <button
+                          key={pill}
+                          type="button"
+                          disabled={already}
+                          onClick={() =>
+                            setDrafts({
+                              ...drafts,
+                              [spec.kind]: {
+                                ...draft,
+                                body: draft.body.trim()
+                                  ? `${draft.body.trim()} ${pill}`
+                                  : pill,
+                              },
+                            })
+                          }
+                          className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-caption cursor-pointer border transition-colors ${
+                            already
+                              ? "border-line bg-paper text-text-muted cursor-default"
+                              : "border-line bg-white text-slate hover:border-ink"
+                          }`}
+                        >
+                          {already ? (
+                            <Check size={11} className="text-success" />
+                          ) : (
+                            <Plus size={11} />
+                          )}
+                          {pill}
+                        </button>
+                      );
+                    })}
+                  </div>
+
                   <textarea
                     value={draft.body}
                     onChange={(e) =>
@@ -163,35 +208,15 @@ export function BlocksPanel({
           );
         })}
 
-        {/* Money, which is the one thing here somebody might not want shared
-            at all. Beside the blocks because it is the same decision: what
-            does this particular client get to see. */}
-        <div className="flex items-start gap-3 pt-3.5 mt-1 border-t border-line">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              await setShowInvoicesAction(clientId, !showInvoices);
-              setBusy(false);
-              router.refresh();
-            }}
-            aria-pressed={showInvoices}
-            className="shrink-0 mt-0.5 text-text-muted hover:text-ink bg-none border-none cursor-pointer p-0 tap"
-            aria-label={showInvoices ? t.blocks.hideInvoices : t.blocks.showInvoices}
-          >
-            {showInvoices ? <Eye size={18} /> : <EyeOff size={18} />}
-          </button>
-          <div className="min-w-0">
-            <p className="font-body font-semibold text-small text-ink m-0">
-              {showInvoices ? t.blocks.invoicesOn : t.blocks.invoicesOff}
-            </p>
-            <p className="text-caption text-text-muted mt-0.5 mb-0">{t.blocks.invoicesHint}</p>
-          </div>
-        </div>
+      <ActionError error={error} />
+    </>
+  );
 
-        <ActionError error={error} />
-      </Card>
+  if (bare) return <div className="flex flex-col">{rows}</div>;
+  return (
+    <>
+      <SectionHeading title={t.blocks.title} hint={t.blocks.hint} />
+      <Card className="flex flex-col">{rows}</Card>
     </>
   );
 }

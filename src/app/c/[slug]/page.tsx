@@ -12,7 +12,8 @@ import { SignInForm } from "@/components/portal/sign-in-form";
 import { SetPassword } from "@/components/portal/set-password";
 import { PortalShell } from "@/components/portal/portal-shell";
 import { blocksForClient } from "@/lib/portal-blocks";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Clock } from "lucide-react";
+import { secondsOf, sayHours } from "@/lib/time-tracking";
 
 /**
  * The client's dashboard.
@@ -46,7 +47,14 @@ import { BookOpen } from "lucide-react";
 export const dynamic = "force-dynamic";
 export const metadata = { robots: { index: false, follow: false } };
 
-type View = "overview" | "howwework" | "projects" | "quotes" | "invoices" | "meetings";
+type View =
+  | "overview"
+  | "howwework"
+  | "projects"
+  | "quotes"
+  | "invoices"
+  | "time"
+  | "meetings";
 
 export default async function ClientPortalPage({
   params,
@@ -69,6 +77,12 @@ export default async function ClientPortalPage({
         welcomePack: string | null;
         onboarding: unknown;
         showInvoices: boolean;
+        showTime: boolean;
+        timeDetail: string;
+        showProjects: boolean;
+        showQuotes: boolean;
+        showDocuments: boolean;
+        showUpdates: boolean;
       } | null>;
     };
     clientDocument: {
@@ -154,6 +168,34 @@ export default async function ClientPortalPage({
   // What this client is told. Read after the gate, like everything else.
   const blocks = await blocksForClient(client.id);
 
+  /*
+   * The hours, only where the freelancer has said so.
+   *
+   * Read behind the flag rather than fetched and hidden: a note somebody
+   * wrote for themselves should not travel to the browser at all on a client
+   * who was never meant to see it.
+   */
+  const showTime = Boolean(client.showTime);
+  const entries = showTime
+    ? await (
+        prisma as unknown as {
+          timeEntry: {
+            findMany(args: {
+              where: Record<string, unknown>;
+              orderBy: { startedAt: "desc" };
+              take: number;
+            }): Promise<
+              { id: string; note: string; startedAt: Date; minutes: number; seconds: number }[]
+            >;
+          };
+        }
+      ).timeEntry.findMany({
+        where: { clientId: client.id, endedAt: { not: null } },
+        orderBy: { startedAt: "desc" },
+        take: 200,
+      })
+    : [];
+
   const extras = owner as unknown as {
     bookingUrl?: string | null;
     clientNotes?: string | null;
@@ -162,7 +204,17 @@ export default async function ClientPortalPage({
   const t = dict("en").clientPage;
   const primary = owner?.brandPrimaryColor || "#FF2D8A";
   const studio = owner?.studioName || owner?.name || "";
+  /*
+   * Every section, behind its own switch.
+   *
+   * Absent reads as on for the four that predate the columns, and off for
+   * time, which was always opt in. A default that changes what an existing
+   * client can see is a change nobody asked for.
+   */
   const showInvoices = client.showInvoices !== false;
+  const showProjects = client.showProjects !== false;
+  const showQuotes = client.showQuotes !== false;
+  const showDocuments = client.showDocuments !== false;
   const view = (searchParams?.view ?? "overview") as View;
 
   /*
@@ -280,10 +332,17 @@ export default async function ClientPortalPage({
 
   const tabs: { id: View; label: string; icon: typeof FileText; count?: number }[] = [
     { id: "overview", label: t.overview, icon: Sparkles },
-    { id: "projects", label: t.projects, icon: FileText, count: projects.length },
-    { id: "quotes", label: t.quotes, icon: FileText, count: quotes.length },
+    ...(showProjects
+      ? [{ id: "projects" as View, label: t.projects, icon: FileText, count: projects.length }]
+      : []),
+    ...(showQuotes
+      ? [{ id: "quotes" as View, label: t.quotes, icon: FileText, count: quotes.length }]
+      : []),
     ...(blocks.length > 0
       ? [{ id: "howwework" as View, label: t.howWeWork, icon: BookOpen }]
+      : []),
+    ...(showTime
+      ? [{ id: "time" as View, label: t.time, icon: Clock, count: entries.length }]
       : []),
     ...(showInvoices
       ? [{ id: "invoices" as View, label: t.invoices, icon: Receipt, count: invoices.length }]
@@ -377,7 +436,7 @@ export default async function ClientPortalPage({
             {visitor && !visitor.passwordHash && <SetPassword slug={params.slug} />}
 
 
-            {documents.length > 0 && (
+            {showDocuments && documents.length > 0 && (
               <Panel title={t.documents}>
                 <DocumentList documents={documents} slug={params.slug} />
               </Panel>
@@ -397,7 +456,7 @@ export default async function ClientPortalPage({
           </>
         )}
 
-        {view === "projects" && (
+        {view === "projects" && showProjects && (
           <Panel title={t.projects}>
             {projects.length === 0 ? (
               <Empty label={t.noProjects} />
@@ -447,7 +506,7 @@ export default async function ClientPortalPage({
           </Panel>
         )}
 
-        {view === "quotes" && (
+        {view === "quotes" && showQuotes && (
           <Panel title={t.quotes}>
             {quotes.length === 0 ? (
               <Empty label={t.noQuotes} />
@@ -519,6 +578,52 @@ export default async function ClientPortalPage({
                   </li>
                 ))}
               </ul>
+            )}
+          </Panel>
+        )}
+
+        {view === "time" && showTime && (
+          <Panel
+            title={t.time}
+            /* The total, in the heading, because the first question anybody
+               opening this asks is how much altogether. */
+          >
+            {entries.length === 0 ? (
+              <Empty label={t.noTime} />
+            ) : (
+              <>
+                <p className="font-body font-bold text-lead text-ink m-0 mb-3 tabular-nums">
+                  {sayHours(
+                    Math.round(
+                      entries.reduce((sum, entry) => sum + secondsOf(entry), 0) / 60
+                    )
+                  )}
+                </p>
+                <ul className="list-none p-0 m-0">
+                  {entries.map((entry) => (
+                    <li
+                      key={entry.id}
+                      className="flex items-baseline justify-between gap-4 py-2.5 border-b border-line last:border-b-0"
+                    >
+                      <span className="min-w-0">
+                        <span className="block font-body text-small text-ink">
+                          {/* On totals, the note never reaches the page. It
+                              was written by somebody for themselves. */}
+                          {client.timeDetail === "totals"
+                            ? t.workedOn
+                            : entry.note || t.workedOn}
+                        </span>
+                        <span className="block text-caption text-text-muted">
+                          {formatLongDay(new Date(entry.startedAt), "en")}
+                        </span>
+                      </span>
+                      <span className="font-label text-small text-ink tabular-nums shrink-0">
+                        {sayHours(Math.round(secondsOf(entry) / 60))}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
           </Panel>
         )}

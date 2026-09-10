@@ -36,9 +36,12 @@ export interface PortalPerson {
 export function AccessPanel({
   clientId,
   people,
+  bare,
 }: {
   clientId: string;
   people: PortalPerson[];
+  /** Inside the setup dialog, which brings its own heading and card. */
+  bare?: boolean;
 }) {
   const t = useT();
   const locale = useLocale();
@@ -75,10 +78,8 @@ export function AccessPanel({
     router.refresh();
   }
 
-  return (
+  const rows = (
     <>
-      <SectionHeading title={t.visitors.title} hint={t.visitors.hint} />
-      <Card className="flex flex-col gap-3.5">
         {people.length === 0 ? (
           <p className="text-small text-slate m-0">{t.visitors.empty}</p>
         ) : (
@@ -149,10 +150,12 @@ export function AccessPanel({
           </Button>
         </div>
 
-        <ActionError error={error} />
-      </Card>
+      <ActionError error={error} />
+    </>
+  );
 
-      <Confirm
+  const dialog = (
+    <Confirm
         open={confirming !== null}
         onClose={() => setConfirming(null)}
         onConfirm={() => {
@@ -170,7 +173,22 @@ export function AccessPanel({
             {confirming.name || confirming.email}
           </p>
         )}
-      </Confirm>
+    </Confirm>
+  );
+
+  if (bare) {
+    return (
+      <div className="flex flex-col gap-3.5">
+        {rows}
+        {dialog}
+      </div>
+    );
+  }
+  return (
+    <>
+      <SectionHeading title={t.visitors.title} hint={t.visitors.hint} />
+      <Card className="flex flex-col gap-3.5">{rows}</Card>
+      {dialog}
     </>
   );
 }

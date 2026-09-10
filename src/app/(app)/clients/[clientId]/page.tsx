@@ -10,13 +10,9 @@ import { serverDict } from "@/lib/i18n/server";
 import { currencySymbol } from "@/lib/currencies";
 import { readHistory } from "@/lib/client-read";
 import { documentsForClient } from "@/actions/documents";
-import { DocumentsPanel } from "@/components/clients/documents-panel";
 import { PortalPanel } from "@/components/clients/portal-panel";
-import { AccessPanel } from "@/components/clients/access-panel";
-import { BlocksPanel } from "@/components/clients/blocks-panel";
 import { visitorsForClient } from "@/actions/portal";
 import { blocksForClient } from "@/lib/portal-blocks";
-import { UpdatesPanel } from "@/components/clients/updates-panel";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -69,6 +65,37 @@ export default async function ClientPage({ params }: { params: { clientId: strin
         clientName={client.name}
         publicSlug={client.publicSlug}
         published={client.published}
+        blocks={blocks}
+        settings={{
+          showProjects: client.showProjects,
+          showQuotes: client.showQuotes,
+          showInvoices: client.showInvoices,
+          showTime: client.showTime,
+          showDocuments: client.showDocuments,
+          showUpdates: client.showUpdates,
+          timeDetail: client.timeDetail,
+        }}
+        people={people}
+        documents={documents.map((doc) => ({
+          id: doc.id,
+          name: doc.name,
+          contentType: doc.contentType,
+          size: doc.size,
+          note: doc.note,
+          emoji: doc.emoji,
+        }))}
+        projects={projects.map((project) => ({
+          id: project.id,
+          title: project.title,
+          published: Boolean((project as unknown as { published?: boolean }).published),
+          entries: entries
+            .filter((entry) => entry.projectId === project.id)
+            .map((entry) => ({
+              id: entry.id,
+              body: entry.body,
+              createdAt: entry.createdAt.toISOString(),
+            })),
+        }))}
       />
 
       <StatRow
@@ -198,43 +225,6 @@ export default async function ClientPage({ params }: { params: { clientId: strin
           )}
         </Card>
       </div>
-      <BlocksPanel
-        clientId={client.id}
-        saved={blocks}
-        showInvoices={client.showInvoices}
-      />
-
-      <AccessPanel clientId={client.id} people={people} />
-
-      <UpdatesPanel
-        projects={projects.map((project) => ({
-          id: project.id,
-          title: project.title,
-          published: Boolean(
-            (project as unknown as { published?: boolean }).published
-          ),
-          entries: entries
-            .filter((entry) => entry.projectId === project.id)
-            .map((entry) => ({
-              id: entry.id,
-              body: entry.body,
-              createdAt: entry.createdAt.toISOString(),
-            })),
-        }))}
-      />
-
-      <DocumentsPanel
-        clientId={client.id}
-        documents={documents.map((doc) => ({
-          id: doc.id,
-          name: doc.name,
-          contentType: doc.contentType,
-          size: doc.size,
-          note: doc.note,
-          emoji: doc.emoji,
-        }))}
-      />
-
     </>
   );
 }

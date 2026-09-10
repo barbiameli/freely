@@ -40,9 +40,12 @@ function saySize(bytes: number): string {
 export function DocumentsPanel({
   clientId,
   documents,
+  bare,
 }: {
   clientId: string;
   documents: ClientDocument[];
+  /** Inside the setup dialog, which brings its own heading and card. */
+  bare?: boolean;
 }) {
   const t = useT();
   const router = useRouter();
@@ -109,10 +112,8 @@ export function DocumentsPanel({
     router.refresh();
   }
 
-  return (
+  const rows = (
     <>
-      <SectionHeading title={t.docs.title} hint={t.docs.hint} />
-      <Card className="flex flex-col gap-3">
         {documents.length === 0 ? (
           <p className="text-small text-slate m-0">{t.docs.empty}</p>
         ) : (
@@ -265,10 +266,12 @@ export function DocumentsPanel({
           <p className="text-caption text-text-muted mt-2 mb-0">{t.docs.privacy}</p>
         </div>
 
-        <ActionError error={error} />
-      </Card>
+      <ActionError error={error} />
+    </>
+  );
 
-      <Confirm
+  const dialog = (
+    <Confirm
         open={confirming !== null}
         onClose={() => setConfirming(null)}
         onConfirm={() => {
@@ -286,7 +289,22 @@ export function DocumentsPanel({
             {confirming.emoji} {confirming.name}
           </p>
         )}
-      </Confirm>
+    </Confirm>
+  );
+
+  if (bare) {
+    return (
+      <div className="flex flex-col gap-3">
+        {rows}
+        {dialog}
+      </div>
+    );
+  }
+  return (
+    <>
+      <SectionHeading title={t.docs.title} hint={t.docs.hint} />
+      <Card className="flex flex-col gap-3">{rows}</Card>
+      {dialog}
     </>
   );
 }

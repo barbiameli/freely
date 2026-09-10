@@ -1141,6 +1141,26 @@ model Client {
   /// paying is the person who most needs to find the invoice, and off is there
   /// for the engagements where money goes through somebody else entirely.
   showInvoices Boolean @default(true)
+  /// Whether the client sees the hours, and the note written against each one.
+  ///
+  /// Off by default, and it stays off until somebody decides otherwise. This
+  /// is the one switch here that changes what the freelancer can safely write
+  /// somewhere else in the app: a time note stops being a private aide-memoire
+  /// the moment this is on, and the interface says so where it is turned on.
+  showTime     Boolean @default(false)
+  /// How much of the time to show, when it is shown at all.
+  ///
+  /// "entries" is every session with the note written against it. "totals"
+  /// keeps the hours and drops the notes. Two levels rather than five,
+  /// because the real question is only whether the notes travel.
+  timeDetail   String  @default("entries")
+
+  /// The rest of the sections. Booleans rather than a JSON blob so that a
+  /// query can ask "is this shown" and a migration can change a default.
+  showProjects  Boolean @default(true)
+  showQuotes    Boolean @default(true)
+  showDocuments Boolean @default(true)
+  showUpdates   Boolean @default(true)
   /// The welcome pack: what happens next, in your words. Falls back to the
   /// account-level "how you work" when this is empty, so one client who needs
   /// something said differently does not mean writing it out for everybody.

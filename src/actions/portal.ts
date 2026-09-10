@@ -279,16 +279,58 @@ export async function removeBlockAction(
   return { ok: true, data: undefined };
 }
 
-/** Whether this client sees what they owe. */
-export async function setShowInvoicesAction(
+
+
+
+/**
+ * What this client's page shows.
+ *
+ * One action for every switch rather than one action each. They are the same
+ * decision asked six times, and six near-identical exports is six places for
+ * the ownership check to be got subtly wrong.
+ *
+ * The allowlist is what makes that safe: a key not on it is refused, so this
+ * cannot be used to set an arbitrary column on a Client row.
+ */
+const SECTIONS = [
+  "showProjects",
+  "showQuotes",
+  "showInvoices",
+  "showTime",
+  "showDocuments",
+  "showUpdates",
+] as const;
+
+export type PortalSection = (typeof SECTIONS)[number];
+
+export async function setSectionAction(
   clientId: string,
-  showInvoices: boolean
+  section: string,
+  on: boolean
 ): Promise<ActionResult<undefined>> {
   const client = await owned(clientId);
   if (!client) return { ok: false, error: "Client not found." };
+  if (!SECTIONS.includes(section as PortalSection)) {
+    return { ok: false, error: "Not a section." };
+  }
 
-  await clients().update({ where: { id: client.id }, data: { showInvoices } });
+  await clients().update({ where: { id: client.id }, data: { [section]: on } });
   revalidatePath(`/clients/${clientId}`);
   return { ok: true, data: undefined };
 }
 
+/** How much of the time travels: every entry with its note, or totals only. */
+export async function setTimeDetailAction(
+  clientId: string,
+  detail: string
+): Promise<ActionResult<undefined>> {
+  const client = await owned(clientId);
+  if (!client) return { ok: false, error: "Client not found." };
+  if (detail !== "entries" && detail !== "totals") {
+    return { ok: false, error: "Not a level of detail." };
+  }
+
+  await clients().update({ where: { id: client.id }, data: { timeDetail: detail } });
+  revalidatePath(`/clients/${clientId}`);
+  return { ok: true, data: undefined };
+}

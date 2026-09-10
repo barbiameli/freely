@@ -38,7 +38,14 @@ export interface UpdatableProject {
  * composers is six textareas nobody is going to fill in, and the one you want
  * is nearly always the one you touched last.
  */
-export function UpdatesPanel({ projects }: { projects: UpdatableProject[] }) {
+export function UpdatesPanel({
+  projects,
+  bare,
+}: {
+  projects: UpdatableProject[];
+  /** Inside the setup dialog, which brings its own heading and card. */
+  bare?: boolean;
+}) {
   const t = useT();
   const locale = useLocale();
   const { run, pending, error } = useAction();
@@ -48,10 +55,8 @@ export function UpdatesPanel({ projects }: { projects: UpdatableProject[] }) {
 
   if (projects.length === 0) return null;
 
-  return (
+  const rows = (
     <>
-      <SectionHeading title={t.diary.entries} hint={t.updates.hint} />
-      <Card className="flex flex-col">
         {projects.map((project) => {
           const open = openId === project.id;
           return (
@@ -144,8 +149,15 @@ export function UpdatesPanel({ projects }: { projects: UpdatableProject[] }) {
             </div>
           );
         })}
-        <ActionError error={error} className="mt-2" />
-      </Card>
+      <ActionError error={error} className="mt-2" />
+    </>
+  );
+
+  if (bare) return <div className="flex flex-col">{rows}</div>;
+  return (
+    <>
+      <SectionHeading title={t.diary.entries} hint={t.updates.hint} />
+      <Card className="flex flex-col">{rows}</Card>
     </>
   );
 }

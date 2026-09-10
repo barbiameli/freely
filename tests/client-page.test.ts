@@ -256,6 +256,19 @@ describe("the client portal", () => {
     }
   });
 
+  it("does not fetch the time notes for a client who cannot see them", () => {
+    /*
+     * Behind the flag, not fetched and hidden.
+     *
+     * A time note is written by somebody for themselves. Once it can be read
+     * by a client it stops being that, which is why the switch warns about it
+     * and why a client with the switch off must never cause the query at all.
+     */
+    expect(page).toContain("const showTime = Boolean(client.showTime)");
+    expect(page).toContain("const entries = showTime");
+    expect(page).toContain(": [];");
+  });
+
   it("keeps the invoices behind the freelancer's switch", () => {
     // Money is the one thing on here somebody might not want shared at all,
     // so both the tab and the figures hang off the same flag.

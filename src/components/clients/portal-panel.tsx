@@ -9,6 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CardHeader } from "@/components/ui/label";
 import { useT } from "@/lib/i18n/context";
+import { PortalSetup } from "@/components/clients/portal-setup";
+import type { SavedBlock } from "@/components/clients/blocks-panel";
+import type { PortalSettings } from "@/components/clients/portal-setup";
+import type { PortalPerson } from "@/components/clients/access-panel";
+import type { ClientDocument } from "@/components/clients/documents-panel";
+import type { UpdatableProject } from "@/components/clients/updates-panel";
 
 /**
  * The client's front door, from your side.
@@ -27,17 +33,28 @@ export function PortalPanel({
   clientName,
   publicSlug,
   published,
+  blocks,
+  settings,
+  people,
+  documents,
+  projects,
 }: {
   clientId: string;
   clientName: string;
   publicSlug: string;
   published: boolean;
+  blocks: SavedBlock[];
+  settings: PortalSettings;
+  people: PortalPerson[];
+  documents: ClientDocument[];
+  projects: UpdatableProject[];
 }) {
   const t = useT();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
+  const [setupOpen, setSetupOpen] = useState(false);
 
   const url = typeof window === "undefined" ? "" : `${window.location.origin}/c/${publicSlug}`;
 
@@ -50,6 +67,9 @@ export function PortalPanel({
       setError(result.error);
       return;
     }
+    // Straight into setting it up. Making the page and deciding what it says
+    // are one intention, and they were two screens apart.
+    if (next) setSetupOpen(true);
     router.refresh();
   }
 
@@ -71,6 +91,18 @@ export function PortalPanel({
           </Button>
         </div>
         <ActionError error={error} />
+
+        <PortalSetup
+          open={setupOpen}
+          onClose={() => setSetupOpen(false)}
+          clientId={clientId}
+          publicSlug={publicSlug}
+          blocks={blocks}
+          settings={settings}
+          people={people}
+          documents={documents}
+          projects={projects}
+        />
       </Card>
     );
   }
@@ -133,12 +165,27 @@ export function PortalPanel({
         {/* Off is a real off switch: the page stops resolving, and so does
             every document reachable through it, for everybody already holding
             the address. */}
+        <Button size="sm" onClick={() => setSetupOpen(true)}>
+          {t.portal.editWhatTheySee}
+        </Button>
         <Button size="sm" variant="ghost" onClick={() => void publish(false)} disabled={saving}>
           {t.portal.turnOff}
         </Button>
       </div>
 
       <ActionError error={error} />
+
+      <PortalSetup
+        open={setupOpen}
+        onClose={() => setSetupOpen(false)}
+        clientId={clientId}
+        publicSlug={publicSlug}
+        blocks={blocks}
+        settings={settings}
+        people={people}
+        documents={documents}
+        projects={projects}
+      />
     </Card>
   );
 }

@@ -704,6 +704,7 @@ export const es: Dictionary = {
     overdueCount: "Vencidos",
     totalValue: "Valor total",
     doneCount: "Entregables hechos",
+    preview: "Verlo",
     done: "Hecho",
     pace: "Ritmo",
     nextUp: "Lo siguiente",
@@ -1488,8 +1489,47 @@ export const es: Dictionary = {
     invoicesOn: "Pueden ver sus facturas",
     invoicesOff: "Las facturas están ocultas para ellos",
     invoicesHint: "Desactívalo cuando el dinero pasa por otra persona.",
+    timeOn: "Pueden ver las horas",
+    timeOff: "Las horas están ocultas para ellos",
+    timeHint: "Útil por horas, como respaldo de una factura.",
+    timeWarning: "Cada nota de tiempo que escribas la puede leer este cliente.",
+    showTime: "Enseñarles las horas",
+    hideTime: "Ocultarles las horas",
     showInvoices: "Enseñarles las facturas",
     hideInvoices: "Ocultarles las facturas",
+  },
+
+  sections: {
+    show: "Mostrar esto",
+    hide: "Ocultar esto",
+  },
+
+  sectionNames: {
+    updates: "Novedades",
+    updatesHint: "Lo que les cuentas según avanza el trabajo.",
+    documents: "Documentos",
+    documentsHint: "Condiciones, contratos, archivos de marca. Todo en un sitio.",
+    projects: "Proyectos",
+    projectsHint: "Cada uno con lo que lleva hecho.",
+    quotes: "Presupuestos",
+    quotesHint: "Todo lo que les has mandado, con la cifra.",
+    invoices: "Facturas",
+    invoicesHint: "Lo que deben y lo que está pagado. Desactívalo si el dinero pasa por otra persona.",
+    time: "Tiempo",
+    timeHint: "Las horas de su trabajo. Útil por horas, incómodo a precio cerrado.",
+    timeWarning: "Cada nota de tiempo que escribas la puede leer este cliente.",
+    timeEntries: "Cada entrada, con su nota",
+    timeTotals: "Solo totales",
+  },
+
+  setup: {
+    preview: "Verlo",
+    title: "Prepara su página",
+    hint: "Elige qué se les cuenta. Todo se guarda solo, así que puedes cerrar esto y volver.",
+    done: "Listo",
+    filesTitle: "Sube los documentos ya que estás",
+    filesHint:
+      "Condiciones, un contrato, un glosario, archivos de marca. Aparecen en su página en Documentos, y te ahorra adjuntarlos por correo seis veces.",
   },
 
   portal: {
@@ -1507,6 +1547,7 @@ export const es: Dictionary = {
     packEmpty: "Aquí no hay nada, así que la página abre directa en los proyectos.",
     previewWelcome: "Ver su bienvenida",
     previewDashboard: "O directo al panel",
+    editWhatTheySee: "Editar lo que ven",
     turnOff: "Apagarla",
   },
 
@@ -1569,6 +1610,9 @@ export const es: Dictionary = {
 
   clientPage: {
     previewing: "Estás viendo la página de tu cliente. Ellos la ven después de entrar.",
+    time: "Tiempo",
+    noTime: "Todavía no hay horas.",
+    workedOn: "Trabajo en el proyecto",
     howWeWork: "Cómo trabajamos",
     overview: "Resumen",
     invoices: "Facturas",
