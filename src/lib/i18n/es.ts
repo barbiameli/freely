@@ -1478,6 +1478,20 @@ export const es: Dictionary = {
     writeHint: "Lo lees tú antes que nadie.",
   },
 
+  blocks: {
+    title: "Lo que se les cuenta",
+    hint: "Se muestra paso a paso la primera vez que entran, y luego queda en una pestaña.",
+    include: "Incluir esto",
+    leaveOut: "Dejar esto fuera",
+    heading: "Título",
+    words: "Qué dice",
+    invoicesOn: "Pueden ver sus facturas",
+    invoicesOff: "Las facturas están ocultas para ellos",
+    invoicesHint: "Desactívalo cuando el dinero pasa por otra persona.",
+    showInvoices: "Enseñarles las facturas",
+    hideInvoices: "Ocultarles las facturas",
+  },
+
   portal: {
     makeTitle: "Dales un pack de bienvenida",
     makeHint:
@@ -1545,7 +1559,14 @@ export const es: Dictionary = {
     removeConfirm: "Quitar acceso",
   },
 
+  welcomeSteps: {
+    next: "Siguiente",
+    done: "Entendido, vamos",
+    skip: "Sáltalo por ahora",
+  },
+
   clientPage: {
+    howWeWork: "Cómo trabajamos",
     overview: "Resumen",
     invoices: "Facturas",
     meetings: "Reuniones",

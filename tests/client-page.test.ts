@@ -213,7 +213,7 @@ describe("the client portal", () => {
     expect(islands).toEqual([
       "@/components/portal/sign-in-form",
       "@/components/portal/set-password",
-      "@/components/portal/portal-intro",
+      "@/components/portal/portal-shell",
     ]);
 
     /*
@@ -230,7 +230,7 @@ describe("the client portal", () => {
         "requestPortalLinkAction",
       ],
       "src/components/portal/set-password.tsx": ["setPortalPasswordAction"],
-      "src/components/portal/portal-intro.tsx": ["markOnboardingSeenAction"],
+      "src/components/portal/welcome-steps.tsx": ["markOnboardingSeenAction"],
     };
     for (const [file, expected] of Object.entries(allowed)) {
       const source = readFileSync(file, "utf8");
@@ -239,8 +239,11 @@ describe("the client portal", () => {
     }
   });
 
-  it("falls back to the account's words when a client has none", () => {
-    expect(page).toContain("client.welcomePack || extras?.clientNotes");
+  it("keeps the invoices behind the freelancer's switch", () => {
+    // Money is the one thing on here somebody might not want shared at all,
+    // so both the tab and the figures hang off the same flag.
+    expect(page).toContain("client.showInvoices !== false");
+    expect(page).toContain("...(showInvoices");
   });
 
   it("keeps the emoji to a known set", () => {

@@ -8,6 +8,7 @@ import type { ActionResult } from "@/actions/briefs";
 import { cleanAnswers, WELCOME_QUESTIONS } from "@/lib/welcome-questions";
 import { writeWelcomePack } from "@/lib/anthropic";
 import { visitors } from "@/lib/portal-auth";
+import { specFor } from "@/lib/onboarding-blocks";
 
 /**
  * The client's own front door.
@@ -214,3 +215,80 @@ export async function visitorsForClient(clientId: string) {
     lastSeenAt: row.verifiedAt ? row.lastSeenAt.toISOString() : null,
   }));
 }
+
+/**
+ * The blocks: what this client is told before the work starts.
+ *
+ * A row means "included". No row means "left out", which is a different thing
+ * from included-and-empty: one is a decision and the other is an unfinished
+ * job, and the interface can only tell them apart if the database does.
+ */
+function blocks() {
+  return (
+    prisma as unknown as {
+      onboardingBlock: {
+        findMany(args: {
+          where: { clientId: string };
+        }): Promise<{ id: string; kind: string; title: string; body: string }[]>;
+        upsert(args: {
+          where: { clientId_kind: { clientId: string; kind: string } };
+          create: Record<string, unknown>;
+          update: Record<string, unknown>;
+        }): Promise<unknown>;
+        deleteMany(args: { where: { clientId: string; kind: string } }): Promise<unknown>;
+      };
+    }
+  ).onboardingBlock;
+}
+
+export async function setBlockAction(
+  clientId: string,
+  kind: string,
+  title: string,
+  body: string
+): Promise<ActionResult<undefined>> {
+  const client = await owned(clientId);
+  if (!client) return { ok: false, error: "Client not found." };
+
+  const spec = specFor(kind);
+  // Anything not in the catalogue is refused rather than stored: a kind the
+  // portal will never render is a row somebody edits and cannot find.
+  if (!spec) return { ok: false, error: "Not a thing we can say." };
+
+  const cleanTitle = title.trim().slice(0, 60) || spec.title;
+  const cleanBody = body.trim().slice(0, 2000);
+  await blocks().upsert({
+    where: { clientId_kind: { clientId, kind } },
+    create: { clientId, kind, title: cleanTitle, body: cleanBody },
+    update: { title: cleanTitle, body: cleanBody },
+  });
+  revalidatePath(`/clients/${clientId}`);
+  return { ok: true, data: undefined };
+}
+
+/** Leaving one out. Deletes the row, so absent means absent. */
+export async function removeBlockAction(
+  clientId: string,
+  kind: string
+): Promise<ActionResult<undefined>> {
+  const client = await owned(clientId);
+  if (!client) return { ok: false, error: "Client not found." };
+
+  await blocks().deleteMany({ where: { clientId, kind } });
+  revalidatePath(`/clients/${clientId}`);
+  return { ok: true, data: undefined };
+}
+
+/** Whether this client sees what they owe. */
+export async function setShowInvoicesAction(
+  clientId: string,
+  showInvoices: boolean
+): Promise<ActionResult<undefined>> {
+  const client = await owned(clientId);
+  if (!client) return { ok: false, error: "Client not found." };
+
+  await clients().update({ where: { id: client.id }, data: { showInvoices } });
+  revalidatePath(`/clients/${clientId}`);
+  return { ok: true, data: undefined };
+}
+

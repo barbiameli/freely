@@ -1490,6 +1490,20 @@ export const en = {
     writeHint: "You read it before anyone else does.",
   },
 
+  blocks: {
+    title: "What they get told",
+    hint: "Shown one at a time the first time they sign in, and kept in a tab after that.",
+    include: "Include this",
+    leaveOut: "Leave this out",
+    heading: "Heading",
+    words: "What it says",
+    invoicesOn: "They can see their invoices",
+    invoicesOff: "Invoices are hidden from them",
+    invoicesHint: "Off for the engagements where money goes through somebody else.",
+    showInvoices: "Show them invoices",
+    hideInvoices: "Hide invoices from them",
+  },
+
   portal: {
     makeTitle: "Give them a welcome pack",
     makeHint:
@@ -1557,7 +1571,14 @@ export const en = {
     removeConfirm: "Remove access",
   },
 
+  welcomeSteps: {
+    next: "Next",
+    done: "Got it, take me in",
+    skip: "Skip for now",
+  },
+
   clientPage: {
+    howWeWork: "How we work",
     overview: "Overview",
     invoices: "Invoices",
     meetings: "Meetings",

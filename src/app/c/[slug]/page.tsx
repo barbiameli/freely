@@ -8,8 +8,9 @@ import { formatMoney } from "@/lib/money";
 import { visitorIdFromCookie } from "@/lib/portal-session";
 import { SignInForm } from "@/components/portal/sign-in-form";
 import { SetPassword } from "@/components/portal/set-password";
-import { PortalIntro } from "@/components/portal/portal-intro";
-import { cleanAnswers } from "@/lib/welcome-questions";
+import { PortalShell } from "@/components/portal/portal-shell";
+import { blocksForClient } from "@/lib/portal-blocks";
+import { BookOpen } from "lucide-react";
 
 /**
  * The client's dashboard.
@@ -43,7 +44,7 @@ import { cleanAnswers } from "@/lib/welcome-questions";
 export const dynamic = "force-dynamic";
 export const metadata = { robots: { index: false, follow: false } };
 
-type View = "overview" | "projects" | "quotes" | "invoices" | "meetings";
+type View = "overview" | "howwework" | "projects" | "quotes" | "invoices" | "meetings";
 
 export default async function ClientPortalPage({
   params,
@@ -65,6 +66,7 @@ export default async function ClientPortalPage({
         published: boolean;
         welcomePack: string | null;
         onboarding: unknown;
+        showInvoices: boolean;
       } | null>;
     };
     clientDocument: {
@@ -147,6 +149,9 @@ export default async function ClientPortalPage({
     db.clientDocument.findMany({ where: { clientId: client.id }, orderBy: { createdAt: "asc" } }),
   ]);
 
+  // What this client is told. Read after the gate, like everything else.
+  const blocks = await blocksForClient(client.id);
+
   const extras = owner as unknown as {
     bookingUrl?: string | null;
     clientNotes?: string | null;
@@ -155,7 +160,7 @@ export default async function ClientPortalPage({
   const t = dict("en").clientPage;
   const primary = owner?.brandPrimaryColor || "#FF2D8A";
   const studio = owner?.studioName || owner?.name || "";
-  const pack = client.welcomePack || extras?.clientNotes || "";
+  const showInvoices = client.showInvoices !== false;
   const view = (searchParams?.view ?? "overview") as View;
 
   /*
@@ -229,13 +234,28 @@ export default async function ClientPortalPage({
     { id: "overview", label: t.overview, icon: Sparkles },
     { id: "projects", label: t.projects, icon: FileText, count: projects.length },
     { id: "quotes", label: t.quotes, icon: FileText, count: quotes.length },
-    { id: "invoices", label: t.invoices, icon: Receipt, count: invoices.length },
+    ...(blocks.length > 0
+      ? [{ id: "howwework" as View, label: t.howWeWork, icon: BookOpen }]
+      : []),
+    ...(showInvoices
+      ? [{ id: "invoices" as View, label: t.invoices, icon: Receipt, count: invoices.length }]
+      : []),
     ...(extras?.bookingUrl
       ? [{ id: "meetings" as View, label: t.meetings, icon: CalendarClock }]
       : []),
   ];
 
   return (
+    <PortalShell
+      slug={params.slug}
+      studio={studio}
+      seen={Boolean(visitor.onboardingSeenAt)}
+      steps={blocks.map((block) => ({
+        kind: block.kind,
+        title: block.title,
+        body: block.body,
+      }))}
+    >
     <div className="min-h-screen bg-paper">
       <header className="bg-white border-b border-line">
         <div className="max-w-6xl mx-auto px-5 sm:px-8 py-5">
@@ -299,21 +319,24 @@ export default async function ClientPortalPage({
           <>
             {!visitor.passwordHash && <SetPassword slug={params.slug} />}
 
-            <PortalIntro
-              slug={params.slug}
-              pack={pack}
-              answers={cleanAnswers(client.onboarding)}
-              // Somebody we do not know is shown it, every time, because there
-              // is nowhere to record that they have read it. That is the
-              // honest behaviour rather than a guess.
-              seen={Boolean(visitor?.onboardingSeenAt)}
-            />
 
             {documents.length > 0 && (
               <Panel title={t.documents}>
                 <DocumentList documents={documents} slug={params.slug} />
               </Panel>
             )}
+          </>
+        )}
+
+        {view === "howwework" && (
+          <>
+            {blocks.map((block) => (
+              <Panel key={block.kind} title={block.title}>
+                <p className="text-body text-slate leading-relaxed whitespace-pre-line m-0 max-w-prose">
+                  {block.body}
+                </p>
+              </Panel>
+            ))}
           </>
         )}
 
@@ -460,6 +483,7 @@ export default async function ClientPortalPage({
         )}
       </main>
     </div>
+    </PortalShell>
   );
 }
 

@@ -1137,6 +1137,10 @@ model Client {
   /// Off until there is something worth sending. A portal with no welcome
   /// pack and no files is a worse first impression than no portal.
   published  Boolean @default(false)
+  /// Whether the client sees what they owe. On by default, because the person
+  /// paying is the person who most needs to find the invoice, and off is there
+  /// for the engagements where money goes through somebody else entirely.
+  showInvoices Boolean @default(true)
   /// The welcome pack: what happens next, in your words. Falls back to the
   /// account-level "how you work" when this is empty, so one client who needs
   /// something said differently does not mean writing it out for everybody.
@@ -1152,6 +1156,7 @@ model Client {
   timeEntries TimeEntry[]
   documents ClientDocument[]
   visitors  PortalVisitor[]
+  blocks    OnboardingBlock[]
 
   createdAt DateTime @default(now())
 
@@ -1350,4 +1355,32 @@ model PortalToken {
   createdAt DateTime @default(now())
 
   @@index([visitorId])
+}
+
+/// One thing said to a client before the work starts.
+///
+/// A row per block per client, created when the freelancer switches it on.
+/// Absent means "not included", which is different from included-and-empty:
+/// one is a decision and the other is an unfinished job, and the interface can
+/// only tell them apart if the database can.
+///
+/// The kind is a string rather than an enum so that adding a block to the
+/// catalogue in lib/onboarding-blocks does not need a migration. Anything not
+/// in the catalogue is ignored on the way out, so a removed kind stops being
+/// shown without a data change either.
+model OnboardingBlock {
+  id       String @id @default(cuid())
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  kind  String
+  /// Overridable, because "How I work" is not what everybody calls it.
+  title String
+  body  String @default("") @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([clientId, kind])
+  @@index([clientId])
 }

@@ -318,6 +318,8 @@ export async function clientDetail(
       published: Boolean((client as unknown as { published?: boolean }).published),
       welcomePack: (client as unknown as { welcomePack?: string | null }).welcomePack ?? null,
       onboarding: cleanAnswers((client as unknown as { onboarding?: unknown }).onboarding),
+      showInvoices:
+        (client as unknown as { showInvoices?: boolean }).showInvoices !== false,
     },
     quotes,
     projects,
