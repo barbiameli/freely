@@ -63,6 +63,7 @@ export default async function ClientPage({ params }: { params: { clientId: strin
         publicSlug={client.publicSlug}
         published={client.published}
         welcomePack={client.welcomePack}
+        onboarding={client.onboarding}
         fallbackPack={
           (user as unknown as { clientNotes?: string | null }).clientNotes ?? null
         }

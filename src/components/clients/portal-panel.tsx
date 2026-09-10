@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CardHeader } from "@/components/ui/label";
 import { useT } from "@/lib/i18n/context";
+import { WelcomeBuilder } from "@/components/clients/welcome-builder";
 
 /**
  * The client's front door, from your side.
@@ -29,6 +30,7 @@ export function PortalPanel({
   publicSlug,
   published,
   welcomePack,
+  onboarding,
   fallbackPack,
 }: {
   clientId: string;
@@ -36,6 +38,8 @@ export function PortalPanel({
   publicSlug: string;
   published: boolean;
   welcomePack: string | null;
+  /** The answers behind the pack, so the questions can be re-opened. */
+  onboarding: Record<string, string>;
   /** What the account says, used when this client has nothing of their own. */
   fallbackPack: string | null;
 }) {
@@ -125,7 +129,18 @@ export function PortalPanel({
         </a>
       </div>
 
-      <div className="mt-4">
+      {/* The questions first, then what they produced. Somebody arriving at a
+          blank textarea called "What happens next" writes nothing; somebody
+          asked how many rounds of revisions they do has an answer. */}
+      <div className="mt-5 border-t border-line pt-4">
+        <WelcomeBuilder
+          clientId={clientId}
+          answers={onboarding}
+          onDrafted={(text) => setPack(text)}
+        />
+      </div>
+
+      <div className="mt-5 border-t border-line pt-4">
         <div className="text-caption text-text-muted mb-1">{t.portal.packLabel}</div>
         <textarea
           value={pack}

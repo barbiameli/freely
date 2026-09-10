@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { clientSlug, historyFrom, isRealName, NO_HISTORY, type ClientHistory } from "@/lib/clients";
 import { teamScopeWhere } from "@/lib/team-scope";
+import { cleanAnswers } from "@/lib/welcome-questions";
 
 /**
  * Reaching the Client table.
@@ -316,6 +317,7 @@ export async function clientDetail(
       publicSlug: (client as unknown as { publicSlug?: string }).publicSlug ?? "",
       published: Boolean((client as unknown as { published?: boolean }).published),
       welcomePack: (client as unknown as { welcomePack?: string | null }).welcomePack ?? null,
+      onboarding: cleanAnswers((client as unknown as { onboarding?: unknown }).onboarding),
     },
     quotes,
     projects,

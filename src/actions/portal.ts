@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import type { ActionResult } from "@/actions/briefs";
+import { cleanAnswers, WELCOME_QUESTIONS } from "@/lib/welcome-questions";
+import { writeWelcomePack } from "@/lib/anthropic";
 
 /**
  * The client's own front door.
@@ -84,4 +86,65 @@ export async function setPortalPublishedAction(
   await clients().update({ where: { id: client.id }, data: { published } });
   revalidatePath(`/clients/${client.id}`);
   return { ok: true, data: { slug: client.publicSlug } };
+}
+
+/**
+ * The answers behind the welcome pack.
+ *
+ * Kept separately from the prose so the questions can be re-opened and changed
+ * later. A pack that only exists as a paragraph can be edited but not revised:
+ * you cannot see what you said about revisions without reading the whole thing
+ * and hoping it is in there.
+ */
+export async function setOnboardingAction(
+  clientId: string,
+  answers: Record<string, string>
+): Promise<ActionResult<undefined>> {
+  const client = await owned(clientId);
+  if (!client) return { ok: false, error: "Client not found." };
+
+  await clients().update({
+    where: { id: client.id },
+    data: { onboarding: cleanAnswers(answers) },
+  });
+  revalidatePath(`/clients/${client.id}`);
+  return { ok: true, data: undefined };
+}
+
+/**
+ * Turning the answers into something a person would actually read.
+ *
+ * Haiku, not Sonnet: this is a short rewrite of text somebody has already
+ * written, which is exactly what the small model is for (see
+ * docs/agents/efficiency-standards.md). It is also not on any critical path —
+ * nothing is blocked on it, and the answers stay exactly as given if it fails,
+ * so the worst case is the freelancer writing the paragraph themselves, which
+ * is what they would have been doing anyway.
+ *
+ * It returns the draft rather than saving it. A machine deciding what your
+ * client reads about how you work, without you seeing it first, is the wrong
+ * shape for this whatever the output quality.
+ */
+export async function draftWelcomePackAction(
+  clientId: string,
+  answers: Record<string, string>
+): Promise<ActionResult<{ text: string }>> {
+  const client = await owned(clientId);
+  if (!client) return { ok: false, error: "Client not found." };
+
+  const cleaned = cleanAnswers(answers);
+  if (Object.keys(cleaned).length === 0) {
+    return { ok: false, error: "Answer a question or two first." };
+  }
+
+  try {
+    const lines = WELCOME_QUESTIONS.filter((q) => cleaned[q.id]).map(
+      (q) => `${q.ask} ${cleaned[q.id]}`
+    );
+
+    const text = await writeWelcomePack(lines);
+    return { ok: true, data: { text } };
+  } catch {
+    return { ok: false, error: "Couldn't draft that. Your answers are saved." };
+  }
 }

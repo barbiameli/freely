@@ -1481,6 +1481,15 @@ export const en = {
     openProject: "Open the project",
   },
 
+  welcome: {
+    title: "What they need to know",
+    hint: "Answer what you like and stop when you want. Two answers beat none.",
+    progress: "{done} of {total}",
+    orSay: "Or say it your own way",
+    write: "Write it up for me",
+    writeHint: "You read it before anyone else does.",
+  },
+
   portal: {
     makeTitle: "Give them a welcome pack",
     makeHint:

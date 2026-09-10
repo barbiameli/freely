@@ -1469,6 +1469,15 @@ export const es: Dictionary = {
     openProject: "Abrir el proyecto",
   },
 
+  welcome: {
+    title: "Lo que necesitan saber",
+    hint: "Contesta lo que quieras y para cuando quieras. Dos respuestas ganan a ninguna.",
+    progress: "{done} de {total}",
+    orSay: "O dilo a tu manera",
+    write: "Escríbemelo",
+    writeHint: "Lo lees tú antes que nadie.",
+  },
+
   portal: {
     makeTitle: "Dales un pack de bienvenida",
     makeHint:

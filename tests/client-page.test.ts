@@ -202,7 +202,8 @@ describe("the client portal", () => {
     // And that one can only ask for a link.
     const banner = readFileSync("src/components/portal/hello-form.tsx", "utf8");
     const actions = banner.match(/[a-zA-Z]+Action/g) ?? [];
-    expect([...new Set(actions)]).toEqual(["requestPortalLinkAction"]);
+    // Array.from rather than a spread: this project compiles below es2015.
+    expect(Array.from(new Set(actions))).toEqual(["requestPortalLinkAction"]);
   });
 
   it("falls back to the account's words when a client has none", () => {

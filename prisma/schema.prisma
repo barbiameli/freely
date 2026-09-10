@@ -1141,6 +1141,10 @@ model Client {
   /// account-level "how you work" when this is empty, so one client who needs
   /// something said differently does not mean writing it out for everybody.
   welcomePack String? @db.Text
+  /// The answers behind the welcome pack, kept so the questions can be
+  /// re-opened and changed rather than only the prose they produced. Shape is
+  /// lib/welcome-questions: { [questionId]: string }.
+  onboarding  Json?
 
   briefs    Brief[]
   projects  Project[]

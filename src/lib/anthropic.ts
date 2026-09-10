@@ -1317,7 +1317,8 @@ type LlmJob =
   | "generateQuoteExtras"
   | "suggestSections"
   | "planQuote"
-  | "researchBenchmark";
+  | "researchBenchmark"
+  | "writeWelcomePack";
 
 interface LlmCallLog {
   job: LlmJob;
@@ -2383,4 +2384,35 @@ export async function researchBenchmark(
     console.error("[researchBenchmark] failed", err);
     return null;
   }
+}
+
+/**
+ * A welcome pack, from the answers somebody gave.
+ *
+ * Haiku: a short rewrite of text that already exists, which is the smaller
+ * model's job. Capped tight, because the failure mode worth guarding is not a
+ * bad paragraph but a long one: nobody reads a page of rules, and a client who
+ * skims past the revisions line has learned nothing.
+ */
+export async function writeWelcomePack(answers: string[]): Promise<string> {
+  const system = [
+    "You write the short note a freelancer sends a client at the start of a project.",
+    "",
+    "Rules:",
+    "- Two or three short paragraphs. Never more. No headings, no bullet list.",
+    "- Warm and plain, the way one person writes to another they like working with.",
+    "- Only say what the answers say. Invent nothing, promise nothing extra.",
+    "- Write as the freelancer, in the first person.",
+    "- No em dashes.",
+    "- Do not open with 'I'm excited' or 'Welcome aboard'.",
+    "- Return the note itself and nothing else.",
+  ].join("\n");
+
+  const prompt = ["Here is how they work:", ...answers.map((line) => `- ${line}`)].join("\n");
+
+  const text = await callClaude("writeWelcomePack", system, prompt, {
+    small: true,
+    maxTokens: 500,
+  });
+  return text.trim();
 }
