@@ -28,4 +28,11 @@ export async function resetTestDb(): Promise<void> {
   // Also not owned by a User (see lib/rate-limit.ts) — the identifier is
   // folded into an opaque key, not a foreign key.
   await testDb.rateLimitHit.deleteMany();
+  // The third of the same kind: somebody on the waitlist has no account yet,
+  // by definition, so there is nothing for the User delete to cascade from.
+  // Left out, a test asserting that a bad address writes nothing passes once
+  // and then fails on every run after it.
+  await (
+    testDb as unknown as { waitlist: { deleteMany(): Promise<unknown> } }
+  ).waitlist.deleteMany();
 }

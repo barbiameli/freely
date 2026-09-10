@@ -60,6 +60,68 @@ export function createQuote(
   });
 }
 
+/**
+ * Creates a Client belonging to the given User.
+ *
+ * `slug` is the internal matching key (lowercased name, see lib/clients) and
+ * is unique per user; `publicSlug` is the Client Portal address and is unique
+ * globally. Two different things with similar names, so both are set here
+ * rather than left to a caller to get right.
+ */
+export function createClient(
+  userId: string,
+  overrides: Record<string, unknown> = {}
+): Promise<{ id: string; publicSlug: string; name: string; published: boolean }> {
+  const name = (overrides.name as string) ?? "Test Client";
+  return (
+    testDb as unknown as {
+      client: {
+        create(args: { data: Record<string, unknown> }): Promise<{
+          id: string;
+          publicSlug: string;
+          name: string;
+          published: boolean;
+        }>;
+      };
+    }
+  ).client.create({
+    data: {
+      name,
+      slug: unique(name.toLowerCase().replace(/[^a-z0-9]+/g, "-")),
+      userId,
+      ...overrides,
+    },
+  });
+}
+
+/** Creates a file on a Client's Portal. The bytes are not real: nothing in a
+ * test talks to blob storage, so `pathname` is just a string. */
+export function createDocument(
+  clientId: string,
+  overrides: Record<string, unknown> = {}
+): Promise<{ id: string; name: string; pathname: string }> {
+  return (
+    testDb as unknown as {
+      clientDocument: {
+        create(args: { data: Record<string, unknown> }): Promise<{
+          id: string;
+          name: string;
+          pathname: string;
+        }>;
+      };
+    }
+  ).clientDocument.create({
+    data: {
+      clientId,
+      name: "brand-guide.pdf",
+      pathname: unique("clients/test/brand-guide.pdf"),
+      contentType: "application/pdf",
+      size: 2048,
+      ...overrides,
+    },
+  });
+}
+
 /** Creates a Project (Track's row) belonging to the given User. */
 export function createProject(
   userId: string,
