@@ -6,6 +6,38 @@ import { PrismaClient } from "@prisma/client";
  * whatever `DATABASE_URL` is set to — the docker-compose Postgres locally, the
  * `postgres` service container in CI (see `.github/workflows/ci.yml`).
  */
+/**
+ * Refuses to be anything but a throwaway database.
+ *
+ * `resetTestDb` below deletes every User. `.env` in this repo points
+ * DATABASE_URL at the production Neon database, because that is what `prisma
+ * db push` and `next dev` need. Nothing stood between those two facts, so
+ * running the integration tests locally without overriding the variable
+ * deleted every real account — which is exactly what happened on 2026-09-10.
+ *
+ * The check is deliberately a blocklist of the one thing that must never be
+ * true rather than a pattern the URL has to match: a new local setup should
+ * not have to be added here to be allowed, but a managed host should never be
+ * reachable by forgetting an environment variable.
+ */
+function assertThrowaway(url: string | undefined): void {
+  if (!url) {
+    throw new Error("DATABASE_URL is not set. Integration tests need a throwaway Postgres.");
+  }
+  const managed = ["neon.tech", "supabase.co", "rds.amazonaws.com", "render.com", "railway.app"];
+  const host = managed.find((h) => url.includes(h));
+  if (host) {
+    throw new Error(
+      `Refusing to run: DATABASE_URL points at ${host}, and these tests delete every row.\n` +
+        "Start the local database and point at it for this command only:\n" +
+        "  docker compose up -d\n" +
+        "  DATABASE_URL=postgresql://freely:freely@localhost:5432/freely npx vitest run tests/integration"
+    );
+  }
+}
+
+assertThrowaway(process.env.DATABASE_URL);
+
 export const testDb = new PrismaClient();
 
 /**

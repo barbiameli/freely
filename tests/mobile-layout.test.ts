@@ -33,7 +33,19 @@ const files = tsxFiles("src").map((path) => ({ path, source: readFileSync(path, 
  * one is a decision somebody makes here, in the test, where it can be argued
  * with.
  */
-const KEEPS_ITS_COLUMNS = ["src/components/track/time-week.tsx"];
+const KEEPS_ITS_COLUMNS = [
+  "src/components/track/time-week.tsx",
+  /*
+   * The board preview on the marketing page, for the same reason.
+   *
+   * Three columns is not a layout choice there, it is the thing being drawn:
+   * To do, Doing, Done stacked into one column is a list, and a picture of a
+   * list does not sell a board. The cards inside it carry four words and a
+   * duration at 9px, and the whole mock is aria-hidden, so it is meant to be
+   * recognised rather than read.
+   */
+  "src/app/product-preview.tsx",
+];
 
 describe("mobile layout", () => {
   it("finds the components to check", () => {

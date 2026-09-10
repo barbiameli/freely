@@ -1498,6 +1498,18 @@ export const en = {
   },
 
   clientPage: {
+    overview: "Overview",
+    invoices: "Invoices",
+    meetings: "Meetings",
+    noInvoices: "Nothing billed yet.",
+    noQuotes: "No quotes yet.",
+    noProjects: "No projects yet.",
+    invoicePaid: "Paid",
+    invoiceOutstanding: "Outstanding",
+    invoiceDue: "Due {date}",
+    invoiceNumber: "No. {n}",
+    openInvoice: "Open",
+    everything: "Everything about working together, in one place.",
     welcomePack: "Start here",
     projects: "Projects",
     stepsDone: "{done} of {total} done",
@@ -1525,21 +1537,27 @@ export const en = {
     capQuoteTitle: "Quote accurately",
     capQuoteBody:
       "Price the work against your own rates and what you have charged before, so the number holds up when a client asks about it. Scope, deliverables and a timeline come with it, as a page you send or a PDF you attach.",
-    capTrackTitle: "See every project at once",
+    capTrackTitle:
+      "Run it on a board",
     capTrackBody:
-      "Everything you have on, in one view: what is due, what has slipped, and which project needs you today. Each one breaks into steps you tick off as you go.",
-    capReportTitle: "Keep clients in the loop",
+      "Every project breaks into tasks you drag between To do, Doing and Done. Press play on one to record the hours against it, and lay the whole job out on a timeline that fits your working days and says what has to give when it will not fit.",
+    capPlanTitle: "Plan it against real days",
+    capPlanBody:
+      "Give a project its dates and how many hours a day you have on it, and the work lays itself out across your working days. When it will not fit, it says which part gets squeezed rather than reporting an overrun and leaving you with it.",
+    capReportTitle:
+      "Give each client one link",
     capReportBody:
-      "A running record of progress your client can open whenever they like, under your own name and colours. Far fewer emails asking how it is going.",
+      "A page in your name holding everything they need: how you work, every project you have run for them with its progress, and the files you have sent. Switch it off and it stops resolving, files included.",
     capInvoiceTitle: "Invoice when the work is done",
     capInvoiceBody:
       "Turn finished work into an invoice carrying your terms and payment details, ready to send, with the hours and figures already filled in.",
 
     aiNote: "AI writes the first draft. You edit it, and nothing reaches a client until you say so.",
 
-    betaTitle: "Twenty people, not twenty thousand",
-    betaBody:
-      "Freely is in a closed beta with a small group of freelancers, so it gets built around what they actually run into. Leave your email and you'll hear when there is room.",
+    joinBeta: "Join the beta, free",
+    closingTitle: "Start with your next quote",
+    closingBody:
+      "Freely is early and still moving. It gets built around what the people using it actually run into, so if something is missing, say so and it usually turns up.",
     freeToStart: "Free while it is in beta.",
     tryIt: "Try it on your next quote.",
     copyright: "© {year} Freely.",

@@ -1,7 +1,7 @@
 "use client";
 
 import { FreelyLogo } from "@/components/freely-logo";
-import { useInView, Tally, GrowBar, StaggerItem } from "./reveal";
+import { useInView, Tally, StaggerItem } from "./reveal";
 import { fill, type Dictionary } from "@/lib/i18n";
 
 /**
@@ -215,87 +215,6 @@ export function QuotePreview({ t }: { t: Dictionary }) {
   );
 }
 
-/** Tracking: several projects at once, which is the whole point of the view. */
-export function TrackPreview({ t }: { t: Dictionary }) {
-  const { ref, inView } = useInView();
-  // Typed rather than inferred: two of these three stats are numbers that count
-  // up and one is a word, and an inferred union of those two shapes cannot be
-  // read from without narrowing at every use.
-  const stats: {
-    label: string;
-    /** A number to count up to, for the two that are numbers. */
-    tally?: number;
-    suffix?: string;
-    /** Or a word, for Pace, which is not a quantity. */
-    text?: string;
-    small?: boolean;
-  }[] = [
-    { label: t.track.done, tally: 58, suffix: "%" },
-    { label: t.track.pace, text: t.track.paceOnTrack, small: true },
-    { label: t.track.hours, tally: 96 },
-  ];
-  const projects = [
-    { name: `${CLIENTS.aurora}, brand refresh`, done: 0.65, meta: "4/6", late: false },
-    { name: `${CLIENTS.meridian}, onboarding flow`, done: 0.3, meta: "2/7", late: true },
-    { name: `${CLIENTS.northwind}, design system`, done: 0.85, meta: "6/7", late: false },
-  ];
-
-  return (
-    <div ref={ref}>
-      <Frame label={t.nav.track}>
-        <div className="px-5 py-5">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-            {stats.map((stat, i) => (
-              <StaggerItem key={stat.label} index={i} start={inView} step={90}>
-                <div className="rounded-lg bg-ink px-3 py-2.5">
-                  <div className="text-[8px] uppercase tracking-wide text-white/70 truncate">
-                    {stat.label}
-                  </div>
-                  <div
-                    className={`font-body font-bold text-white tabular-nums mt-0.5 ${
-                      stat.small ? "text-caption" : "text-lead"
-                    }`}
-                  >
-                    {stat.text ?? (
-                      <Tally value={stat.tally ?? 0} suffix={stat.suffix ?? ""} start={inView} />
-                    )}
-                  </div>
-                </div>
-              </StaggerItem>
-            ))}
-          </div>
-
-          <div className="flex flex-col gap-2.5">
-            {projects.map((project, i) => (
-              <StaggerItem key={project.name} index={i} start={inView} step={110}>
-                <div className="flex items-center gap-3">
-                  <span className="min-w-0 flex-1 text-caption text-slate truncate">
-                    {project.name}
-                  </span>
-                  {/* The bars fill rather than appear. Three projects at
-                      different lengths arriving at different moments is the
-                      difference between reading progress and reading a chart. */}
-                  <span className="w-20 h-[4px] rounded-full bg-line overflow-hidden shrink-0">
-                    <GrowBar
-                      fraction={project.done}
-                      color={project.late ? "bg-overdue" : "bg-violet"}
-                      start={inView}
-                      delay={260 + i * 110}
-                    />
-                  </span>
-                  <span className="text-[9px] text-text-muted tabular-nums w-7 text-right shrink-0">
-                    {project.meta}
-                  </span>
-                </div>
-              </StaggerItem>
-            ))}
-          </div>
-        </div>
-      </Frame>
-    </div>
-  );
-}
-
 /** Client reporting: what the client sees, so it is shown from their side. */
 export function ReportPreview({ t }: { t: Dictionary }) {
   const { ref, inView } = useInView();
@@ -388,6 +307,152 @@ export function InvoicePreview({ t }: { t: Dictionary }) {
                 <span className="text-[9px] text-text-muted">{fill(t.invoices.dueInDays, { days: 14 })}</span>
               </div>
             </StaggerItem>
+          </div>
+        </div>
+      </Frame>
+    </div>
+  );
+}
+
+/**
+ * The board: three columns, the cards arriving into them, one clock running.
+ *
+ * The Track preview above it answers "how are my projects doing" across the
+ * whole week. This one answers "what am I doing this afternoon", which is a
+ * different question and the one the board was built for, so it gets its own
+ * picture rather than being folded into that one.
+ *
+ * The running card is the point of the whole thing, so it is the only card
+ * carrying the accent and it is in Doing, where a clock can honestly be.
+ */
+export function BoardPreview({ t }: { t: Dictionary }) {
+  const { ref, inView } = useInView();
+
+  const columns: { label: string; cards: { name: string; hours: string; running?: boolean }[] }[] =
+    [
+      {
+        label: t.track.boardTodo,
+        cards: [
+          { name: "Pricing page copy", hours: "3h" },
+          { name: "Mobile nav states", hours: "2h" },
+        ],
+      },
+      {
+        label: t.track.boardDoing,
+        cards: [{ name: "Homepage layout", hours: "0:42", running: true }],
+      },
+      {
+        label: t.track.boardDone,
+        cards: [
+          { name: "Brand audit", hours: "5h" },
+          { name: "Sitemap", hours: "1h" },
+        ],
+      },
+    ];
+
+  return (
+    <div ref={ref}>
+      <Frame label={t.nav.track}>
+        <div className="grid grid-cols-3 gap-2 px-3 py-4">
+          {columns.map((column, columnIndex) => (
+            <div key={column.label} className="rounded-lg bg-paper p-2">
+              <div className="text-[8px] uppercase tracking-[0.1em] text-text-muted mb-2 truncate">
+                {column.label}
+              </div>
+              <div className="flex flex-col gap-1.5">
+                {column.cards.map((card, cardIndex) => (
+                  <StaggerItem
+                    key={card.name}
+                    // Left to right, so it reads as work moving across rather
+                    // than three lists appearing at once.
+                    index={columnIndex * 2 + cardIndex}
+                    start={inView}
+                    step={110}
+                  >
+                    <div className="rounded-md bg-white border border-line px-2 py-1.5 flex items-start gap-1.5">
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[9px] font-semibold text-ink leading-snug">
+                          {card.name}
+                        </span>
+                        <span className="block text-[8px] text-text-muted tabular-nums mt-0.5">
+                          {card.hours}
+                        </span>
+                      </span>
+                      {card.running && (
+                        <span className="shrink-0 w-3.5 h-3.5 rounded-full bg-violet flex items-center justify-center">
+                          <span className="w-1 h-1 rounded-full bg-ink" />
+                        </span>
+                      )}
+                    </div>
+                  </StaggerItem>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Frame>
+    </div>
+  );
+}
+
+/**
+ * The timeline: deliverables as parent bars, with their tasks nested under.
+ *
+ * Drawn as bars of different lengths starting on different days, because the
+ * complaint the planner exists to answer is a chart that gives everything one
+ * day and calls it a plan. A picture of that failure would sell the wrong
+ * thing.
+ */
+export function TimelinePreview({ t }: { t: Dictionary }) {
+  const { ref, inView } = useInView();
+
+  // start and span are in columns out of twelve.
+  const bars = [
+    { name: "Discovery", start: 0, span: 3, parent: true },
+    { name: "Interviews", start: 0, span: 2, parent: false },
+    { name: "Design", start: 3, span: 6, parent: true },
+    { name: "Homepage", start: 3, span: 4, parent: false },
+    { name: "Build", start: 8, span: 4, parent: true },
+  ];
+
+  return (
+    <div ref={ref}>
+      <Frame label={t.track.viewTimeline}>
+        <div className="px-4 py-4">
+          <div className="flex flex-col gap-1.5">
+            {bars.map((bar, i) => (
+              <StaggerItem key={bar.name} index={i} start={inView} step={110}>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`w-16 shrink-0 truncate text-[9px] ${
+                      bar.parent ? "font-semibold text-ink" : "text-text-muted pl-2"
+                    }`}
+                  >
+                    {bar.name}
+                  </span>
+                  <span className="relative flex-1 h-3">
+                    {/* The week, behind the bars, so a bar has something to
+                        be positioned against rather than floating. */}
+                    <span className="absolute inset-0 grid grid-cols-12 gap-px">
+                      {Array.from({ length: 12 }).map((_, column) => (
+                        <span key={column} className="bg-paper rounded-[2px]" />
+                      ))}
+                    </span>
+                    <span
+                      className={`absolute inset-y-0 rounded-full transition-[width,opacity] duration-700 ease-marketing motion-reduce:transition-none ${
+                        bar.parent ? "bg-violet" : "bg-inkblue/70"
+                      }`}
+                      style={{
+                        left: `${(bar.start / 12) * 100}%`,
+                        width: inView ? `${(bar.span / 12) * 100}%` : "0%",
+                        opacity: inView ? 1 : 0,
+                        transitionDelay: `${i * 110}ms`,
+                      }}
+                    />
+                  </span>
+                </div>
+              </StaggerItem>
+            ))}
           </div>
         </div>
       </Frame>

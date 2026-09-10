@@ -1486,6 +1486,18 @@ export const es: Dictionary = {
   },
 
   clientPage: {
+    overview: "Resumen",
+    invoices: "Facturas",
+    meetings: "Reuniones",
+    noInvoices: "Todavía no hay nada facturado.",
+    noQuotes: "Todavía no hay presupuestos.",
+    noProjects: "Todavía no hay proyectos.",
+    invoicePaid: "Pagada",
+    invoiceOutstanding: "Pendiente",
+    invoiceDue: "Vence el {date}",
+    invoiceNumber: "Nº {n}",
+    openInvoice: "Abrir",
+    everything: "Todo sobre nuestro trabajo juntos, en un sitio.",
     welcomePack: "Empieza por aquí",
     projects: "Proyectos",
     stepsDone: "{done} de {total} hechos",
@@ -1513,21 +1525,27 @@ export const es: Dictionary = {
     capQuoteTitle: "Presupuesta con criterio",
     capQuoteBody:
       "Pon precio con tus tarifas y con lo que ya has cobrado antes, para que el número aguante cuando el cliente pregunte. Con alcance, entregables y calendario, como página o como PDF.",
-    capTrackTitle: "Todos tus proyectos de un vistazo",
+    capTrackTitle:
+      "Llévalo en un tablero",
     capTrackBody:
-      "Todo lo que tienes abierto en una sola vista: qué toca, qué se ha retrasado y qué proyecto te necesita hoy. Cada uno se desglosa en pasos que vas marcando.",
-    capReportTitle: "El cliente sabe por dónde va",
+      "Cada proyecto se divide en tareas que arrastras entre Por hacer, En curso y Hecho. Dale al play en una para registrar las horas, y coloca el trabajo entero en una línea de tiempo que respeta tus días y te dice qué sobra cuando no cabe.",
+    capPlanTitle: "Planifícalo con días reales",
+    capPlanBody:
+      "Dale fechas al proyecto y cuántas horas al día le dedicas, y el trabajo se reparte por tus días laborables. Cuando no cabe, te dice qué parte se aprieta en vez de avisarte del desfase y dejarte con él.",
+    capReportTitle:
+      "Un enlace para cada cliente",
     capReportBody:
-      "Un registro de avances que tu cliente abre cuando quiera, con tu nombre y tus colores. Muchos menos correos preguntando cómo va la cosa.",
+      "Una página con tu nombre y todo lo que necesitan: cómo trabajas, cada proyecto que llevas con ellos y cómo va, y los archivos que les has mandado. La apagas y deja de existir, archivos incluidos.",
     capInvoiceTitle: "Factura al terminar",
     capInvoiceBody:
       "Convierte el trabajo hecho en una factura con tus condiciones y tus datos de pago, lista para enviar y con las horas y las cifras ya puestas.",
 
     aiNote: "La IA escribe el primer borrador. Tú lo editas, y no le llega nada al cliente hasta que tú lo digas.",
 
-    betaTitle: "Veinte personas, no veinte mil",
-    betaBody:
-      "Freely está en beta cerrada con un grupo pequeño de freelancers, así se construye alrededor de lo que os pasa de verdad. Deja tu correo y te aviso cuando haya sitio.",
+    joinBeta: "Únete a la beta, gratis",
+    closingTitle: "Empieza por tu próximo presupuesto",
+    closingBody:
+      "Freely es reciente y sigue cambiando. Se construye alrededor de lo que os pasa de verdad a quienes lo usáis, así que si falta algo, dilo y suele aparecer.",
     freeToStart: "Gratis mientras está en beta.",
     tryIt: "Pruébalo en tu próximo presupuesto.",
     copyright: "© {year} Freely.",

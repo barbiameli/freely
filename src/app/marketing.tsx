@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { ShieldCheck, Sparkles } from "lucide-react";
 import { FreelyLogo } from "@/components/freely-logo";
-import { WaitlistForm } from "@/components/waitlist-form";
 import { LocaleProvider } from "@/lib/i18n/context";
 import { MarketingHeader } from "./marketing-header";
 import { Reveal, Rise } from "./reveal";
@@ -9,9 +8,10 @@ import { fill, type Dictionary, type Locale } from "@/lib/i18n";
 import {
   ProductPreview,
   QuotePreview,
-  TrackPreview,
   ReportPreview,
   InvoicePreview,
+  BoardPreview,
+  TimelinePreview,
 } from "./product-preview";
 
 /**
@@ -113,11 +113,25 @@ function Hero({ t }: { t: Dictionary }) {
         </div>
       </Rise>
 
-      {/* The list, rather than a pair of buttons to an account nobody can
-          make yet. The beta is closed, so Sign up led to a door that opens
-          for a handful of people and a form is the honest version of it. */}
+      {/* The door is open, so this is the door rather than a form asking to
+          be let through it. The waitlist stood here while the beta was closed
+          to twenty people; keeping it now would be collecting addresses for
+          an invitation nobody needs. */}
       <Rise delay={240} className="mt-8">
-        <WaitlistForm />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
+          <Link
+            href="/signup"
+            className="font-body font-bold text-sm text-ink bg-violet px-6 py-3.5 rounded-full text-center no-underline press hover:bg-violet-deep transition-colors"
+          >
+            {t.marketing.joinBeta}
+          </Link>
+          <Link
+            href="/signin"
+            className="font-body font-bold text-sm text-ink bg-white border-[1.5px] border-ink px-6 py-3.5 rounded-full text-center no-underline press hover:bg-ink hover:text-white transition-colors"
+          >
+            {t.marketing.logIn}
+          </Link>
+        </div>
         <p className="text-muted text-meta mt-3 mb-0">{t.marketing.freeToStart}</p>
       </Rise>
     </section>
@@ -147,7 +161,12 @@ function Capabilities({ t }: { t: Dictionary }) {
     {
       title: t.marketing.capTrackTitle,
       body: t.marketing.capTrackBody,
-      visual: <TrackPreview t={t} />,
+      visual: <BoardPreview t={t} />,
+    },
+    {
+      title: t.marketing.capPlanTitle,
+      body: t.marketing.capPlanBody,
+      visual: <TimelinePreview t={t} />,
     },
     {
       title: t.marketing.capReportTitle,
@@ -204,14 +223,23 @@ function ClosingCTA({ t }: { t: Dictionary }) {
         {/* The dark block, which is the one place lime can carry anything:
             on ink it is 14:1, and on white it is unreadable at any size. */}
         <div className="rounded-lg bg-ink px-6 sm:px-10 py-10 sm:py-14 text-center">
+          {/* "Twenty people, not twenty thousand" stood here and is gone.
+              It was true of a closed beta and stopped being true the moment
+              anybody could sign up, and a line that has quietly become false
+              is worse than a plainer one that has not. */}
           <h2 className="font-display text-[28px] sm:text-[42px] leading-[1.04] text-white m-0 max-w-[15ch] mx-auto text-balance">
-            {t.marketing.betaTitle}
+            {t.marketing.closingTitle}
           </h2>
           <p className="text-white/70 text-lead mt-4 mb-8 max-w-md mx-auto">
-            {t.marketing.betaBody}
+            {t.marketing.closingBody}
           </p>
 
-          <WaitlistForm onDark />
+          <Link
+            href="/signup"
+            className="inline-block font-body font-bold text-sm text-ink bg-lime px-7 py-3.5 rounded-full no-underline press hover:bg-[#B9E92F] transition-colors"
+          >
+            {t.marketing.joinBeta}
+          </Link>
 
           <p className="flex items-start justify-center gap-2 text-white/60 text-small mt-7 max-w-sm mx-auto text-left sm:text-center mb-0">
             <Sparkles size={14} className="text-lime shrink-0 mt-0.5" />
