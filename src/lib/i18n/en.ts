@@ -1523,6 +1523,12 @@ export const en = {
     failed: "That didn't send. Try again in a moment.",
   },
 
+  intro: {
+    title: "Start here",
+    gotIt: "Got it",
+    reminder: "How this works",
+  },
+
   clientPage: {
     overview: "Overview",
     invoices: "Invoices",

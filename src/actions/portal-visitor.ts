@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, RateLimitError } from "@/lib/rate-limit";
 import { appUrl, send } from "@/lib/email";
-import { newToken } from "@/lib/portal-session";
+import { newToken, visitorIdFromCookie } from "@/lib/portal-session";
 import type { ActionResult } from "@/actions/briefs";
 
 /**
@@ -105,5 +105,45 @@ export async function requestPortalLinkAction(
   } catch (error) {
     if (error instanceof RateLimitError) return { ok: false, error: "portal.tooMany" };
     return { ok: false, error: "portal.failed" };
+  }
+}
+
+/**
+ * "Got it" on the welcome pack.
+ *
+ * Identified by the cookie rather than by anything passed in, so this cannot
+ * be used to mark somebody else as having read the rules. If there is no
+ * cookie there is nobody to record it against, and the answer is a quiet yes:
+ * the caller is a browser that has just collapsed a card, and telling it off
+ * for not being logged in would be a strange thing to do.
+ */
+export async function markOnboardingSeenAction(slug: string): Promise<ActionResult<undefined>> {
+  const visitorId = visitorIdFromCookie(slug);
+  if (!visitorId) return { ok: true, data: undefined };
+
+  try {
+    const client = await db().client.findUnique({ where: { publicSlug: slug } });
+    if (!client || !client.published) return { ok: true, data: undefined };
+
+    await (
+      prisma as unknown as {
+        portalVisitor: {
+          updateMany(args: {
+            where: { id: string; clientId: string };
+            data: Record<string, unknown>;
+          }): Promise<unknown>;
+        };
+      }
+    ).portalVisitor.updateMany({
+      // Scoped to this portal's client, so a cookie from one portal cannot
+      // write against a visitor row belonging to another.
+      where: { id: visitorId, clientId: client.id },
+      data: { onboardingSeenAt: new Date() },
+    });
+    return { ok: true, data: undefined };
+  } catch {
+    // Nothing worth telling anybody. Worst case they are shown the welcome
+    // pack once more.
+    return { ok: true, data: undefined };
   }
 }

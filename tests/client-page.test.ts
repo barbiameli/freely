@@ -197,13 +197,28 @@ describe("the client portal", () => {
      * appears on a page anybody on the internet can open.
      */
     const islands = page.match(/@\/components\/[a-z/-]+/g) ?? [];
-    expect(islands).toEqual(["@/components/portal/hello-banner"]);
+    expect(islands).toEqual([
+      "@/components/portal/hello-banner",
+      "@/components/portal/portal-intro",
+    ]);
 
-    // And that one can only ask for a link.
-    const banner = readFileSync("src/components/portal/hello-form.tsx", "utf8");
-    const actions = banner.match(/[a-zA-Z]+Action/g) ?? [];
-    // Array.from rather than a spread: this project compiles below es2015.
-    expect(Array.from(new Set(actions))).toEqual(["requestPortalLinkAction"]);
+    /*
+     * And what each of them is allowed to call.
+     *
+     * Both of these only ever write about the person reading: ask for a link
+     * to my address, and record that I have read the rules. Neither can touch
+     * the work, the money or the files. Array.from rather than a spread,
+     * because this project compiles below es2015.
+     */
+    const allowed: Record<string, string[]> = {
+      "src/components/portal/hello-form.tsx": ["requestPortalLinkAction"],
+      "src/components/portal/portal-intro.tsx": ["markOnboardingSeenAction"],
+    };
+    for (const [file, expected] of Object.entries(allowed)) {
+      const source = readFileSync(file, "utf8");
+      const actions = source.match(/[a-zA-Z]+Action/g) ?? [];
+      expect({ file, actions: Array.from(new Set(actions)) }).toEqual({ file, actions: expected });
+    }
   });
 
   it("falls back to the account's words when a client has none", () => {

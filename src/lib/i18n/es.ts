@@ -1511,6 +1511,12 @@ export const es: Dictionary = {
     failed: "No se ha enviado. Prueba otra vez en un momento.",
   },
 
+  intro: {
+    title: "Empieza por aquí",
+    gotIt: "Entendido",
+    reminder: "Cómo funciona esto",
+  },
+
   clientPage: {
     overview: "Resumen",
     invoices: "Facturas",

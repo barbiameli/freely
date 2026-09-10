@@ -7,6 +7,8 @@ import { formatLongDay } from "@/lib/schedule";
 import { formatMoney } from "@/lib/money";
 import { visitorIdFromCookie } from "@/lib/portal-session";
 import { HelloBanner } from "@/components/portal/hello-banner";
+import { PortalIntro } from "@/components/portal/portal-intro";
+import { cleanAnswers } from "@/lib/welcome-questions";
 
 /**
  * The client's dashboard.
@@ -56,6 +58,7 @@ export default async function ClientPortalPage({
         name: string;
         published: boolean;
         welcomePack: string | null;
+        onboarding: unknown;
       } | null>;
     };
     clientDocument: {
@@ -163,7 +166,7 @@ export default async function ClientPortalPage({
           portalVisitor: {
             findFirst(args: {
               where: { id: string; clientId: string };
-            }): Promise<{ id: string; name: string } | null>;
+            }): Promise<{ id: string; name: string; onboardingSeenAt: Date | null } | null>;
           };
         }
       ).portalVisitor.findFirst({ where: { id: visitorId, clientId: client.id } })
@@ -267,18 +270,15 @@ export default async function ClientPortalPage({
           <>
             {/* Only if we do not already know them. */}
             {!visitor && <HelloBanner slug={params.slug} />}
-            {pack ? (
-              <Panel title={t.welcomePack}>
-                {/* Their words, and the line breaks they typed. */}
-                <p className="text-body text-slate leading-relaxed whitespace-pre-line m-0 max-w-prose">
-                  {pack}
-                </p>
-              </Panel>
-            ) : (
-              <Panel title={t.welcomePack}>
-                <p className="text-small text-text-muted m-0">{t.everything}</p>
-              </Panel>
-            )}
+            <PortalIntro
+              slug={params.slug}
+              pack={pack}
+              answers={cleanAnswers(client.onboarding)}
+              // Somebody we do not know is shown it, every time, because there
+              // is nowhere to record that they have read it. That is the
+              // honest behaviour rather than a guess.
+              seen={Boolean(visitor?.onboardingSeenAt)}
+            />
 
             {documents.length > 0 && (
               <Panel title={t.documents}>
