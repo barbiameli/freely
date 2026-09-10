@@ -6,7 +6,8 @@ import { dict } from "@/lib/i18n";
 import { formatLongDay } from "@/lib/schedule";
 import { formatMoney } from "@/lib/money";
 import { visitorIdFromCookie } from "@/lib/portal-session";
-import { HelloBanner } from "@/components/portal/hello-banner";
+import { SignInForm } from "@/components/portal/sign-in-form";
+import { SetPassword } from "@/components/portal/set-password";
 import { PortalIntro } from "@/components/portal/portal-intro";
 import { cleanAnswers } from "@/lib/welcome-questions";
 
@@ -23,10 +24,15 @@ import { cleanAnswers } from "@/lib/welcome-questions";
  * links rather than a tab component, which keeps the page itself a server
  * component: no form, no action, no client boundary.
  *
- * There is exactly one interactive thing on it, HelloBanner, and it can do
- * exactly one thing: ask for a link to be emailed to an address. Everything
- * else an unknown visitor can do here is look. That is a property of this
- * file rather than a promise, and there is a test that keeps it one.
+ * It is gated. Nothing below renders to somebody who has not signed in, and
+ * signing in is only possible for an address the freelancer invited. The
+ * unguessable link used to be the credential, which meant access could be
+ * forwarded, could not be revoked, and lasted forever; now the link is only an
+ * address and the credential is the person.
+ *
+ * Behind the gate there are two interactive things and each can do exactly one
+ * thing: record that the rules have been read, and set a password. Neither can
+ * touch the work, the money or the files. A test keeps that true.
  *
  * Money is on it. A client is the person paying, and an invoice they cannot
  * find is a payment that arrives late for a reason nobody meant. There is no
@@ -166,13 +172,36 @@ export default async function ClientPortalPage({
           portalVisitor: {
             findFirst(args: {
               where: { id: string; clientId: string };
-            }): Promise<{ id: string; name: string; onboardingSeenAt: Date | null } | null>;
+            }): Promise<{
+              id: string;
+              name: string;
+              onboardingSeenAt: Date | null;
+              passwordHash: string | null;
+            } | null>;
           };
         }
       ).portalVisitor.findFirst({ where: { id: visitorId, clientId: client.id } })
     : null;
 
-  if (visitor) {
+  /*
+   * The gate.
+   *
+   * Rendered before any of the client's work is read, so a signed-out visitor
+   * never causes a query about projects, quotes or invoices, let alone sees
+   * one. A gate that runs after the data is fetched is a gate on the markup
+   * rather than on the information.
+   */
+  if (!visitor) {
+    return (
+      <div className="min-h-screen bg-paper flex items-center justify-center px-5 py-12">
+        <div className="w-full max-w-sm bg-white rounded-card border border-line shadow-card px-6 sm:px-8 py-8">
+          <SignInForm slug={params.slug} studio={studio} />
+        </div>
+      </div>
+    );
+  }
+
+  {
     // The thing the freelancer actually wanted out of all this: who opened it,
     // and when. Fire and forget, because a failed write here should not cost
     // somebody their page.
@@ -268,8 +297,8 @@ export default async function ClientPortalPage({
       <main className="max-w-6xl mx-auto px-5 sm:px-8 py-7 flex flex-col gap-5">
         {view === "overview" && (
           <>
-            {/* Only if we do not already know them. */}
-            {!visitor && <HelloBanner slug={params.slug} />}
+            {!visitor.passwordHash && <SetPassword slug={params.slug} />}
+
             <PortalIntro
               slug={params.slug}
               pack={pack}

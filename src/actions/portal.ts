@@ -7,6 +7,7 @@ import { teamScopeWhere } from "@/lib/team-scope";
 import type { ActionResult } from "@/actions/briefs";
 import { cleanAnswers, WELCOME_QUESTIONS } from "@/lib/welcome-questions";
 import { writeWelcomePack } from "@/lib/anthropic";
+import { visitors } from "@/lib/portal-auth";
 
 /**
  * The client's own front door.
@@ -147,4 +148,69 @@ export async function draftWelcomePackAction(
   } catch {
     return { ok: false, error: "Couldn't draft that. Your answers are saved." };
   }
+}
+
+/**
+ * Who may read this client's portal.
+ *
+ * The portal is gated and access is by invitation, so this list is the whole
+ * of it. Adding somebody creates the row that lets their address sign in;
+ * removing it takes them out on every device at once, which is the thing an
+ * unguessable link could never do.
+ */
+export async function inviteVisitorAction(
+  clientId: string,
+  email: string,
+  name: string
+): Promise<ActionResult<undefined>> {
+  const client = await owned(clientId);
+  if (!client) return { ok: false, error: "Client not found." };
+
+  const cleaned = email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(cleaned)) {
+    return { ok: false, error: "That needs to be an email address." };
+  }
+
+  const existing = await visitors().findFirst({ where: { clientId, email: cleaned } });
+  if (existing) return { ok: false, error: "They are already on the list." };
+
+  await visitors().create({
+    data: { clientId, email: cleaned, name: name.trim().slice(0, 80) },
+  });
+  revalidatePath(`/clients/${clientId}`);
+  return { ok: true, data: undefined };
+}
+
+/** Taking somebody out. Immediate, and on every device they are signed in on. */
+export async function removeVisitorAction(
+  clientId: string,
+  visitorId: string
+): Promise<ActionResult<undefined>> {
+  const client = await owned(clientId);
+  if (!client) return { ok: false, error: "Client not found." };
+
+  // Scoped to the client, so an id from elsewhere cannot be deleted through
+  // a client you happen to own.
+  const visitor = await visitors().findFirst({ where: { id: visitorId, clientId } });
+  if (!visitor) return { ok: false, error: "Not found." };
+
+  await visitors().delete({ where: { id: visitor.id } });
+  revalidatePath(`/clients/${clientId}`);
+  return { ok: true, data: undefined };
+}
+
+/** The list, for the panel on the client page. */
+export async function visitorsForClient(clientId: string) {
+  const rows = await visitors().findMany({
+    where: { clientId },
+    orderBy: { invitedAt: "asc" },
+  });
+  return rows.map((row) => ({
+    id: row.id,
+    email: row.email,
+    name: row.name,
+    hasPassword: Boolean(row.passwordHash),
+    verified: Boolean(row.verifiedAt),
+    lastSeenAt: row.verifiedAt ? row.lastSeenAt.toISOString() : null,
+  }));
 }

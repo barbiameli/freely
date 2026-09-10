@@ -12,6 +12,8 @@ import { readHistory } from "@/lib/client-read";
 import { documentsForClient } from "@/actions/documents";
 import { DocumentsPanel } from "@/components/clients/documents-panel";
 import { PortalPanel } from "@/components/clients/portal-panel";
+import { AccessPanel } from "@/components/clients/access-panel";
+import { visitorsForClient } from "@/actions/portal";
 import { UpdatesPanel } from "@/components/clients/updates-panel";
 import { prisma } from "@/lib/prisma";
 
@@ -35,6 +37,8 @@ export default async function ClientPage({ params }: { params: { clientId: strin
   // What they can see on the page you send them, edited from the same screen
   // as everything else you know about them.
   const documents = await documentsForClient(client.id);
+  // Who may open their page. The portal renders nothing to anybody else.
+  const people = await visitorsForClient(client.id);
 
   /*
    * The updates, per project, newest project first.
@@ -196,6 +200,8 @@ export default async function ClientPage({ params }: { params: { clientId: strin
           )}
         </Card>
       </div>
+      <AccessPanel clientId={client.id} people={people} />
+
       <UpdatesPanel
         projects={projects.map((project) => ({
           id: project.id,

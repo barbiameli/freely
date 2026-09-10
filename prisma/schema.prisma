@@ -1289,12 +1289,16 @@ model ClientDocument {
   @@index([clientId, order])
 }
 
-/// Somebody who has opened a Client Portal and said who they are.
+/// Somebody the freelancer has invited to a Client Portal.
 ///
-/// Not an account. There is no password, nothing to reset, and no way to sign
-/// in anywhere else in the app: this row exists so a portal can say "you have
-/// read the rules" and mean the person rather than the browser, and so the
-/// freelancer can see who has actually looked.
+/// An account, but only for one portal. There is no way to use it anywhere
+/// else in the app, and it is created by invitation rather than by signing up:
+/// the portal is gated, so a row here is the whole of who may read it. Remove
+/// the row and they are out, on every device, immediately.
+///
+/// Kept separate from User on purpose. A client must never hold a session that
+/// means anything on the freelancer's side, and making them a User is the
+/// shortcut that is fine until somebody adds a check for "is signed in".
 ///
 /// One per email per client. The same person at two companies you work with is
 /// two rows, which is right: they are two different relationships and the
@@ -1307,6 +1311,14 @@ model PortalVisitor {
   email String
   name  String @default("")
 
+  /// Set the first time they sign in and choose one. Null means they have
+  /// only ever used an emailed link, which is a complete way to use this
+  /// rather than a half-finished signup.
+  passwordHash String?
+
+  /// When the freelancer added them. Access is by invitation: an address that
+  /// is not here cannot get in, however many links it asks for.
+  invitedAt  DateTime  @default(now())
   /// Verified by clicking a link sent to that address. Until then the row
   /// exists but is not trusted, so nothing is shown on the strength of it.
   verifiedAt DateTime?

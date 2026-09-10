@@ -186,7 +186,20 @@ describe("the client portal", () => {
     expect(page).toContain("published: true");
   });
 
-  it("can be written to in exactly one way", () => {
+  it("is gated before it reads anything", () => {
+    /*
+     * The order matters as much as the check.
+     *
+     * A gate that runs after the projects, quotes and invoices have been
+     * fetched is a gate on the markup rather than on the information. This
+     * asserts the signed-out return happens before any of them is used.
+     */
+    expect(page).toContain("if (!visitor) {");
+    expect(page.indexOf("if (!visitor) {")).toBeLessThan(page.indexOf("view === \"projects\""));
+    expect(page.indexOf("if (!visitor) {")).toBeLessThan(page.indexOf("view === \"invoices\""));
+  });
+
+  it("can be written to in exactly three ways", () => {
     // The page itself stays a server component with no action of its own.
     expect(page).not.toContain('"use client"');
     expect(page).not.toContain("@/actions/");
@@ -198,7 +211,8 @@ describe("the client portal", () => {
      */
     const islands = page.match(/@\/components\/[a-z/-]+/g) ?? [];
     expect(islands).toEqual([
-      "@/components/portal/hello-banner",
+      "@/components/portal/sign-in-form",
+      "@/components/portal/set-password",
       "@/components/portal/portal-intro",
     ]);
 
@@ -211,7 +225,11 @@ describe("the client portal", () => {
      * because this project compiles below es2015.
      */
     const allowed: Record<string, string[]> = {
-      "src/components/portal/hello-form.tsx": ["requestPortalLinkAction"],
+      "src/components/portal/sign-in-form.tsx": [
+        "portalSignInAction",
+        "requestPortalLinkAction",
+      ],
+      "src/components/portal/set-password.tsx": ["setPortalPasswordAction"],
       "src/components/portal/portal-intro.tsx": ["markOnboardingSeenAction"],
     };
     for (const [file, expected] of Object.entries(allowed)) {
@@ -231,7 +249,19 @@ describe("the client portal", () => {
   });
 
   it("switches off without deleting anything", () => {
-    expect(actions).toContain("setPortalPublishedAction");
-    expect(actions).not.toContain("delete(");
+    /*
+     * Scoped to the publish action rather than the file.
+     *
+     * The file has a delete in it now, and should: removing somebody's access
+     * takes their row away, which is the whole point of being able to revoke
+     * it. What must never happen is the publish toggle destroying anything,
+     * since switching a portal off is meant to be undoable.
+     */
+    const publish = actions.slice(
+      actions.indexOf("export async function setPortalPublishedAction"),
+      actions.indexOf("export async function setOnboardingAction")
+    );
+    expect(publish).toContain("data: { published }");
+    expect(publish).not.toContain("delete(");
   });
 });
