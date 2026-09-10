@@ -153,10 +153,30 @@ export async function uploadDocumentAction(
 
     revalidatePath(`/clients/${clientId}`);
     return { ok: true, data: undefined };
-  } catch {
-    // The commonest cause by far is the blob token being absent, which is a
-    // setup problem rather than something the person did wrong.
-    return { ok: false, error: "That didn't upload. Check the file storage is connected." };
+  } catch (error) {
+    /*
+     * Say which thing broke.
+     *
+     * This was a bare catch returning one sentence about file storage, which
+     * is the commonest cause and useless when it is not the cause: a missing
+     * token, a store that is not linked to the project, and a database column
+     * that has not been pushed yet all produced the same words and none of
+     * them said what to do.
+     */
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error("[documents] upload failed:", detail);
+
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      return {
+        ok: false,
+        error:
+          "File storage isn't connected. Create a Blob store in Vercel, link it to this project, then run: npx vercel env pull .env.local",
+      };
+    }
+    if (/pathname|column|relation|does not exist/i.test(detail)) {
+      return { ok: false, error: "The database is behind. Run: npx prisma db push" };
+    }
+    return { ok: false, error: `That didn't upload. ${detail}` };
   }
 }
 
