@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { dict } from "@/lib/i18n";
 import { formatLongDay } from "@/lib/schedule";
 import { formatMoney } from "@/lib/money";
+import { visitorIdFromCookie } from "@/lib/portal-session";
+import { HelloBanner } from "@/components/portal/hello-banner";
 
 /**
  * The client's dashboard.
@@ -16,11 +18,13 @@ import { formatMoney } from "@/lib/money";
  * "where are we" is visible without moving.
  *
  * So: full width, a rail of sections, and one section at a time. The rail is
- * links rather than a tab component, because that keeps this a server
- * component with no JavaScript of its own, and that is the property worth
- * protecting here. Nothing on this page can be pressed to change anything;
- * there is no action imported and no client boundary, so what an unknown
- * visitor is allowed to do has one answer: look.
+ * links rather than a tab component, which keeps the page itself a server
+ * component: no form, no action, no client boundary.
+ *
+ * There is exactly one interactive thing on it, HelloBanner, and it can do
+ * exactly one thing: ask for a link to be emailed to an address. Everything
+ * else an unknown visitor can do here is look. That is a property of this
+ * file rather than a promise, and there is a test that keeps it one.
  *
  * Money is on it. A client is the person paying, and an invoice they cannot
  * find is a payment that arrives late for a reason nobody meant. There is no
@@ -145,6 +149,41 @@ export default async function ClientPortalPage({
   const pack = client.welcomePack || extras?.clientNotes || "";
   const view = (searchParams?.view ?? "overview") as View;
 
+  /*
+   * Who is reading, if they have said.
+   *
+   * The cookie is checked against a real row rather than trusted on its own:
+   * a signature proves the id was issued here, not that it still means
+   * anything. A visitor whose row was deleted is nobody again.
+   */
+  const visitorId = visitorIdFromCookie(params.slug);
+  const visitor = visitorId
+    ? await (
+        prisma as unknown as {
+          portalVisitor: {
+            findFirst(args: {
+              where: { id: string; clientId: string };
+            }): Promise<{ id: string; name: string } | null>;
+          };
+        }
+      ).portalVisitor.findFirst({ where: { id: visitorId, clientId: client.id } })
+    : null;
+
+  if (visitor) {
+    // The thing the freelancer actually wanted out of all this: who opened it,
+    // and when. Fire and forget, because a failed write here should not cost
+    // somebody their page.
+    void (
+      prisma as unknown as {
+        portalVisitor: {
+          update(args: { where: { id: string }; data: Record<string, unknown> }): Promise<unknown>;
+        };
+      }
+    ).portalVisitor
+      .update({ where: { id: visitor.id }, data: { lastSeenAt: new Date() } })
+      .catch(() => {});
+  }
+
   /** An invoice's total, added up the way the document adds it up. */
   const totalOf = (invoice: { lineItems: unknown; taxRate: number }) => {
     const lines = Array.isArray(invoice.lineItems)
@@ -226,6 +265,8 @@ export default async function ClientPortalPage({
       <main className="max-w-6xl mx-auto px-5 sm:px-8 py-7 flex flex-col gap-5">
         {view === "overview" && (
           <>
+            {/* Only if we do not already know them. */}
+            {!visitor && <HelloBanner slug={params.slug} />}
             {pack ? (
               <Panel title={t.welcomePack}>
                 {/* Their words, and the line breaks they typed. */}

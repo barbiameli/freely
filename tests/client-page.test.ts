@@ -186,10 +186,23 @@ describe("the client portal", () => {
     expect(page).toContain("published: true");
   });
 
-  it("cannot be written to", () => {
-    // No form and no action import: the only thing a visitor can do is look.
+  it("can be written to in exactly one way", () => {
+    // The page itself stays a server component with no action of its own.
     expect(page).not.toContain('"use client"');
     expect(page).not.toContain("@/actions/");
+
+    /*
+     * The single exception, named here so adding a second is a decision
+     * somebody makes in this file rather than a component that quietly
+     * appears on a page anybody on the internet can open.
+     */
+    const islands = page.match(/@\/components\/[a-z/-]+/g) ?? [];
+    expect(islands).toEqual(["@/components/portal/hello-banner"]);
+
+    // And that one can only ask for a link.
+    const banner = readFileSync("src/components/portal/hello-form.tsx", "utf8");
+    const actions = banner.match(/[a-zA-Z]+Action/g) ?? [];
+    expect([...new Set(actions)]).toEqual(["requestPortalLinkAction"]);
   });
 
   it("falls back to the account's words when a client has none", () => {

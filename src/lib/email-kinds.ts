@@ -18,6 +18,7 @@ export type EmailKind =
   | "QUOTE_ACCEPTED"
   | "QUOTE_COPY"
   | "TEAM_INVITE"
+  | "PORTAL_LINK"
   | "NUDGE_TRACK_QUOTE"
   | "NUDGE_DUE_SOON"
   | "NUDGE_OVERDUE"

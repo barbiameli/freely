@@ -1485,6 +1485,23 @@ export const es: Dictionary = {
     turnOff: "Apagarla",
   },
 
+  portalHello: {
+    title: "¿Quién nos lee?",
+    body: "Deja tu correo y esta página te recordará, así no ves la introducción cada vez. Puedes saltártelo y leerlo todo igual.",
+    nameLabel: "Tu nombre",
+    namePlaceholder: "Tu nombre",
+    emailLabel: "Tu correo",
+    emailPlaceholder: "tu@empresa.com",
+    send: "Mándame un enlace",
+    sending: "Enviando",
+    skip: "Sáltalo, solo quiero leer",
+    sentTitle: "Mira tu correo",
+    sentBody: "Tienes un enlace esperando. Funciona una vez y caduca en una hora.",
+    badEmail: "Ese correo no parece correcto.",
+    tooMany: "Son muchos intentos en un minuto. Espera un momento y prueba otra vez.",
+    failed: "No se ha enviado. Prueba otra vez en un momento.",
+  },
+
   clientPage: {
     overview: "Resumen",
     invoices: "Facturas",

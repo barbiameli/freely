@@ -1147,6 +1147,7 @@ model Client {
   invoices  Invoice[]
   timeEntries TimeEntry[]
   documents ClientDocument[]
+  visitors  PortalVisitor[]
 
   createdAt DateTime @default(now())
 
@@ -1282,4 +1283,55 @@ model ClientDocument {
   createdAt DateTime @default(now())
 
   @@index([clientId, order])
+}
+
+/// Somebody who has opened a Client Portal and said who they are.
+///
+/// Not an account. There is no password, nothing to reset, and no way to sign
+/// in anywhere else in the app: this row exists so a portal can say "you have
+/// read the rules" and mean the person rather than the browser, and so the
+/// freelancer can see who has actually looked.
+///
+/// One per email per client. The same person at two companies you work with is
+/// two rows, which is right: they are two different relationships and the
+/// second one has not read the first one's rules.
+model PortalVisitor {
+  id       String @id @default(cuid())
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  email String
+  name  String @default("")
+
+  /// Verified by clicking a link sent to that address. Until then the row
+  /// exists but is not trusted, so nothing is shown on the strength of it.
+  verifiedAt DateTime?
+  /// What the freelancer actually wanted from all this: who opened it, when.
+  lastSeenAt DateTime  @default(now())
+  /// Set when they have been through the welcome pack, so it stops leading.
+  onboardingSeenAt DateTime?
+
+  createdAt DateTime @default(now())
+  tokens    PortalToken[]
+
+  @@unique([clientId, email])
+  @@index([clientId])
+}
+
+/// One click of one link, from one email.
+///
+/// Short-lived and single-use. The token is the whole credential, so it is
+/// long, random, and stops working the moment it is spent: a link sitting in
+/// an inbox forever is a password nobody can change.
+model PortalToken {
+  id        String        @id @default(cuid())
+  visitorId String
+  visitor   PortalVisitor @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([visitorId])
 }

@@ -1497,6 +1497,23 @@ export const en = {
     turnOff: "Switch it off",
   },
 
+  portalHello: {
+    title: "Who's looking?",
+    body: "Leave your email and this page will remember you, so you are not shown the introduction every time. You can skip it and read everything anyway.",
+    nameLabel: "Your name",
+    namePlaceholder: "Your name",
+    emailLabel: "Your email",
+    emailPlaceholder: "you@company.com",
+    send: "Send me a link",
+    sending: "Sending",
+    skip: "Skip, just let me read",
+    sentTitle: "Check your email",
+    sentBody: "There is a link waiting. It works once and expires in an hour.",
+    badEmail: "That address doesn't look right.",
+    tooMany: "That's a lot of tries in one minute. Wait a moment and go again.",
+    failed: "That didn't send. Try again in a moment.",
+  },
+
   clientPage: {
     overview: "Overview",
     invoices: "Invoices",
