@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Copy, ExternalLink, Sparkles } from "lucide-react";
+import { Check, Copy, Eye, ExternalLink, Sparkles } from "lucide-react";
 import { setPortalPublishedAction } from "@/actions/portal";
 import { ActionError } from "@/components/ui/action-error";
 import { Button } from "@/components/ui/button";
@@ -103,6 +103,29 @@ export function PortalPanel({
           className="text-text-muted hover:text-ink p-1 tap shrink-0"
         >
           <ExternalLink size={14} />
+        </a>
+      </div>
+
+      {/* Their page, from their side, without a second account and without a
+          dummy client to keep in step with the real one. Signed in as the
+          owner, so it shows exactly what is actually there. */}
+      <div className="flex flex-wrap items-center gap-2.5 mt-3">
+        <a
+          href={`/c/${publicSlug}?preview=1&welcome=1`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 font-body font-bold text-meta text-ink bg-white border-[1.5px] border-ink rounded-full px-4 py-2 no-underline press hover:bg-ink hover:text-white transition-colors"
+        >
+          <Eye size={14} />
+          {t.portal.previewWelcome}
+        </a>
+        <a
+          href={`/c/${publicSlug}?preview=1`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-body font-semibold text-meta text-link no-underline tap"
+        >
+          {t.portal.previewDashboard}
         </a>
       </div>
 

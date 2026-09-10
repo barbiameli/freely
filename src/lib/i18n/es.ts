@@ -1505,6 +1505,8 @@ export const es: Dictionary = {
     packPlaceholder: "Cómo trabajas, cuándo respondes, qué necesitas de ellos.",
     packFallback: "Déjalo vacío para usar lo que pone en tu cuenta.",
     packEmpty: "Aquí no hay nada, así que la página abre directa en los proyectos.",
+    previewWelcome: "Ver su bienvenida",
+    previewDashboard: "O directo al panel",
     turnOff: "Apagarla",
   },
 
@@ -1566,6 +1568,7 @@ export const es: Dictionary = {
   },
 
   clientPage: {
+    previewing: "Estás viendo la página de tu cliente. Ellos la ven después de entrar.",
     howWeWork: "Cómo trabajamos",
     overview: "Resumen",
     invoices: "Facturas",

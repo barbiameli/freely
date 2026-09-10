@@ -194,9 +194,26 @@ describe("the client portal", () => {
      * fetched is a gate on the markup rather than on the information. This
      * asserts the signed-out return happens before any of them is used.
      */
-    expect(page).toContain("if (!visitor) {");
-    expect(page.indexOf("if (!visitor) {")).toBeLessThan(page.indexOf("view === \"projects\""));
-    expect(page.indexOf("if (!visitor) {")).toBeLessThan(page.indexOf("view === \"invoices\""));
+    expect(page).toContain("if (!visitor && !previewing) {");
+    const gate = page.indexOf("if (!visitor && !previewing) {");
+    expect(gate).toBeLessThan(page.indexOf("view === \"projects\""));
+    expect(gate).toBeLessThan(page.indexOf("view === \"invoices\""));
+  });
+
+  it("only lets the owner past the gate without signing in", () => {
+    /*
+     * The preview is the one way through without a visitor, and a query
+     * parameter is not what opens it: ?preview=1 sets an intent, and the
+     * ownership check against the session decides. Both halves have to be
+     * here, and the check has to be the same team scope the rest of the app
+     * uses rather than a comparison somebody wrote once.
+     */
+    expect(page).toContain('searchParams?.preview === "1"');
+    expect(page).toContain("getCurrentUser()");
+    expect(page).toContain("teamScopeWhere(full)");
+    // Set from the lookup, never from the parameter alone.
+    expect(page).toContain("previewing = Boolean(owned)");
+    expect(page).not.toContain("previewing = wantsPreview");
   });
 
   it("can be written to in exactly three ways", () => {

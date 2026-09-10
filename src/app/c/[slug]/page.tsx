@@ -6,6 +6,8 @@ import { dict } from "@/lib/i18n";
 import { formatLongDay } from "@/lib/schedule";
 import { formatMoney } from "@/lib/money";
 import { visitorIdFromCookie } from "@/lib/portal-session";
+import { getCurrentUser } from "@/lib/session";
+import { teamScopeWhere } from "@/lib/team-scope";
 import { SignInForm } from "@/components/portal/sign-in-form";
 import { SetPassword } from "@/components/portal/set-password";
 import { PortalShell } from "@/components/portal/portal-shell";
@@ -51,7 +53,7 @@ export default async function ClientPortalPage({
   searchParams,
 }: {
   params: { slug: string };
-  searchParams?: { view?: string };
+  searchParams?: { view?: string; preview?: string; welcome?: string };
 }) {
   /*
    * Everything through a narrow shape: these columns and relations are newer
@@ -189,6 +191,52 @@ export default async function ClientPortalPage({
     : null;
 
   /*
+   * The freelancer, looking at their own client's page.
+   *
+   * Checked against the session and the client's owner, not against a query
+   * parameter: ?preview=1 on its own does nothing at all. It is the same
+   * ownership check the client page itself uses, so somebody can preview
+   * exactly the portals they could already edit.
+   *
+   * Worth having because the alternative is a dummy client, which drifts:
+   * it shows the content somebody remembered to put in it rather than the
+   * content that is actually there, and it is wrong in a different way from
+   * the real thing every time either changes.
+   */
+  const wantsPreview = searchParams?.preview === "1";
+  let previewing = false;
+  if (!visitor && wantsPreview) {
+    const session = await getCurrentUser();
+    if (session) {
+      /*
+       * The row, not the session.
+       *
+       * getCurrentUser carries no teamId, and teamScopeWhere needs one to
+       * decide whether a client belongs to a studio or to a person. Passing
+       * the session straight in would have narrowed every team account to
+       * its own rows silently, so a colleague could not preview a client they
+       * can already edit.
+       */
+      const full = await prisma.user.findUnique({
+        where: { id: session.id },
+        select: { id: true, teamId: true },
+      });
+      const owned = full
+        ? await (
+            prisma as unknown as {
+              client: {
+                findFirst(args: {
+                  where: Record<string, unknown>;
+                }): Promise<{ id: string } | null>;
+              };
+            }
+          ).client.findFirst({ where: { id: client.id, ...teamScopeWhere(full) } })
+        : null;
+      previewing = Boolean(owned);
+    }
+  }
+
+  /*
    * The gate.
    *
    * Rendered before any of the client's work is read, so a signed-out visitor
@@ -196,7 +244,7 @@ export default async function ClientPortalPage({
    * one. A gate that runs after the data is fetched is a gate on the markup
    * rather than on the information.
    */
-  if (!visitor) {
+  if (!visitor && !previewing) {
     return (
       <div className="min-h-screen bg-paper flex items-center justify-center px-5 py-12">
         <div className="w-full max-w-sm bg-white rounded-card border border-line shadow-card px-6 sm:px-8 py-8">
@@ -206,7 +254,7 @@ export default async function ClientPortalPage({
     );
   }
 
-  {
+  if (visitor) {
     // The thing the freelancer actually wanted out of all this: who opened it,
     // and when. Fire and forget, because a failed write here should not cost
     // somebody their page.
@@ -249,7 +297,10 @@ export default async function ClientPortalPage({
     <PortalShell
       slug={params.slug}
       studio={studio}
-      seen={Boolean(visitor.onboardingSeenAt)}
+      // In a preview, whether the steps show is a choice rather than a
+      // record: it is the thing the freelancer most wants to look at, and
+      // they have no "seen" state of their own to consult.
+      seen={previewing ? searchParams?.welcome !== "1" : Boolean(visitor?.onboardingSeenAt)}
       steps={blocks.map((block) => ({
         kind: block.kind,
         title: block.title,
@@ -314,10 +365,16 @@ export default async function ClientPortalPage({
         </div>
       </header>
 
+      {previewing && (
+        <div className="bg-ink text-white px-5 sm:px-8 py-2.5">
+          <p className="max-w-6xl mx-auto text-caption m-0">{t.previewing}</p>
+        </div>
+      )}
+
       <main className="max-w-6xl mx-auto px-5 sm:px-8 py-7 flex flex-col gap-5">
         {view === "overview" && (
           <>
-            {!visitor.passwordHash && <SetPassword slug={params.slug} />}
+            {visitor && !visitor.passwordHash && <SetPassword slug={params.slug} />}
 
 
             {documents.length > 0 && (

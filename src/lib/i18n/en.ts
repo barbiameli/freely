@@ -1517,6 +1517,8 @@ export const en = {
     packPlaceholder: "How you work, when you reply, what you need from them.",
     packFallback: "Leave this empty to use what your account says.",
     packEmpty: "Nothing here yet, so the page opens straight into the projects.",
+    previewWelcome: "See their welcome",
+    previewDashboard: "Or straight to the dashboard",
     turnOff: "Switch it off",
   },
 
@@ -1578,6 +1580,7 @@ export const en = {
   },
 
   clientPage: {
+    previewing: "You are previewing your client's page. They see this after signing in.",
     howWeWork: "How we work",
     overview: "Overview",
     invoices: "Invoices",
