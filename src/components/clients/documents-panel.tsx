@@ -4,11 +4,11 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Paperclip, PenLine, Trash2, Upload, X } from "lucide-react";
 import {
-  DOCUMENT_EMOJI,
   deleteDocumentAction,
   renameDocumentAction,
   uploadDocumentAction,
 } from "@/actions/documents";
+import { DOCUMENT_EMOJI } from "@/lib/document-emoji";
 import { ActionError } from "@/components/ui/action-error";
 import { Card } from "@/components/ui/card";
 import { SectionHeading } from "@/components/ui/page-header";

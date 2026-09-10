@@ -155,9 +155,15 @@ export function Board({
   const signature = steps
     .map((step) => `${step.id}:${step.done}:${step.startedAt}:${step.order}`)
     .join("|");
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- the signature is
-  // the point: depending on `steps` itself would fire on every parent render
-  // and undo the optimistic move.
+  /*
+   * The signature is the point: depending on `steps` itself would fire on
+   * every parent render and undo the optimistic move.
+   *
+   * The directive has to be the line immediately above the code. It was
+   * written with the reason on two further comment lines underneath it, which
+   * meant it disabled the rule for a comment and the warning never went away.
+   */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => setLocal(steps), [signature]);
   /** The card being renamed, and the text so far. */
   const [editing, setEditing] = useState<{ id: string; name: string; hours: string } | null>(null);

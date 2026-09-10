@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import type { ActionResult } from "@/actions/briefs";
+import { DOCUMENT_EMOJI } from "@/lib/document-emoji";
 
 /**
  * The files on a client's page.
@@ -180,28 +181,6 @@ export async function uploadDocumentAction(
     return { ok: false, error: `That didn't upload. ${detail}` };
   }
 }
-
-/**
- * A small set, and only this set.
- *
- * Free text here would be a text field somebody pastes a sentence into, and
- * the column is one character wide by design. These are the kinds of thing a
- * freelancer actually sends a client.
- */
-export const DOCUMENT_EMOJI = [
-  "",
-  "\u{1F4C4}",
-  "\u{1F3A8}",
-  "\u{1F5BC}\uFE0F",
-  "\u{1F4CA}",
-  "\u{1F4DD}",
-  "\u{1F510}",
-  "\u{1F4C1}",
-  "\u{2705}",
-  "\u{1F680}",
-  "\u{2728}",
-  "\u{1F4CE}",
-];
 
 export async function renameDocumentAction(
   id: string,

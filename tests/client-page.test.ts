@@ -170,8 +170,11 @@ describe("the client portal", () => {
 
   it("is unguessable and off by default", () => {
     const client = schema.slice(schema.indexOf("model Client"));
-    expect(client.slice(0, 1400)).toContain("publicSlug String  @unique @default(cuid())");
-    expect(client.slice(0, 1400)).toContain("published  Boolean @default(false)");
+    // Whitespace-insensitive: prisma format and a hand edit both move the
+    // columns around, and the assertion is about the constraints.
+    const head = client.slice(0, 1400).replace(/[ \t]+/g, " ");
+    expect(head).toContain("publicSlug String @unique @default(cuid())");
+    expect(head).toContain("published Boolean @default(false)");
   });
 
   it("says the same thing for missing and switched off", () => {
