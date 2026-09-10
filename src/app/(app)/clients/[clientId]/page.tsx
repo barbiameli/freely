@@ -11,6 +11,7 @@ import { currencySymbol } from "@/lib/currencies";
 import { readHistory } from "@/lib/client-read";
 import { documentsForClient } from "@/actions/documents";
 import { DocumentsPanel } from "@/components/clients/documents-panel";
+import { PortalPanel } from "@/components/clients/portal-panel";
 
 /**
  * One client, and what working with them has actually been like.
@@ -33,9 +34,31 @@ export default async function ClientPage({ params }: { params: { clientId: strin
   // as everything else you know about them.
   const documents = await documentsForClient(client.id);
 
+  // The portal columns are newer than the generated client here, so they come
+  // off the row through a cast rather than a select.
+  const portal = client as unknown as {
+    publicSlug: string;
+    published: boolean;
+    welcomePack: string | null;
+  };
+
   return (
     <>
       <RecordHeader title={client.name} meta={client.email || t.clients.noEmail} />
+
+      {/* Above the figures. What working with somebody has been like is
+          reference; the page you send them is the thing you came here to do
+          something about. */}
+      <PortalPanel
+        clientId={client.id}
+        clientName={client.name}
+        publicSlug={portal.publicSlug}
+        published={portal.published}
+        welcomePack={portal.welcomePack}
+        fallbackPack={
+          (user as unknown as { clientNotes?: string | null }).clientNotes ?? null
+        }
+      />
 
       <StatRow
         stats={[
@@ -172,6 +195,7 @@ export default async function ClientPage({ params }: { params: { clientId: strin
           contentType: doc.contentType,
           size: doc.size,
           note: doc.note,
+          emoji: doc.emoji,
         }))}
       />
 

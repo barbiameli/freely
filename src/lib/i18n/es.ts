@@ -1452,10 +1452,30 @@ export const es: Dictionary = {
     notePlaceholder: "Para qué es",
     privacy:
       "Solo tú, y quien reciba una página de proyecto mientras esté publicada. Aquí nada tiene enlace público.",
+    noEmoji: "Sin emoji",
     rename: "Renombrar",
   },
 
+  portal: {
+    makeTitle: "Dales un pack de bienvenida",
+    makeHint:
+      "Una página que {name} puede abrir cuando quiera: qué pasa ahora, todos los proyectos que llevas con ellos y los archivos que necesitan. El enlace no se puede adivinar y lo apagas cuando quieras.",
+    make: "Crear su página",
+    title: "Su página",
+    hint: "Mándalo una vez. Todo lo que añadas aquí aparece ahí.",
+    copy: "Copiar el enlace",
+    open: "Abrirla",
+    packLabel: "Qué pasa ahora",
+    packPlaceholder: "Cómo trabajas, cuándo respondes, qué necesitas de ellos.",
+    packFallback: "Déjalo vacío para usar lo que pone en tu cuenta.",
+    packEmpty: "Aquí no hay nada, así que la página abre directa en los proyectos.",
+    turnOff: "Apagarla",
+  },
+
   clientPage: {
+    welcomePack: "Empieza por aquí",
+    projects: "Proyectos",
+    stepsDone: "{done} de {total} hechos",
     howIWork: "Cómo trabajo",
     bookACall: "Reservar una llamada",
     bookHint: "¿Algo que comentar? Coge un hueco.",

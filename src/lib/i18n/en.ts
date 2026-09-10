@@ -1464,10 +1464,30 @@ export const en = {
     notePlaceholder: "What it is for",
     privacy:
       "Only you, and anyone you send a project page to while it is published. Nothing here has a public link.",
+    noEmoji: "No emoji",
     rename: "Rename",
   },
 
+  portal: {
+    makeTitle: "Give them a welcome pack",
+    makeHint:
+      "One page {name} can open any time: what happens next, every project you run for them, and the files they need. The link is unguessable and you can switch it off whenever you like.",
+    make: "Make their page",
+    title: "Their page",
+    hint: "Send this once. Everything you add here shows up on it.",
+    copy: "Copy the link",
+    open: "Open it",
+    packLabel: "What happens next",
+    packPlaceholder: "How you work, when you reply, what you need from them.",
+    packFallback: "Leave this empty to use what your account says.",
+    packEmpty: "Nothing here yet, so the page opens straight into the projects.",
+    turnOff: "Switch it off",
+  },
+
   clientPage: {
+    welcomePack: "Start here",
+    projects: "Projects",
+    stepsDone: "{done} of {total} done",
     howIWork: "How I work",
     bookACall: "Book a call",
     bookHint: "Something to talk through? Grab a time.",

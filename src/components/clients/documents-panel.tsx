@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Paperclip, PenLine, Trash2, Upload, X } from "lucide-react";
 import {
+  DOCUMENT_EMOJI,
   deleteDocumentAction,
   renameDocumentAction,
   uploadDocumentAction,
@@ -19,6 +20,7 @@ export interface ClientDocument {
   contentType: string;
   size: number;
   note: string;
+  emoji: string;
 }
 
 /** "3.2 MB", or "812 KB" under a megabyte. Nobody wants the byte count. */
@@ -46,7 +48,12 @@ export function DocumentsPanel({
   const fileInput = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [editing, setEditing] = useState<{ id: string; name: string; note: string } | null>(null);
+  const [editing, setEditing] = useState<{
+    id: string;
+    name: string;
+    note: string;
+    emoji: string;
+  } | null>(null);
 
   async function upload(file: File) {
     setBusy(true);
@@ -65,7 +72,12 @@ export function DocumentsPanel({
   async function saveEdit() {
     if (!editing) return;
     setBusy(true);
-    const result = await renameDocumentAction(editing.id, editing.name, editing.note);
+    const result = await renameDocumentAction(
+      editing.id,
+      editing.name,
+      editing.note,
+      editing.emoji
+    );
     setBusy(false);
     if (!result.ok) {
       setError(result.error);
@@ -100,7 +112,11 @@ export function DocumentsPanel({
                 key={doc.id}
                 className="flex items-start gap-3 py-2.5 border-b border-line last:border-b-0"
               >
-                <Paperclip size={14} className="text-text-muted shrink-0 mt-1" aria-hidden />
+                <span className="shrink-0 w-5 text-center mt-0.5 text-body" aria-hidden>
+                  {doc.emoji || (
+                    <Paperclip size={14} className="text-text-muted inline align-middle" />
+                  )}
+                </span>
 
                 {editing?.id === doc.id ? (
                   <div className="flex-1 min-w-0 flex flex-col gap-1.5">
@@ -118,6 +134,27 @@ export function DocumentsPanel({
                       aria-label={t.docs.noteLabel}
                       className="w-full bg-paper rounded-sm border-none px-2 py-1.5 text-caption text-slate outline-none"
                     />
+                    {/* The set, as buttons. A picker behind a popover for
+                        twelve characters is a menu to open in order to press
+                        one thing. */}
+                    <div className="flex flex-wrap gap-1">
+                      {DOCUMENT_EMOJI.map((glyph) => (
+                        <button
+                          key={glyph || "none"}
+                          type="button"
+                          onClick={() => setEditing({ ...editing, emoji: glyph })}
+                          aria-label={glyph || t.docs.noEmoji}
+                          aria-pressed={editing.emoji === glyph}
+                          className={`w-7 h-7 rounded-sm border cursor-pointer text-small flex items-center justify-center ${
+                            editing.emoji === glyph
+                              ? "border-violet bg-violet-tint"
+                              : "border-line bg-white"
+                          }`}
+                        >
+                          {glyph || <X size={11} className="text-text-muted" />}
+                        </button>
+                      ))}
+                    </div>
                     <div className="flex items-center gap-1.5">
                       <button
                         type="button"
@@ -159,7 +196,14 @@ export function DocumentsPanel({
                     </div>
                     <button
                       type="button"
-                      onClick={() => setEditing({ id: doc.id, name: doc.name, note: doc.note })}
+                      onClick={() =>
+                        setEditing({
+                          id: doc.id,
+                          name: doc.name,
+                          note: doc.note,
+                          emoji: doc.emoji,
+                        })
+                      }
                       aria-label={t.docs.rename}
                       className="text-text-muted hover:text-ink bg-none border-none cursor-pointer p-1 tap shrink-0"
                     >

@@ -60,6 +60,7 @@ interface DocumentRow {
   contentType: string;
   size: number;
   note: string;
+  emoji: string;
   order: number;
   createdAt: Date;
 }
@@ -180,10 +181,33 @@ export async function uploadDocumentAction(
   }
 }
 
+/**
+ * A small set, and only this set.
+ *
+ * Free text here would be a text field somebody pastes a sentence into, and
+ * the column is one character wide by design. These are the kinds of thing a
+ * freelancer actually sends a client.
+ */
+export const DOCUMENT_EMOJI = [
+  "",
+  "\u{1F4C4}",
+  "\u{1F3A8}",
+  "\u{1F5BC}\uFE0F",
+  "\u{1F4CA}",
+  "\u{1F4DD}",
+  "\u{1F510}",
+  "\u{1F4C1}",
+  "\u{2705}",
+  "\u{1F680}",
+  "\u{2728}",
+  "\u{1F4CE}",
+];
+
 export async function renameDocumentAction(
   id: string,
   name: string,
-  note: string
+  note: string,
+  emoji: string
 ): Promise<ActionResult<undefined>> {
   try {
     const row = await table().findFirst({ where: { id } });
@@ -195,7 +219,13 @@ export async function renameDocumentAction(
 
     await table().update({
       where: { id },
-      data: { name: cleaned.slice(0, 120), note: note.trim().slice(0, 300) },
+      data: {
+        name: cleaned.slice(0, 120),
+        note: note.trim().slice(0, 300),
+        // Anything not on the list becomes nothing, rather than being stored
+        // and rendered as whatever it happens to be.
+        emoji: DOCUMENT_EMOJI.includes(emoji) ? emoji : "",
+      },
     });
     revalidatePath(`/clients/${row.clientId}`);
     return { ok: true, data: undefined };

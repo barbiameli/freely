@@ -154,3 +154,52 @@ describe("what a client can reach", () => {
     expect(actions).toContain("10 * 1024 * 1024");
   });
 });
+
+/**
+ * The portal: one client, one link.
+ *
+ * A client with three jobs used to have three links and three copies of the
+ * same brand guide, and no answer to "where do I find that thing you sent me
+ * in March".
+ */
+describe("the client portal", () => {
+  const page = readFileSync("src/app/c/[slug]/page.tsx", "utf8");
+  const route = readFileSync("src/app/c/[slug]/doc/[docId]/route.ts", "utf8");
+  const actions = readFileSync("src/actions/portal.ts", "utf8");
+  const schema = readFileSync("prisma/schema.prisma", "utf8");
+
+  it("is unguessable and off by default", () => {
+    const client = schema.slice(schema.indexOf("model Client"));
+    expect(client.slice(0, 1400)).toContain("publicSlug String  @unique @default(cuid())");
+    expect(client.slice(0, 1400)).toContain("published  Boolean @default(false)");
+  });
+
+  it("says the same thing for missing and switched off", () => {
+    expect(page).toContain("!client || !client.published");
+    expect(route).toContain("!client || !client.published");
+  });
+
+  it("lists only published projects", () => {
+    expect(page).toContain("published: true");
+  });
+
+  it("cannot be written to", () => {
+    // No form and no action import: the only thing a visitor can do is look.
+    expect(page).not.toContain('"use client"');
+    expect(page).not.toContain("@/actions/");
+  });
+
+  it("falls back to the account's words when a client has none", () => {
+    expect(page).toContain("client.welcomePack || extras?.clientNotes");
+  });
+
+  it("keeps the emoji to a known set", () => {
+    const docs = readFileSync("src/actions/documents.ts", "utf8");
+    expect(docs).toContain("DOCUMENT_EMOJI.includes(emoji) ? emoji : \"\"");
+  });
+
+  it("switches off without deleting anything", () => {
+    expect(actions).toContain("setPortalPublishedAction");
+    expect(actions).not.toContain("delete(");
+  });
+});

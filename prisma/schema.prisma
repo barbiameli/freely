@@ -1128,6 +1128,20 @@ model Client {
   email String @default("")
   notes String @default("") @db.Text
 
+  /// The client's own front door, at /c/[slug].
+  ///
+  /// A cuid rather than the name, for the same reason a project page uses
+  /// one: the link is the permission, so it has to be unguessable. Nobody
+  /// should be able to reach a client portal by typing a company name.
+  publicSlug String @unique @default(cuid())
+  /// Off until there is something worth sending. A portal with no welcome
+  /// pack and no files is a worse first impression than no portal.
+  published  Boolean @default(false)
+  /// The welcome pack: what happens next, in your words. Falls back to the
+  /// account-level "how you work" when this is empty, so one client who needs
+  /// something said differently does not mean writing it out for everybody.
+  welcomePack String? @db.Text
+
   briefs    Brief[]
   projects  Project[]
   invoices  Invoice[]
@@ -1258,6 +1272,11 @@ model ClientDocument {
   size        Int    @default(0)
   /// A line about what it is for, when the name is not enough.
   note String @default("") @db.Text
+  /// One character, picked from a small set. A file list is a wall of
+  /// identical rows and an emoji is the fastest thing a person can scan for,
+  /// which is most of why the tools people already keep their client files in
+  /// have them.
+  emoji String @default("")
 
   order     Int      @default(0)
   createdAt DateTime @default(now())
