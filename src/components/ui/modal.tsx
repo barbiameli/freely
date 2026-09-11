@@ -1,6 +1,14 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+
+/**
+ * Which dialogs are open, innermost last.
+ *
+ * Module scope on purpose: two Modals cannot see each other through props or
+ * context, and the thing they have to agree on is which of them is on top.
+ */
+const openModals: object[] = [];
 import { X } from "lucide-react";
 import clsx from "@/lib/clsx";
 
@@ -80,8 +88,24 @@ export function Modal({
   useEffect(() => {
     if (!open) return;
 
+    /*
+     * Only the top one closes on Escape.
+     *
+     * Every open Modal listens on document, so with one inside another both
+     * heard the key: pressing Escape in a delete confirmation closed the
+     * confirmation and the dialog underneath it, and whatever was being set
+     * up in there went with it.
+     *
+     * A stack rather than a check on the event, because the listeners are on
+     * document and there is nothing to stop propagating between them.
+     */
+    const token = {};
+    openModals.push(token);
+
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
+      if (event.key !== "Escape") return;
+      if (openModals[openModals.length - 1] !== token) return;
+      onClose();
     }
     document.addEventListener("keydown", onKey);
 
@@ -94,6 +118,8 @@ export function Modal({
 
     return () => {
       document.removeEventListener("keydown", onKey);
+      const at = openModals.indexOf(token);
+      if (at !== -1) openModals.splice(at, 1);
       document.body.style.overflow = previous;
     };
   }, [open, onClose]);

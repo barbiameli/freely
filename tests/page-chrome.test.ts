@@ -114,3 +114,24 @@ describe("deleting always asks the same way", () => {
     });
   }
 });
+
+/**
+ * A dialog opened inside another dialog.
+ *
+ * Every open Modal listens for Escape on document, so both heard it: pressing
+ * Escape in a delete confirmation closed the confirmation and the dialog
+ * underneath it, taking whatever was being set up in there with it.
+ */
+describe("dialogs inside dialogs", () => {
+  const modal = readFileSync("src/components/ui/modal.tsx", "utf8");
+
+  it("closes only the top one on Escape", () => {
+    expect(modal).toContain("const openModals");
+    expect(modal).toContain("openModals[openModals.length - 1] !== token");
+  });
+
+  it("takes itself off the stack when it closes", () => {
+    // Otherwise the stack only grows and the top is never the real top.
+    expect(modal).toContain("openModals.splice(at, 1)");
+  });
+});
