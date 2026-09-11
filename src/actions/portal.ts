@@ -6,9 +6,10 @@ import { requireFullUser } from "@/lib/session";
 import { teamScopeWhere } from "@/lib/team-scope";
 import type { ActionResult } from "@/actions/briefs";
 import { cleanAnswers, WELCOME_QUESTIONS } from "@/lib/welcome-questions";
-import { writeWelcomePack } from "@/lib/anthropic";
+import { writeOnboardingBlocks, writeWelcomePack } from "@/lib/anthropic";
 import { visitors } from "@/lib/portal-auth";
-import { specFor } from "@/lib/onboarding-blocks";
+import { BLOCKS, specFor } from "@/lib/onboarding-blocks";
+import type { Locale } from "@/lib/i18n/types";
 
 /**
  * The client's own front door.
@@ -230,6 +231,9 @@ function blocks() {
         findMany(args: {
           where: { clientId: string };
         }): Promise<{ id: string; kind: string; title: string; body: string }[]>;
+        findFirst(args: {
+          where: { clientId: string; kind: string };
+        }): Promise<{ id: string; kind: string; title: string; body: string } | null>;
         upsert(args: {
           where: { clientId_kind: { clientId: string; kind: string } };
           create: Record<string, unknown>;
@@ -264,6 +268,70 @@ export async function setBlockAction(
   });
   revalidatePath(`/clients/${clientId}`);
   return { ok: true, data: undefined };
+}
+
+/**
+ * The whole pack, written from one paragraph.
+ *
+ * The quote form works this way and it is the reason people finish one: you
+ * say what the job is and the structure arrives filled in, ready to be argued
+ * with. Setting a client's page up had the structure but no filling, which
+ * left five empty boxes and a person who came here to get something sent.
+ *
+ * Saved rather than handed back. Nothing here is visible to anybody until the
+ * portal is published and an invited address signs in, so what this writes is
+ * a draft in every sense that matters, and the step immediately after this one
+ * is the freelancer reading every word of it. Handing it back instead would
+ * mean losing it on a closed dialog, which is the one thing the rest of this
+ * screen is careful never to do.
+ *
+ * It only writes the blocks the description covers, so a paragraph about
+ * revisions and email does not silently invent a meetings policy.
+ */
+export async function draftBlocksAction(
+  clientId: string,
+  description: string,
+  language: Locale = "en"
+): Promise<ActionResult<{ written: string[] }>> {
+  const client = await owned(clientId);
+  if (!client) return { ok: false, error: "Client not found." };
+
+  const said = description.trim().slice(0, 4000);
+  // Short enough and there is nothing to sort, and the model fills the gap by
+  // making things up, which is the one failure worth refusing outright.
+  if (said.length < 20) {
+    return { ok: false, error: "Say a bit more and I can write these for you." };
+  }
+
+  let drafted: { kind: string; body: string }[];
+  try {
+    drafted = await writeOnboardingBlocks(
+      said,
+      BLOCKS.map((spec) => ({ kind: spec.kind, title: spec.title, why: spec.why })),
+      language
+    );
+  } catch {
+    return { ok: false, error: "Couldn't write those. Try again, or write them yourself below." };
+  }
+
+  if (drafted.length === 0) {
+    return { ok: false, error: "Nothing in that fitted a step. Try saying how you work." };
+  }
+
+  for (const block of drafted) {
+    const spec = specFor(block.kind);
+    if (!spec) continue;
+    const existing = await blocks().findFirst({ where: { clientId, kind: block.kind } });
+    await blocks().upsert({
+      where: { clientId_kind: { clientId, kind: block.kind } },
+      // A heading somebody has already renamed is theirs and stays.
+      create: { clientId, kind: block.kind, title: spec.title, body: block.body.slice(0, 2000) },
+      update: { title: existing?.title || spec.title, body: block.body.slice(0, 2000) },
+    });
+  }
+
+  revalidatePath(`/clients/${clientId}`);
+  return { ok: true, data: { written: drafted.map((block) => block.kind) } };
 }
 
 /** Leaving one out. Deletes the row, so absent means absent. */

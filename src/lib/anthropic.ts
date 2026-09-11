@@ -29,6 +29,7 @@ import {
   type RateUnit,
 } from "@/lib/rate-unit";
 import type { BillingBasis } from "@/lib/quote-definitions";
+import { blocksFromReply } from "@/lib/onboarding-blocks";
 
 /**
  * Two models, chosen per job rather than one for everything.
@@ -1318,7 +1319,8 @@ type LlmJob =
   | "suggestSections"
   | "planQuote"
   | "researchBenchmark"
-  | "writeWelcomePack";
+  | "writeWelcomePack"
+  | "writeOnboardingBlocks";
 
 interface LlmCallLog {
   job: LlmJob;
@@ -2415,4 +2417,61 @@ export async function writeWelcomePack(answers: string[]): Promise<string> {
     maxTokens: 500,
   });
   return text.trim();
+}
+
+/**
+ * The steps a client is shown, written from how the freelancer describes the
+ * job out loud.
+ *
+ * The same move the quote form makes. Nobody sits down and writes five
+ * headings about their own working habits, but everybody can say "two rounds,
+ * email only, there is a contract first" in one breath. This takes the breath
+ * and files it under the right headings.
+ *
+ * Two things it must not do. It must not invent a rule: a client reading
+ * "I am offline at weekends" on a page belonging to somebody who never said
+ * that is a promise made by a machine. And it must not return a block the
+ * description says nothing about, which is why an empty list is a valid
+ * answer and a short one is the common answer.
+ *
+ * Haiku, capped: sorting sentences into five known buckets is filing rather
+ * than judgement.
+ */
+export async function writeOnboardingBlocks(
+  description: string,
+  catalogue: { kind: string; title: string; why: string }[],
+  language: Locale = "en"
+): Promise<{ kind: string; body: string }[]> {
+  const system = [
+    "You turn how a freelancer describes working with a client into the short steps that client is shown before the project starts.",
+    "",
+    "The steps available, and what each is for:",
+    ...catalogue.map((spec) => `- ${spec.kind} (${spec.title}): ${spec.why}`),
+    "",
+    "Rules:",
+    "- Only return a step the description actually covers. Returning three is normal. Returning none is a valid answer.",
+    "- Every sentence has to trace back to something in the description. Invent no rule, no timeframe, no number, no tool.",
+    "- One to three short sentences per step. These are read once, on a page, by somebody who wants to get on with it.",
+    "- Write as the freelancer, first person, plain and warm. No headings, no bullets, no marketing language.",
+    "- The welcome step is the only one that may be warm for its own sake, and even then one sentence is plenty.",
+    "- No em dashes.",
+    language === "es"
+      ? '- Write in Spanish, neutral between Latin America and Spain, addressing the client as "tú" rather than "usted".'
+      : "- Write in English.",
+    '- Respond with ONLY valid JSON, no markdown fences, matching exactly: {"blocks": [{"kind": string, "body": string}]}',
+  ].join("\n");
+
+  const prompt = `How they work with this client, in their own words:\n${description}`;
+
+  const text = await callClaude("writeOnboardingBlocks", system, prompt, {
+    small: true,
+    maxTokens: 800,
+  });
+
+  // Through the same sanitiser as generated quote text, so the house rules
+  // about dashes and contrastive phrasing hold here too.
+  return blocksFromReply(text).map((block) => ({
+    kind: block.kind as string,
+    body: sanitizeText(block.body).trim(),
+  }));
 }

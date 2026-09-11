@@ -1536,9 +1536,23 @@ export const en = {
 
   setup: {
     preview: "Preview it",
-    title: "Set up their page",
-    hint: "Pick what they get told. Everything saves as you go, so you can close this and come back.",
     done: "Done",
+    back: "Back",
+    next: "Next",
+    stepOf: "{n} of {total}",
+    stepsLabel: "Setting up their page",
+    describeTitle: "How do you work with them?",
+    describeStepHint: "Say it once and the steps get written. You read every word before they do.",
+    describeHint:
+      "Write it the way you would say it out loud. Revisions, feedback, the contract, how to reach you, when you are about.",
+    describeLabel: "How you work with this client",
+    describePlaceholder:
+      "There is a contract to sign before we start. Two rounds of changes at each stage, and feedback within two working days keeps us on the date. Email is best and I reply within a day. A short call at the start of each stage, booked whenever suits.",
+    describeYours: "It writes only what you said here, and every word is yours to edit next.",
+    describeReplaces: "This replaces the words already written on the next step.",
+    write: "Write the steps",
+    sectionsTitle: "What they can see",
+    sectionsHint: "Each one is a section on their page. Off means it is not there at all.",
     filesTitle: "Upload the documents while you are here",
     filesHint:
       "Terms, a contract, a glossary, brand files. They appear on their page under Documents, and it saves you attaching them to an email six times.",

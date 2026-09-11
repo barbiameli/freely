@@ -112,6 +112,54 @@ export function specFor(kind: string): BlockSpec | null {
   return BLOCKS.find((block) => block.kind === kind) ?? null;
 }
 
+/**
+ * What the model sent back, reduced to rows this app will actually render.
+ *
+ * Here rather than inside the call so it can be tested against the replies
+ * that go wrong, which are the ones worth testing: a fenced block, a kind
+ * invented on the spot, an empty body, the same kind twice. Every one of those
+ * is a row written to the database that nothing displays, or a heading a
+ * client sees with nothing under it.
+ *
+ * An empty list is a legitimate answer and is returned as one. The caller
+ * decides what to say about it, because "nothing in that fitted a step" is a
+ * sentence about the description rather than about the reply.
+ */
+export function blocksFromReply(text: string): { kind: BlockKind; body: string }[] {
+  const match = text.match(/\{[\s\S]*\}/);
+  const cleaned = (match ? match[0] : text)
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch {
+    return [];
+  }
+
+  const rows = (parsed as { blocks?: unknown })?.blocks;
+  if (!Array.isArray(rows)) return [];
+
+  const known = new Set<string>(BLOCKS.map((spec) => spec.kind));
+  const seen = new Set<string>();
+  const out: { kind: BlockKind; body: string }[] = [];
+
+  for (const row of rows) {
+    const kind = (row as { kind?: unknown })?.kind;
+    const body = (row as { body?: unknown })?.body;
+    if (typeof kind !== "string" || typeof body !== "string") continue;
+    if (!known.has(kind) || seen.has(kind)) continue;
+    const trimmed = body.trim();
+    if (!trimmed) continue;
+    seen.add(kind);
+    out.push({ kind: kind as BlockKind, body: trimmed });
+  }
+
+  return inCatalogueOrder(out);
+}
+
 /** Catalogue order, whatever order the rows came back in. */
 export function inCatalogueOrder<T extends { kind: string }>(rows: T[]): T[] {
   const rank = new Map(BLOCKS.map((block, index) => [block.kind as string, index]));

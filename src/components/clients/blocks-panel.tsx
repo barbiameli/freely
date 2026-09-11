@@ -122,8 +122,16 @@ export function BlocksPanel({
                   <span className="block font-body font-semibold text-small text-ink">
                     {block?.title ?? spec.title}
                   </span>
-                  <span className="block text-caption text-text-muted">
-                    {on && block?.body ? block.body.slice(0, 90) : spec.why}
+                  {/* The words themselves once there are any, wrapped to three
+                      lines rather than cut at 90 characters. These arrive
+                      written now, and a step somebody is meant to check
+                      should be readable without opening it. */}
+                  <span
+                    className={`block text-caption text-text-muted ${
+                      on && block?.body ? "line-clamp-3 mt-0.5" : ""
+                    }`}
+                  >
+                    {on && block?.body ? block.body : spec.why}
                   </span>
                 </button>
 

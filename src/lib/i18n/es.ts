@@ -1524,9 +1524,25 @@ export const es: Dictionary = {
 
   setup: {
     preview: "Verlo",
-    title: "Prepara su página",
-    hint: "Elige qué se les cuenta. Todo se guarda solo, así que puedes cerrar esto y volver.",
     done: "Listo",
+    back: "Atrás",
+    next: "Siguiente",
+    stepOf: "{n} de {total}",
+    stepsLabel: "Preparando su página",
+    describeTitle: "¿Cómo trabajas con ellos?",
+    describeStepHint:
+      "Cuéntalo una vez y se escriben los pasos. Los lees enteros antes que ellos.",
+    describeHint:
+      "Escríbelo como lo dirías en voz alta. Rondas de cambios, respuestas, el contrato, cómo localizarte, cuándo estás.",
+    describeLabel: "Cómo trabajas con este cliente",
+    describePlaceholder:
+      "Hay un contrato que firmar antes de empezar. Dos rondas de cambios en cada fase, y con respuestas en dos días laborables llegamos a la fecha. El correo es lo mejor y contesto en un día. Una llamada corta al empezar cada fase, cuando os venga bien.",
+    describeYours:
+      "Solo escribe lo que has dicho aquí, y cada palabra la puedes editar en el paso siguiente.",
+    describeReplaces: "Esto sustituye lo que ya está escrito en el paso siguiente.",
+    write: "Escribir los pasos",
+    sectionsTitle: "Qué pueden ver",
+    sectionsHint: "Cada una es una sección de su página. Apagada significa que no está.",
     filesTitle: "Sube los documentos ya que estás",
     filesHint:
       "Condiciones, un contrato, un glosario, archivos de marca. Aparecen en su página en Documentos, y te ahorra adjuntarlos por correo seis veces.",
